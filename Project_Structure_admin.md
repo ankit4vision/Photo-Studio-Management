@@ -1,4 +1,4 @@
-# NZ Grocery Admin - Project Structure & Development Guidelines
+# Photo Studio Management - Project Structure & Development Guidelines
 
 ## 📁 Project Folder Structure
 
@@ -57,37 +57,15 @@ admin/
 │   │   │       └── index.jsx
 │   │   │
 │   │   ├── 📁 pages/                  # Page-specific components
-│   │   │   ├── 📁 categories/          # Category management
-│   │   │   │   └── CategoryForm.jsx   # Category form component
-│   │   │   ├── 📁 content/             # Content management
-│   │   │   │   ├── BannerFormModal.jsx # Banner add/edit modal component
-│   │   │   │   ├── FAQFormModal.jsx    # FAQ add/edit modal component
-│   │   │   │   └── NotificationFormModal.jsx # Notification send modal component
 │   │   │   ├── 📁 customers/          # Customer management
 │   │   │   │   ├── CustomerDetailsModal.jsx # Customer details modal component
 │   │   │   │   ├── SuspendCustomerModal.jsx # Customer suspension modal
 │   │   │   │   └── README.md          # Customer components documentation
-│   │   │   ├── 📁 inventory/          # Inventory management
-│   │   │   │   ├── InventoryHistoryModal.jsx # Inventory history modal
-│   │   │   │   ├── StockAdjustmentForm.jsx # Stock adjustment form
-│   │   │   │   └── README.md          # Inventory components documentation
 │   │   │   ├── 📁 orders/             # Order management
 │   │   │   │   ├── OrderDetailsModal.jsx # Order details modal component
 │   │   │   │   └── README.md          # Order components documentation
-│   │   │   ├── 📁 products/           # Product management
-│   │   │   │   ├── AddProductWizard.jsx # Multi-step product creation wizard
-│   │   │   │   ├── ProductForm.jsx    # Product form component
-│   │   │   │   ├── README.md          # Product components documentation
-│   │   │   │   └── 📁 steps/          # Wizard step components
-│   │   │   │       ├── BasicInfoStep.jsx    # Basic information step
-│   │   │   │       ├── AttributesStep.jsx   # Product attributes step
-│   │   │   │       ├── VariantsStep.jsx     # Product variants step
-│   │   │   │       ├── ImageStep.jsx        # Product images step
-│   │   │   │       └── ReviewStep.jsx       # Review and submit step
 │   │   │   ├── 📁 roles/              # Role management
 │   │   │   │   └── RoleForm.jsx       # Role form component
-│   │   │   ├── 📁 subcategories/      # Subcategory management
-│   │   │   │   └── SubCategoryForm.jsx # Subcategory form component
 │   │   │   └── 📁 users/              # User management
 │   │   │       ├── 📁 __tests__/      # User component tests
 │   │   │       │   └── ProfileForm.test.js
@@ -117,16 +95,11 @@ admin/
 │   │   └── PrivateRoute.jsx           # Protected route wrapper
 │   │
 │   ├── 📁 mock/                       # Mock data for development
-│   │   ├── categories.json            # Mock category data
-│   │   ├── content.json               # Mock content management data
 │   │   ├── customers.json             # Mock customer data
-│   │   ├── inventory.json             # Mock inventory data
 │   │   ├── orders.json                # Mock order data
-│   │   ├── products.json              # Mock product data
 │   │   ├── profile.json               # Mock profile data
 │   │   ├── roles.json                 # Mock role data
 │   │   ├── settings.json              # Mock settings data
-│   │   ├── subCategories.json         # Mock subcategory data
 │   │   └── users.json                 # Mock user data
 │   │
 │   ├── 📁 pages/                      # Page components
@@ -145,48 +118,48 @@ admin/
 │   │       └── simplebar.scss         # SimpleBar styles
 │   │
 │   ├── 📁 services/                   # API service layer
-│   │   ├── categoryService.js         # Category API service
-│   │   ├── contentService.js          # Content management API service
+│   │   ├── authService.js             # Authentication API service
+│   │   ├── branchService.js           # Branch management API service
 │   │   ├── customerService.js         # Customer API service
-│   │   ├── inventoryService.js        # Inventory API service
 │   │   ├── orderService.js            # Order API service
-│   │   ├── productService.js          # Product API service
+│   │   ├── packageService.js          # Package management API service
+│   │   ├── paymentService.js          # Payment API service
 │   │   ├── profileService.js          # Profile API service
 │   │   ├── README.md                  # Services documentation
+│   │   ├── reportService.js           # Reports API service
 │   │   ├── roleService.js             # Role API service
 │   │   ├── settingsService.js         # Settings API service
-│   │   ├── subCategoryService.js      # Subcategory API service
+│   │   ├── transactionService.js     # Transaction/Wallet API service
 │   │   └── userService.js             # User API service
 │   │
 │   ├── 📁 styles/                     # Additional styles
 │   │   └── auth.css                   # Authentication styles
 │   │
 │   ├── 📁 views/                      # Main view components
-│   │   ├── 📁 categories/             # Category management views
-│   │   │   └── CategoriesList.jsx     # Categories list view
-│   │   ├── 📁 content/                # Content management views
-│   │   │   ├── ContentManagement.jsx # Main content management with tabs
-│   │   │   ├── BannersPromotions.jsx  # Banners & promotions management
-│   │   │   ├── FAQManagement.jsx     # FAQ management with expandable cards
-│   │   │   └── Notifications.jsx     # System notifications management
+│   │   ├── 📁 branches/               # Branch management views
+│   │   │   └── BranchesList.jsx       # Branches list view
 │   │   ├── 📁 customers/              # Customer management views
 │   │   │   └── CustomersList.jsx      # Customers list view
 │   │   ├── 📁 dashboard/              # Dashboard views
 │   │   │   ├── Dashboard.jsx          # Main dashboard
 │   │   │   └── MainChart.jsx          # Dashboard chart component
-│   │   ├── 📁 inventory/              # Inventory management views
-│   │   │   └── InventoryManagement.jsx # Inventory management main view
 │   │   ├── 📁 orders/                 # Order management views
 │   │   │   └── OrdersList.jsx         # Orders list view
-│   │   ├── 📁 products/               # Product management views
-│   │   │   ├── ProductDetails.jsx     # Product details view
-│   │   │   └── ProductsList.jsx       # Products list view
+│   │   ├── 📁 packages/               # Package management views
+│   │   │   └── PackagesList.jsx       # Packages list view
+│   │   ├── 📁 payments/               # Payment management views
+│   │   │   └── PaymentsList.jsx       # Payments list view
+│   │   ├── 📁 reports/                # Reports views
+│   │   │   ├── BranchReport.jsx      # Branch-wise sales report
+│   │   │   ├── LedgerReport.jsx       # Customer ledger report
+│   │   │   ├── SalesReport.jsx        # Sales summary report
+│   │   │   └── StaffReport.jsx        # Staff performance report
 │   │   ├── 📁 roles/                  # Role management views
 │   │   │   └── RolesList.jsx          # Roles list view
 │   │   ├── 📁 settings/               # Settings views
 │   │   │   └── Settings.jsx           # Settings page
-│   │   ├── 📁 subcategories/          # Subcategory management views
-│   │   │   └── SubCategoriesList.jsx  # Subcategories list view
+│   │   ├── 📁 transactions/           # Transaction management views
+│   │   │   └── TransactionsList.jsx   # Transactions list view (Wallet/Credit-Debit)
 │   │   └── 📁 users/                  # User management views
 │   │       ├── Profile.jsx            # User profile view
 │   │       └── UsersList.jsx          # Users list view
@@ -753,12 +726,13 @@ const userService = {
 ### 🧩 Component Library
 - **StepIndicator** - Multi-step form progress indicator
 - **ImageUpload** - Drag-and-drop image upload component
-- **AddProductWizard** - Complete multi-step product creation wizard (supports create/edit modes)
-- **ProductForm** - Single-step product form (legacy)
 - **FormModal** - Modal wrapper for forms
 - **Table** - Data table with sorting and pagination
 - **ThemeToggle** - Theme switching component (light/dark modes)
 - **ToastProvider** - Global notification system
+- **Modal** - Reusable modal component for confirmations and details
+- **Button** - Reusable button component with variants
+- **Card** - Reusable card component
 
 ### 📊 Performance Monitoring
 - **Bundle size** monitoring
@@ -777,11 +751,11 @@ const userService = {
 ## 🚀 Current Project Status
 
 ### 🎯 Navigation Structure
-- **Main Section**: Dashboard groups with multiple dashboard options
-- **Product Management**: Products, categories, subcategories, brands, units, inventory management
-- **Order Management**: Orders list, order details, order history, customer management
-- **User Management**: Users and role & permission management
-- **Account Section**: Profile and settings
+- **Main Section**: Dashboard
+- **Management Section**: Branches, Packages, Customers, Orders
+- **Financial Section**: Transactions (Wallet/Credit-Debit), Payments
+- **Reports Section**: Sales Report, Ledger Report, Branch Report, Staff Report
+- **System Section**: Users, Roles, Settings
 
 ### 🔧 Technical Implementation
 - **CoreUI Components**: Proper use of CSidebar, CSidebarHeader, CSidebarBrand
@@ -796,15 +770,16 @@ const userService = {
 - **Enhanced Forms**: Better input styling with border-2 and fw-semibold labels
 - **Gradient System**: CSS variables and utility classes for theme-based gradients
 - **Logo-Inspired Gradients**: Green-blue gradient variants matching brand colors
-- **Product Management**: Complete CRUD operations with dashboard-style summary cards
-- **Inventory Management**: Complete stock tracking with history, bulk operations, and alerts
-- **Order Management**: Complete order tracking with status management, customer details, and timeline
+- **Branch Management**: Complete CRUD operations for studio branches
+- **Package Management**: Complete package management with types (Album, PhotoShoot, Editing, Video)
+- **Customer Management**: Customer management with wallet balance and ledger tracking
+- **Order Management**: Order tracking with multiple packages support, status management, and payment tracking
+- **Transaction Management**: Wallet/Credit-Debit transaction system for customer accounts
+- **Payment Management**: Payment recording with multiple payment methods (Cash, UPI, Card)
+- **Reports System**: Sales, Ledger, Branch, and Staff performance reports
 - **Custom Table Component**: Reusable table with sorting, pagination, and loading states
-- **Multi-Step Forms**: StepIndicator component with wizard pattern for complex forms
-- **Image Management**: Drag-and-drop upload with primary image selection
-- **Form Validation**: Step-by-step validation with error handling
+- **Form Validation**: Comprehensive validation with error handling
 - **Mock Data System**: JSON-based mock data for development and testing
-- **Image Handling**: Fallback system with icon display for missing product images
 - **Order Details Modal**: Comprehensive order view with timeline, customer info, and quick actions
 - **Authentication Pages**: Complete dark theme support for login, forgot password, and reset password
 - **Sidebar Theme Adaptation**: Sidebar changes color scheme based on selected theme
