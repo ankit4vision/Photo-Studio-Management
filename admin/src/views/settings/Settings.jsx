@@ -1,20 +1,24 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Container, Row, Col, Card, Button, Spinner, Form, FormControl, FormSelect, FormText, Alert } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPercentage, faBuilding, faEnvelope, faGlobe, faShieldAlt, faSave, faCheckCircle } from '@fortawesome/free-solid-svg-icons'
+import { faPercentage, faBuilding, faEnvelope, faGlobe, faShieldAlt, faSave, faCheckCircle, faFileInvoice } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from '../../components'
 import { settingsService } from '../../services/settingsService'
 
 const Settings = () => {
   const [settingsData, setSettingsData] = useState({
     taxPricing: {
-      defaultGstRate: 15,
+      tax_percentage: 15,
       defaultProfitMargin: 25
     },
     businessInfo: {
-      businessName: 'Photo Studio Management',
+      company_name: 'Photo Studio Management',
+      logo: '',
       gstNumber: '',
       businessAddress: ''
+    },
+    invoiceSettings: {
+      invoice_prefix: 'INV'
     },
     emailNotifications: {
       supportEmail: 'support@photostudio.com',
@@ -43,11 +47,13 @@ const Settings = () => {
   
   // Mapping from form fields to API keys and sections
   const fieldMapping = {
-    'taxPricing.defaultGstRate': { key: 'defaultGstRate', section: 'Tax & Pricing' },
+    'taxPricing.tax_percentage': { key: 'tax_percentage', section: 'Tax & Pricing' },
     'taxPricing.defaultProfitMargin': { key: 'defaultProfitMargin', section: 'Tax & Pricing' },
-    'businessInfo.businessName': { key: 'businessName', section: 'Business Information' },
+    'businessInfo.company_name': { key: 'company_name', section: 'Business Information' },
+    'businessInfo.logo': { key: 'logo', section: 'Business Information' },
     'businessInfo.gstNumber': { key: 'gstNumber', section: 'Business Information' },
     'businessInfo.businessAddress': { key: 'businessAddress', section: 'Business Information' },
+    'invoiceSettings.invoice_prefix': { key: 'invoice_prefix', section: 'Invoice Settings' },
     'emailNotifications.supportEmail': { key: 'supportEmail', section: 'Email & Notification' },
     'emailNotifications.adminEmail': { key: 'adminEmail', section: 'Email & Notification' },
     'emailNotifications.enableOrderNotifications': { key: 'enableOrderNotifications', section: 'Email & Notification' },
@@ -173,9 +179,9 @@ const Settings = () => {
   const validateForm = () => {
     const newErrors = {}
     
-    // Validate GST Rate
-    if (settingsData.taxPricing.defaultGstRate < 0 || settingsData.taxPricing.defaultGstRate > 100) {
-      newErrors['taxPricing.defaultGstRate'] = 'GST rate must be between 0 and 100'
+    // Validate Tax Percentage
+    if (settingsData.taxPricing.tax_percentage < 0 || settingsData.taxPricing.tax_percentage > 100) {
+      newErrors['taxPricing.tax_percentage'] = 'Tax percentage must be between 0 and 100'
     }
     
     // Validate Profit Margin
@@ -239,9 +245,9 @@ const Settings = () => {
         <Col md={6}>
             <div className="p-4 rounded-3 bg-gradient-logo text-dark mb-3 shadow-sm">
             <div className="text-center">
-              <h3 className="mb-1 text-dark">{settingsData.taxPricing.defaultGstRate}%</h3>
-              <p className="mb-0 fw-semibold text-dark">Default GST Rate</p>
-              <small className="text-muted">Default GST rate applied to all orders unless specified individually.</small>
+              <h3 className="mb-1 text-dark">{settingsData.taxPricing.tax_percentage}%</h3>
+              <p className="mb-0 fw-semibold text-dark">Tax Percentage</p>
+              <small className="text-muted">Tax percentage applied to all orders unless specified individually.</small>
             </div>
           </div>
         </Col>
@@ -261,11 +267,11 @@ const Settings = () => {
         <Col md={6}>
           <Form.Group className="mb-3">
             <Form.Label className="fw-semibold">
-              Default GST Rate (%)
-              {autoSaving['taxPricing.defaultGstRate'] && (
+              Tax Percentage (%)
+              {autoSaving['taxPricing.tax_percentage'] && (
                 <Spinner size="sm" className="ms-2" variant="primary" />
               )}
-              {autoSaved['taxPricing.defaultGstRate'] && (
+              {autoSaved['taxPricing.tax_percentage'] && (
                 <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
               )}
             </Form.Label>
@@ -273,15 +279,15 @@ const Settings = () => {
               type="number"
               min="0"
               max="100"
-              value={settingsData.taxPricing.defaultGstRate}
-              onChange={(e) => handleChange('taxPricing', 'defaultGstRate', parseInt(e.target.value) || 0)}
-              onBlur={(e) => handleBlur('taxPricing', 'defaultGstRate', parseInt(e.target.value) || 0)}
-              isInvalid={!!errors['taxPricing.defaultGstRate']}
+              value={settingsData.taxPricing.tax_percentage}
+              onChange={(e) => handleChange('taxPricing', 'tax_percentage', parseInt(e.target.value) || 0)}
+              onBlur={(e) => handleBlur('taxPricing', 'tax_percentage', parseInt(e.target.value) || 0)}
+              isInvalid={!!errors['taxPricing.tax_percentage']}
               className="border-2"
             />
-            <FormText className="text-muted">This will be used for orders that don't have a specific GST rate set.</FormText>
-            {errors['taxPricing.defaultGstRate'] && (
-              <FormText className="text-danger">{errors['taxPricing.defaultGstRate']}</FormText>
+            <FormText className="text-muted">This will be used for orders that don't have a specific tax percentage set.</FormText>
+            {errors['taxPricing.tax_percentage'] && (
+              <FormText className="text-danger">{errors['taxPricing.tax_percentage']}</FormText>
             )}
           </Form.Group>
         </Col>
@@ -327,15 +333,38 @@ const Settings = () => {
       <Row>
         <Col md={6}>
           <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">Business Name</Form.Label>
+            <Form.Label className="fw-semibold">
+              Company Name
+              {autoSaving['businessInfo.company_name'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['businessInfo.company_name'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
             <FormControl
-              value={settingsData.businessInfo.businessName}
-              onChange={(e) => handleChange('businessInfo', 'businessName', e.target.value)}
-              onBlur={(e) => handleBlur('businessInfo', 'businessName', e.target.value)}
+              value={settingsData.businessInfo.company_name}
+              onChange={(e) => handleChange('businessInfo', 'company_name', e.target.value)}
+              onBlur={(e) => handleBlur('businessInfo', 'company_name', e.target.value)}
               className="border-2"
             />
           </Form.Group>
         </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">Logo URL</Form.Label>
+            <FormControl
+              placeholder="Enter logo URL or upload image"
+              value={settingsData.businessInfo.logo}
+              onChange={(e) => handleChange('businessInfo', 'logo', e.target.value)}
+              onBlur={(e) => handleBlur('businessInfo', 'logo', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">URL or path to your company logo</FormText>
+          </Form.Group>
+        </Col>
+      </Row>
+      <Row>
         <Col md={6}>
           <Form.Group className="mb-3">
             <Form.Label className="fw-semibold">GST Number</Form.Label>
@@ -361,6 +390,40 @@ const Settings = () => {
               onBlur={(e) => handleBlur('businessInfo', 'businessAddress', e.target.value)}
               className="border-2"
             />
+          </Form.Group>
+        </Col>
+      </Row>
+    </div>
+  )
+
+  const renderInvoiceSettings = () => (
+    <div className="mb-5">
+      {/* Section Header */}
+      <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-success border-2">
+        <FontAwesomeIcon icon={faFileInvoice} className="me-3 text-success fs-4" />
+        <h4 className="mb-0 text-success">Invoice Settings</h4>
+      </div>
+
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Invoice Prefix
+              {autoSaving['invoiceSettings.invoice_prefix'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['invoiceSettings.invoice_prefix'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              placeholder="INV"
+              value={settingsData.invoiceSettings.invoice_prefix}
+              onChange={(e) => handleChange('invoiceSettings', 'invoice_prefix', e.target.value)}
+              onBlur={(e) => handleBlur('invoiceSettings', 'invoice_prefix', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">Prefix for invoice numbers (e.g., INV-001, ORD-001)</FormText>
           </Form.Group>
         </Col>
       </Row>
@@ -596,6 +659,7 @@ const Settings = () => {
           <div className="bg-white rounded-3 shadow-sm p-4">
             {renderTaxPricingSettings()}
             {renderBusinessInfo()}
+            {renderInvoiceSettings()}
             {renderEmailNotifications()}
             {renderCurrencyRegional()}
             {renderSecuritySettings()}

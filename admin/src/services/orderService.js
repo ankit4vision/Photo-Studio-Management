@@ -247,10 +247,8 @@ class OrderService {
       { value: 'pending', label: 'Pending', color: 'warning' },
       { value: 'confirmed', label: 'Confirmed', color: 'info' },
       { value: 'processing', label: 'Processing', color: 'primary' },
-      { value: 'shipped', label: 'Shipped', color: 'info' },
-      { value: 'delivered', label: 'Delivered', color: 'success' },
+      { value: 'completed', label: 'Completed', color: 'success' },
       { value: 'cancelled', label: 'Cancelled', color: 'danger' },
-      { value: 'refunded', label: 'Refunded', color: 'secondary' },
     ]
   }
 
@@ -268,23 +266,10 @@ class OrderService {
   // Get payment method options
   getPaymentMethodOptions() {
     return [
-      { value: 'credit_card', label: 'Credit Card' },
-      { value: 'debit_card', label: 'Debit Card' },
-      { value: 'paypal', label: 'PayPal' },
+      { value: 'cash', label: 'Cash' },
+      { value: 'upi', label: 'UPI' },
+      { value: 'card', label: 'Card' },
       { value: 'bank_transfer', label: 'Bank Transfer' },
-      { value: 'cash_on_delivery', label: 'Cash on Delivery' },
-      { value: 'digital_wallet', label: 'Digital Wallet' },
-    ]
-  }
-
-  // Get shipping method options
-  getShippingMethodOptions() {
-    return [
-      { value: 'standard', label: 'Standard Shipping' },
-      { value: 'express', label: 'Express Shipping' },
-      { value: 'overnight', label: 'Overnight Shipping' },
-      { value: 'pickup', label: 'Store Pickup' },
-      { value: 'local_delivery', label: 'Local Delivery' },
     ]
   }
 }

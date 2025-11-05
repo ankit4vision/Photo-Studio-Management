@@ -1,5 +1,6 @@
 import React from 'react'
 import { Modal, Row, Col, Badge, Button } from 'react-bootstrap'
+import { useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
   faUser, 
@@ -7,10 +8,13 @@ import {
   faPhone, 
   faMapMarkerAlt, 
   faShoppingCart, 
-  faDollarSign,
+  faWallet,
   faCalendarAlt,
   faBan,
-  faCheckCircle
+  faCheckCircle,
+  faBuilding,
+  faBook,
+  faGift
 } from '@fortawesome/free-solid-svg-icons'
 
 const CustomerDetailsModal = ({ 
@@ -20,17 +24,29 @@ const CustomerDetailsModal = ({
   onSuspend, 
   onActivate 
 }) => {
+  const navigate = useNavigate()
+  
   if (!customer) return null
 
+  // Get customer name
+  const customerName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+
   // Generate initials for avatar
-  const getInitials = (firstName, lastName) => {
-    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase()
+  const getInitials = (customer) => {
+    if (customer.name) {
+      const names = customer.name.split(' ')
+      if (names.length >= 2) {
+        return `${names[0]?.charAt(0) || ''}${names[names.length - 1]?.charAt(0) || ''}`.toUpperCase()
+      }
+      return customer.name.substring(0, 2).toUpperCase()
+    }
+    return `${customer.firstName?.charAt(0) || ''}${customer.lastName?.charAt(0) || ''}`.toUpperCase()
   }
 
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A'
-    return new Date(dateString).toLocaleDateString('en-NZ', {
+    return new Date(dateString).toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -39,16 +55,17 @@ const CustomerDetailsModal = ({
 
   // Format currency
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-NZ', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'NZD'
-    }).format(amount)
+      currency: 'INR'
+    }).format(amount || 0)
   }
 
   // Get status color
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'success'
+      case 'inactive': return 'secondary'
       case 'suspended': return 'danger'
       case 'pending': return 'warning'
       default: return 'secondary'
@@ -59,11 +76,15 @@ const CustomerDetailsModal = ({
   const getStatusText = (status) => {
     switch (status) {
       case 'active': return 'Active'
+      case 'inactive': return 'Inactive'
       case 'suspended': return 'Suspended'
       case 'pending': return 'Pending'
       default: return status
     }
   }
+
+  const walletBalance = customer.wallet_balance || 0
+  const totalOrders = customer.total_orders || customer.totalOrders || 0
 
   return (
     <Modal show={visible} onHide={onClose} size="lg" centered>
@@ -85,75 +106,139 @@ const CustomerDetailsModal = ({
               fontWeight: 'bold'
             }}
           >
-            {getInitials(customer.firstName, customer.lastName)}
+            {getInitials(customer)}
           </div>
-          <h4 className="mb-1">{customer.firstName} {customer.lastName}</h4>
-          <p className="text-muted mb-0">Customer ID: {customer.customerId}</p>
+          <h4 className="mb-1">{customerName}</h4>
+          <p className="text-muted mb-0">Customer ID: {customer.id || customer.customerId}</p>
+        </div>
+
+        {/* Wallet Balance Card */}
+        <div className="mb-4 p-3 bg-light rounded border border-success border-2">
+          <div className="d-flex justify-content-between align-items-center">
+            <div>
+              <div className="text-muted small mb-1">Wallet Balance</div>
+              <div className={`h4 mb-0 fw-bold ${walletBalance >= 0 ? 'text-success' : 'text-danger'}`}>
+                {formatCurrency(walletBalance)}
+              </div>
+            </div>
+            <div className="d-flex gap-2">
+              <Button
+                variant="outline-success"
+                size="sm"
+                onClick={() => {
+                  onClose()
+                  navigate(`/customers/${customer.id}/wallet`)
+                }}
+              >
+                <FontAwesomeIcon icon={faWallet} className="me-2" />
+                View Wallet
+              </Button>
+              <Button
+                variant="outline-info"
+                size="sm"
+                onClick={() => {
+                  onClose()
+                  navigate(`/customers/${customer.id}/ledger`)
+                }}
+              >
+                <FontAwesomeIcon icon={faBook} className="me-2" />
+                View Ledger
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Customer Information */}
         <Row className="g-4">
           <Col md={6}>
             <div className="d-flex align-items-center mb-3">
+              <FontAwesomeIcon icon={faPhone} className="me-3 text-success" />
+              <div>
+                <div className="fw-semibold">Mobile</div>
+                <div className="text-muted">{customer.mobile || customer.phone || 'N/A'}</div>
+              </div>
+            </div>
+          </Col>
+          
+          <Col md={6}>
+            <div className="d-flex align-items-center mb-3">
               <FontAwesomeIcon icon={faEnvelope} className="me-3 text-success" />
               <div>
                 <div className="fw-semibold">Email</div>
-                <div className="text-muted">{customer.email}</div>
+                <div className="text-muted">{customer.email || 'N/A'}</div>
               </div>
             </div>
           </Col>
-          
-          <Col md={6}>
-            <div className="d-flex align-items-center mb-3">
-              <FontAwesomeIcon icon={faPhone} className="me-3 text-success" />
-              <div>
-                <div className="fw-semibold">Phone</div>
-                <div className="text-muted">{customer.phone}</div>
-              </div>
-            </div>
-          </Col>
-          
-          <Col md={6}>
-            <div className="d-flex align-items-center mb-3">
-              <FontAwesomeIcon icon={faMapMarkerAlt} className="me-3 text-success" />
-              <div>
-                <div className="fw-semibold">Location</div>
-                <div className="text-muted">
-                  {customer.location?.city}, {customer.location?.country}
+
+          {customer.address && (
+            <Col md={6}>
+              <div className="d-flex align-items-center mb-3">
+                <FontAwesomeIcon icon={faMapMarkerAlt} className="me-3 text-success" />
+                <div>
+                  <div className="fw-semibold">Address</div>
+                  <div className="text-muted">{customer.address}</div>
                 </div>
               </div>
-            </div>
-          </Col>
+            </Col>
+          )}
+
+          {customer.branch_name && (
+            <Col md={6}>
+              <div className="d-flex align-items-center mb-3">
+                <FontAwesomeIcon icon={faBuilding} className="me-3 text-success" />
+                <div>
+                  <div className="fw-semibold">Branch</div>
+                  <div className="text-muted">{customer.branch_name} ({customer.branch_code || ''})</div>
+                </div>
+              </div>
+            </Col>
+          )}
+
+          {customer.dob && (
+            <Col md={6}>
+              <div className="d-flex align-items-center mb-3">
+                <FontAwesomeIcon icon={faCalendarAlt} className="me-3 text-success" />
+                <div>
+                  <div className="fw-semibold">Date of Birth</div>
+                  <div className="text-muted">{formatDate(customer.dob)}</div>
+                </div>
+              </div>
+            </Col>
+          )}
+
+          {customer.anniversary_date && (
+            <Col md={6}>
+              <div className="d-flex align-items-center mb-3">
+                <FontAwesomeIcon icon={faGift} className="me-3 text-success" />
+                <div>
+                  <div className="fw-semibold">Anniversary Date</div>
+                  <div className="text-muted">{formatDate(customer.anniversary_date)}</div>
+                </div>
+              </div>
+            </Col>
+          )}
           
           <Col md={6}>
             <div className="d-flex align-items-center mb-3">
               <FontAwesomeIcon icon={faShoppingCart} className="me-3 text-success" />
               <div>
                 <div className="fw-semibold">Total Orders</div>
-                <div className="text-muted">{customer.totalOrders}</div>
+                <div className="text-muted">{totalOrders}</div>
               </div>
             </div>
           </Col>
-          
-          <Col md={6}>
-            <div className="d-flex align-items-center mb-3">
-              <FontAwesomeIcon icon={faDollarSign} className="me-3 text-success" />
-              <div>
-                <div className="fw-semibold">Total Spent</div>
-                <div className="text-muted">{formatCurrency(customer.totalSpent)}</div>
+
+          {customer.created_at && (
+            <Col md={6}>
+              <div className="d-flex align-items-center mb-3">
+                <FontAwesomeIcon icon={faCalendarAlt} className="me-3 text-success" />
+                <div>
+                  <div className="fw-semibold">Registered</div>
+                  <div className="text-muted">{formatDate(customer.created_at || customer.joinedDate)}</div>
+                </div>
               </div>
-            </div>
-          </Col>
-          
-          <Col md={6}>
-            <div className="d-flex align-items-center mb-3">
-              <FontAwesomeIcon icon={faCalendarAlt} className="me-3 text-success" />
-              <div>
-                <div className="fw-semibold">Joined</div>
-                <div className="text-muted">{formatDate(customer.joinedDate)}</div>
-              </div>
-            </div>
-          </Col>
+            </Col>
+          )}
         </Row>
 
         {/* Status Badge */}
@@ -162,122 +247,18 @@ const CustomerDetailsModal = ({
             {getStatusText(customer.status)}
           </Badge>
         </div>
-
-        {/* Address Information */}
-        {customer.address && (
-          <div className="mb-4">
-            <h6 className="fw-semibold mb-3">Address Information</h6>
-            <div className="bg-light p-3 rounded">
-              <div className="text-muted">
-                {customer.address.street}<br />
-                {customer.address.city}, {customer.address.state} {customer.address.postalCode}<br />
-                {customer.address.country}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Preferences */}
-        {customer.preferences && Object.keys(customer.preferences).length > 0 && (
-          <div className="mb-4">
-            <h6 className="fw-semibold mb-3">Preferences</h6>
-            <div className="bg-light p-3 rounded">
-              <Row className="g-2">
-                {customer.preferences.newsletter !== undefined && (
-                  <Col md={6}>
-                    <small className="text-muted">
-                      Newsletter: {customer.preferences.newsletter ? 'Subscribed' : 'Not subscribed'}
-                    </small>
-                  </Col>
-                )}
-                {customer.preferences.smsNotifications !== undefined && (
-                  <Col md={6}>
-                    <small className="text-muted">
-                      SMS Notifications: {customer.preferences.smsNotifications ? 'Enabled' : 'Disabled'}
-                    </small>
-                  </Col>
-                )}
-                {customer.preferences.preferredDeliveryTime && (
-                  <Col md={6}>
-                    <small className="text-muted">
-                      Preferred Delivery: {customer.preferences.preferredDeliveryTime}
-                    </small>
-                  </Col>
-                )}
-                {customer.preferences.dietaryRestrictions && customer.preferences.dietaryRestrictions.length > 0 && (
-                  <Col md={12}>
-                    <small className="text-muted">
-                      Dietary Restrictions: {customer.preferences.dietaryRestrictions.join(', ')}
-                    </small>
-                  </Col>
-                )}
-              </Row>
-            </div>
-          </div>
-        )}
-
-        {/* Notes */}
-        {customer.notes && (
-          <div className="mb-4">
-            <h6 className="fw-semibold mb-3">Notes</h6>
-            <div className="bg-light p-3 rounded">
-              <div className="text-muted">{customer.notes}</div>
-            </div>
-          </div>
-        )}
-
-        {/* Last Order Date */}
-        {customer.lastOrderDate && (
-          <div className="mb-4">
-            <h6 className="fw-semibold mb-3">Last Order</h6>
-            <div className="bg-light p-3 rounded">
-              <div className="text-muted">{formatDate(customer.lastOrderDate)}</div>
-            </div>
-          </div>
-        )}
-
-        {/* Suspension Details */}
-        {customer.suspensionDetails && (
-          <div className="mb-4">
-            <h6 className="fw-semibold mb-3 text-danger">Suspension Details</h6>
-            <div className="bg-danger bg-opacity-10 p-3 rounded border border-danger">
-              <Row className="g-2">
-                <Col md={6}>
-                  <small className="text-muted">Reason:</small>
-                  <div className="fw-semibold">{customer.suspensionDetails.reason}</div>
-                </Col>
-                <Col md={6}>
-                  <small className="text-muted">Suspended On:</small>
-                  <div className="fw-semibold">{formatDate(customer.suspensionDetails.suspendedAt)}</div>
-                </Col>
-                {customer.suspensionDetails.durationType === 'temporary' && customer.suspensionDetails.suspendedUntil && (
-                  <Col md={6}>
-                    <small className="text-muted">Suspended Until:</small>
-                    <div className="fw-semibold">{formatDate(customer.suspensionDetails.suspendedUntil)}</div>
-                  </Col>
-                )}
-                {customer.suspensionDetails.notes && (
-                  <Col md={12}>
-                    <small className="text-muted">Notes:</small>
-                    <div className="fw-semibold">{customer.suspensionDetails.notes}</div>
-                  </Col>
-                )}
-              </Row>
-            </div>
-          </div>
-        )}
       </Modal.Body>
       
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>
           Close
         </Button>
-        {customer.status === 'active' ? (
+        {customer.status === 'active' && onSuspend ? (
           <Button variant="danger" onClick={() => onSuspend(customer)}>
             <FontAwesomeIcon icon={faBan} className="me-2" />
             Suspend Account
           </Button>
-        ) : customer.status === 'suspended' ? (
+        ) : customer.status === 'suspended' && onActivate ? (
           <Button variant="success" onClick={() => onActivate(customer)}>
             <FontAwesomeIcon icon={faCheckCircle} className="me-2" />
             Activate Account

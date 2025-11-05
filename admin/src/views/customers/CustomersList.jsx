@@ -11,7 +11,8 @@ import {
   faUser,
   faDownload,
   faBan,
-  faCheckCircle
+  faCheckCircle,
+  faPlus
 } from '@fortawesome/free-solid-svg-icons'
 import { Table, Modal } from '../../components'
 import CustomerDetailsModal from '../../components/pages/customers/CustomerDetailsModal'
@@ -106,13 +107,15 @@ const CustomersList = () => {
 
   // Filter customers
   const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = `${customer.firstName} ${customer.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const customerName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+    const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         customer.mobile?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          customer.phone?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = !statusFilter || customer.status === statusFilter
     const matchesLocation = !locationFilter || 
-                           customer.location?.city?.toLowerCase().includes(locationFilter.toLowerCase()) ||
-                           customer.location?.country?.toLowerCase().includes(locationFilter.toLowerCase())
+                           customer.address?.toLowerCase().includes(locationFilter.toLowerCase()) ||
+                           customer.location?.city?.toLowerCase().includes(locationFilter.toLowerCase())
     
     let matchesRegistrationDate = true
     if (registrationDateFilter) {
@@ -136,7 +139,8 @@ const CustomersList = () => {
           break
       }
       
-      matchesRegistrationDate = new Date(customer.joinedDate) >= filterDate
+      const joinDate = customer.created_at || customer.joinedDate
+      matchesRegistrationDate = joinDate ? new Date(joinDate) >= filterDate : true
     }
     
     return matchesSearch && matchesStatus && matchesLocation && matchesRegistrationDate
@@ -156,22 +160,29 @@ const CustomersList = () => {
   }
 
   // Generate initials for avatar
-  const getInitials = (firstName, lastName) => {
-    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase()
+  const getInitials = (customer) => {
+    if (customer.name) {
+      const names = customer.name.split(' ')
+      if (names.length >= 2) {
+        return `${names[0]?.charAt(0) || ''}${names[names.length - 1]?.charAt(0) || ''}`.toUpperCase()
+      }
+      return customer.name.substring(0, 2).toUpperCase()
+    }
+    return `${customer.firstName?.charAt(0) || ''}${customer.lastName?.charAt(0) || ''}`.toUpperCase()
   }
 
   // Format currency
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-NZ', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'NZD'
-    }).format(amount)
+      currency: 'INR'
+    }).format(amount || 0)
   }
 
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A'
-    return new Date(dateString).toLocaleDateString('en-NZ', {
+    return new Date(dateString).toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -183,64 +194,70 @@ const CustomersList = () => {
     {
       key: 'customer',
       label: 'Customer',
-      render: (value, customer, index) => (
-        <div className="d-flex align-items-center">
-          <div 
-            className="d-flex align-items-center justify-content-center rounded-circle me-3"
-            style={{ 
-              width: '40px', 
-              height: '40px', 
-              backgroundColor: '#8b5cf6',
-              color: 'white',
-              fontSize: '14px',
-              fontWeight: 'bold'
-            }}
-          >
-            {getInitials(customer.firstName, customer.lastName)}
+      render: (value, customer, index) => {
+        const customerName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+        return (
+          <div className="d-flex align-items-center">
+            <div 
+              className="d-flex align-items-center justify-content-center rounded-circle me-3"
+              style={{ 
+                width: '40px', 
+                height: '40px', 
+                backgroundColor: '#8b5cf6',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}
+            >
+              {getInitials(customer)}
+            </div>
+            <div>
+              <div className="fw-semibold text-dark">{customerName}</div>
+              <small className="text-muted">{customer.mobile || customer.phone || 'N/A'}</small>
+            </div>
           </div>
-          <div>
-            <div className="fw-semibold text-dark">{customer.firstName} {customer.lastName}</div>
-            <small className="text-muted">{customer.customerId}</small>
-          </div>
-        </div>
-      )
+        )
+      }
     },
     {
       key: 'contact',
       label: 'Contact',
       render: (value, customer, index) => (
         <div>
-          <div className="fw-semibold text-dark">{customer.email}</div>
-          <small className="text-muted">{customer.phone}</small>
+          <div className="fw-semibold text-dark">{customer.mobile || customer.phone || 'N/A'}</div>
+          <small className="text-muted">{customer.email || 'No email'}</small>
         </div>
       )
     },
     {
-      key: 'location',
-      label: 'Location',
+      key: 'branch',
+      label: 'Branch',
       render: (value, customer, index) => (
         <div>
-          <div className="fw-semibold text-dark">{customer.location?.city}</div>
-          <small className="text-muted">{customer.location?.country}</small>
+          <div className="fw-semibold text-dark">{customer.branch_name || 'N/A'}</div>
+          <small className="text-muted">{customer.branch_code || ''}</small>
         </div>
       )
+    },
+    {
+      key: 'wallet',
+      label: 'Wallet Balance',
+      render: (value, customer, index) => {
+        const balance = customer.wallet_balance || 0
+        return (
+          <div className={`fw-semibold ${balance >= 0 ? 'text-success' : 'text-danger'}`}>
+            {formatCurrency(balance)}
+          </div>
+        )
+      }
     },
     {
       key: 'orders',
-      label: 'Orders',
+      label: 'Total Orders',
       render: (value, customer, index) => (
         <Badge bg="info" className="px-2 py-1">
-          {customer.totalOrders}
+          {customer.total_orders || customer.totalOrders || 0}
         </Badge>
-      )
-    },
-    {
-      key: 'totalSpent',
-      label: 'Total Spent',
-      render: (value, customer, index) => (
-        <div className="fw-semibold text-success">
-          {formatCurrency(customer.totalSpent)}
-        </div>
       )
     },
     {
@@ -420,6 +437,10 @@ const CustomersList = () => {
               <h2 className="mb-0 text-dark">Customer Management</h2>
             </div>
             <div className="ms-auto d-flex align-items-center gap-3">
+              <Button variant="primary" onClick={() => navigate('/customers/create')}>
+                <FontAwesomeIcon icon={faPlus} className="me-2" />
+                Add Customer
+              </Button>
               <Button variant="primary" onClick={handleExport}>
                 <FontAwesomeIcon icon={faDownload} className="me-2" />
                 Export

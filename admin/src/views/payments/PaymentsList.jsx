@@ -5,11 +5,14 @@ import {
   faCreditCard,
   faSearch, 
   faRefresh,
+  faPlus,
 } from '@fortawesome/free-solid-svg-icons'
 import { Table } from '../../components'
 import paymentService from '../../services/paymentService'
+import { useNavigate } from 'react-router-dom'
 
 const PaymentsList = () => {
+  const navigate = useNavigate()
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -91,6 +94,12 @@ const PaymentsList = () => {
             <div className="d-flex align-items-center">
               <FontAwesomeIcon icon={faCreditCard} className="me-3 text-dark fs-4" />
               <h2 className="mb-0 text-dark">Payments</h2>
+            </div>
+            <div className="ms-auto">
+              <Button variant="primary" onClick={() => navigate('/payments/create')}>
+                <FontAwesomeIcon icon={faPlus} className="me-2" />
+                Record Payment
+              </Button>
             </div>
           </div>
 

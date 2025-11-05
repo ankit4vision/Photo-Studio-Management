@@ -98,18 +98,18 @@ const Dashboard = () => {
   // Recent activities data
   const recentActivities = [
     { id: 1, user: 'John Smith', action: 'Placed order #1234', time: '2 minutes ago', type: 'order' },
-    { id: 2, user: 'Sarah Johnson', action: 'Created new account', time: '5 minutes ago', type: 'user' },
+    { id: 2, user: 'Sarah Johnson', action: 'New customer registered', time: '5 minutes ago', type: 'user' },
     { id: 3, user: 'Mike Wilson', action: 'Completed order #1233', time: '8 minutes ago', type: 'order' },
-    { id: 4, user: 'Emma Davis', action: 'Updated profile', time: '12 minutes ago', type: 'profile' },
+    { id: 4, user: 'Emma Davis', action: 'Payment received for order #1231', time: '12 minutes ago', type: 'payment' },
     { id: 5, user: 'David Brown', action: 'Placed order #1232', time: '15 minutes ago', type: 'order' },
-    { id: 6, user: 'Lisa Anderson', action: 'Registered new account', time: '18 minutes ago', type: 'user' }
+    { id: 6, user: 'Lisa Anderson', action: 'New customer registered', time: '18 minutes ago', type: 'user' }
   ]
 
   const getActivityIcon = (type) => {
     switch (type) {
       case 'order': return faCartShopping
       case 'user': return faUsers
-      case 'profile': return faUsers
+      case 'payment': return faDollarSign
       default: return faClock
     }
   }
@@ -118,7 +118,7 @@ const Dashboard = () => {
     switch (type) {
       case 'order': return 'success'
       case 'user': return 'primary'
-      case 'profile': return 'info'
+      case 'payment': return 'success'
       default: return 'secondary'
     }
   }

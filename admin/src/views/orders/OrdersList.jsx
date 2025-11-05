@@ -9,16 +9,18 @@ import {
   faSync,
   faEye,
   faCheck,
-  faTruck,
   faPrint,
-  faImage
+  faImage,
+  faPlus
 } from '@fortawesome/free-solid-svg-icons'
 import orderService from '../../services/orderService'
 import Table from '../../components/common/Table'
 import OrderDetailsModal from '../../components/pages/orders/OrderDetailsModal'
 import { formatCurrency, formatDate } from '../../utils'
+import { useNavigate } from 'react-router-dom'
 
 const OrdersList = () => {
+  const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [stats, setStats] = useState({})
   const [loading, setLoading] = useState(true)
@@ -132,8 +134,8 @@ const OrdersList = () => {
         case 'process':
           await orderService.updateOrderStatus(orderId, 'processing')
           break
-        case 'ship':
-          await orderService.updateOrderStatus(orderId, 'shipped')
+        case 'complete':
+          await orderService.updateOrderStatus(orderId, 'completed')
           break
         case 'print':
           // Handle print action
@@ -152,10 +154,8 @@ const OrdersList = () => {
       pending: 'warning',
       confirmed: 'info',
       processing: 'primary',
-      shipped: 'info',
-      delivered: 'success',
-      cancelled: 'danger',
-      refunded: 'secondary'
+      completed: 'success',
+      cancelled: 'danger'
     }
     return statusMap[status] || 'secondary'
   }
@@ -177,10 +177,11 @@ const OrdersList = () => {
       header: 'Order ID',
       render: (value, order) => {
         if (!order) return <div>No order data</div>
+        const orderId = order.id || order.orderNumber || 'N/A'
         return (
           <div>
-            <div className="fw-bold">{order.orderNumber || 'N/A'}</div>
-            <small className="text-muted">{order.shippingMethod || 'Standard'}</small>
+            <div className="fw-bold">#{orderId}</div>
+            <small className="text-muted">{formatDate(order.order_date || order.orderDate)}</small>
           </div>
         )
       }
@@ -190,60 +191,68 @@ const OrdersList = () => {
       header: 'Customer',
       render: (value, order) => {
         if (!order) return <div>No customer data</div>
+        const customerName = order.customer_name || 
+          (order.customer ? (order.customer.name || `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim()) : 'Unknown')
         return (
           <div>
-            <div className="fw-bold">
-              {order.customer?.firstName || 'Unknown'} {order.customer?.lastName || 'Customer'}
-            </div>
-            <small className="text-muted">{order.customer?.email || 'No email'}</small>
+            <div className="fw-bold">{customerName}</div>
+            <small className="text-muted">{order.customer?.mobile || order.customer?.phone || order.customer?.email || 'N/A'}</small>
           </div>
         )
       }
     },
     {
-      key: 'items',
-      header: 'Items',
+      key: 'packages',
+      header: 'Packages',
       render: (value, order) => {
         if (!order) return <div>No items data</div>
-        const firstItem = order.items?.[0]
+        const items = order.items || []
+        if (items.length === 0) return <Badge bg="secondary">No items</Badge>
+        
         return (
-          <div className="d-flex align-items-center">
-            {firstItem?.productImage ? (
-              <img 
-                src={firstItem.productImage} 
-                alt={firstItem?.productName || 'Product'}
-                className="rounded me-2"
-                style={{ width: '40px', height: '40px', objectFit: 'cover' }}
-              />
-            ) : (
-              <div 
-                className="d-flex align-items-center justify-content-center border rounded me-2"
-                style={{ 
-                  width: '40px', 
-                  height: '40px', 
-                  backgroundColor: '#f8f9fa'
-                }}
-              >
-                <FontAwesomeIcon icon={faImage} className="text-muted" />
-              </div>
-            )}
-            <div>
-              <div className="fw-bold">{firstItem?.productName || 'Unknown Product'}</div>
-              <small className="text-muted">Qty: {firstItem?.quantity || 0}</small>
-            </div>
+          <div>
+            <div className="fw-bold">{items.length} Package{items.length > 1 ? 's' : ''}</div>
+            <small className="text-muted">
+              {items.slice(0, 2).map(item => item.package_name || 'Package').join(', ')}
+              {items.length > 2 && ` +${items.length - 2} more`}
+            </small>
           </div>
         )
       }
     },
     {
-      key: 'total',
-      header: 'Amount',
+      key: 'dates',
+      header: 'Dates',
       render: (value, order) => {
-        if (!order) return <div>No amount data</div>
+        if (!order) return <div>N/A</div>
         return (
           <div>
-            <div className="fw-bold">{formatCurrency(order.total || 0)}</div>
-            <small className="text-success">Commission: {formatCurrency(order.commission || 0)}</small>
+            <div className="fw-semibold text-dark">Order: {formatDate(order.order_date || order.orderDate)}</div>
+            {order.due_date && (
+              <small className={`${new Date(order.due_date) < new Date() ? 'text-danger' : 'text-muted'}`}>
+                Due: {formatDate(order.due_date)}
+              </small>
+            )}
+          </div>
+        )
+      }
+    },
+    {
+      key: 'amounts',
+      header: 'Amounts',
+      render: (value, order) => {
+        if (!order) return <div>No amount data</div>
+        const totalAmount = order.total_amount || order.total || 0
+        const paidAmount = order.paid_amount || order.paid || 0
+        const balanceAmount = order.balance_amount || (totalAmount - paidAmount)
+        
+        return (
+          <div>
+            <div className="fw-bold">Total: {formatCurrency(totalAmount)}</div>
+            <div className="text-success small">Paid: {formatCurrency(paidAmount)}</div>
+            <div className={`small ${balanceAmount > 0 ? 'text-danger' : 'text-success'}`}>
+              Balance: {formatCurrency(balanceAmount)}
+            </div>
           </div>
         )
       }
@@ -313,12 +322,12 @@ const OrdersList = () => {
             )}
             {(order.status || 'pending') === 'processing' && (
               <Button
-                variant="outline-info"
+                variant="outline-success"
                 size="sm"
-                onClick={() => handleQuickAction(order.id, 'ship')}
-                title="Ship Order"
+                onClick={() => handleQuickAction(order.id, 'complete')}
+                title="Complete Order"
               >
-                <FontAwesomeIcon icon={faTruck} />
+                <FontAwesomeIcon icon={faCheck} />
               </Button>
             )}
             <Button
@@ -345,7 +354,11 @@ const OrdersList = () => {
           <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
             <FontAwesomeIcon icon={faShoppingCart} className="me-3 text-success fs-4" />
             <h2 className="mb-0 text-dark">Order Management</h2>
-            <div className="ms-auto d-flex align-items-center">
+            <div className="ms-auto d-flex align-items-center gap-2">
+              <Button variant="success" onClick={() => navigate('/orders/create')}>
+                <FontAwesomeIcon icon={faPlus} className="me-2" />
+                Create Order
+              </Button>
               <div className="position-relative me-3">
                 <FontAwesomeIcon icon={faBell} className="text-muted fs-5" />
                 <Badge bg="danger" className="position-absolute top-0 start-100 translate-middle rounded-pill" style={{ fontSize: '0.6rem' }}>
@@ -395,7 +408,7 @@ const OrdersList = () => {
                       <h4 className="mb-0">{stats.processingOrders || 8}</h4>
                       <p className="mb-0">Processing</p>
                     </div>
-                    <FontAwesomeIcon icon={faTruck} className="fs-1 opacity-75" />
+                    <FontAwesomeIcon icon={faCheck} className="fs-1 opacity-75" />
                   </div>
                 </Card.Body>
               </Card>

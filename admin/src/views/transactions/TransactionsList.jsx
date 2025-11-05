@@ -111,7 +111,7 @@ const TransactionsList = () => {
               <h2 className="mb-0 text-dark">Transactions</h2>
             </div>
             <div className="ms-auto">
-              <Button variant="primary" onClick={() => {}}>
+              <Button variant="primary" onClick={() => navigate('/transactions/create')}>
                 <FontAwesomeIcon icon={faPlus} className="me-2" />
                 Add Transaction
               </Button>
