@@ -1,0 +1,89 @@
+import React, { Suspense } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { CContainer, CSpinner } from '@coreui/react'
+
+// Import components
+const Dashboard = React.lazy(() => import('../../views/dashboard/Dashboard'))
+
+// User Management Components
+const UsersList = React.lazy(() => import('../../views/users/UsersList'))
+const Profile = React.lazy(() => import('../../views/users/Profile'))
+const RolesList = React.lazy(() => import('../../views/roles/RolesList'))
+
+// Settings Components
+const Settings = React.lazy(() => import('../../views/settings/Settings'))
+
+// Branch Management Components
+const BranchesList = React.lazy(() => import('../../views/branches/BranchesList'))
+
+// Package Management Components
+const PackagesList = React.lazy(() => import('../../views/packages/PackagesList'))
+
+// Order Management Components
+const OrdersList = React.lazy(() => import('../../views/orders/OrdersList'))
+
+// Customer Management Components
+const CustomersList = React.lazy(() => import('../../views/customers/CustomersList'))
+
+// Transaction Components
+const TransactionsList = React.lazy(() => import('../../views/transactions/TransactionsList'))
+
+// Payment Components
+const PaymentsList = React.lazy(() => import('../../views/payments/PaymentsList'))
+
+// Report Components
+const SalesReport = React.lazy(() => import('../../views/reports/SalesReport'))
+const LedgerReport = React.lazy(() => import('../../views/reports/LedgerReport'))
+const BranchReport = React.lazy(() => import('../../views/reports/BranchReport'))
+const StaffReport = React.lazy(() => import('../../views/reports/StaffReport'))
+
+const AppContent = () => {
+  return (
+    <div className="app-content">
+      <Suspense fallback={<CSpinner color="primary" />}>
+        <Routes>
+          {/* Dashboard */}
+          <Route path="/dashboard" element={<Dashboard />} />
+          
+          {/* User Management Routes */}
+          <Route path="/users" element={<UsersList />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/roles" element={<RolesList />} />
+          
+          {/* Settings Routes */}
+          <Route path="/settings" element={<Settings />} />
+          
+          {/* Branch Management Routes */}
+          <Route path="/branches" element={<BranchesList />} />
+          
+          {/* Package Management Routes */}
+          <Route path="/packages" element={<PackagesList />} />
+          
+          {/* Order Management Routes */}
+          <Route path="/orders" element={<OrdersList />} />
+          
+          {/* Customer Management Routes */}
+          <Route path="/customers" element={<CustomersList />} />
+          
+          {/* Transaction Routes */}
+          <Route path="/transactions" element={<TransactionsList />} />
+          
+          {/* Payment Routes */}
+          <Route path="/payments" element={<PaymentsList />} />
+          
+          {/* Report Routes */}
+          <Route path="/reports/sales" element={<SalesReport />} />
+          <Route path="/reports/ledger" element={<LedgerReport />} />
+          <Route path="/reports/branch" element={<BranchReport />} />
+          <Route path="/reports/staff" element={<StaffReport />} />
+          
+          {/* Default redirect */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </Suspense>
+    </div>
+  )
+}
+
+export default React.memo(AppContent)
+
