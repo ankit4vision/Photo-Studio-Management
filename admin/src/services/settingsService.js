@@ -333,7 +333,7 @@ class SettingsService {
         defaultProfitMargin: 25
       },
       businessInfo: {
-        businessName: 'Farm2Fridge',
+        businessName: 'Photo Studio Management',
         gstNumber: '',
         businessAddress: ''
       },

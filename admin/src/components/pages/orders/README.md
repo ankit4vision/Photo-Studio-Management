@@ -1,7 +1,7 @@
 # Orders Management Module
 
 ## Overview
-The Orders Management module provides comprehensive functionality for managing customer orders in the NZ Grocery Admin system. It includes order listing, detailed view, status management, and various order operations.
+The Orders Management module provides comprehensive functionality for managing customer orders in the Photo Studio Management App. It includes order listing, detailed view, status management, and various order operations.
 
 ## Components
 

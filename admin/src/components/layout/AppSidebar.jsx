@@ -39,7 +39,7 @@ const AppSidebar = () => {
         <CSidebarBrand to="/" className="sidebar-brand-custom">
           <img
             src={logoImg}
-            alt="NZ Grocery Admin"
+            alt="Photo Studio Management App"
             className="sidebar-brand-logo-full"
           />
         </CSidebarBrand>

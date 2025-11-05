@@ -412,28 +412,28 @@ This document provides comprehensive API information for the CoreUI React Templa
 // Settings Object
 {
   "general": {
-    "appName": "BaseAdmin",
-    "businessName": "Codexaa Technologies",
-    "businessAddress": "123 Business Street, Tech City, TC 12345",
-    "contactInfo": "+1-555-0123",
-    "email": "admin@codexaa.com",
+    "appName": "Photo Studio Management App",
+    "businessName": "Photo Studio Management",
+    "businessAddress": "",
+    "contactInfo": "",
+    "email": "admin@photostudio.com",
     "theme": "light",
     "updatedAt": "2024-01-15T10:30:00Z"
   },
   "email": {
     "smtpHost": "smtp.gmail.com",
     "smtpPort": "587",
-    "smtpUsername": "noreply@codexaa.com",
+    "smtpUsername": "noreply@photostudio.com",
     "smtpPassword": "encrypted_password_here",
-    "fromEmail": "noreply@codexaa.com",
-    "fromName": "BaseAdmin System",
+    "fromEmail": "noreply@photostudio.com",
+    "fromName": "Photo Studio Management App",
     "encryption": "tls",
     "updatedAt": "2024-01-15T10:30:00Z"
   },
   "aws": {
     "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
     "secretAccessKey": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-    "bucketName": "baseadmin-storage",
+    "bucketName": "photostudio-storage",
     "region": "us-east-1",
     "endpoint": "",
     "updatedAt": "2024-01-15T10:30:00Z"

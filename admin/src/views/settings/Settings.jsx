@@ -12,13 +12,13 @@ const Settings = () => {
       defaultProfitMargin: 25
     },
     businessInfo: {
-      businessName: 'Farm2Fridge',
+      businessName: 'Photo Studio Management',
       gstNumber: '',
-      businessAddress: '123 Queen Street, Auckland Central, Auckland 1010, New Zealand'
+      businessAddress: ''
     },
     emailNotifications: {
-      supportEmail: 'support@farm2fridge.co.nz',
-      adminEmail: 'admin@farm2fridge.co.nz',
+      supportEmail: 'support@photostudio.com',
+      adminEmail: 'admin@photostudio.com',
       enableOrderNotifications: false
     },
     currencyRegional: {

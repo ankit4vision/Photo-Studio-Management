@@ -1,6 +1,6 @@
 # Customer Management Components
 
-This directory contains the customer management components for the NZ Grocery Admin application.
+This directory contains the customer management components for the Photo Studio Management App.
 
 ## Components
 

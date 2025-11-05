@@ -101,7 +101,7 @@ const ResetPassword = () => {
                    style={{ width: '80px', height: '80px' }}>
                 <FontAwesomeIcon icon={faLock} size="2x" className="text-primary" />
               </div>
-              <h2 className="text-dark fw-bold mb-1">BaseAdmin</h2>
+              <h2 className="text-dark fw-bold mb-1">Photo Studio Management App</h2>
               <p className="text-muted mb-0">Secure Admin Dashboard</p>
             </div>
 
@@ -178,7 +178,7 @@ const ResetPassword = () => {
             {/* Footer */}
             <div className="text-center mt-4">
               <p className="text-muted small mb-0">
-                © 2024 BaseAdmin. All rights reserved.
+                © 2025 Photo Studio Management App. All rights reserved.
               </p>
             </div>
           </Col>

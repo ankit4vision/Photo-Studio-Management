@@ -85,10 +85,10 @@ const ForgotPassword = () => {
               <div className="text-center mb-4">
                 <div className="d-inline-flex align-items-center justify-content-center mb-3 p-3" 
                      style={{ boxShadow: '0 4px 20px rgba(34, 197, 94, 0.15)' }}>
-                  <img src={logoImg} alt="Farm2Fridge Logo" style={{ width: '120px', height: 'auto' }} />
+                  <img src={logoImg} alt="Photo Studio Management App Logo" style={{ width: '120px', height: 'auto' }} />
                 </div>
-              <h2 className="text-success fw-bold mb-1">Farm2Fridge Admin</h2>
-              <p className="text-muted mb-0">Fresh Farm to Table Management</p>
+              <h2 className="text-success fw-bold mb-1">Photo Studio Management App</h2>
+              <p className="text-muted mb-0">Professional Photo Studio Management System</p>
               </div>
 
               <div className="auth-card text-center">
@@ -136,7 +136,7 @@ const ForgotPassword = () => {
               {/* Footer */}
               <div className="text-center mt-4">
                 <p className="text-muted small mb-0">
-                  © 2024 Farm2Fridge Admin. All rights reserved.
+                  © 2025 Photo Studio Management App. All rights reserved.
                 </p>
               </div>
             </Col>
@@ -160,9 +160,9 @@ const ForgotPassword = () => {
             <div className="text-center mb-4">
               <div className="d-inline-flex align-items-center justify-content-center mb-3 p-3" 
                    style={{ boxShadow: '0 4px 20px rgba(34, 197, 94, 0.15)' }}>
-                <img src={logoImg} alt="Farm2Fridge Logo" style={{ width: '120px', height: 'auto' }} />
+                <img src={logoImg} alt="Photo Studio Management App Logo" style={{ width: '120px', height: 'auto' }} />
               </div>
-              <h2 className="text-success fw-bold mb-1">Farm2Fridge Admin</h2>
+              <h2 className="text-success fw-bold mb-1">Photo Studio Management App</h2>
               <p className="text-muted mb-0">Fresh Farm to Table Management</p>
             </div>
 
@@ -216,7 +216,7 @@ const ForgotPassword = () => {
             {/* Footer */}
             <div className="text-center mt-4">
               <p className="text-muted small mb-0">
-                © 2024 Farm2Fridge Admin. All rights reserved.
+                © 2025 Photo Studio Management App. All rights reserved.
               </p>
             </div>
           </Col>
