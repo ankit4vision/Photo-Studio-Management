@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react'
 import { Container, Row, Col, Button, Card, Spinner } from 'react-bootstrap'
 import { useNavigate, useParams } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCart, faArrowLeft, faSave } from '@fortawesome/free-solid-svg-icons'
+import { faShoppingCart, faArrowLeft, faSave } from '@fortawesome/free-solid-svg-icons'
 import OrderForm from '../../components/pages/orders/OrderForm'
 import orderService from '../../services/orderService'
 import { useToast } from '../../components/common/ToastProvider'
@@ -10,13 +10,61 @@ import { useToast } from '../../components/common/ToastProvider'
 const OrderFormView = () => {
   const navigate = useNavigate()
   const { id } = useParams()
-  const { showToast } = useToast()
+  const { success, error } = useToast()
   const formRef = useRef()
   const [loading, setLoading] = useState(false)
   const [orderData, setOrderData] = useState(null)
   const [loadingData, setLoadingData] = useState(!!id)
 
   const mode = id ? 'edit' : 'create'
+
+  const normalizeOrderData = (order) => {
+    if (!order) return null
+
+    const orderDate = order.order_date || order.orderDate || new Date().toISOString()
+    const dueDate = order.due_date || order.dueDate || null
+    const flatDiscount = order.flat_discount !== undefined ? order.flat_discount : (order.discount || 0)
+    const customerId = order.customer_id || order.customerId || order.customer?.id || ''
+    const branchId = order.branch_id || order.branchId || ''
+
+    const normalizedItems = (order.items || []).map((item, index) => {
+      const quantity = item.qty || item.quantity || 1
+      const price = item.price !== undefined
+        ? item.price
+        : item.unitPrice !== undefined
+          ? item.unitPrice
+          : item.amount !== undefined && quantity
+            ? item.amount / quantity
+            : item.totalPrice !== undefined && quantity
+              ? item.totalPrice / quantity
+              : 0
+
+      const amount = item.amount !== undefined
+        ? item.amount
+        : item.totalPrice !== undefined
+          ? item.totalPrice
+          : price * quantity
+
+      return {
+        id: item.id || index + 1,
+        package_id: (item.package_id || item.packageId || item.productId || item.id || index + 1).toString(),
+        package_name: item.package_name || item.packageName || item.productName || item.title || `Package ${index + 1}`,
+        price,
+        qty: quantity,
+        amount
+      }
+    })
+
+    return {
+      ...order,
+      customer_id: customerId,
+      branch_id: branchId?.toString() || '',
+      order_date: orderDate,
+      due_date: dueDate,
+      flat_discount: flatDiscount,
+      items: normalizedItems
+    }
+  }
 
   // Load order data for edit mode
   React.useEffect(() => {
@@ -26,14 +74,20 @@ const OrderFormView = () => {
           setLoadingData(true)
           const response = await orderService.getOrderById(id)
           if (response.success) {
-            setOrderData(response.data)
+            const normalized = normalizeOrderData(response.data)
+            if (!normalized) {
+              error('Order data is invalid')
+              navigate('/orders')
+              return
+            }
+            setOrderData(normalized)
           } else {
-            showToast('Error loading order data', 'error')
+            error('Error loading order data')
             navigate('/orders')
           }
-        } catch (error) {
-          console.error('Error loading order:', error)
-          showToast('Error loading order data', 'error')
+        } catch (err) {
+          console.error('Error loading order:', err)
+          error('Error loading order data')
           navigate('/orders')
         } finally {
           setLoadingData(false)
@@ -41,7 +95,7 @@ const OrderFormView = () => {
       }
       loadOrder()
     }
-  }, [id, mode, navigate, showToast])
+  }, [id, mode, navigate, error])
 
   const handleSubmit = async (formData) => {
     try {
@@ -50,23 +104,23 @@ const OrderFormView = () => {
       if (mode === 'create') {
         const response = await orderService.createOrder(formData)
         if (response.success) {
-          showToast('Order created successfully', 'success')
+          success('Order created successfully')
           navigate('/orders')
         } else {
-          showToast(response.message || 'Error creating order', 'error')
+          error(response.message || 'Error creating order')
         }
       } else {
         const response = await orderService.updateOrder(id, formData)
         if (response.success) {
-          showToast('Order updated successfully', 'success')
+          success('Order updated successfully')
           navigate('/orders')
         } else {
-          showToast(response.message || 'Error updating order', 'error')
+          error(response.message || 'Error updating order')
         }
       }
-    } catch (error) {
-      console.error('Error saving order:', error)
-      showToast('An error occurred while saving order', 'error')
+    } catch (err) {
+      console.error('Error saving order:', err)
+      error('An error occurred while saving order')
     } finally {
       setLoading(false)
     }
@@ -100,7 +154,7 @@ const OrderFormView = () => {
               Back
             </Button>
             <div className="d-flex align-items-center">
-              <FontAwesomeIcon icon={faCart} className="me-3 text-dark fs-4" />
+              <FontAwesomeIcon icon={faShoppingCart} className="me-3 text-dark fs-4" />
               <h2 className="mb-0 text-dark">
                 {mode === 'create' ? 'Create Order' : 'Edit Order'}
               </h2>

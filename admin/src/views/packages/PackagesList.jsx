@@ -34,11 +34,27 @@ const PackagesList = () => {
     try {
       setLoading(true)
       const response = await packageService.getPackages()
-      if (response.success) {
+      if (response && response.success) {
         setPackages(response.data || [])
+      } else {
+        // If response is not successful, try to use mock data directly
+        console.warn('Failed to load packages from API, using mock data')
+        const mockResponse = packageService.getMockPackages()
+        if (mockResponse && mockResponse.success) {
+          setPackages(mockResponse.data || [])
+        }
       }
     } catch (error) {
       console.error('Error loading packages:', error)
+      // Fallback to mock data on error
+      try {
+        const mockResponse = packageService.getMockPackages()
+        if (mockResponse && mockResponse.success) {
+          setPackages(mockResponse.data || [])
+        }
+      } catch (mockError) {
+        console.error('Error loading mock packages:', mockError)
+      }
     } finally {
       setLoading(false)
     }

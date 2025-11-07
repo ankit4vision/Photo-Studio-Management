@@ -50,19 +50,13 @@ export const exportToPDF = (data, columns, title = 'Export', filename = 'export.
           if (typeof rendered === 'string') {
             td.textContent = rendered
           } else {
-            // Try to extract text from React element
-            td.textContent = col.key === 'customer' ? (item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim()) :
-                            col.key === 'contact' ? (item.mobile || item.phone || item.email || 'N/A') :
-                            col.key === 'status' ? (item.status || 'N/A') :
-                            item[col.key] || 'N/A'
+            td.textContent = item[col.key] || ''
           }
         } else {
-          td.textContent = item[col.key] || 'N/A'
+          td.textContent = item[col.key] || ''
         }
-        
         row.appendChild(td)
       })
-      
       tbody.appendChild(row)
     })
     
@@ -75,7 +69,7 @@ export const exportToPDF = (data, columns, title = 'Export', filename = 'export.
     container.appendChild(table)
     document.body.appendChild(container)
     
-    // Create print window
+    // Create a new window for printing
     const printWindow = window.open('', '_blank')
     printWindow.document.write(`
       <html>
@@ -83,19 +77,16 @@ export const exportToPDF = (data, columns, title = 'Export', filename = 'export.
           <title>${title}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th { background-color: #f8f9fa; padding: 8px; border: 1px solid #dee2e6; text-align: left; }
-            td { padding: 8px; border: 1px solid #dee2e6; }
-            h1 { color: #333; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
+            th { background-color: #f8f9fa; font-weight: bold; }
             @media print {
-              body { margin: 0; }
               @page { margin: 1cm; }
             }
           </style>
         </head>
         <body>
-          <h1>${title}</h1>
-          <p>Generated on: ${new Date().toLocaleString()}</p>
+          <h2>${title}</h2>
           ${table.outerHTML}
         </body>
       </html>
@@ -103,100 +94,121 @@ export const exportToPDF = (data, columns, title = 'Export', filename = 'export.
     printWindow.document.close()
     
     // Wait for content to load, then print
-    setTimeout(() => {
+    printWindow.onload = () => {
       printWindow.print()
-      document.body.removeChild(container)
-    }, 250)
-    
-    return { success: true, message: 'PDF export initiated' }
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(container)
+        printWindow.close()
+      }, 1000)
+    }
   } catch (error) {
     console.error('Error exporting to PDF:', error)
-    return { success: false, message: 'Failed to export PDF: ' + error.message }
+    alert('Failed to export PDF. Please try again.')
   }
 }
 
-/**
- * Export photographer data to PDF
- */
 export const exportPhotographersToPDF = (photographers, filters = {}) => {
   const columns = [
-    { key: 'photographerId', label: 'ID' },
     { key: 'name', label: 'Name' },
-    { key: 'mobile', label: 'Mobile' },
     { key: 'email', label: 'Email' },
-    { key: 'specialization', label: 'Specialization' },
-    { key: 'total_orders', label: 'Orders' },
-    { key: 'total_earnings', label: 'Earnings' },
+    { key: 'mobile', label: 'Mobile' },
+    { key: 'total_services', label: 'Services' },
+    { key: 'total_amount', label: 'Total Amount' },
     { key: 'status', label: 'Status' }
   ]
   
-  // Filter data if needed
-  let filteredData = [...photographers]
+  const data = photographers.map(p => ({
+    name: p.name || `${p.firstName || ''} ${p.lastName || ''}`.trim(),
+    email: p.email || 'N/A',
+    mobile: p.mobile || p.phone || 'N/A',
+    total_services: p.total_services || p.total_orders || 0,
+    total_amount: `₹${(p.total_amount || p.total_earnings || 0).toLocaleString('en-IN')}`,
+    status: p.status || 'active'
+  }))
   
-  if (filters.status) {
-    filteredData = filteredData.filter(p => p.status === filters.status)
-  }
-  
-  if (filters.search) {
-    const search = filters.search.toLowerCase()
-    filteredData = filteredData.filter(p => 
-      p.name?.toLowerCase().includes(search) ||
-      p.email?.toLowerCase().includes(search) ||
-      p.mobile?.toLowerCase().includes(search) ||
-      p.specialization?.toLowerCase().includes(search)
-    )
-  }
-  
-  const filename = `photographers_${new Date().toISOString().split('T')[0]}.pdf`
-  return exportToPDF(filteredData, columns, 'Photographers List', filename)
+  exportToPDF(data, columns, 'Photographers List', 'photographers.pdf')
 }
 
-/**
- * Export single photographer details to PDF
- */
 export const exportSinglePhotographerToPDF = (photographer) => {
   if (!photographer) {
-    return { success: false, message: 'No photographer data available' }
+    console.error('No photographer data provided')
+    return
   }
 
-  try {
-    const photographerName = photographer.name || `${photographer.firstName || ''} ${photographer.lastName || ''}`.trim() || 'N/A'
-    const photographerId = photographer.photographerId || photographer.id || 'N/A'
+  const photographerName = photographer.name || `${photographer.firstName || ''} ${photographer.lastName || ''}`.trim()
+  const photographerId = photographer.photographerId || photographer.customerId || `#${photographer.id}` || 'N/A'
+  
+  const totalAmount = photographer.total_amount || photographer.total_earnings || photographer.totalSpent || 0
+  const paidAmount = photographer.paid_amount || photographer.wallet_balance || 0
+  const remainingAmount = photographer.remaining_amount || (totalAmount - paidAmount)
+  const totalServices = photographer.total_services || photographer.total_orders || photographer.totalOrders || 0
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount || 0)
+  }
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A'
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  const getBranchIndicator = (photographer) => {
+    if (!photographer) return ''
     
-    // Format currency
-    const formatCurrency = (amount) => {
-      return new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR'
-      }).format(amount || 0)
+    const branchName = (photographer.branch_name || '').toLowerCase().trim()
+    const branchCode = (photographer.branch_code || '').toUpperCase().trim()
+    const branchId = photographer.branch_id
+    
+    if (branchName.includes('lunawada') || branchName.includes('luna') || branchName.includes('main')) {
+      return 'L'
     }
-
-    // Format date
-    const formatDate = (dateString) => {
-      if (!dateString) return 'N/A'
-      return new Date(dateString).toLocaleDateString('en-IN', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
+    if (branchName.includes('vadodara') || branchName.includes('vado') || branchName.includes('baroda') || branchName.includes('mumbai')) {
+      return 'V'
     }
+    
+    if (branchCode && branchCode.length > 0) {
+      const firstChar = branchCode.charAt(0)
+      if (firstChar === 'L') return 'L'
+      if (firstChar === 'V') return 'V'
+      if (firstChar === 'M' && branchCode.includes('001')) return 'L'
+      if (firstChar === 'M' && branchCode.includes('002')) return 'V'
+    }
+    
+    if (branchId) {
+      if (branchId === 1) return 'L'
+      if (branchId === 2) return 'V'
+    }
+    
+    return ''
+  }
 
-    // Create detailed HTML content
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
+  const branchIndicator = getBranchIndicator(photographer)
+  const displayName = branchIndicator ? `${photographerName} (${branchIndicator})` : photographerName
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
         <head>
           <meta charset="UTF-8">
-          <title>Photographer Details - ${photographerName}</title>
+          <title>Photographer Profile - ${photographerName}</title>
           <style>
             * {
               margin: 0;
               padding: 0;
               box-sizing: border-box;
             }
-            body { 
-              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-              padding: 30px;
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
               color: #2c3e50;
               background: #ffffff;
               line-height: 1.6;
@@ -399,21 +411,19 @@ export const exportSinglePhotographerToPDF = (photographer) => {
               <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
                 <div class="stat-card earnings">
                   <div class="stat-label">Total Amount</div>
-                  <div class="stat-value">${formatCurrency(photographer.total_earnings || photographer.total_amount || 0)}</div>
+                  <div class="stat-value">${formatCurrency(totalAmount)}</div>
                 </div>
                 <div class="stat-card wallet">
                   <div class="stat-label">Paid Amount</div>
-                  <div class="stat-value" style="color: #059669;">${formatCurrency(photographer.paid_amount || photographer.wallet_balance || 0)}</div>
+                  <div class="stat-value">${formatCurrency(paidAmount)}</div>
                 </div>
-                <div class="stat-card rating">
-                  <div class="stat-label">Remaining Amount</div>
-                  <div class="stat-value" style="color: ${((photographer.total_earnings || photographer.total_amount || 0) - (photographer.paid_amount || photographer.wallet_balance || 0)) > 0 ? '#dc2626' : '#059669'};">${formatCurrency(photographer.remaining_amount || ((photographer.total_earnings || photographer.total_amount || 0) - (photographer.paid_amount || photographer.wallet_balance || 0)))}</div>
-                </div>
-              </div>
-              <div style="margin-bottom: 20px;">
-                <div class="stat-card orders" style="max-width: 300px; margin: 0 auto;">
+                <div class="stat-card orders">
                   <div class="stat-label">Total Services</div>
-                  <div class="stat-value">${photographer.total_orders || photographer.totalOrders || photographer.total_services || 0}</div>
+                  <div class="stat-value">${totalServices}</div>
+                </div>
+                <div class="stat-card rating" style="grid-column: span 1;">
+                  <div class="stat-label">Remaining Amount</div>
+                  <div class="stat-value">${formatCurrency(remainingAmount)}</div>
                 </div>
               </div>
 
@@ -424,130 +434,523 @@ export const exportSinglePhotographerToPDF = (photographer) => {
                   <div class="info-grid">
                     <div class="info-item">
                       <div class="info-label">Full Name</div>
-                      <div class="info-value">${photographerName}</div>
+                      <div class="info-value">${displayName}</div>
                     </div>
                     <div class="info-item">
-                      <div class="info-label">Email Address</div>
+                      <div class="info-label">Photographer ID</div>
+                      <div class="info-value">${photographerId}</div>
+                    </div>
+                    <div class="info-item">
+                      <div class="info-label">Email</div>
                       <div class="info-value">${photographer.email || 'N/A'}</div>
                     </div>
                     <div class="info-item">
-                      <div class="info-label">Mobile Number</div>
+                      <div class="info-label">Mobile</div>
                       <div class="info-value">${photographer.mobile || photographer.phone || 'N/A'}</div>
                     </div>
-                    <div class="info-item">
-                      <div class="info-label">Address</div>
-                      <div class="info-value">${photographer.address || 'N/A'}</div>
-                    </div>
-                    ${photographer.location ? `
-                    <div class="info-item">
-                      <div class="info-label">Location</div>
-                      <div class="info-value">${[photographer.location.city, photographer.location.state, photographer.location.country].filter(Boolean).join(', ') || 'N/A'}</div>
-                    </div>
-                    ` : ''}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Professional Information -->
-              <div class="section">
-                <div class="section-title">💼 Professional Information</div>
-                <div class="section-content">
-                  <div class="info-grid">
-                    <div class="info-item">
-                      <div class="info-label">Specialization</div>
-                      <div class="info-value" style="font-weight: 600; color: #22c55e;">${photographer.specialization || 'N/A'}</div>
-                    </div>
-                    <div class="info-item">
-                      <div class="info-label">Experience</div>
-                      <div class="info-value">${photographer.experience_years || 0} years</div>
-                    </div>
-                    <div class="info-item">
-                      <div class="info-label">Hourly Rate</div>
-                      <div class="info-value" style="font-weight: 600; color: #059669;">${formatCurrency(photographer.hourly_rate || 0)}</div>
-                    </div>
-                    <div class="info-item">
-                      <div class="info-label">Camera Equipment</div>
-                      <div class="info-value">${photographer.camera_equipment || 'N/A'}</div>
-                    </div>
-                    ${photographer.portfolio_url ? `
-                    <div class="info-item" style="grid-column: 1 / -1;">
-                      <div class="info-label">Portfolio URL</div>
-                      <div class="info-value" style="color: #3b82f6; word-break: break-all;">${photographer.portfolio_url}</div>
-                    </div>
-                    ` : ''}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Branch Information -->
-              <div class="section">
-                <div class="section-title">🏢 Branch Information</div>
-                <div class="section-content">
-                  <div class="info-grid">
-                    <div class="info-item">
-                      <div class="info-label">Branch Name</div>
-                      <div class="info-value">${photographer.branch_name || 'N/A'}</div>
-                    </div>
-                    <div class="info-item">
-                      <div class="info-label">Branch Code</div>
-                      <div class="info-value">${photographer.branch_code || 'N/A'}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Additional Information -->
-              <div class="section">
-                <div class="section-title">📅 Additional Information</div>
-                <div class="section-content">
-                  <div class="info-grid">
                     <div class="info-item">
                       <div class="info-label">Status</div>
                       <div class="info-value">
                         <span class="badge ${photographer.status === 'active' ? 'active' : 'suspended'}">
-                          ${photographer.status ? photographer.status.charAt(0).toUpperCase() + photographer.status.slice(1) : 'N/A'}
+                          ${photographer.status || 'active'}
                         </span>
                       </div>
                     </div>
                     <div class="info-item">
                       <div class="info-label">Joined Date</div>
-                      <div class="info-value">${formatDate(photographer.joinedDate || photographer.created_at)}</div>
+                      <div class="info-value">${formatDate(photographer.joinedDate || photographer.createdAt || photographer.created_at)}</div>
                     </div>
-                    ${photographer.updated_at ? `
-                    <div class="info-item">
-                      <div class="info-label">Last Updated</div>
-                      <div class="info-value">${formatDate(photographer.updated_at)}</div>
-                    </div>
-                    ` : ''}
                   </div>
                 </div>
               </div>
 
-              <!-- Footer -->
-              <div class="footer">
-                <p>This document was generated automatically by Photo Studio Management System</p>
-                <p>© ${new Date().getFullYear()} Photo Studio Management. All rights reserved.</p>
+              <!-- Contact Information -->
+              ${(photographer.address || photographer.location) ? `
+              <div class="section">
+                <div class="section-title">📍 Contact Information</div>
+                <div class="section-content">
+                  <div class="info-grid">
+                    ${typeof photographer.address === 'string' ? `
+                      <div class="info-item" style="grid-column: span 2;">
+                        <div class="info-label">Address</div>
+                        <div class="info-value">${photographer.address}</div>
+                      </div>
+                    ` : (photographer.address && typeof photographer.address === 'object') ? `
+                      <div class="info-item">
+                        <div class="info-label">Street</div>
+                        <div class="info-value">${photographer.address.street || 'N/A'}</div>
+                      </div>
+                      <div class="info-item">
+                        <div class="info-label">City</div>
+                        <div class="info-value">${photographer.address.city || 'N/A'}</div>
+                      </div>
+                      <div class="info-item">
+                        <div class="info-label">State</div>
+                        <div class="info-value">${photographer.address.state || 'N/A'}</div>
+                      </div>
+                      <div class="info-item">
+                        <div class="info-label">Postal Code</div>
+                        <div class="info-value">${photographer.address.postalCode || 'N/A'}</div>
+                      </div>
+                    ` : ''}
+                    ${photographer.location ? `
+                      <div class="info-item">
+                        <div class="info-label">Location</div>
+                        <div class="info-value">${photographer.location.city || photographer.location || 'N/A'}</div>
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
               </div>
+              ` : ''}
+
+              <!-- Performance Statistics -->
+              <div class="section">
+                <div class="section-title">📊 Performance Statistics</div>
+                <div class="section-content">
+                  <div class="info-grid">
+                    <div class="info-item">
+                      <div class="info-label">Total Services</div>
+                      <div class="info-value" style="font-size: 20px; font-weight: 700; color: #22c55e;">${totalServices}</div>
+                    </div>
+                    <div class="info-item">
+                      <div class="info-label">Total Amount</div>
+                      <div class="info-value" style="font-size: 20px; font-weight: 700; color: #10b981;">${formatCurrency(totalAmount)}</div>
+                    </div>
+                    <div class="info-item">
+                      <div class="info-label">Paid Amount</div>
+                      <div class="info-value" style="font-size: 20px; font-weight: 700; color: #3b82f6;">${formatCurrency(paidAmount)}</div>
+                    </div>
+                    <div class="info-item">
+                      <div class="info-label">Remaining Amount</div>
+                      <div class="info-value" style="font-size: 20px; font-weight: 700; color: ${remainingAmount > 0 ? '#ef4444' : '#22c55e'};">${formatCurrency(remainingAmount)}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="footer">
+              <p>This document was generated automatically by Photo Studio Management System</p>
+              <p style="margin-top: 5px;">© ${new Date().getFullYear()} Photo Studio. All rights reserved.</p>
             </div>
           </div>
         </body>
-      </html>
-    `
+    </html>
+  `
 
-    // Create print window
-    const printWindow = window.open('', '_blank')
-    printWindow.document.write(htmlContent)
-    printWindow.document.close()
-    
-    // Wait for content to load, then print
+  // Create a new window for printing
+  const printWindow = window.open('', '_blank')
+  printWindow.document.write(htmlContent)
+  printWindow.document.close()
+
+  // Wait for content to load, then print
+  printWindow.onload = () => {
     setTimeout(() => {
       printWindow.print()
-    }, 250)
-    
-    return { success: true, message: 'PDF export initiated' }
-  } catch (error) {
-    console.error('Error exporting photographer PDF:', error)
-    return { success: false, message: 'Failed to export PDF: ' + error.message }
+    }, 500)
   }
 }
 
+// Export order to PDF
+export const exportOrderToPDF = (order) => {
+  if (!order) {
+    console.error('No order data provided')
+    return
+  }
+
+  const orderNumber = order.orderNumber || order.id || 'N/A'
+  const customerName = order.customer_name || 
+    (order.customer ? (order.customer.name || `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim()) : 'Unknown')
+  const customerEmail = order.customer?.email || 'N/A'
+  const customerPhone = order.customer?.mobile || order.customer?.phone || 'N/A'
+  
+  const totalAmount = order.total_amount || order.total || 0
+  const paidAmount = order.paid_amount || order.paid || 0
+  const balanceAmount = order.balance_amount || (totalAmount - paidAmount)
+  const subtotal = order.subtotal || totalAmount
+  const discount = order.flat_discount || order.discount || 0
+  const items = order.items || []
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount || 0)
+  }
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A'
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      pending: { bg: '#fef3c7', color: '#92400e', label: 'Pending' },
+      processing: { bg: '#dbeafe', color: '#1e40af', label: 'Processing' },
+      completed: { bg: '#d1fae5', color: '#065f46', label: 'Completed' },
+      cancelled: { bg: '#fee2e2', color: '#991b1b', label: 'Cancelled' }
+    }
+    const statusInfo = statusMap[status?.toLowerCase()] || statusMap.pending
+    return `<span style="background: ${statusInfo.bg}; color: ${statusInfo.color}; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase;">${statusInfo.label}</span>`
+  }
+
+  const getPaymentStatusBadge = (paymentStatus) => {
+    const statusMap = {
+      pending: { bg: '#fef3c7', color: '#92400e', label: 'Pending' },
+      paid: { bg: '#d1fae5', color: '#065f46', label: 'Paid' },
+      partial: { bg: '#dbeafe', color: '#1e40af', label: 'Partial' },
+      failed: { bg: '#fee2e2', color: '#991b1b', label: 'Failed' }
+    }
+    const statusInfo = statusMap[paymentStatus?.toLowerCase()] || statusMap.pending
+    return `<span style="background: ${statusInfo.bg}; color: ${statusInfo.color}; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase;">${statusInfo.label}</span>`
+  }
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Order Invoice - ${orderNumber}</title>
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              color: #2c3e50;
+              background: #ffffff;
+              line-height: 1.6;
+            }
+            .container {
+              max-width: 900px;
+              margin: 0 auto;
+              background: #ffffff;
+            }
+            .header {
+              background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+              color: white;
+              padding: 40px 30px;
+              border-radius: 10px 10px 0 0;
+              text-align: center;
+              box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }
+            .header h1 {
+              font-size: 32px;
+              font-weight: 700;
+              margin-bottom: 10px;
+              text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+            .header .subtitle {
+              font-size: 14px;
+              opacity: 0.95;
+              font-weight: 300;
+            }
+            .header .order-number {
+              background: rgba(255,255,255,0.2);
+              display: inline-block;
+              padding: 8px 20px;
+              border-radius: 20px;
+              margin-top: 15px;
+              font-weight: 600;
+              font-size: 16px;
+            }
+            .content {
+              background: #ffffff;
+              padding: 30px;
+            }
+            .info-section {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 30px;
+              margin-bottom: 30px;
+            }
+            .info-box {
+              background: #f8f9fa;
+              padding: 20px;
+              border-radius: 10px;
+              border-left: 5px solid #3b82f6;
+            }
+            .info-box h3 {
+              font-size: 16px;
+              color: #6b7280;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 15px;
+              font-weight: 600;
+            }
+            .info-item {
+              padding: 8px 0;
+              border-bottom: 1px solid #e5e7eb;
+            }
+            .info-item:last-child {
+              border-bottom: none;
+            }
+            .info-label {
+              font-size: 12px;
+              color: #6b7280;
+              margin-bottom: 4px;
+              font-weight: 500;
+            }
+            .info-value {
+              font-size: 14px;
+              color: #1f2937;
+              font-weight: 600;
+            }
+            .items-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 30px 0;
+              background: #ffffff;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+              border-radius: 10px;
+              overflow: hidden;
+            }
+            .items-table thead {
+              background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+              color: white;
+            }
+            .items-table th {
+              padding: 15px;
+              text-align: left;
+              font-weight: 600;
+              font-size: 14px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .items-table td {
+              padding: 15px;
+              border-bottom: 1px solid #e5e7eb;
+            }
+            .items-table tbody tr:last-child td {
+              border-bottom: none;
+            }
+            .items-table tbody tr:hover {
+              background: #f8f9fa;
+            }
+            .summary-section {
+              background: #f8f9fa;
+              padding: 25px;
+              border-radius: 10px;
+              margin-top: 30px;
+            }
+            .summary-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 12px 0;
+              border-bottom: 1px solid #e5e7eb;
+            }
+            .summary-row:last-child {
+              border-bottom: none;
+              border-top: 2px solid #3b82f6;
+              margin-top: 10px;
+              padding-top: 15px;
+            }
+            .summary-label {
+              font-size: 14px;
+              color: #6b7280;
+              font-weight: 500;
+            }
+            .summary-value {
+              font-size: 16px;
+              color: #1f2937;
+              font-weight: 700;
+            }
+            .summary-row:last-child .summary-label,
+            .summary-row:last-child .summary-value {
+              font-size: 18px;
+              color: #3b82f6;
+            }
+            .status-section {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 20px;
+              margin-top: 30px;
+            }
+            .status-card {
+              background: #f8f9fa;
+              padding: 20px;
+              border-radius: 10px;
+              text-align: center;
+            }
+            .status-label {
+              font-size: 12px;
+              color: #6b7280;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 10px;
+              font-weight: 600;
+            }
+            .footer {
+              margin-top: 40px;
+              padding-top: 20px;
+              border-top: 2px solid #e5e7eb;
+              text-align: center;
+              color: #6b7280;
+              font-size: 12px;
+            }
+            @media print {
+              body { 
+                margin: 0;
+                padding: 20px;
+              }
+              @page { 
+                margin: 1cm;
+                size: A4;
+              }
+              .section {
+                page-break-inside: avoid;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>📦 Order Invoice</h1>
+              <div class="subtitle">Order Details</div>
+              <div class="order-number">Order ${orderNumber}</div>
+              <div style="margin-top: 15px; font-size: 12px; opacity: 0.9;">
+                Generated on: ${new Date().toLocaleString('en-IN', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
+            </div>
+            
+            <div class="content">
+              <!-- Order and Customer Information -->
+              <div class="info-section">
+                <div class="info-box">
+                  <h3>Order Information</h3>
+                  <div class="info-item">
+                    <div class="info-label">Order Number</div>
+                    <div class="info-value">${orderNumber}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Order Date</div>
+                    <div class="info-value">${formatDate(order.order_date || order.orderDate)}</div>
+                  </div>
+                  ${order.due_date ? `
+                  <div class="info-item">
+                    <div class="info-label">Due Date</div>
+                    <div class="info-value">${formatDate(order.due_date)}</div>
+                  </div>
+                  ` : ''}
+                  <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div class="info-value">${getStatusBadge(order.status)}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Payment Status</div>
+                    <div class="info-value">${getPaymentStatusBadge(order.paymentStatus)}</div>
+                  </div>
+                </div>
+
+                <div class="info-box">
+                  <h3>Customer Information</h3>
+                  <div class="info-item">
+                    <div class="info-label">Customer Name</div>
+                    <div class="info-value">${customerName}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">${customerEmail}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Phone</div>
+                    <div class="info-value">${customerPhone}</div>
+                  </div>
+                  ${order.customer?.address ? `
+                  <div class="info-item">
+                    <div class="info-label">Address</div>
+                    <div class="info-value">${typeof order.customer.address === 'string' ? order.customer.address : (order.customer.address.street || 'N/A')}</div>
+                  </div>
+                  ` : ''}
+                </div>
+              </div>
+
+              <!-- Order Items -->
+              <div style="margin-top: 30px;">
+                <h3 style="font-size: 18px; color: #1f2937; margin-bottom: 15px; font-weight: 600;">Order Items</h3>
+                <table class="items-table">
+                  <thead>
+                    <tr>
+                      <th>Package Name</th>
+                      <th style="text-align: center;">Quantity</th>
+                      <th style="text-align: right;">Price</th>
+                      <th style="text-align: right;">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${items.map(item => `
+                      <tr>
+                        <td style="font-weight: 600;">${item.package_name || item.productName || 'Package'}</td>
+                        <td style="text-align: center;">${item.qty || item.quantity || 1}</td>
+                        <td style="text-align: right;">${formatCurrency(item.price || item.unitPrice || 0)}</td>
+                        <td style="text-align: right; font-weight: 700;">${formatCurrency(item.amount || item.totalPrice || 0)}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Order Summary -->
+              <div class="summary-section">
+                <div class="summary-row">
+                  <span class="summary-label">Subtotal</span>
+                  <span class="summary-value">${formatCurrency(subtotal)}</span>
+                </div>
+                ${discount > 0 ? `
+                <div class="summary-row">
+                  <span class="summary-label">Discount</span>
+                  <span class="summary-value" style="color: #10b981;">- ${formatCurrency(discount)}</span>
+                </div>
+                ` : ''}
+                <div class="summary-row">
+                  <span class="summary-label">Total Amount</span>
+                  <span class="summary-value">${formatCurrency(totalAmount)}</span>
+                </div>
+                <div class="summary-row">
+                  <span class="summary-label">Paid Amount</span>
+                  <span class="summary-value" style="color: #10b981;">${formatCurrency(paidAmount)}</span>
+                </div>
+                <div class="summary-row">
+                  <span class="summary-label">Balance Amount</span>
+                  <span class="summary-value" style="color: ${balanceAmount > 0 ? '#ef4444' : '#10b981'};">${formatCurrency(balanceAmount)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="footer">
+              <p>This invoice was generated automatically by Photo Studio Management System</p>
+              <p style="margin-top: 5px;">© ${new Date().getFullYear()} Photo Studio. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+    </html>
+  `
+
+  // Create a new window for printing
+  const printWindow = window.open('', '_blank')
+  printWindow.document.write(htmlContent)
+  printWindow.document.close()
+
+  // Wait for content to load, then print
+  printWindow.onload = () => {
+    setTimeout(() => {
+      printWindow.print()
+    }, 500)
+  }
+}

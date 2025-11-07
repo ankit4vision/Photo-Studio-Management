@@ -24,9 +24,11 @@ import SuspendCustomerModal from '../../components/pages/customers/SuspendCustom
 import { customerService } from '../../services/customerService'
 import photographersData from '../../mock/photographers.json'
 import { exportPhotographersToPDF, exportSinglePhotographerToPDF } from '../../utils/pdfExport'
+import { useLocation } from 'react-router-dom'
 
 const CustomersList = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { success, error } = useToast()
   
   // State management
@@ -65,16 +67,58 @@ const CustomersList = () => {
   useEffect(() => {
     loadCustomers()
     loadStats()
-  }, [])
+  }, [location.pathname]) // Reload when navigating back
 
   const loadCustomers = async () => {
     try {
       setLoading(true)
-      // Using photographers mock data
+      // Load from service (includes newly created customers)
+      const response = await customerService.getCustomers()
+      
+      // Always combine customers from service with photographers data
+      let allCustomers = []
+      
+      // Add customers from service
+      if (response && response.success && response.data && Array.isArray(response.data)) {
+        const convertedCustomers = response.data.map(customer => ({
+          ...customer,
+          name: customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim(),
+          mobile: customer.mobile || customer.phone,
+          phone: customer.phone || customer.mobile,
+          joinedDate: customer.joinedDate || customer.createdAt || customer.created_at,
+          created_at: customer.created_at || customer.createdAt || customer.joinedDate,
+          // Map customer fields to photographer fields for table compatibility
+          photographerId: customer.photographerId || customer.customerId || `#${customer.id}`,
+          total_earnings: customer.total_earnings || customer.total_amount || customer.totalSpent || 0,
+          total_amount: customer.total_amount || customer.total_earnings || customer.totalSpent || 0,
+          paid_amount: customer.paid_amount || 0,
+          remaining_amount: customer.remaining_amount || (customer.total_amount || customer.total_earnings || customer.totalSpent || 0),
+          total_orders: customer.total_orders || customer.total_services || customer.totalOrders || 0,
+          total_services: customer.total_services || customer.total_orders || customer.totalOrders || 0,
+          wallet_balance: customer.wallet_balance || 0,
+          // Ensure branch_id and branch_name for branch indicator
+          branch_id: customer.branch_id || null,
+          branch_name: customer.branch_name || null
+        }))
+        allCustomers = [...convertedCustomers]
+      }
+      
+      // Add photographers data (excluding duplicates)
+      const existingIds = new Set(allCustomers.map(c => c.id))
+      const uniquePhotographers = photographersData.filter(p => !existingIds.has(p.id))
+      allCustomers = [...allCustomers, ...uniquePhotographers]
+      
+      // If no data at all, use photographers as fallback
+      if (allCustomers.length === 0) {
+        allCustomers = photographersData
+      }
+      
+      setCustomers(allCustomers)
+      console.log('Loaded customers:', allCustomers.length, 'items')
+    } catch (err) {
+      console.error('Error loading customers:', err)
+      // Fallback to photographers mock data on error
       setCustomers(photographersData)
-    } catch (error) {
-      console.error('Error loading photographers:', error)
-      error('Failed to load photographers')
     } finally {
       setLoading(false)
     }
@@ -82,13 +126,17 @@ const CustomersList = () => {
 
   const loadStats = async () => {
     try {
-      const totalCustomers = photographersData.length
-      const activeCustomers = photographersData.filter(p => p.status === 'active').length
-      const suspendedCustomers = photographersData.filter(p => p.status === 'suspended').length
-      const newThisMonth = photographersData.filter(p => {
-        const joinedDate = new Date(p.joinedDate)
+      // Use current customers state for stats
+      const allCustomers = customers.length > 0 ? customers : photographersData
+      const totalCustomers = allCustomers.length
+      const activeCustomers = allCustomers.filter(p => p.status === 'active').length
+      const suspendedCustomers = allCustomers.filter(p => p.status === 'suspended').length
+      const newThisMonth = allCustomers.filter(p => {
+        const joinedDate = p.joinedDate || p.createdAt || p.created_at
+        if (!joinedDate) return false
+        const joinDate = new Date(joinedDate)
         const now = new Date()
-        return joinedDate.getMonth() === now.getMonth() && joinedDate.getFullYear() === now.getFullYear()
+        return joinDate.getMonth() === now.getMonth() && joinDate.getFullYear() === now.getFullYear()
       }).length
       
       setStats({
@@ -97,24 +145,33 @@ const CustomersList = () => {
         suspendedCustomers,
         newThisMonth
       })
-    } catch (error) {
-      console.error('Error loading stats:', error)
+    } catch (err) {
+      console.error('Error loading stats:', err)
     }
   }
 
-  // Filter photographers
-  const filteredCustomers = customers.filter(photographer => {
-    const photographerName = photographer.name || `${photographer.firstName || ''} ${photographer.lastName || ''}`.trim()
-    const matchesSearch = photographerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         photographer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         photographer.mobile?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         photographer.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         photographer.specialization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         photographer.photographerId?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = !statusFilter || photographer.status === statusFilter
+  // Update stats when customers change
+  useEffect(() => {
+    if (customers.length > 0) {
+      loadStats()
+    }
+  }, [customers])
+
+  // Filter customers/photographers
+  const filteredCustomers = customers.filter(customer => {
+    const customerName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+    const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         customer.mobile?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         customer.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         customer.specialization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         customer.photographerId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         customer.customerId?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = !statusFilter || customer.status === statusFilter
     const matchesLocation = !locationFilter || 
-                           photographer.address?.toLowerCase().includes(locationFilter.toLowerCase()) ||
-                           photographer.location?.city?.toLowerCase().includes(locationFilter.toLowerCase())
+                           (typeof customer.address === 'string' && customer.address.toLowerCase().includes(locationFilter.toLowerCase())) ||
+                           (customer.address && typeof customer.address === 'object' && customer.address.city?.toLowerCase().includes(locationFilter.toLowerCase())) ||
+                           customer.location?.city?.toLowerCase().includes(locationFilter.toLowerCase())
     
     let matchesRegistrationDate = true
     if (registrationDateFilter) {
@@ -138,7 +195,7 @@ const CustomersList = () => {
           break
       }
       
-      const joinDate = photographer.created_at || photographer.joinedDate
+      const joinDate = customer.created_at || customer.createdAt || customer.joinedDate
       matchesRegistrationDate = joinDate ? new Date(joinDate) >= filterDate : true
     }
     
@@ -250,7 +307,7 @@ const CustomersList = () => {
             </div>
             <div style={{ minWidth: 0 }}>
               <div className="fw-semibold text-dark" style={{ fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</div>
-              <small className="text-muted" style={{ fontSize: '11px' }}>{photographer.photographerId || 'N/A'}</small>
+              <small className="text-muted" style={{ fontSize: '11px' }}>{photographer.photographerId || photographer.customerId || `#${photographer.id}` || 'N/A'}</small>
             </div>
           </div>
         )
@@ -282,7 +339,7 @@ const CustomersList = () => {
       key: 'paid_amount',
       label: 'Paid Amount',
       render: (value, photographer, index) => {
-        const totalAmount = photographer.total_earnings || photographer.total_amount || 0
+        const totalAmount = photographer.total_earnings || photographer.total_amount || photographer.totalSpent || 0
         const remainingAmount = photographer.remaining_amount || 0
         const paidAmount = photographer.paid_amount || photographer.wallet_balance || (totalAmount - remainingAmount)
         return (
@@ -305,7 +362,7 @@ const CustomersList = () => {
       key: 'remaining_amount',
       label: 'Remaining',
       render: (value, photographer, index) => {
-        const totalAmount = photographer.total_earnings || photographer.total_amount || 0
+        const totalAmount = photographer.total_earnings || photographer.total_amount || photographer.totalSpent || 0
         const paidAmount = photographer.paid_amount || photographer.wallet_balance || 0
         const remainingAmount = photographer.remaining_amount || (totalAmount - paidAmount)
         return (
@@ -331,7 +388,7 @@ const CustomersList = () => {
       label: 'Joined',
       render: (value, customer, index) => (
         <div className="text-muted" style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '100px' }}>
-          {formatDate(customer.joinedDate)}
+          {formatDate(customer.joinedDate || customer.createdAt || customer.created_at)}
         </div>
       )
     },
@@ -786,3 +843,4 @@ const CustomersList = () => {
 }
 
 export default CustomersList
+

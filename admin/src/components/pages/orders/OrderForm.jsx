@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react'
 import { FormRow, TextField, SelectField } from '../../common/FormFields'
-import { Button, Table as BootstrapTable, Badge, Form, Col } from 'react-bootstrap'
+import { Button, Table as BootstrapTable, Badge, Form, Col, Card } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTrash, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faTrash, faPlus, faCheckSquare, faSquare } from '@fortawesome/free-solid-svg-icons'
 import PropTypes from 'prop-types'
 import packageService from '../../../services/packageService'
 import { customerService } from '../../../services/customerService'
@@ -32,6 +32,21 @@ const OrderForm = forwardRef(({
     price: '',
     qty: 1
   })
+  const [selectedPackageIds, setSelectedPackageIds] = useState([])
+  const [showMultipleSelect, setShowMultipleSelect] = useState(false)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMultipleSelect && !event.target.closest('.position-relative')) {
+        setShowMultipleSelect(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showMultipleSelect])
 
   // Load data
   useEffect(() => {
@@ -43,47 +58,85 @@ const OrderForm = forwardRef(({
   // Load order data for edit mode
   useEffect(() => {
     if (mode === 'edit' && orderData) {
+      const items = orderData.items || []
       setFormData({
         customer_id: orderData.customer_id?.toString() || '',
         branch_id: orderData.branch_id?.toString() || '',
         order_date: orderData.order_date ? orderData.order_date.split('T')[0] : new Date().toISOString().split('T')[0],
         due_date: orderData.due_date ? orderData.due_date.split('T')[0] : '',
         flat_discount: orderData.flat_discount || 0,
-        items: orderData.items || []
+        items: items
       })
+      // Sync selectedPackageIds with items
+      const itemPackageIds = items.map(item => item.package_id?.toString()).filter(Boolean)
+      setSelectedPackageIds(itemPackageIds)
     }
   }, [mode, orderData])
 
   const loadPackages = async () => {
     try {
       const response = await packageService.getPackages({ status: 'active' })
-      if (response.success) {
+      if (response && response.success) {
         setPackages(response.data || [])
+      } else {
+        // Fallback to mock data
+        console.warn('Failed to load packages from API, using mock data')
+        const mockResponse = packageService.getMockPackages({ status: 'active' })
+        if (mockResponse && mockResponse.success) {
+          setPackages(mockResponse.data || [])
+        }
       }
     } catch (error) {
       console.error('Error loading packages:', error)
+      // Fallback to mock data on error
+      try {
+        const mockResponse = packageService.getMockPackages({ status: 'active' })
+        if (mockResponse && mockResponse.success) {
+          setPackages(mockResponse.data || [])
+        }
+      } catch (mockError) {
+        console.error('Error loading mock packages:', mockError)
+      }
     }
   }
 
   const loadCustomers = async () => {
     try {
       const response = await customerService.getCustomers()
-      if (response.success) {
+      if (response && response.success) {
         setCustomers(response.data || [])
       }
     } catch (error) {
       console.error('Error loading customers:', error)
+      // customerService already uses mock data, so if it fails, set empty array
+      setCustomers([])
     }
   }
 
   const loadBranches = async () => {
     try {
       const response = await branchService.getBranches({ status: 'active' })
-      if (response.success) {
+      if (response && response.success) {
         setBranches(response.data || [])
+      } else {
+        // Fallback to mock data
+        console.warn('Failed to load branches from API, using mock data')
+        const mockResponse = branchService.getMockBranches({ status: 'active' })
+        if (mockResponse && mockResponse.success) {
+          setBranches(mockResponse.data || [])
+        }
       }
     } catch (error) {
       console.error('Error loading branches:', error)
+      // Fallback to mock data on error
+      try {
+        const mockResponse = branchService.getMockBranches({ status: 'active' })
+        if (mockResponse && mockResponse.success) {
+          setBranches(mockResponse.data || [])
+        }
+      } catch (mockError) {
+        console.error('Error loading mock branches:', mockError)
+      }
     }
   }
 
@@ -98,37 +151,75 @@ const OrderForm = forwardRef(({
   }
 
   const handlePackageSelect = (packageId) => {
+    // Clear multiple selection when selecting single package
+    if (selectedPackageIds.length > 0) {
+      setSelectedPackageIds([])
+    }
+    
     const selectedPackage = packages.find(p => p.id.toString() === packageId)
     if (selectedPackage) {
       setNewItem({
         package_id: packageId,
         price: selectedPackage.default_price || '',
-        qty: 1
+        qty: newItem.qty || 1
       })
     }
   }
 
+  // Handle single package selection from dropdown (for backward compatibility)
+  const handleSinglePackageSelect = (packageId) => {
+    handlePackageSelect(packageId)
+    setShowMultipleSelect(false)
+  }
+
   const handleAddItem = () => {
     if (!newItem.package_id) {
-      setErrors({ ...errors, items: 'Please select a package' })
+      setErrors(prev => ({ ...prev, items: 'Please select a package' }))
       return
     }
 
     const selectedPackage = packages.find(p => p.id.toString() === newItem.package_id)
-    if (!selectedPackage) return
-
-    const item = {
-      package_id: parseInt(newItem.package_id),
-      package_name: selectedPackage.package_name,
-      price: parseFloat(newItem.price) || 0,
-      qty: parseInt(newItem.qty) || 1,
-      amount: (parseFloat(newItem.price) || 0) * (parseInt(newItem.qty) || 1)
+    if (!selectedPackage) {
+      setErrors(prev => ({ ...prev, items: 'Package not found' }))
+      return
     }
 
-    setFormData(prev => ({
-      ...prev,
-      items: [...prev.items, item]
-    }))
+    // Check if package already exists in items
+    const existingItemIndex = formData.items.findIndex(
+      item => item.package_id === parseInt(newItem.package_id)
+    )
+
+    if (existingItemIndex !== -1) {
+      // Update quantity if package already exists
+      setFormData(prev => ({
+        ...prev,
+        items: prev.items.map((item, index) => {
+          if (index === existingItemIndex) {
+            const newQty = item.qty + (parseInt(newItem.qty) || 1)
+            return {
+              ...item,
+              qty: newQty,
+              amount: item.price * newQty
+            }
+          }
+          return item
+        })
+      }))
+    } else {
+      // Add new item
+      const item = {
+        package_id: parseInt(newItem.package_id),
+        package_name: selectedPackage.package_name,
+        price: parseFloat(newItem.price) || selectedPackage.default_price || 0,
+        qty: parseInt(newItem.qty) || 1,
+        amount: (parseFloat(newItem.price) || selectedPackage.default_price || 0) * (parseInt(newItem.qty) || 1)
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        items: [...prev.items, item]
+      }))
+    }
 
     setNewItem({
       package_id: '',
@@ -136,22 +227,166 @@ const OrderForm = forwardRef(({
       qty: 1
     })
 
-    if (errors.items) {
-      setErrors(prev => ({ ...prev, items: '' }))
+    // Clear items error if it exists
+    setErrors(prev => {
+      const newErrors = { ...prev }
+      if (newErrors.items) {
+        delete newErrors.items
+      }
+      return newErrors
+    })
+  }
+
+  // Handle multiple package selection - Auto add/remove on checkbox change
+  const handlePackageToggle = (packageId) => {
+    const packageIdStr = packageId.toString()
+    const selectedPackage = packages.find(p => p.id.toString() === packageIdStr)
+    if (!selectedPackage) return
+
+    const isAlreadyAdded = formData.items.some(item => item.package_id === parseInt(packageId))
+
+    if (isAlreadyAdded) {
+      // Remove from selection and from items
+      setSelectedPackageIds(prev => prev.filter(id => id !== packageIdStr))
+      setFormData(prev => ({
+        ...prev,
+        items: prev.items.filter(item => item.package_id !== parseInt(packageId))
+      }))
+    } else {
+      // Add to selection and to items automatically with default price and qty
+      const defaultPrice = selectedPackage.default_price || 0
+      const defaultQty = 1
+      
+      const itemToAdd = {
+        package_id: parseInt(packageId),
+        package_name: selectedPackage.package_name,
+        price: defaultPrice,
+        qty: defaultQty,
+        amount: defaultPrice * defaultQty
+      }
+
+      setSelectedPackageIds(prev => [...prev, packageIdStr])
+      setFormData(prev => ({
+        ...prev,
+        items: [...prev.items, itemToAdd]
+      }))
+
+      // Clear items error if it exists
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        if (newErrors.items) {
+          delete newErrors.items
+        }
+        return newErrors
+      })
     }
   }
 
+  // Update item price/quantity when changed in table
+  const handleItemPriceChange = (packageId, newPrice) => {
+    setFormData(prev => ({
+      ...prev,
+      items: prev.items.map(item => {
+        if (item.package_id === parseInt(packageId)) {
+          return {
+            ...item,
+            price: parseFloat(newPrice) || 0,
+            amount: (parseFloat(newPrice) || 0) * item.qty
+          }
+        }
+        return item
+      })
+    }))
+  }
+
+  const handleItemQtyChange = (packageId, newQty) => {
+    setFormData(prev => ({
+      ...prev,
+      items: prev.items.map(item => {
+        if (item.package_id === parseInt(packageId)) {
+          return {
+            ...item,
+            qty: parseInt(newQty) || 1,
+            amount: item.price * (parseInt(newQty) || 1)
+          }
+        }
+        return item
+      })
+    }))
+  }
+
+  // Select all packages
+  const handleSelectAllPackages = () => {
+    const availablePackages = packages.filter(pkg => {
+      return !formData.items.some(item => item.package_id === pkg.id)
+    })
+    
+    // Auto-add all packages to items
+    const newItems = availablePackages.map(pkg => {
+      const defaultPrice = pkg.default_price || 0
+      const defaultQty = 1
+      return {
+        package_id: pkg.id,
+        package_name: pkg.package_name,
+        price: defaultPrice,
+        qty: defaultQty,
+        amount: defaultPrice * defaultQty
+      }
+    })
+
+    const newPackageIds = availablePackages.map(p => p.id.toString())
+    setSelectedPackageIds(prev => [...prev, ...newPackageIds])
+
+    setFormData(prev => ({
+      ...prev,
+      items: [...prev.items, ...newItems]
+    }))
+
+    // Clear items error if it exists
+    setErrors(prev => {
+      const newErrors = { ...prev }
+      if (newErrors.items) {
+        delete newErrors.items
+      }
+      return newErrors
+    })
+  }
+
+  // Deselect all packages
+  const handleDeselectAllPackages = () => {
+    // Remove all items (clear all)
+    setFormData(prev => ({
+      ...prev,
+      items: []
+    }))
+    setSelectedPackageIds([])
+
+    // Clear items error if it exists
+    setErrors(prev => {
+      const newErrors = { ...prev }
+      if (newErrors.items) {
+        delete newErrors.items
+      }
+      return newErrors
+    })
+  }
+
   const handleRemoveItem = (index) => {
+    const itemToRemove = formData.items[index]
     setFormData(prev => ({
       ...prev,
       items: prev.items.filter((_, i) => i !== index)
     }))
+    
+    // Remove from selectedPackageIds
+    setSelectedPackageIds(prev => 
+      prev.filter(id => id !== itemToRemove.package_id.toString())
+    )
   }
 
   const handleItemChange = (index, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      items: prev.items.map((item, i) => {
+    setFormData(prev => {
+      const updatedItems = prev.items.map((item, i) => {
         if (i === index) {
           const updated = { ...item, [field]: value }
           if (field === 'price' || field === 'qty') {
@@ -161,7 +396,16 @@ const OrderForm = forwardRef(({
         }
         return item
       })
-    }))
+      
+      // Update selectedPackageIds based on updated items
+      const itemPackageIds = updatedItems.map(item => item.package_id.toString())
+      setSelectedPackageIds(itemPackageIds)
+      
+      return {
+        ...prev,
+        items: updatedItems
+      }
+    })
   }
 
   const calculateTotal = () => {
@@ -213,7 +457,7 @@ const OrderForm = forwardRef(({
 
   useImperativeHandle(ref, () => ({
     handleSubmit: handleSubmit
-  }), [formData])
+  }), [formData, errors, onSubmit])
 
   const customerOptions = [
     { value: '', label: 'Select Customer' },
@@ -298,56 +542,114 @@ const OrderForm = forwardRef(({
           <h5 className="mb-0 text-success">Order Items</h5>
         </div>
 
-        {/* Add Item Form */}
+        {/* Package Selection with Multiple Select Dropdown */}
         <div className="bg-light p-3 rounded mb-3">
           <FormRow className="mb-0">
-            <Col md={4}>
-              <Form.Label className="fw-semibold">Package</Form.Label>
-              <Form.Select
-                value={newItem.package_id}
-                onChange={(e) => handlePackageSelect(e.target.value)}
-                className="border-2"
-              >
-                <option value="">Select Package</option>
-                {packageOptions.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </Form.Select>
-            </Col>
-            <Col md={2}>
-              <Form.Label className="fw-semibold">Price</Form.Label>
-              <Form.Control
-                type="number"
-                min="0"
-                step="0.01"
-                value={newItem.price}
-                onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
-                className="border-2"
-                placeholder="0.00"
-              />
-            </Col>
-            <Col md={2}>
-              <Form.Label className="fw-semibold">Qty</Form.Label>
-              <Form.Control
-                type="number"
-                min="1"
-                value={newItem.qty}
-                onChange={(e) => setNewItem({ ...newItem, qty: e.target.value })}
-                className="border-2"
-              />
-            </Col>
-            <Col md={2}>
-              <Form.Label className="fw-semibold">&nbsp;</Form.Label>
-              <div>
-                <Button
-                  variant="success"
-                  size="sm"
-                  onClick={handleAddItem}
-                  className="text-white w-100"
+            <Col md={12}>
+              <Form.Label className="fw-semibold">Select Packages</Form.Label>
+              <div className="position-relative">
+                <div
+                  className="form-control border-2 d-flex align-items-center justify-content-between"
+                  style={{ cursor: 'pointer', minHeight: '38px' }}
+                  onClick={() => setShowMultipleSelect(!showMultipleSelect)}
                 >
-                  <FontAwesomeIcon icon={faPlus} className="me-1" />
-                  Add
-                </Button>
+                  <span className={formData.items.length === 0 ? 'text-muted' : ''}>
+                    {formData.items.length > 0 
+                      ? `${formData.items.length} package(s) added`
+                      : 'Select Packages (Click to open)'
+                    }
+                  </span>
+                  <FontAwesomeIcon 
+                    icon={showMultipleSelect ? faCheckSquare : faSquare} 
+                    className="text-muted"
+                  />
+                </div>
+                
+                {/* Dropdown Menu with Checkboxes */}
+                {showMultipleSelect && (
+                  <div
+                    className="position-absolute w-100 bg-white border rounded shadow-lg"
+                    style={{
+                      zIndex: 1000,
+                      maxHeight: '400px',
+                      overflowY: 'auto',
+                      marginTop: '2px'
+                    }}
+                    onMouseLeave={() => setShowMultipleSelect(false)}
+                  >
+                    <div className="p-2 border-bottom bg-light sticky-top">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <small className="fw-semibold">Select Packages (Auto-add on selection)</small>
+                        <div className="d-flex gap-2">
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="p-0 text-decoration-none"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleSelectAllPackages()
+                            }}
+                          >
+                            <small>Select All</small>
+                          </Button>
+                          <span className="text-muted">|</span>
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="p-0 text-decoration-none"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeselectAllPackages()
+                            }}
+                          >
+                            <small>Clear All</small>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-2">
+                      {packages.map(pkg => {
+                        const isSelected = formData.items.some(item => item.package_id === pkg.id)
+                        
+                        return (
+                          <div
+                            key={pkg.id}
+                            className="d-flex align-items-center p-2 rounded hover-bg-light"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handlePackageToggle(pkg.id)
+                            }}
+                            style={{
+                              cursor: 'pointer'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#f8f9fa'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent'
+                            }}
+                          >
+                            <Form.Check
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                handlePackageToggle(pkg.id)
+                              }}
+                              className="me-2"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <div className="flex-grow-1">
+                              <div className="fw-semibold">{pkg.package_name}</div>
+                              <small className="text-muted">{pkg.package_type}</small>
+                              <div className="text-success fw-bold">{formatCurrency(pkg.default_price)}</div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </Col>
           </FormRow>

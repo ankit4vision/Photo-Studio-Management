@@ -42,25 +42,43 @@ const customerService = {
     const existingIds = customersData.map(c => parseInt(c.id)).filter(id => !isNaN(id))
     const newId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1
     
+    // Handle both name format (single name field) and firstName/lastName format
+    let firstName = customerData.firstName || ''
+    let lastName = customerData.lastName || ''
+    
+    if (!firstName && !lastName && customerData.name) {
+      // Split single name field into firstName and lastName
+      const nameParts = customerData.name.trim().split(' ')
+      firstName = nameParts[0] || ''
+      lastName = nameParts.slice(1).join(' ') || ''
+    }
+    
     const newCustomer = {
       id: newId,
       customerId: `#${String(newId).padStart(5, '0')}`,
-      firstName: customerData.firstName,
-      lastName: customerData.lastName,
-      email: customerData.email,
-      phone: customerData.phone,
-      address: customerData.address || {},
+      name: customerData.name || `${firstName} ${lastName}`.trim(),
+      firstName: firstName,
+      lastName: lastName,
+      email: customerData.email || null,
+      phone: customerData.mobile || customerData.phone || '',
+      mobile: customerData.mobile || customerData.phone || '',
+      address: typeof customerData.address === 'string' ? customerData.address : (customerData.address || {}),
       location: customerData.location || {},
+      branch_id: customerData.branch_id || null,
       status: customerData.status || 'active',
       totalOrders: 0,
       totalSpent: 0,
       joinedDate: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       lastOrderDate: null,
       avatar: customerData.avatar || '',
       notes: customerData.notes || '',
       preferences: customerData.preferences || {},
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      dob: customerData.dob || null,
+      anniversary_date: customerData.anniversary_date || null
     }
     
     customersData.push(newCustomer)
@@ -80,19 +98,44 @@ const customerService = {
     if (customerIndex !== -1) {
       const existingCustomer = customersData[customerIndex]
       
+      // Merge all fields from customerData, keeping existing values if not provided
       customersData[customerIndex] = {
         ...existingCustomer,
-        firstName: customerData.firstName || existingCustomer.firstName,
-        lastName: customerData.lastName || existingCustomer.lastName,
-        email: customerData.email || existingCustomer.email,
-        phone: customerData.phone || existingCustomer.phone,
+        ...customerData, // Spread new data first
+        // Override with existing values if new data is undefined (to preserve existing data)
+        id: existingCustomer.id, // Never change ID
+        customerId: customerData.customerId !== undefined ? customerData.customerId : existingCustomer.customerId,
+        firstName: customerData.firstName !== undefined ? customerData.firstName : existingCustomer.firstName,
+        lastName: customerData.lastName !== undefined ? customerData.lastName : existingCustomer.lastName,
+        name: customerData.name !== undefined ? customerData.name : (existingCustomer.name || `${existingCustomer.firstName || ''} ${existingCustomer.lastName || ''}`.trim()),
+        email: customerData.email !== undefined ? customerData.email : existingCustomer.email,
+        phone: customerData.phone !== undefined ? customerData.phone : existingCustomer.phone,
+        mobile: customerData.mobile !== undefined ? customerData.mobile : (existingCustomer.mobile || existingCustomer.phone),
         address: customerData.address !== undefined ? customerData.address : existingCustomer.address,
         location: customerData.location !== undefined ? customerData.location : existingCustomer.location,
+        branch_id: customerData.branch_id !== undefined ? customerData.branch_id : existingCustomer.branch_id,
         status: customerData.status !== undefined ? customerData.status : existingCustomer.status,
         avatar: customerData.avatar !== undefined ? customerData.avatar : existingCustomer.avatar,
         notes: customerData.notes !== undefined ? customerData.notes : existingCustomer.notes,
         preferences: customerData.preferences !== undefined ? customerData.preferences : existingCustomer.preferences,
-        updatedAt: new Date().toISOString()
+        // Order-related fields
+        totalOrders: customerData.totalOrders !== undefined ? customerData.totalOrders : existingCustomer.totalOrders,
+        total_orders: customerData.total_orders !== undefined ? customerData.total_orders : (existingCustomer.total_orders || existingCustomer.totalOrders),
+        total_services: customerData.total_services !== undefined ? customerData.total_services : (existingCustomer.total_services || existingCustomer.total_orders || existingCustomer.totalOrders),
+        totalSpent: customerData.totalSpent !== undefined ? customerData.totalSpent : existingCustomer.totalSpent,
+        total_amount: customerData.total_amount !== undefined ? customerData.total_amount : (existingCustomer.total_amount || existingCustomer.totalSpent),
+        total_earnings: customerData.total_earnings !== undefined ? customerData.total_earnings : (existingCustomer.total_earnings || existingCustomer.total_amount || existingCustomer.totalSpent),
+        paid_amount: customerData.paid_amount !== undefined ? customerData.paid_amount : existingCustomer.paid_amount,
+        remaining_amount: customerData.remaining_amount !== undefined ? customerData.remaining_amount : existingCustomer.remaining_amount,
+        wallet_balance: customerData.wallet_balance !== undefined ? customerData.wallet_balance : existingCustomer.wallet_balance,
+        lastOrderDate: customerData.lastOrderDate !== undefined ? customerData.lastOrderDate : existingCustomer.lastOrderDate,
+        dob: customerData.dob !== undefined ? customerData.dob : existingCustomer.dob,
+        anniversary_date: customerData.anniversary_date !== undefined ? customerData.anniversary_date : existingCustomer.anniversary_date,
+        joinedDate: customerData.joinedDate !== undefined ? customerData.joinedDate : existingCustomer.joinedDate,
+        createdAt: existingCustomer.createdAt || existingCustomer.created_at || existingCustomer.joinedDate, // Preserve creation date
+        created_at: existingCustomer.created_at || existingCustomer.createdAt || existingCustomer.joinedDate,
+        updatedAt: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
       
       return {

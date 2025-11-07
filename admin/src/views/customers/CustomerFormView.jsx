@@ -11,7 +11,7 @@ import { useToast } from '../../components/common/ToastProvider'
 const CustomerFormView = () => {
   const navigate = useNavigate()
   const { id } = useParams()
-  const { showToast } = useToast()
+  const { success, error } = useToast()
   const formRef = useRef()
   const [loading, setLoading] = useState(false)
   const [customerData, setCustomerData] = useState(null)
@@ -38,13 +38,13 @@ const CustomerFormView = () => {
           if (customerResponse.success) {
             setCustomerData(customerResponse.data)
           } else {
-            showToast('Error loading customer data', 'error')
+            error('Error loading customer data')
             navigate('/customers')
           }
         }
-      } catch (error) {
-        console.error('Error loading data:', error)
-        showToast('Error loading data', 'error')
+      } catch (err) {
+        console.error('Error loading data:', err)
+        error('Error loading data')
         if (mode === 'edit') {
           navigate('/customers')
         }
@@ -53,7 +53,7 @@ const CustomerFormView = () => {
       }
     }
     loadData()
-  }, [id, mode, navigate, showToast])
+  }, [id, mode, navigate, error])
 
   const handleSubmit = async (formData) => {
     try {
@@ -62,23 +62,23 @@ const CustomerFormView = () => {
       if (mode === 'create') {
         const response = await customerService.createCustomer(formData)
         if (response.success) {
-          showToast('Customer created successfully', 'success')
+          success('Customer created successfully')
           navigate('/customers')
         } else {
-          showToast(response.message || 'Error creating customer', 'error')
+          error(response.message || 'Error creating customer')
         }
       } else {
         const response = await customerService.updateCustomer(id, formData)
         if (response.success) {
-          showToast('Customer updated successfully', 'success')
+          success('Customer updated successfully')
           navigate('/customers')
         } else {
-          showToast(response.message || 'Error updating customer', 'error')
+          error(response.message || 'Error updating customer')
         }
       }
-    } catch (error) {
-      console.error('Error saving customer:', error)
-      showToast('An error occurred while saving customer', 'error')
+    } catch (err) {
+      console.error('Error saving customer:', err)
+      error('An error occurred while saving customer')
     } finally {
       setLoading(false)
     }

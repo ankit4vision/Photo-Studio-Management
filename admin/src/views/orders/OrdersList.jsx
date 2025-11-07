@@ -9,7 +9,8 @@ import {
   faSync,
   faEye,
   faCheck,
-  faPrint,
+  faEdit,
+  faFilePdf,
   faImage,
   faPlus
 } from '@fortawesome/free-solid-svg-icons'
@@ -18,6 +19,7 @@ import Table from '../../components/common/Table'
 import OrderDetailsModal from '../../components/pages/orders/OrderDetailsModal'
 import { formatCurrency, formatDate } from '../../utils'
 import { useNavigate } from 'react-router-dom'
+import { exportOrderToPDF } from '../../utils/pdfExport'
 
 const OrdersList = () => {
   const navigate = useNavigate()
@@ -137,9 +139,13 @@ const OrdersList = () => {
         case 'complete':
           await orderService.updateOrderStatus(orderId, 'completed')
           break
-        case 'print':
-          // Handle print action
-          break
+        case 'export-pdf':
+          // Handle PDF export
+          const order = orders.find(o => (o.id === orderId || o.id?.toString() === orderId?.toString()))
+          if (order) {
+            exportOrderToPDF(order)
+          }
+          return // Don't refresh orders list for PDF export
         default:
           break
       }
@@ -310,33 +316,22 @@ const OrdersList = () => {
             >
               <FontAwesomeIcon icon={faEye} />
             </Button>
-            {(order.status || 'pending') === 'pending' && (
-              <Button
-                variant="outline-success"
-                size="sm"
-                onClick={() => handleQuickAction(order.id, 'process')}
-                title="Process Order"
-              >
-                <FontAwesomeIcon icon={faCheck} />
-              </Button>
-            )}
-            {(order.status || 'pending') === 'processing' && (
-              <Button
-                variant="outline-success"
-                size="sm"
-                onClick={() => handleQuickAction(order.id, 'complete')}
-                title="Complete Order"
-              >
-                <FontAwesomeIcon icon={faCheck} />
-              </Button>
-            )}
             <Button
-              variant="outline-secondary"
+              variant="outline-success"
               size="sm"
-              onClick={() => handleQuickAction(order.id, 'print')}
-              title="Print"
+              onClick={() => navigate(`/orders/edit/${order.id}`)}
+              title="Edit Order"
             >
-              <FontAwesomeIcon icon={faPrint} />
+              <FontAwesomeIcon icon={faEdit} />
+            </Button>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              onClick={() => handleQuickAction(order.id, 'export-pdf')}
+              title="Export PDF"
+              className="text-danger"
+            >
+              <FontAwesomeIcon icon={faFilePdf} />
             </Button>
           </div>
         )
