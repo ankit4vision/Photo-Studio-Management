@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Container, Row, Col, Button, FormControl, FormSelect, Badge, Card } from 'react-bootstrap'
-import { useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
   faTrash, 
@@ -16,18 +15,21 @@ import {
   faEdit,
   faFilePdf,
   faCamera,
-  faFileExport
+  faFileExport,
+  faSave,
+  faFilter,
 } from '@fortawesome/free-solid-svg-icons'
-import { Table, Modal, useToast } from '../../components'
+import { Table, Modal, FormModal, useToast } from '../../components'
+import CustomerForm from '../../components/pages/customers/CustomerForm'
 import CustomerDetailsModal from '../../components/pages/customers/CustomerDetailsModal'
 import SuspendCustomerModal from '../../components/pages/customers/SuspendCustomerModal'
 import { customerService } from '../../services/customerService'
+import branchService from '../../services/branchService'
 import photographersData from '../../mock/photographers.json'
 import { exportPhotographersToPDF, exportSinglePhotographerToPDF } from '../../utils/pdfExport'
 import { useLocation } from 'react-router-dom'
 
 const CustomersList = () => {
-  const navigate = useNavigate()
   const location = useLocation()
   const { success, error } = useToast()
   
@@ -48,6 +50,18 @@ const CustomersList = () => {
   const [showSuspendDetailsModal, setShowSuspendDetailsModal] = useState(false)
   const [showActivateModal, setShowActivateModal] = useState(false)
   
+  // Add/Edit Modal States
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [customerToEdit, setCustomerToEdit] = useState(null)
+  const [branches, setBranches] = useState([])
+  const [addLoading, setAddLoading] = useState(false)
+  const [editLoading, setEditLoading] = useState(false)
+  
+  // Refs for form components
+  const addFormRef = useRef()
+  const editFormRef = useRef()
+  
   // Data states
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [customerToDelete, setCustomerToDelete] = useState(null)
@@ -63,11 +77,23 @@ const CustomersList = () => {
   })
   
 
-  // Load customers
+  // Load customers and branches
   useEffect(() => {
     loadCustomers()
     loadStats()
+    loadBranches()
   }, [location.pathname]) // Reload when navigating back
+
+  const loadBranches = async () => {
+    try {
+      const response = await branchService.getBranches()
+      if (response.success) {
+        setBranches(response.data || [])
+      }
+    } catch (err) {
+      console.error('Error loading branches:', err)
+    }
+  }
 
   const loadCustomers = async () => {
     try {
@@ -283,8 +309,8 @@ const CustomersList = () => {
   // Table columns
   const columns = [
     {
-      key: 'photographer',
-      label: 'Photographer',
+      key: 'customer',
+      label: 'Customer',
       render: (value, photographer, index) => {
         const photographerName = photographer.name || `${photographer.firstName || ''} ${photographer.lastName || ''}`.trim()
         const branchIndicator = getBranchIndicator(photographer)
@@ -296,7 +322,7 @@ const CustomersList = () => {
               style={{ 
                 width: '35px', 
                 height: '35px', 
-                backgroundColor: '#22c55e',
+                backgroundColor: '#8b5cf6',
                 color: 'white',
                 fontSize: '12px',
                 fontWeight: 'bold',
@@ -343,7 +369,7 @@ const CustomersList = () => {
         const remainingAmount = photographer.remaining_amount || 0
         const paidAmount = photographer.paid_amount || photographer.wallet_balance || (totalAmount - remainingAmount)
         return (
-          <div className="fw-semibold text-success" style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '110px' }}>
+          <div className="fw-semibold text-primary" style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '110px' }}>
             {formatCurrency(paidAmount >= 0 ? paidAmount : 0)}
           </div>
         )
@@ -404,7 +430,7 @@ const CustomersList = () => {
               e.stopPropagation()
               handleViewCustomer(photographer)
             }}
-            title="View Photographer"
+            title="View Customer"
             style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
           >
             <FontAwesomeIcon icon={faEye} />
@@ -414,9 +440,9 @@ const CustomersList = () => {
             size="sm"
             onClick={(e) => {
               e.stopPropagation()
-              navigate(`/customers/edit/${photographer.id}`)
+              handleEditCustomer(photographer)
             }}
-            title="Edit Photographer"
+            title="Edit Customer"
             style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
           >
             <FontAwesomeIcon icon={faEdit} />
@@ -497,7 +523,7 @@ const CustomersList = () => {
     try {
       const result = exportSinglePhotographerToPDF(photographer)
       if (result.success) {
-        success(`PDF export initiated for ${photographer.name || 'photographer'}. Check your print dialog.`)
+        success(`PDF export initiated for ${photographer.name || 'customer'}. Check your print dialog.`)
       } else {
         error(result.message || 'Failed to export PDF')
       }
@@ -521,13 +547,81 @@ const CustomersList = () => {
     try {
       const response = await customerService.deleteCustomer(customerToDelete.id)
       if (response.success) {
+        success('Customer deleted successfully')
         setShowDeleteModal(false)
         setCustomerToDelete(null)
         loadCustomers()
         loadStats()
+      } else {
+        error(response.message || 'Failed to delete customer')
       }
-    } catch (error) {
-      console.error('Error deleting customer:', error)
+    } catch (err) {
+      console.error('Error deleting customer:', err)
+      error('An error occurred while deleting customer')
+    }
+  }
+
+  // Add Customer Handlers
+  const handleAddCustomer = () => {
+    setShowAddModal(true)
+  }
+
+  const handleAddCustomerSubmit = () => {
+    if (addFormRef.current) {
+      addFormRef.current.handleSubmit()
+    }
+  }
+
+  const handleAddCustomerFormSubmit = async (formData) => {
+    try {
+      setAddLoading(true)
+      const response = await customerService.createCustomer(formData)
+      if (response.success) {
+        success('Customer created successfully')
+        setShowAddModal(false)
+        loadCustomers()
+        loadStats()
+      } else {
+        error(response.message || 'Failed to create customer')
+      }
+    } catch (err) {
+      console.error('Error creating customer:', err)
+      error('An error occurred while creating customer')
+    } finally {
+      setAddLoading(false)
+    }
+  }
+
+  // Edit Customer Handlers
+  const handleEditCustomer = (customer) => {
+    setCustomerToEdit(customer)
+    setShowEditModal(true)
+  }
+
+  const handleEditCustomerSubmit = () => {
+    if (editFormRef.current) {
+      editFormRef.current.handleSubmit()
+    }
+  }
+
+  const handleEditCustomerFormSubmit = async (formData) => {
+    try {
+      setEditLoading(true)
+      const response = await customerService.updateCustomer(customerToEdit.id, formData)
+      if (response.success) {
+        success('Customer updated successfully')
+        setShowEditModal(false)
+        setCustomerToEdit(null)
+        loadCustomers()
+        loadStats()
+      } else {
+        error(response.message || 'Failed to update customer')
+      }
+    } catch (err) {
+      console.error('Error updating customer:', err)
+      error('An error occurred while updating customer')
+    } finally {
+      setEditLoading(false)
     }
   }
 
@@ -568,13 +662,13 @@ const CustomersList = () => {
           {/* Page Header */}
           <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
             <div className="d-flex align-items-center">
-              <FontAwesomeIcon icon={faCamera} className="me-3 text-success fs-4" />
-              <h2 className="mb-0 text-dark">Photographer Management</h2>
+              <FontAwesomeIcon icon={faUsers} className="me-3 text-primary fs-4" />
+              <h2 className="mb-0 text-dark">Customer Management</h2>
             </div>
             <div className="ms-auto d-flex align-items-center gap-3">
-              <Button variant="success" onClick={() => navigate('/customers/create')} className="text-white">
+              <Button variant="primary" onClick={handleAddCustomer} className="text-white">
                 <FontAwesomeIcon icon={faPlus} className="me-2" />
-                Add Photographer
+                Add Customer
               </Button>
               <Button variant="danger" onClick={handleExport} className="text-white">
                 <FontAwesomeIcon icon={faFilePdf} className="me-2" />
@@ -583,201 +677,192 @@ const CustomersList = () => {
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <Row className="mb-5">
+          {/* Statistics Cards */}
+          <Row className="mb-4">
             <Col md={3}>
-              <Card className="h-100 border-0 shadow-sm">
+              <Card className="bg-gradient-primary text-white border-0 shadow-sm">
                 <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
-                    <div className="flex-shrink-0">
-                      <div className="p-3 rounded-3 bg-gradient-success text-white">
-                        <FontAwesomeIcon icon={faUsers} size="lg" />
-                      </div>
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{stats.totalCustomers}</h4>
+                      <p className="mb-0 opacity-75">Total Customers</p>
                     </div>
-                    <div className="flex-grow-1 ms-4">
-                      <div className="text-muted small fw-semibold mb-1">Total Photographers</div>
-                      <div className="h3 mb-2 fw-bold text-dark">{stats.totalCustomers}</div>
-                    </div>
+                    <FontAwesomeIcon icon={faUsers} className="fs-1 opacity-50" />
                   </div>
                 </Card.Body>
               </Card>
             </Col>
             <Col md={3}>
-              <Card className="h-100 border-0 shadow-sm">
+              <Card className="bg-gradient-success text-white border-0 shadow-sm">
                 <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
-                    <div className="flex-shrink-0">
-                      <div className="p-3 rounded-3 bg-gradient-info text-white">
-                        <FontAwesomeIcon icon={faUser} size="lg" />
-                      </div>
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{stats.activeCustomers}</h4>
+                      <p className="mb-0 opacity-75">Active Customers</p>
                     </div>
-                    <div className="flex-grow-1 ms-4">
-                      <div className="text-muted small fw-semibold mb-1">Active Photographers</div>
-                      <div className="h3 mb-2 fw-bold text-dark">{stats.activeCustomers}</div>
-                    </div>
+                    <FontAwesomeIcon icon={faUser} className="fs-1 opacity-50" />
                   </div>
                 </Card.Body>
               </Card>
             </Col>
             <Col md={3}>
-              <Card className="h-100 border-0 shadow-sm">
+              <Card className="bg-gradient-warning text-white border-0 shadow-sm">
                 <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
-                    <div className="flex-shrink-0">
-                      <div className="p-3 rounded-3 bg-gradient-warning text-white">
-                        <FontAwesomeIcon icon={faBan} size="lg" />
-                      </div>
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{stats.suspendedCustomers}</h4>
+                      <p className="mb-0 opacity-75">Suspended Accounts</p>
                     </div>
-                    <div className="flex-grow-1 ms-4">
-                      <div className="text-muted small fw-semibold mb-1">Suspended Accounts</div>
-                      <div className="h3 mb-2 fw-bold text-dark">{stats.suspendedCustomers}</div>
-                    </div>
+                    <FontAwesomeIcon icon={faBan} className="fs-1 opacity-50" />
                   </div>
                 </Card.Body>
               </Card>
             </Col>
             <Col md={3}>
-              <Card className="h-100 border-0 shadow-sm">
+              <Card className="bg-gradient-info text-white border-0 shadow-sm">
                 <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
-                    <div className="flex-shrink-0">
-                      <div className="p-3 rounded-3 bg-gradient-primary text-white">
-                        <FontAwesomeIcon icon={faUser} size="lg" />
-                      </div>
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{stats.newThisMonth}</h4>
+                      <p className="mb-0 opacity-75">New This Month</p>
                     </div>
-                    <div className="flex-grow-1 ms-4">
-                      <div className="text-muted small fw-semibold mb-1">New This Month</div>
-                      <div className="h3 mb-2 fw-bold text-dark">{stats.newThisMonth}</div>
-                    </div>
+                    <FontAwesomeIcon icon={faUser} className="fs-1 opacity-50" />
                   </div>
                 </Card.Body>
               </Card>
             </Col>
           </Row>
 
-          {/* Search and Filter Section */}
-          <div className="mb-4">
-            <Row className="g-3">
-              <Col md={3}>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">Search Photographer</label>
-                  <FormControl
-                    placeholder="Name, email, phone, or ID"
-                    value={searchTerm}
-                    onChange={handleSearch}
-                    className="border-2"
-                  />
-                </div>
-              </Col>
-              <Col md={2}>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">Status</label>
-                  <FormSelect
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="border-2"
-                  >
-                    <option value="">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="suspended">Suspended</option>
-                    <option value="pending">Pending</option>
-                  </FormSelect>
-                </div>
-              </Col>
-              <Col md={2}>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">Location</label>
-                  <FormSelect
-                    value={locationFilter}
-                    onChange={(e) => setLocationFilter(e.target.value)}
-                    className="border-2"
-                  >
-                    <option value="">All Locations</option>
-                    {locations.map(location => (
-                      <option key={location} value={location}>{location}</option>
-                    ))}
-                  </FormSelect>
-                </div>
-              </Col>
-              <Col md={2}>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">Registration Date</label>
-                  <FormSelect
-                    value={registrationDateFilter}
-                    onChange={(e) => setRegistrationDateFilter(e.target.value)}
-                    className="border-2"
-                  >
-                    <option value="">All Time</option>
-                    <option value="today">Today</option>
-                    <option value="week">This Week</option>
-                    <option value="month">This Month</option>
-                    <option value="year">This Year</option>
-                  </FormSelect>
-                </div>
-              </Col>
-              <Col md={3}>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">&nbsp;</label>
-                  <div className="d-flex gap-2">
-                    <Button variant="success" onClick={() => {}} className="text-white">
-                      <FontAwesomeIcon icon={faSearch} className="me-2" />
-                      Search
-                    </Button>
-                    <Button variant="outline-secondary" onClick={handleReset}>
-                      <FontAwesomeIcon icon={faRefresh} className="me-2" />
-                      Reset
-                    </Button>
+          {/* Main Content Container */}
+          <div className="bg-white rounded-3 shadow-sm p-4">
+            {/* Search and Filter Section */}
+            <div className="mb-4">
+              <Row className="g-3">
+                <Col md={4}>
+                  <div className="position-relative">
+                    <FontAwesomeIcon 
+                      icon={faSearch} 
+                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+                      style={{ zIndex: 10 }}
+                    />
+                    <FormControl
+                      placeholder="Search by name, email, phone, or ID..."
+                      value={searchTerm}
+                      onChange={handleSearch}
+                      className="border-2 ps-5"
+                    />
                   </div>
-                </div>
-              </Col>
-            </Row>
-          </div>
+                </Col>
+                <Col md={2}>
+                  <div className="position-relative">
+                    <FontAwesomeIcon 
+                      icon={faFilter} 
+                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+                      style={{ zIndex: 10 }}
+                    />
+                    <FormSelect
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="border-2 ps-5"
+                    >
+                      <option value="">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="suspended">Suspended</option>
+                      <option value="pending">Pending</option>
+                    </FormSelect>
+                  </div>
+                </Col>
+                <Col md={2}>
+                  <div className="position-relative">
+                    <FontAwesomeIcon 
+                      icon={faFilter} 
+                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+                      style={{ zIndex: 10 }}
+                    />
+                    <FormSelect
+                      value={locationFilter}
+                      onChange={(e) => setLocationFilter(e.target.value)}
+                      className="border-2 ps-5"
+                    >
+                      <option value="">All Locations</option>
+                      {locations.map(location => (
+                        <option key={location} value={location}>{location}</option>
+                      ))}
+                    </FormSelect>
+                  </div>
+                </Col>
+                <Col md={2}>
+                  <div className="position-relative">
+                    <FontAwesomeIcon 
+                      icon={faFilter} 
+                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+                      style={{ zIndex: 10 }}
+                    />
+                    <FormSelect
+                      value={registrationDateFilter}
+                      onChange={(e) => setRegistrationDateFilter(e.target.value)}
+                      className="border-2 ps-5"
+                    >
+                      <option value="">All Time</option>
+                      <option value="today">Today</option>
+                      <option value="week">This Week</option>
+                      <option value="month">This Month</option>
+                      <option value="year">This Year</option>
+                    </FormSelect>
+                  </div>
+                </Col>
+                <Col md={2}>
+                  <Button 
+                    variant="outline-secondary" 
+                    onClick={handleReset}
+                    className="w-100"
+                  >
+                    <FontAwesomeIcon icon={faRefresh} className="me-2" />
+                    Reset
+                  </Button>
+                </Col>
+              </Row>
+            </div>
 
-          {/* Photographers Table */}
-          <div className="mb-4">
-            <div className="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-success border-2">
+            {/* Section Header */}
+            <div className="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-primary border-2">
               <div className="d-flex align-items-center">
-                <FontAwesomeIcon icon={faCamera} className="me-3 text-success fs-4" />
-                <h4 className="mb-0 text-success">Photographers List</h4>
+                <FontAwesomeIcon icon={faUsers} className="me-3 text-primary fs-4" />
+                <h4 className="mb-0 text-primary">Customers List</h4>
               </div>
               <div className="text-muted">
-                Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, filteredCustomers.length)} of {filteredCustomers.length} photographers
+                Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, filteredCustomers.length)} of {filteredCustomers.length} customers
               </div>
+            </div>
+
+            {/* Table */}
+            <div 
+              style={{ 
+                width: '100%',
+                overflowX: 'auto',
+                overflowY: 'visible',
+                WebkitOverflowScrolling: 'touch'
+              }}
+            >
+              <Table
+                data={filteredCustomers}
+                columns={columns}
+                sortableColumns={sortableColumns}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                loading={loading}
+                hover
+                pagination={true}
+                sortable={true}
+                totalItems={filteredCustomers.length}
+                emptyMessage="No customers found"
+              />
             </div>
           </div>
         </Col>
       </Row>
-      
-      {/* Full Width Table */}
-      <div 
-        style={{ 
-          width: '100%',
-          overflowX: 'auto',
-          overflowY: 'visible',
-          WebkitOverflowScrolling: 'touch',
-          marginLeft: 0,
-          marginRight: 0,
-          paddingLeft: 0,
-          paddingRight: 0
-        }}
-      >
-        <div style={{ minWidth: '1200px', paddingLeft: '1.5rem', paddingRight: '1.5rem' }}>
-          <Table
-            data={filteredCustomers}
-            columns={columns}
-            sortableColumns={sortableColumns}
-            currentPage={currentPage}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setPageSize}
-            loading={loading}
-            hover
-            pagination={true}
-            sortable={true}
-            totalItems={filteredCustomers.length}
-          />
-        </div>
-      </div>
     </Container>
     </div>
 
@@ -800,13 +885,13 @@ const CustomersList = () => {
           setShowDeleteModal(false)
           setCustomerToDelete(null)
         }}
-        title="Delete Photographer"
+        title="Delete Customer"
         onConfirm={confirmDeleteCustomer}
         confirmText="Delete"
         cancelText="Cancel"
         type="danger"
       >
-        <p>Are you sure you want to delete the photographer <strong>"{customerToDelete?.name || `${customerToDelete?.firstName || ''} ${customerToDelete?.lastName || ''}`.trim()}"</strong>?</p>
+        <p>Are you sure you want to delete the customer <strong>"{customerToDelete?.name || `${customerToDelete?.firstName || ''} ${customerToDelete?.lastName || ''}`.trim()}"</strong>?</p>
         <p className="text-muted">This action cannot be undone.</p>
       </Modal>
 
@@ -829,15 +914,64 @@ const CustomersList = () => {
           setShowActivateModal(false)
           setCustomerToActivate(null)
         }}
-        title="Activate Photographer"
+        title="Activate Customer"
         onConfirm={confirmActivateCustomer}
         confirmText="Activate"
         cancelText="Cancel"
         type="success"
       >
-        <p>Are you sure you want to activate the photographer <strong>"{customerToActivate?.name || `${customerToActivate?.firstName || ''} ${customerToActivate?.lastName || ''}`.trim()}"</strong>?</p>
-        <p className="text-muted">The photographer will be able to accept orders again.</p>
+        <p>Are you sure you want to activate the customer <strong>"{customerToActivate?.name || `${customerToActivate?.firstName || ''} ${customerToActivate?.lastName || ''}`.trim()}"</strong>?</p>
+        <p className="text-muted">The customer will be able to place orders again.</p>
       </Modal>
+
+      {/* Add Customer Modal */}
+      <FormModal
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Add New Customer"
+        onSubmit={handleAddCustomerSubmit}
+        submitText="Create Customer"
+        submitIcon={faPlus}
+        loading={addLoading}
+        loadingText="Creating..."
+        size="lg"
+      >
+        <CustomerForm
+          ref={addFormRef}
+          mode="create"
+          branches={branches}
+          onSubmit={handleAddCustomerFormSubmit}
+          onCancel={() => setShowAddModal(false)}
+        />
+      </FormModal>
+
+      {/* Edit Customer Modal */}
+      <FormModal
+        visible={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setCustomerToEdit(null)
+        }}
+        title="Edit Customer"
+        onSubmit={handleEditCustomerSubmit}
+        submitText="Update Customer"
+        submitIcon={faSave}
+        loading={editLoading}
+        loadingText="Updating..."
+        size="lg"
+      >
+        <CustomerForm
+          ref={editFormRef}
+          mode="edit"
+          customerData={customerToEdit}
+          branches={branches}
+          onSubmit={handleEditCustomerFormSubmit}
+          onCancel={() => {
+            setShowEditModal(false)
+            setCustomerToEdit(null)
+          }}
+        />
+      </FormModal>
     </>
   )
 }

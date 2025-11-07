@@ -15,21 +15,15 @@ const Settings = React.lazy(() => import('../../views/settings/Settings'))
 
 // Branch Management Components
 const BranchesList = React.lazy(() => import('../../views/branches/BranchesList'))
-const BranchFormView = React.lazy(() => import('../../views/branches/BranchFormView'))
 
 // Package Management Components
 const PackagesList = React.lazy(() => import('../../views/packages/PackagesList'))
-const PackageFormView = React.lazy(() => import('../../views/packages/PackageFormView'))
 
 // Order Management Components
 const OrdersList = React.lazy(() => import('../../views/orders/OrdersList'))
-const OrderFormView = React.lazy(() => import('../../views/orders/OrderFormView'))
 
 // Customer Management Components
 const CustomersList = React.lazy(() => import('../../views/customers/CustomersList'))
-const CustomerFormView = React.lazy(() => import('../../views/customers/CustomerFormView'))
-const CustomerWalletView = React.lazy(() => import('../../views/customers/CustomerWalletView'))
-const CustomerLedgerView = React.lazy(() => import('../../views/customers/CustomerLedgerView'))
 
 // Transaction Components
 const TransactionsList = React.lazy(() => import('../../views/transactions/TransactionsList'))
@@ -63,25 +57,25 @@ const AppContent = () => {
           
           {/* Branch Management Routes */}
           <Route path="/branches" element={<BranchesList />} />
-          <Route path="/branches/create" element={<BranchFormView />} />
-          <Route path="/branches/edit/:id" element={<BranchFormView />} />
+          <Route path="/branches/create" element={<Navigate to="/branches" replace />} />
+          <Route path="/branches/edit/:id" element={<Navigate to="/branches" replace />} />
           
           {/* Package Management Routes */}
           <Route path="/packages" element={<PackagesList />} />
-          <Route path="/packages/create" element={<PackageFormView />} />
-          <Route path="/packages/edit/:id" element={<PackageFormView />} />
+          <Route path="/packages/create" element={<Navigate to="/packages" replace />} />
+          <Route path="/packages/edit/:id" element={<Navigate to="/packages" replace />} />
           
           {/* Order Management Routes */}
           <Route path="/orders" element={<OrdersList />} />
-          <Route path="/orders/create" element={<OrderFormView />} />
-          <Route path="/orders/edit/:id" element={<OrderFormView />} />
+          <Route path="/orders/create" element={<Navigate to="/orders" replace />} />
+          <Route path="/orders/edit/:id" element={<Navigate to="/orders" replace />} />
           
           {/* Customer Management Routes */}
           <Route path="/customers" element={<CustomersList />} />
-          <Route path="/customers/create" element={<CustomerFormView />} />
-          <Route path="/customers/edit/:id" element={<CustomerFormView />} />
-          <Route path="/customers/:id/wallet" element={<CustomerWalletView />} />
-          <Route path="/customers/:id/ledger" element={<CustomerLedgerView />} />
+          <Route path="/customers/create" element={<Navigate to="/customers" replace />} />
+          <Route path="/customers/edit/:id" element={<Navigate to="/customers" replace />} />
+          <Route path="/customers/:id/wallet" element={<Navigate to="/customers" replace />} />
+          <Route path="/customers/:id/ledger" element={<Navigate to="/customers" replace />} />
           
           {/* Transaction Routes */}
           <Route path="/transactions" element={<TransactionsList />} />

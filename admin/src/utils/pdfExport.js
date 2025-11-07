@@ -219,7 +219,7 @@ export const exportSinglePhotographerToPDF = (photographer) => {
               background: #ffffff;
             }
             .header {
-              background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
               color: white;
               padding: 40px 30px;
               border-radius: 10px 10px 0 0;
@@ -260,7 +260,7 @@ export const exportSinglePhotographerToPDF = (photographer) => {
               background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
               padding: 25px;
               border-radius: 10px;
-              border-left: 5px solid #22c55e;
+              border-left: 5px solid #8b5cf6;
               box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             }
             .stat-card.earnings {
@@ -301,7 +301,7 @@ export const exportSinglePhotographerToPDF = (photographer) => {
               box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             }
             .section-title {
-              background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
               color: white;
               padding: 15px 20px;
               font-size: 18px;
@@ -511,7 +511,7 @@ export const exportSinglePhotographerToPDF = (photographer) => {
                   <div class="info-grid">
                     <div class="info-item">
                       <div class="info-label">Total Services</div>
-                      <div class="info-value" style="font-size: 20px; font-weight: 700; color: #22c55e;">${totalServices}</div>
+                      <div class="info-value" style="font-size: 20px; font-weight: 700; color: #8b5cf6;">${totalServices}</div>
                     </div>
                     <div class="info-item">
                       <div class="info-label">Total Amount</div>
@@ -523,7 +523,7 @@ export const exportSinglePhotographerToPDF = (photographer) => {
                     </div>
                     <div class="info-item">
                       <div class="info-label">Remaining Amount</div>
-                      <div class="info-value" style="font-size: 20px; font-weight: 700; color: ${remainingAmount > 0 ? '#ef4444' : '#22c55e'};">${formatCurrency(remainingAmount)}</div>
+                      <div class="info-value" style="font-size: 20px; font-weight: 700; color: ${remainingAmount > 0 ? '#ef4444' : '#8b5cf6'};">${formatCurrency(remainingAmount)}</div>
                     </div>
                   </div>
                 </div>
@@ -1023,7 +1023,7 @@ export const exportTransactionToPDF = (transaction) => {
             overflow: hidden;
           }
           .header {
-            background: linear-gradient(135deg, ${isCredit ? '#22c55e' : '#ef4444'} 0%, ${isCredit ? '#16a34a' : '#dc2626'} 100%);
+            background: linear-gradient(135deg, ${isCredit ? '#8b5cf6' : '#ef4444'} 0%, ${isCredit ? '#7c3aed' : '#dc2626'} 100%);
             color: white;
             padding: 40px 30px;
             text-align: center;
@@ -1060,7 +1060,7 @@ export const exportTransactionToPDF = (transaction) => {
             background: #f8f9fa;
             padding: 20px;
             border-radius: 8px;
-            border-left: 4px solid ${isCredit ? '#22c55e' : '#ef4444'};
+            border-left: 4px solid ${isCredit ? '#8b5cf6' : '#ef4444'};
           }
           .info-box h3 {
             font-size: 16px;
@@ -1092,7 +1092,7 @@ export const exportTransactionToPDF = (transaction) => {
             padding: 25px;
             border-radius: 10px;
             margin: 30px 0;
-            border: 2px solid ${isCredit ? '#22c55e' : '#ef4444'};
+            border: 2px solid ${isCredit ? '#8b5cf6' : '#ef4444'};
           }
           .amount-grid {
             display: grid;
@@ -1120,7 +1120,7 @@ export const exportTransactionToPDF = (transaction) => {
             font-weight: 700;
           }
           .amount-value.received {
-            color: #22c55e;
+            color: #8b5cf6;
           }
           .amount-value.remaining {
             color: #f59e0b;

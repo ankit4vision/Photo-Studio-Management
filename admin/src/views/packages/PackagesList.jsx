@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Container, Row, Col, Button, FormControl, FormSelect, Badge, Card } from 'react-bootstrap'
-import { useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
   faTrash, 
@@ -9,12 +8,17 @@ import {
   faTag,
   faSearch, 
   faRefresh,
+  faFilter,
+  faSave,
+  faRupeeSign,
 } from '@fortawesome/free-solid-svg-icons'
-import { Table, Modal } from '../../components'
+import { Table, Modal, FormModal } from '../../components'
+import PackageForm from '../../components/pages/packages/PackageForm'
 import packageService from '../../services/packageService'
+import { useToast } from '../../components/common/ToastProvider'
 
 const PackagesList = () => {
-  const navigate = useNavigate()
+  const { success, error } = useToast()
   
   const [packages, setPackages] = useState([])
   const [loading, setLoading] = useState(true)
@@ -25,6 +29,17 @@ const PackagesList = () => {
   const [pageSize, setPageSize] = useState(10)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [packageToDelete, setPackageToDelete] = useState(null)
+  
+  // Add/Edit Modal States
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [packageToEdit, setPackageToEdit] = useState(null)
+  const [addLoading, setAddLoading] = useState(false)
+  const [editLoading, setEditLoading] = useState(false)
+  
+  // Refs for form components
+  const addFormRef = useRef()
+  const editFormRef = useRef()
 
   useEffect(() => {
     loadPackages()
@@ -91,16 +106,92 @@ const PackagesList = () => {
     try {
       const response = await packageService.deletePackage(packageToDelete.id)
       if (response.success) {
+        success('Package deleted successfully')
         setShowDeleteModal(false)
         setPackageToDelete(null)
         loadPackages()
+      } else {
+        error(response.message || 'Failed to delete package')
       }
-    } catch (error) {
-      console.error('Error deleting package:', error)
+    } catch (err) {
+      console.error('Error deleting package:', err)
+      error('An error occurred while deleting package')
+    }
+  }
+
+  // Add Package Handlers
+  const handleAddPackage = () => {
+    setShowAddModal(true)
+  }
+
+  const handleAddPackageSubmit = () => {
+    if (addFormRef.current) {
+      addFormRef.current.handleSubmit()
+    }
+  }
+
+  const handleAddPackageFormSubmit = async (formData) => {
+    try {
+      setAddLoading(true)
+      const response = await packageService.createPackage(formData)
+      if (response.success) {
+        success('Package created successfully')
+        setShowAddModal(false)
+        loadPackages()
+      } else {
+        error(response.message || 'Failed to create package')
+      }
+    } catch (err) {
+      console.error('Error creating package:', err)
+      error('An error occurred while creating package')
+    } finally {
+      setAddLoading(false)
+    }
+  }
+
+  // Edit Package Handlers
+  const handleEditPackage = (pkg) => {
+    setPackageToEdit(pkg)
+    setShowEditModal(true)
+  }
+
+  const handleEditPackageSubmit = () => {
+    if (editFormRef.current) {
+      editFormRef.current.handleSubmit()
+    }
+  }
+
+  const handleEditPackageFormSubmit = async (formData) => {
+    try {
+      setEditLoading(true)
+      const response = await packageService.updatePackage(packageToEdit.id, formData)
+      if (response.success) {
+        success('Package updated successfully')
+        setShowEditModal(false)
+        setPackageToEdit(null)
+        loadPackages()
+      } else {
+        error(response.message || 'Failed to update package')
+      }
+    } catch (err) {
+      console.error('Error updating package:', err)
+      error('An error occurred while updating package')
+    } finally {
+      setEditLoading(false)
     }
   }
 
   const packageTypes = packageService.getPackageTypes()
+
+  const sortableColumns = ['package', 'price']
+
+  // Calculate statistics
+  const totalStats = filteredPackages.reduce((acc, pkg) => {
+    acc.totalPackages += 1
+    acc.totalValue += pkg.default_price || 0
+    if (pkg.status === 'active') acc.activePackages += 1
+    return acc
+  }, { totalPackages: 0, totalValue: 0, activePackages: 0 })
 
   const columns = [
     {
@@ -126,7 +217,7 @@ const PackagesList = () => {
       key: 'price',
       label: 'Default Price',
       render: (value, pkg) => (
-        <div className="fw-semibold text-success">
+        <div className="fw-semibold text-primary">
           {formatCurrency(pkg.default_price)}
         </div>
       )
@@ -144,12 +235,13 @@ const PackagesList = () => {
       key: 'actions',
       label: 'Actions',
       render: (value, pkg) => (
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-1 align-items-center" style={{ flexWrap: 'nowrap' }}>
           <Button
-            variant="outline-warning"
+            variant="outline-primary"
             size="sm"
-            onClick={() => navigate(`/packages/edit/${pkg.id}`)}
+            onClick={() => handleEditPackage(pkg)}
             title="Edit Package"
+            style={{ minWidth: '32px', padding: '4px 8px' }}
           >
             <FontAwesomeIcon icon={faEdit} />
           </Button>
@@ -158,6 +250,7 @@ const PackagesList = () => {
             size="sm"
             onClick={() => handleDeletePackage(pkg)}
             title="Delete Package"
+            style={{ minWidth: '32px', padding: '4px 8px' }}
           >
             <FontAwesomeIcon icon={faTrash} />
           </Button>
@@ -170,76 +263,190 @@ const PackagesList = () => {
     <Container fluid>
       <Row>
         <Col xs={12}>
+          {/* Page Header */}
           <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
             <div className="d-flex align-items-center">
-              <FontAwesomeIcon icon={faTag} className="me-3 text-dark fs-4" />
+              <FontAwesomeIcon icon={faTag} className="me-3 text-primary fs-4" />
               <h2 className="mb-0 text-dark">Package Management</h2>
             </div>
             <div className="ms-auto">
-              <Button variant="primary" onClick={() => navigate('/packages/create')}>
+              <Button variant="primary" onClick={handleAddPackage} className="text-white">
                 <FontAwesomeIcon icon={faPlus} className="me-2" />
                 Add Package
               </Button>
             </div>
           </div>
 
+          {/* Statistics Cards */}
+          <Row className="mb-4">
+            <Col md={3}>
+              <Card className="bg-gradient-primary text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <div className="d-flex align-items-center">
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{totalStats.totalPackages}</h4>
+                      <p className="mb-0 opacity-75">Total Packages</p>
+                    </div>
+                    <FontAwesomeIcon icon={faTag} className="fs-1 opacity-50" />
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3}>
+              <Card className="bg-gradient-info text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <div className="d-flex align-items-center">
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{formatCurrency(totalStats.totalValue)}</h4>
+                      <p className="mb-0 opacity-75">Total Value</p>
+                    </div>
+                    <FontAwesomeIcon icon={faRupeeSign} className="fs-1 opacity-50" />
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3}>
+              <Card className="bg-gradient-success text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <div className="d-flex align-items-center">
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{totalStats.activePackages}</h4>
+                      <p className="mb-0 opacity-75">Active Packages</p>
+                    </div>
+                    <FontAwesomeIcon icon={faTag} className="fs-1 opacity-50" />
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3}>
+              <Card className="bg-gradient-warning text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <div className="d-flex align-items-center">
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{filteredPackages.length}</h4>
+                      <p className="mb-0 opacity-75">Filtered Results</p>
+                    </div>
+                    <FontAwesomeIcon icon={faFilter} className="fs-1 opacity-50" />
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Main Content Container */}
           <div className="bg-white rounded-3 shadow-sm p-4">
+            {/* Search and Filter Section */}
             <div className="mb-4">
               <Row className="g-3">
+                <Col md={4}>
+                  <div className="position-relative">
+                    <FontAwesomeIcon 
+                      icon={faSearch} 
+                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+                      style={{ zIndex: 10 }}
+                    />
+                    <FormControl
+                      placeholder="Search by package name or description..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="border-2 ps-5"
+                    />
+                  </div>
+                </Col>
                 <Col md={3}>
-                  <FormControl
-                    placeholder="Search packages"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="border-2"
-                  />
+                  <div className="position-relative">
+                    <FontAwesomeIcon 
+                      icon={faFilter} 
+                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+                      style={{ zIndex: 10 }}
+                    />
+                    <FormSelect
+                      value={typeFilter}
+                      onChange={(e) => setTypeFilter(e.target.value)}
+                      className="border-2 ps-5"
+                    >
+                      <option value="">All Types</option>
+                      {packageTypes.map(type => (
+                        <option key={type.value} value={type.value}>{type.label}</option>
+                      ))}
+                    </FormSelect>
+                  </div>
                 </Col>
                 <Col md={2}>
-                  <FormSelect
-                    value={typeFilter}
-                    onChange={(e) => setTypeFilter(e.target.value)}
-                    className="border-2"
+                  <div className="position-relative">
+                    <FontAwesomeIcon 
+                      icon={faFilter} 
+                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+                      style={{ zIndex: 10 }}
+                    />
+                    <FormSelect
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="border-2 ps-5"
+                    >
+                      <option value="">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </FormSelect>
+                  </div>
+                </Col>
+                <Col md={3}>
+                  <Button 
+                    variant="outline-secondary" 
+                    onClick={() => {
+                      setSearchTerm('')
+                      setTypeFilter('')
+                      setStatusFilter('')
+                    }}
+                    className="w-100"
                   >
-                    <option value="">All Types</option>
-                    {packageTypes.map(type => (
-                      <option key={type.value} value={type.value}>{type.label}</option>
-                    ))}
-                  </FormSelect>
-                </Col>
-                <Col md={2}>
-                  <FormSelect
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="border-2"
-                  >
-                    <option value="">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </FormSelect>
-                </Col>
-                <Col md={2}>
-                  <Button variant="outline-secondary" onClick={loadPackages}>
                     <FontAwesomeIcon icon={faRefresh} className="me-2" />
-                    Refresh
+                    Reset
                   </Button>
                 </Col>
               </Row>
             </div>
 
-            <Table
-              data={filteredPackages}
-              columns={columns}
-              currentPage={currentPage}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
-              loading={loading}
-              pagination={true}
-            />
+            {/* Section Header */}
+            <div className="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-primary border-2">
+              <div className="d-flex align-items-center">
+                <FontAwesomeIcon icon={faTag} className="me-3 text-primary fs-4" />
+                <h4 className="mb-0 text-primary">Packages List</h4>
+              </div>
+              <div className="text-muted">
+                Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, filteredPackages.length)} of {filteredPackages.length} packages
+              </div>
+            </div>
+
+            {/* Table */}
+            <div 
+              style={{ 
+                width: '100%',
+                overflowX: 'auto',
+                overflowY: 'visible',
+                WebkitOverflowScrolling: 'touch'
+              }}
+            >
+              <Table
+                data={filteredPackages}
+                columns={columns}
+                sortableColumns={sortableColumns}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                loading={loading}
+                pagination={true}
+                sortable={true}
+                totalItems={filteredPackages.length}
+                emptyMessage="No packages found"
+              />
+            </div>
           </div>
         </Col>
       </Row>
 
+      {/* Delete Confirmation Modal */}
       <Modal
         visible={showDeleteModal}
         onClose={() => {
@@ -255,6 +462,53 @@ const PackagesList = () => {
         <p>Are you sure you want to delete the package <strong>"{packageToDelete?.package_name}"</strong>?</p>
         <p className="text-muted">This action cannot be undone.</p>
       </Modal>
+
+      {/* Add Package Modal */}
+      <FormModal
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Add New Package"
+        onSubmit={handleAddPackageSubmit}
+        submitText="Create Package"
+        submitIcon={faPlus}
+        loading={addLoading}
+        loadingText="Creating..."
+        size="lg"
+      >
+        <PackageForm
+          ref={addFormRef}
+          mode="create"
+          onSubmit={handleAddPackageFormSubmit}
+          onCancel={() => setShowAddModal(false)}
+        />
+      </FormModal>
+
+      {/* Edit Package Modal */}
+      <FormModal
+        visible={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setPackageToEdit(null)
+        }}
+        title="Edit Package"
+        onSubmit={handleEditPackageSubmit}
+        submitText="Update Package"
+        submitIcon={faSave}
+        loading={editLoading}
+        loadingText="Updating..."
+        size="lg"
+      >
+        <PackageForm
+          ref={editFormRef}
+          mode="edit"
+          packageData={packageToEdit}
+          onSubmit={handleEditPackageFormSubmit}
+          onCancel={() => {
+            setShowEditModal(false)
+            setPackageToEdit(null)
+          }}
+        />
+      </FormModal>
     </Container>
   )
 }

@@ -5,17 +5,30 @@ This directory contains the customer management components for the Photo Studio 
 ## Components
 
 ### CustomerDetailsModal.jsx
-A modal component that displays detailed information about a customer.
+A comprehensive modal component that displays detailed information about a customer with tabbed interface.
 
 **Features:**
-- Customer profile with avatar (initials)
-- Contact information (email, phone, location)
-- Order statistics (total orders, total spent)
-- Account status with color-coded badges
-- Address information
-- Customer preferences
-- Notes section
-- Action buttons (Suspend/Activate)
+- **Information Tab:**
+  - Customer profile with avatar (initials)
+  - Financial summary (Total, Paid, Remaining amounts)
+  - Contact information (mobile, email, address)
+  - Branch information
+  - Personal details (DOB, Anniversary)
+  - Registration date and total orders
+  - Account status with color-coded badges
+
+- **Orders Tab:**
+  - Complete list of customer orders
+  - Order details: Order number, date, package, amount, status, payment status
+  - Loading states and empty states
+
+- **Transactions Tab:**
+  - Complete transaction history
+  - Transaction details: Date, type (credit/debit), description, amount, balance
+  - Color-coded transaction types
+  - Order references where applicable
+
+- Action buttons (Suspend/Activate account)
 
 **Props:**
 - `visible` (boolean): Controls modal visibility
@@ -23,6 +36,33 @@ A modal component that displays detailed information about a customer.
 - `customer` (object): Customer data to display
 - `onSuspend` (function): Callback for suspend action
 - `onActivate` (function): Callback for activate action
+
+**Data Loading:**
+- Automatically loads orders when modal opens
+- Automatically loads transactions when modal opens
+- Uses `orderService.getOrdersByCustomer()`
+- Uses `transactionService.getTransactionsByCustomer()`
+
+### CustomerForm.jsx
+Form component for creating and editing customers.
+
+**Features:**
+- Customer name and mobile (required)
+- Email (optional)
+- Address (optional)
+- Date of Birth and Anniversary Date
+- Branch selection (required)
+- Status selection
+- Form validation
+- Supports both create and edit modes
+
+**Props:**
+- `mode` ('create' | 'edit'): Form mode
+- `customerData` (object): Customer data for edit mode
+- `branches` (array): List of branches for dropdown
+- `onSubmit` (function): Callback when form is submitted
+- `onCancel` (function): Callback when form is cancelled
+- `loading` (boolean): Loading state
 
 ### SuspendCustomerModal.jsx
 A detailed modal component for suspending customer accounts with comprehensive suspension management.
@@ -44,28 +84,7 @@ A detailed modal component for suspending customer accounts with comprehensive s
 - `onSuspend` (function): Callback when suspension is confirmed
 - `loading` (boolean): Loading state
 
-**Form Fields:**
-- **Reason for Suspension**: Dropdown with predefined reasons
-- **Duration Type**: Temporary or Permanent
-- **Duration Value/Unit**: For temporary suspensions (days, weeks, months)
-- **Additional Notes**: Free text field
-- **Notification Options**: Email, support team, support ticket checkboxes
-
-
 ## Usage
-
-### SuspendCustomerModal
-```jsx
-import SuspendCustomerModal from './components/pages/customers/SuspendCustomerModal'
-
-<SuspendCustomerModal
-  visible={showSuspendModal}
-  onClose={() => setShowSuspendModal(false)}
-  customer={selectedCustomer}
-  onSuspend={handleSuspendCustomer}
-  loading={isLoading}
-/>
-```
 
 ### CustomerDetailsModal
 ```jsx
@@ -80,14 +99,41 @@ import CustomerDetailsModal from './components/pages/customers/CustomerDetailsMo
 />
 ```
 
+### CustomerForm
+```jsx
+import CustomerForm from './components/pages/customers/CustomerForm'
+
+<CustomerForm
+  ref={formRef}
+  mode="create"
+  branches={branches}
+  onSubmit={handleSubmit}
+  onCancel={handleCancel}
+/>
+```
+
+### SuspendCustomerModal
+```jsx
+import SuspendCustomerModal from './components/pages/customers/SuspendCustomerModal'
+
+<SuspendCustomerModal
+  visible={showSuspendModal}
+  onClose={() => setShowSuspendModal(false)}
+  customer={selectedCustomer}
+  onSuspend={handleSuspendCustomer}
+  loading={isLoading}
+/>
+```
+
 ## Styling
 
 The components follow the project's design guidelines:
-- Green theme colors (`text-success`, `border-success`)
+- Purple/Violet theme colors (`text-primary`, `border-primary`)
 - Bootstrap classes with custom enhancements
 - Consistent spacing and typography
 - Responsive design
 - Clean layout without nested cards
+- Tabbed interface for better organization
 
 ## Dependencies
 
@@ -95,6 +141,8 @@ The components follow the project's design guidelines:
 - FontAwesome for icons
 - React hooks for state management
 - Form validation and error handling
+- Custom Table component for data display
+- Order and Transaction services for data fetching
 
 ## Data Structure
 
@@ -102,10 +150,12 @@ The components follow the project's design guidelines:
 ```javascript
 {
   id: number,
-  customerId: string, // e.g., "#12345"
+  customerId: string, // e.g., "#CUST001"
+  name: string,
   firstName: string,
   lastName: string,
   email: string,
+  mobile: string,
   phone: string,
   address: {
     street: string,
@@ -114,42 +164,22 @@ The components follow the project's design guidelines:
     postalCode: string,
     country: string
   },
-  location: {
-    city: string,
-    country: string
-  },
-  status: 'active' | 'suspended' | 'pending',
+  branch_id: number,
+  branch_name: string,
+  branch_code: string,
+  status: 'active' | 'suspended' | 'pending' | 'inactive',
   totalOrders: number,
+  total_orders: number,
   totalSpent: number,
+  total_amount: number,
+  total_earnings: number,
+  paid_amount: number,
+  remaining_amount: number,
+  wallet_balance: number,
+  dob: string, // ISO date string
+  anniversary_date: string, // ISO date string
   joinedDate: string, // ISO date string
-  lastOrderDate: string, // ISO date string
-  avatar: string,
-  notes: string,
-  preferences: {
-    newsletter: boolean,
-    smsNotifications: boolean,
-    preferredDeliveryTime: 'morning' | 'afternoon' | 'evening',
-    dietaryRestrictions: string[]
-  },
-  suspensionDetails?: {
-    reason: string,
-    durationType: 'temporary' | 'permanent',
-    durationValue?: string,
-    durationUnit?: 'day' | 'week' | 'month',
-    notes?: string,
-    suspendedAt: string, // ISO date string
-    suspendedBy: string,
-    suspendedUntil?: string, // ISO date string (for temporary suspensions)
-    activatedAt?: string, // ISO date string
-    activatedBy?: string,
-    notifications: {
-      emailSent: boolean,
-      supportNotified: boolean,
-      supportTicketCreated: boolean
-    }
-  },
-  createdAt: string, // ISO date string
-  updatedAt: string // ISO date string
+  created_at: string // ISO date string
 }
 ```
 
@@ -157,7 +187,10 @@ The components follow the project's design guidelines:
 
 These components are integrated with:
 - Customer service API layer
+- Order service for fetching customer orders
+- Transaction service for fetching customer transactions
 - Mock data for development
-- Main customer list view
+- Main customer list view (CustomersList.jsx)
+- FormModal component for modal-based add/edit
 - Navigation system
 - Routing configuration

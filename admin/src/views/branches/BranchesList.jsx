@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Container, Row, Col, Button, Badge, Card } from 'react-bootstrap'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect, useRef } from 'react'
+import { Container, Row, Col, Button, Badge, Card, FormControl, FormSelect } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
   faTrash, 
@@ -9,13 +8,19 @@ import {
   faBuilding,
   faUsers,
   faRupeeSign,
+  faSearch,
+  faFilter,
+  faRefresh,
+  faSave,
 } from '@fortawesome/free-solid-svg-icons'
-import { Table, Modal } from '../../components'
+import { Table, Modal, FormModal } from '../../components'
+import BranchForm from '../../components/pages/branches/BranchForm'
 import branchService from '../../services/branchService'
 import photographersData from '../../mock/photographers.json'
+import { useToast } from '../../components/common/ToastProvider'
 
 const BranchesList = () => {
-  const navigate = useNavigate()
+  const { success, error } = useToast()
   
   const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
@@ -26,6 +31,17 @@ const BranchesList = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [branchToDelete, setBranchToDelete] = useState(null)
   const [branchStats, setBranchStats] = useState({})
+  
+  // Add/Edit Modal States
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [branchToEdit, setBranchToEdit] = useState(null)
+  const [addLoading, setAddLoading] = useState(false)
+  const [editLoading, setEditLoading] = useState(false)
+  
+  // Refs for form components
+  const addFormRef = useRef()
+  const editFormRef = useRef()
 
   useEffect(() => {
     loadBranches()
@@ -129,12 +145,78 @@ const BranchesList = () => {
     try {
       const response = await branchService.deleteBranch(branchToDelete.id)
       if (response.success) {
+        success('Branch deleted successfully')
         setShowDeleteModal(false)
         setBranchToDelete(null)
         loadBranches()
+      } else {
+        error(response.message || 'Failed to delete branch')
       }
-    } catch (error) {
-      console.error('Error deleting branch:', error)
+    } catch (err) {
+      console.error('Error deleting branch:', err)
+      error('An error occurred while deleting branch')
+    }
+  }
+
+  // Add Branch Handlers
+  const handleAddBranch = () => {
+    setShowAddModal(true)
+  }
+
+  const handleAddBranchSubmit = () => {
+    if (addFormRef.current) {
+      addFormRef.current.handleSubmit()
+    }
+  }
+
+  const handleAddBranchFormSubmit = async (formData) => {
+    try {
+      setAddLoading(true)
+      const response = await branchService.createBranch(formData)
+      if (response.success) {
+        success('Branch created successfully')
+        setShowAddModal(false)
+        loadBranches()
+      } else {
+        error(response.message || 'Failed to create branch')
+      }
+    } catch (err) {
+      console.error('Error creating branch:', err)
+      error('An error occurred while creating branch')
+    } finally {
+      setAddLoading(false)
+    }
+  }
+
+  // Edit Branch Handlers
+  const handleEditBranch = (branch) => {
+    setBranchToEdit(branch)
+    setShowEditModal(true)
+  }
+
+  const handleEditBranchSubmit = () => {
+    if (editFormRef.current) {
+      editFormRef.current.handleSubmit()
+    }
+  }
+
+  const handleEditBranchFormSubmit = async (formData) => {
+    try {
+      setEditLoading(true)
+      const response = await branchService.updateBranch(branchToEdit.id, formData)
+      if (response.success) {
+        success('Branch updated successfully')
+        setShowEditModal(false)
+        setBranchToEdit(null)
+        loadBranches()
+      } else {
+        error(response.message || 'Failed to update branch')
+      }
+    } catch (err) {
+      console.error('Error updating branch:', err)
+      error('An error occurred while updating branch')
+    } finally {
+      setEditLoading(false)
     }
   }
 
@@ -198,9 +280,9 @@ const BranchesList = () => {
       render: (value, branch) => (
         <div className="d-flex gap-1 align-items-center" style={{ flexWrap: 'nowrap' }}>
           <Button
-            variant="outline-info"
+            variant="outline-primary"
             size="sm"
-            onClick={() => navigate(`/branches/edit/${branch.id}`)}
+            onClick={() => handleEditBranch(branch)}
             title="Edit Branch"
             style={{ minWidth: '32px', padding: '4px 8px' }}
           >
@@ -220,17 +302,29 @@ const BranchesList = () => {
     }
   ]
 
+  const sortableColumns = ['branch', 'revenue', 'customers']
+
+  // Calculate total statistics
+  const totalStats = filteredBranches.reduce((acc, branch) => {
+    const stats = getBranchStats(branch.id)
+    acc.revenue += stats.revenue
+    acc.customers += stats.customers
+    acc.services += stats.services
+    return acc
+  }, { revenue: 0, customers: 0, services: 0 })
+
   return (
     <Container fluid>
       <Row>
         <Col xs={12}>
+          {/* Page Header */}
           <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
             <div className="d-flex align-items-center">
-              <FontAwesomeIcon icon={faBuilding} className="me-3 text-success fs-4" />
+              <FontAwesomeIcon icon={faBuilding} className="me-3 text-primary fs-4" />
               <h2 className="mb-0 text-dark">Branch Management</h2>
             </div>
             <div className="ms-auto">
-              <Button variant="success" onClick={() => navigate('/branches/create')} className="text-white">
+              <Button variant="primary" onClick={handleAddBranch} className="text-white">
                 <FontAwesomeIcon icon={faPlus} className="me-2" />
                 Add Branch
               </Button>
@@ -239,61 +333,126 @@ const BranchesList = () => {
 
           {/* Statistics Cards */}
           <Row className="mb-4">
-            {filteredBranches.map(branch => {
-              const stats = getBranchStats(branch.id)
-              return (
-                <Col md={6} key={branch.id} className="mb-3">
-                  <Card className="h-100 border-0 shadow-sm">
-                    <Card.Body className="p-4">
-                      <div className="d-flex align-items-center justify-content-between mb-3">
-                        <div>
-                          <div className="fw-bold text-dark mb-1" style={{ fontSize: '18px' }}>{branch.branch_name}</div>
-                          <small className="text-muted">{branch.branch_code}</small>
-                        </div>
-                        <Badge bg={getStatusColor(branch.status)} className="px-3 py-2">
-                          {branch.status || 'inactive'}
-                        </Badge>
-                      </div>
-                      <Row className="g-3">
-                        <Col xs={6}>
-                          <div className="p-3 bg-light rounded">
-                            <div className="text-muted small mb-1">
-                              <FontAwesomeIcon icon={faRupeeSign} className="me-1" />
-                              Revenue
-                            </div>
-                            <div className="h5 mb-0 fw-bold text-primary">
-                              {formatCurrency(stats.revenue)}
-                            </div>
-                          </div>
-                        </Col>
-                        <Col xs={6}>
-                          <div className="p-3 bg-light rounded">
-                            <div className="text-muted small mb-1">
-                              <FontAwesomeIcon icon={faUsers} className="me-1" />
-                              Customers
-                            </div>
-                            <div className="h5 mb-0 fw-bold text-dark">
-                              {stats.customers}
-                            </div>
-                          </div>
-                        </Col>
-                      </Row>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              )
-            })}
+            <Col md={3}>
+              <Card className="bg-gradient-primary text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <div className="d-flex align-items-center">
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{filteredBranches.length}</h4>
+                      <p className="mb-0 opacity-75">Total Branches</p>
+                    </div>
+                    <FontAwesomeIcon icon={faBuilding} className="fs-1 opacity-50" />
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3}>
+              <Card className="bg-gradient-info text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <div className="d-flex align-items-center">
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{formatCurrency(totalStats.revenue)}</h4>
+                      <p className="mb-0 opacity-75">Total Revenue</p>
+                    </div>
+                    <FontAwesomeIcon icon={faRupeeSign} className="fs-1 opacity-50" />
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3}>
+              <Card className="bg-gradient-success text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <div className="d-flex align-items-center">
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{totalStats.customers}</h4>
+                      <p className="mb-0 opacity-75">Total Customers</p>
+                    </div>
+                    <FontAwesomeIcon icon={faUsers} className="fs-1 opacity-50" />
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3}>
+              <Card className="bg-gradient-warning text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <div className="d-flex align-items-center">
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{filteredBranches.filter(b => b.status === 'active').length}</h4>
+                      <p className="mb-0 opacity-75">Active Branches</p>
+                    </div>
+                    <FontAwesomeIcon icon={faBuilding} className="fs-1 opacity-50" />
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
           </Row>
 
-          {/* Branches Table */}
-          <div className="mb-4">
-            <div className="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-success border-2">
+          {/* Main Content Container */}
+          <div className="bg-white rounded-3 shadow-sm p-4">
+            {/* Search and Filter Section */}
+            <div className="mb-4">
+              <Row className="g-3">
+                <Col md={6}>
+                  <div className="position-relative">
+                    <FontAwesomeIcon 
+                      icon={faSearch} 
+                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+                      style={{ zIndex: 10 }}
+                    />
+                    <FormControl
+                      placeholder="Search by branch name, code, or city..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="border-2 ps-5"
+                    />
+                  </div>
+                </Col>
+                <Col md={3}>
+                  <div className="position-relative">
+                    <FontAwesomeIcon 
+                      icon={faFilter} 
+                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+                      style={{ zIndex: 10 }}
+                    />
+                    <FormSelect
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="border-2 ps-5"
+                    >
+                      <option value="">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </FormSelect>
+                  </div>
+                </Col>
+                <Col md={3}>
+                  <Button 
+                    variant="outline-secondary" 
+                    onClick={() => {
+                      setSearchTerm('')
+                      setStatusFilter('')
+                    }}
+                    className="w-100"
+                  >
+                    <FontAwesomeIcon icon={faRefresh} className="me-2" />
+                    Reset
+                  </Button>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Section Header */}
+            <div className="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-primary border-2">
               <div className="d-flex align-items-center">
-                <FontAwesomeIcon icon={faBuilding} className="me-3 text-success fs-4" />
-                <h4 className="mb-0 text-success">Branches List</h4>
+                <FontAwesomeIcon icon={faBuilding} className="me-3 text-primary fs-4" />
+                <h4 className="mb-0 text-primary">Branches List</h4>
+              </div>
+              <div className="text-muted">
+                Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, filteredBranches.length)} of {filteredBranches.length} branches
               </div>
             </div>
 
+            {/* Table */}
             <div 
               style={{ 
                 width: '100%',
@@ -305,18 +464,23 @@ const BranchesList = () => {
               <Table
                 data={filteredBranches}
                 columns={columns}
+                sortableColumns={sortableColumns}
                 currentPage={currentPage}
                 pageSize={pageSize}
                 onPageChange={setCurrentPage}
                 onPageSizeChange={setPageSize}
                 loading={loading}
                 pagination={true}
+                sortable={true}
+                totalItems={filteredBranches.length}
+                emptyMessage="No branches found"
               />
             </div>
           </div>
         </Col>
       </Row>
 
+      {/* Delete Confirmation Modal */}
       <Modal
         visible={showDeleteModal}
         onClose={() => {
@@ -332,6 +496,53 @@ const BranchesList = () => {
         <p>Are you sure you want to delete the branch <strong>"{branchToDelete?.branch_name}"</strong>?</p>
         <p className="text-muted">This action cannot be undone.</p>
       </Modal>
+
+      {/* Add Branch Modal */}
+      <FormModal
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Add New Branch"
+        onSubmit={handleAddBranchSubmit}
+        submitText="Create Branch"
+        submitIcon={faPlus}
+        loading={addLoading}
+        loadingText="Creating..."
+        size="lg"
+      >
+        <BranchForm
+          ref={addFormRef}
+          mode="create"
+          onSubmit={handleAddBranchFormSubmit}
+          onCancel={() => setShowAddModal(false)}
+        />
+      </FormModal>
+
+      {/* Edit Branch Modal */}
+      <FormModal
+        visible={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setBranchToEdit(null)
+        }}
+        title="Edit Branch"
+        onSubmit={handleEditBranchSubmit}
+        submitText="Update Branch"
+        submitIcon={faSave}
+        loading={editLoading}
+        loadingText="Updating..."
+        size="lg"
+      >
+        <BranchForm
+          ref={editFormRef}
+          mode="edit"
+          branchData={branchToEdit}
+          onSubmit={handleEditBranchFormSubmit}
+          onCancel={() => {
+            setShowEditModal(false)
+            setBranchToEdit(null)
+          }}
+        />
+      </FormModal>
     </Container>
   )
 }

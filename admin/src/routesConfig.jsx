@@ -17,29 +17,19 @@ const routesConfig = [
   
   // Branch Management Routes
   { path: '/branches', name: 'Branches' },
-  { path: '/branches/create', name: 'Create Branch' },
-  { path: '/branches/edit/:id', name: 'Edit Branch' },
   { path: '/branches/:id', name: 'Branch Details' },
   
   // Package Management Routes
   { path: '/packages', name: 'Packages' },
-  { path: '/packages/create', name: 'Create Package' },
-  { path: '/packages/edit/:id', name: 'Edit Package' },
   { path: '/packages/:id', name: 'Package Details' },
   
   // Order Management Routes
   { path: '/orders', name: 'Orders' },
-  { path: '/orders/create', name: 'Create Order' },
-  { path: '/orders/edit/:id', name: 'Edit Order' },
   { path: '/orders/:id', name: 'Order Details' },
   
   // Customer Management Routes
   { path: '/customers', name: 'Customers' },
-  { path: '/customers/create', name: 'Create Customer' },
-  { path: '/customers/edit/:id', name: 'Edit Customer' },
   { path: '/customers/:id', name: 'Customer Details' },
-  { path: '/customers/:id/wallet', name: 'Customer Wallet' },
-  { path: '/customers/:id/ledger', name: 'Customer Ledger' },
   
   // Transaction Routes
   { path: '/transactions', name: 'Transactions' },

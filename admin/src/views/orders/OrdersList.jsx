@@ -1,34 +1,45 @@
-import React, { useState, useEffect } from 'react'
-import { Container, Row, Col, Card, Button, Form, Alert, Badge } from 'react-bootstrap'
+import React, { useState, useEffect, useRef } from 'react'
+import { Container, Row, Col, Card, Button, Form, Alert, Badge, FormControl, FormSelect } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
   faShoppingCart, 
   faBell, 
   faDownload, 
   faSearch, 
-  faSync,
+  faRefresh,
   faEye,
   faCheck,
   faEdit,
-  faFilePdf,
-  faImage,
-  faPlus
+  faPlus,
+  faSave,
+  faFilter,
+  faRupeeSign
 } from '@fortawesome/free-solid-svg-icons'
 import orderService from '../../services/orderService'
-import Table from '../../components/common/Table'
+import { Table, FormModal, useToast } from '../../components'
+import OrderForm from '../../components/pages/orders/OrderForm'
 import OrderDetailsModal from '../../components/pages/orders/OrderDetailsModal'
 import { formatCurrency, formatDate } from '../../utils'
-import { useNavigate } from 'react-router-dom'
-import { exportOrderToPDF } from '../../utils/pdfExport'
 
 const OrdersList = () => {
-  const navigate = useNavigate()
+  const { success, error: showError } = useToast()
   const [orders, setOrders] = useState([])
   const [stats, setStats] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
+  
+  // Add/Edit Modal States
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [orderToEdit, setOrderToEdit] = useState(null)
+  const [addLoading, setAddLoading] = useState(false)
+  const [editLoading, setEditLoading] = useState(false)
+  
+  // Refs for form components
+  const addFormRef = useRef()
+  const editFormRef = useRef()
   
   // Filters
   const [filters, setFilters] = useState({
@@ -135,23 +146,134 @@ const OrdersList = () => {
       switch (action) {
         case 'process':
           await orderService.updateOrderStatus(orderId, 'processing')
+          success('Order status updated to processing')
           break
         case 'complete':
           await orderService.updateOrderStatus(orderId, 'completed')
+          success('Order status updated to completed')
           break
-        case 'export-pdf':
-          // Handle PDF export
-          const order = orders.find(o => (o.id === orderId || o.id?.toString() === orderId?.toString()))
-          if (order) {
-            exportOrderToPDF(order)
-          }
-          return // Don't refresh orders list for PDF export
         default:
           break
       }
       handleOrderUpdate()
     } catch (err) {
       console.error('Error performing quick action:', err)
+      showError('Failed to update order status')
+    }
+  }
+
+  // Add Order Handlers
+  const handleAddOrder = () => {
+    setShowAddModal(true)
+  }
+
+  const handleAddOrderSubmit = () => {
+    if (addFormRef.current) {
+      addFormRef.current.handleSubmit()
+    }
+  }
+
+  const handleAddOrderFormSubmit = async (formData) => {
+    try {
+      setAddLoading(true)
+      const response = await orderService.createOrder(formData)
+      if (response.success) {
+        success('Order created successfully')
+        setShowAddModal(false)
+        fetchOrders()
+        fetchStats()
+      } else {
+        showError(response.message || 'Failed to create order')
+      }
+    } catch (err) {
+      console.error('Error creating order:', err)
+      showError('An error occurred while creating order')
+    } finally {
+      setAddLoading(false)
+    }
+  }
+
+  // Normalize order data for form
+  const normalizeOrderData = (order) => {
+    if (!order) return null
+
+    const orderDate = order.order_date || order.orderDate || new Date().toISOString()
+    const dueDate = order.due_date || order.dueDate || null
+    const flatDiscount = order.flat_discount !== undefined ? order.flat_discount : (order.discount || 0)
+    const customerId = order.customer_id || order.customerId || order.customer?.id || ''
+    const branchId = order.branch_id || order.branchId || ''
+
+    const normalizedItems = (order.items || []).map((item, index) => {
+      const quantity = item.qty || item.quantity || 1
+      const price = item.price !== undefined
+        ? item.price
+        : item.unitPrice !== undefined
+          ? item.unitPrice
+          : item.amount !== undefined && quantity
+            ? item.amount / quantity
+            : item.totalPrice !== undefined && quantity
+              ? item.totalPrice / quantity
+              : 0
+
+      const amount = item.amount !== undefined
+        ? item.amount
+        : item.totalPrice !== undefined
+          ? item.totalPrice
+          : price * quantity
+
+      return {
+        id: item.id || index + 1,
+        package_id: (item.package_id || item.packageId || item.productId || item.id || index + 1).toString(),
+        package_name: item.package_name || item.packageName || item.productName || item.title || `Package ${index + 1}`,
+        package_type: item.package_type || item.packageType || '',
+        price,
+        qty: quantity,
+        amount
+      }
+    })
+
+    return {
+      ...order,
+      customer_id: customerId,
+      branch_id: branchId?.toString() || '',
+      order_date: orderDate,
+      due_date: dueDate,
+      flat_discount: flatDiscount,
+      items: normalizedItems
+    }
+  }
+
+  // Edit Order Handlers
+  const handleEditOrder = (order) => {
+    const normalized = normalizeOrderData(order)
+    setOrderToEdit(normalized)
+    setShowEditModal(true)
+  }
+
+  const handleEditOrderSubmit = () => {
+    if (editFormRef.current) {
+      editFormRef.current.handleSubmit()
+    }
+  }
+
+  const handleEditOrderFormSubmit = async (formData) => {
+    try {
+      setEditLoading(true)
+      const response = await orderService.updateOrder(orderToEdit.id, formData)
+      if (response.success) {
+        success('Order updated successfully')
+        setShowEditModal(false)
+        setOrderToEdit(null)
+        fetchOrders()
+        fetchStats()
+      } else {
+        showError(response.message || 'Failed to update order')
+      }
+    } catch (err) {
+      console.error('Error updating order:', err)
+      showError('An error occurred while updating order')
+    } finally {
+      setEditLoading(false)
     }
   }
 
@@ -180,7 +302,7 @@ const OrdersList = () => {
   const tableColumns = [
     {
       key: 'orderNumber',
-      header: 'Order ID',
+      label: 'Order ID',
       render: (value, order) => {
         if (!order) return <div>No order data</div>
         const orderId = order.id || order.orderNumber || 'N/A'
@@ -194,7 +316,7 @@ const OrdersList = () => {
     },
     {
       key: 'customer',
-      header: 'Customer',
+      label: 'Customer',
       render: (value, order) => {
         if (!order) return <div>No customer data</div>
         const customerName = order.customer_name || 
@@ -209,7 +331,7 @@ const OrdersList = () => {
     },
     {
       key: 'packages',
-      header: 'Packages',
+      label: 'Packages',
       render: (value, order) => {
         if (!order) return <div>No items data</div>
         const items = order.items || []
@@ -228,7 +350,7 @@ const OrdersList = () => {
     },
     {
       key: 'dates',
-      header: 'Dates',
+      label: 'Dates',
       render: (value, order) => {
         if (!order) return <div>N/A</div>
         return (
@@ -245,7 +367,7 @@ const OrdersList = () => {
     },
     {
       key: 'amounts',
-      header: 'Amounts',
+      label: 'Amounts',
       render: (value, order) => {
         if (!order) return <div>No amount data</div>
         const totalAmount = order.total_amount || order.total || 0
@@ -255,7 +377,7 @@ const OrdersList = () => {
         return (
           <div>
             <div className="fw-bold">Total: {formatCurrency(totalAmount)}</div>
-            <div className="text-success small">Paid: {formatCurrency(paidAmount)}</div>
+            <div className="text-primary small">Paid: {formatCurrency(paidAmount)}</div>
             <div className={`small ${balanceAmount > 0 ? 'text-danger' : 'text-success'}`}>
               Balance: {formatCurrency(balanceAmount)}
             </div>
@@ -265,7 +387,7 @@ const OrdersList = () => {
     },
     {
       key: 'paymentStatus',
-      header: 'Payment',
+      label: 'Payment',
       render: (value, order) => {
         if (!order) return <div>No payment data</div>
         return (
@@ -277,7 +399,7 @@ const OrdersList = () => {
     },
     {
       key: 'status',
-      header: 'Status',
+      label: 'Status',
       render: (value, order) => {
         if (!order) return <div>No status data</div>
         return (
@@ -289,7 +411,7 @@ const OrdersList = () => {
     },
     {
       key: 'orderDate',
-      header: 'Order Date',
+      label: 'Order Date',
       render: (value, order) => {
         if (!order) return <div>No date data</div>
         return (
@@ -302,7 +424,7 @@ const OrdersList = () => {
     },
     {
       key: 'actions',
-      header: 'Actions',
+      label: 'Actions',
       render: (value, order) => {
         if (!order) return <div>No actions available</div>
         
@@ -317,21 +439,12 @@ const OrdersList = () => {
               <FontAwesomeIcon icon={faEye} />
             </Button>
             <Button
-              variant="outline-success"
+              variant="outline-primary"
               size="sm"
-              onClick={() => navigate(`/orders/edit/${order.id}`)}
+              onClick={() => handleEditOrder(order)}
               title="Edit Order"
             >
               <FontAwesomeIcon icon={faEdit} />
-            </Button>
-            <Button
-              variant="outline-danger"
-              size="sm"
-              onClick={() => handleQuickAction(order.id, 'export-pdf')}
-              title="Export PDF"
-              className="text-danger"
-            >
-              <FontAwesomeIcon icon={faFilePdf} />
             </Button>
           </div>
         )
@@ -347,76 +460,71 @@ const OrdersList = () => {
         <Col xs={12}>
           {/* Page Header */}
           <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
-            <FontAwesomeIcon icon={faShoppingCart} className="me-3 text-success fs-4" />
+            <div className="d-flex align-items-center">
+              <FontAwesomeIcon icon={faShoppingCart} className="me-3 text-primary fs-4" />
             <h2 className="mb-0 text-dark">Order Management</h2>
-            <div className="ms-auto d-flex align-items-center gap-2">
-              <Button variant="success" onClick={() => navigate('/orders/create')}>
+            </div>
+            <div className="ms-auto d-flex align-items-center gap-3">
+              <Button variant="primary" onClick={handleAddOrder} className="text-white">
                 <FontAwesomeIcon icon={faPlus} className="me-2" />
                 Create Order
-              </Button>
-              <div className="position-relative me-3">
-                <FontAwesomeIcon icon={faBell} className="text-muted fs-5" />
-                <Badge bg="danger" className="position-absolute top-0 start-100 translate-middle rounded-pill" style={{ fontSize: '0.6rem' }}>
-                  3
-                </Badge>
-              </div>
-              <Button variant="primary">
-                <FontAwesomeIcon icon={faDownload} className="me-2" />
-                Export Orders
               </Button>
             </div>
           </div>
 
-          {/* Stats Cards */}
+          {/* Statistics Cards */}
           <Row className="mb-4">
             <Col md={3}>
-              <Card className="bg-gradient-success text-white">
-                <Card.Body>
+              <Card className="bg-gradient-primary text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
                     <div className="flex-grow-1">
-                      <h4 className="mb-0">{stats.totalOrders || 234}</h4>
-                      <p className="mb-0">Total Orders</p>
+                      <h4 className="mb-0">{stats.totalOrders || orders.length || 0}</h4>
+                      <p className="mb-0 opacity-75">Total Orders</p>
                     </div>
-                    <FontAwesomeIcon icon={faShoppingCart} className="fs-1 opacity-75" />
+                    <FontAwesomeIcon icon={faShoppingCart} className="fs-1 opacity-50" />
                   </div>
                 </Card.Body>
               </Card>
             </Col>
             <Col md={3}>
-              <Card className="bg-gradient-warning text-white">
-                <Card.Body>
+              <Card className="bg-gradient-warning text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
                     <div className="flex-grow-1">
-                      <h4 className="mb-0">{stats.pendingOrders || 12}</h4>
-                      <p className="mb-0">Pending Orders</p>
+                      <h4 className="mb-0">{stats.pendingOrders || 0}</h4>
+                      <p className="mb-0 opacity-75">Pending Orders</p>
                     </div>
-                    <FontAwesomeIcon icon={faBell} className="fs-1 opacity-75" />
+                    <FontAwesomeIcon icon={faBell} className="fs-1 opacity-50" />
                   </div>
                 </Card.Body>
               </Card>
             </Col>
             <Col md={3}>
-              <Card className="bg-gradient-info text-white">
-                <Card.Body>
+              <Card className="bg-gradient-info text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
                     <div className="flex-grow-1">
-                      <h4 className="mb-0">{stats.processingOrders || 8}</h4>
-                      <p className="mb-0">Processing</p>
+                      <h4 className="mb-0">{stats.processingOrders || 0}</h4>
+                      <p className="mb-0 opacity-75">Processing</p>
                     </div>
-                    <FontAwesomeIcon icon={faCheck} className="fs-1 opacity-75" />
+                    <FontAwesomeIcon icon={faCheck} className="fs-1 opacity-50" />
                   </div>
                 </Card.Body>
               </Card>
             </Col>
             <Col md={3}>
-              <Card className="bg-gradient-primary text-white">
-                <Card.Body>
+              <Card className="bg-gradient-success text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
                     <div className="flex-grow-1">
-                      <h4 className="mb-0">{formatCurrency(stats.totalRevenue || 12456)}</h4>
-                      <p className="mb-0">Total Revenue</p>
+                      <h4 className="mb-0">
+                        <FontAwesomeIcon icon={faRupeeSign} className="me-1" style={{ fontSize: '0.8em' }} />
+                        {stats.totalRevenue ? (stats.totalRevenue / 1000).toFixed(1) + 'K' : '0'}
+                      </h4>
+                      <p className="mb-0 opacity-75">Total Revenue</p>
                     </div>
-                    <FontAwesomeIcon icon={faDownload} className="fs-1 opacity-75" />
+                    <FontAwesomeIcon icon={faRupeeSign} className="fs-1 opacity-50" />
                   </div>
                 </Card.Body>
               </Card>
@@ -428,37 +536,32 @@ const OrdersList = () => {
             {/* Search and Filter Section */}
             <div className="mb-4">
               <Row className="g-3">
-                <Col md={2}>
-                  <div className="mb-3">
-                    <Form.Label className="fw-semibold">Order ID</Form.Label>
-                    <Form.Control
-                      type="text"
-                      placeholder="Search by ID"
+                <Col md={3}>
+                  <div className="position-relative">
+                    <FontAwesomeIcon 
+                      icon={faSearch} 
+                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+                      style={{ zIndex: 10 }}
+                    />
+                    <FormControl
+                      placeholder="Search by Order ID..."
                       value={filters.search}
                       onChange={(e) => handleFilterChange('search', e.target.value)}
-                      className="border-2"
+                      className="border-2 ps-5"
                     />
                   </div>
                 </Col>
                 <Col md={2}>
-                  <div className="mb-3">
-                    <Form.Label className="fw-semibold">Customer</Form.Label>
-                    <Form.Control
-                      type="text"
-                      placeholder="Customer name"
-                      value={filters.customer}
-                      onChange={(e) => handleFilterChange('customer', e.target.value)}
-                      className="border-2"
+                  <div className="position-relative">
+                    <FontAwesomeIcon 
+                      icon={faFilter} 
+                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+                      style={{ zIndex: 10 }}
                     />
-                  </div>
-                </Col>
-                <Col md={2}>
-                  <div className="mb-3">
-                    <Form.Label className="fw-semibold">Status</Form.Label>
-                    <Form.Select
+                    <FormSelect
                       value={filters.status}
                       onChange={(e) => handleFilterChange('status', e.target.value)}
-                      className="border-2"
+                      className="border-2 ps-5"
                     >
                       <option value="all">All Status</option>
                       {orderService.getOrderStatusOptions().map(option => (
@@ -466,32 +569,20 @@ const OrdersList = () => {
                           {option.label}
                         </option>
                       ))}
-                    </Form.Select>
+                    </FormSelect>
                   </div>
                 </Col>
                 <Col md={2}>
-                  <div className="mb-3">
-                    <Form.Label className="fw-semibold">Date Range</Form.Label>
-                    <Form.Select
-                      value={filters.dateRange}
-                      onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                      className="border-2"
-                    >
-                      <option value="all">All Time</option>
-                      <option value="today">Today</option>
-                      <option value="week">This Week</option>
-                      <option value="month">This Month</option>
-                      <option value="quarter">This Quarter</option>
-                    </Form.Select>
-                  </div>
-                </Col>
-                <Col md={2}>
-                  <div className="mb-3">
-                    <Form.Label className="fw-semibold">Payment Status</Form.Label>
-                    <Form.Select
+                  <div className="position-relative">
+                    <FontAwesomeIcon 
+                      icon={faFilter} 
+                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+                      style={{ zIndex: 10 }}
+                    />
+                    <FormSelect
                       value={filters.paymentStatus}
                       onChange={(e) => handleFilterChange('paymentStatus', e.target.value)}
-                      className="border-2"
+                      className="border-2 ps-5"
                     >
                       <option value="all">All Payments</option>
                       {orderService.getPaymentStatusOptions().map(option => (
@@ -499,23 +590,38 @@ const OrdersList = () => {
                           {option.label}
                         </option>
                       ))}
-                    </Form.Select>
+                    </FormSelect>
                   </div>
                 </Col>
                 <Col md={2}>
-                  <div className="mb-3">
-                    <Form.Label className="fw-semibold">&nbsp;</Form.Label>
-                    <div className="d-flex gap-2">
-                      <Button variant="success" onClick={handleSearch} className="text-white">
-                        <FontAwesomeIcon icon={faSearch} className="me-2" />
-                        Search
-                      </Button>
-                      <Button variant="outline-secondary" onClick={handleReset}>
-                        <FontAwesomeIcon icon={faSync} className="me-2" />
-                        Reset
-                      </Button>
-                    </div>
+                  <div className="position-relative">
+                    <FontAwesomeIcon 
+                      icon={faFilter} 
+                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+                      style={{ zIndex: 10 }}
+                    />
+                    <FormSelect
+                      value={filters.dateRange}
+                      onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+                      className="border-2 ps-5"
+                    >
+                      <option value="all">All Time</option>
+                      <option value="today">Today</option>
+                      <option value="week">This Week</option>
+                      <option value="month">This Month</option>
+                      <option value="quarter">This Quarter</option>
+                    </FormSelect>
                   </div>
+                </Col>
+                <Col md={3}>
+                  <Button 
+                    variant="outline-secondary" 
+                    onClick={handleReset}
+                    className="w-100"
+                  >
+                    <FontAwesomeIcon icon={faRefresh} className="me-2" />
+                    Reset
+                  </Button>
                 </Col>
               </Row>
             </div>
@@ -524,10 +630,11 @@ const OrdersList = () => {
             <div className="mb-4">
               {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
               
-              <div className="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-success border-2">
+            {/* Section Header */}
+            <div className="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-primary border-2">
                 <div className="d-flex align-items-center">
-                  <FontAwesomeIcon icon={faShoppingCart} className="me-3 text-success fs-4" />
-                  <h4 className="mb-0 text-success">Orders List</h4>
+                <FontAwesomeIcon icon={faShoppingCart} className="me-3 text-primary fs-4" />
+                <h4 className="mb-0 text-primary">Orders List</h4>
                 </div>
                 <div className="text-muted">
                   Showing {((pagination.currentPage - 1) * pagination.pageSize) + 1}-{Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems)} of {pagination.totalItems} orders
@@ -553,10 +660,61 @@ const OrdersList = () => {
       {/* Order Details Modal */}
       <OrderDetailsModal
         show={showDetailsModal}
-        onHide={() => setShowDetailsModal(false)}
+        onHide={() => {
+          setShowDetailsModal(false)
+          setSelectedOrder(null)
+        }}
         orderId={selectedOrder?.id}
         onOrderUpdate={handleOrderUpdate}
+        onEdit={handleEditOrder}
       />
+
+      {/* Add Order Modal */}
+      <FormModal
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Create New Order"
+        onSubmit={handleAddOrderSubmit}
+        submitText="Create Order"
+        submitIcon={faPlus}
+        loading={addLoading}
+        loadingText="Creating..."
+        size="xl"
+      >
+        <OrderForm
+          ref={addFormRef}
+          mode="create"
+          onSubmit={handleAddOrderFormSubmit}
+          onCancel={() => setShowAddModal(false)}
+        />
+      </FormModal>
+
+      {/* Edit Order Modal */}
+      <FormModal
+        visible={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setOrderToEdit(null)
+        }}
+        title="Edit Order"
+        onSubmit={handleEditOrderSubmit}
+        submitText="Update Order"
+        submitIcon={faSave}
+        loading={editLoading}
+        loadingText="Updating..."
+        size="xl"
+      >
+        <OrderForm
+          ref={editFormRef}
+          mode="edit"
+          orderData={orderToEdit}
+          onSubmit={handleEditOrderFormSubmit}
+          onCancel={() => {
+            setShowEditModal(false)
+            setOrderToEdit(null)
+          }}
+        />
+      </FormModal>
     </Container>
   )
 }

@@ -401,7 +401,7 @@ const _nav = [
 - **Sidebar**: CoreUI components with custom white background and subtle shadows
 - **Navigation**: CoreUI navigation with dark text and proper contrast on white background
 - **Icons**: FontAwesome for main content, CoreUI icons for sidebar only
-- **Colors**: Green primary color (#16a34a) with proper contrast
+- **Colors**: Purple/Violet primary color (#8b5cf6) - creative & artistic theme for Photo Studio
 - **Typography**: Clean, readable fonts with proper hierarchy
 - **Spacing**: Consistent padding and margins throughout
 
@@ -452,7 +452,7 @@ html[data-coreui-theme="dark"] .component {
 --light-text-primary: #1f2937;
 --light-text-secondary: #6b7280;
 --light-border: #e5e7eb;
---light-accent: #22c55e;
+--light-accent: #8b5cf6; /* Purple/Violet for Photo Studio */
 
 /* Dark Theme Colors */
 --dark-bg-primary: #1f2937;
@@ -460,7 +460,7 @@ html[data-coreui-theme="dark"] .component {
 --dark-text-primary: #f9fafb;
 --dark-text-secondary: #d1d5db;
 --dark-border: #4b5563;
---dark-accent: #34d399;
+--dark-accent: #a78bfa; /* Brighter violet for dark mode */
 ```
 
 ##### **Theme File Organization**
@@ -505,22 +505,22 @@ const handleThemeChange = (themeKey) => {
 
 #### 7. **Gradient System & CSS Variables**
 ```css
-/* Theme-based Gradient Variables - Light & Subtle */
---gradient-primary: linear-gradient(135deg, #86efac 0%, #4ade80 100%) !important;
+/* Theme-based Gradient Variables - Light & Subtle (Purple/Violet Theme) */
+--gradient-primary: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%) !important;
 --gradient-success: linear-gradient(135deg, #6ee7b7 0%, #34d399 100%) !important;
 --gradient-info: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%) !important;
 --gradient-warning: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
 --gradient-danger: linear-gradient(135deg, #fca5a5 0%, #f87171 100%) !important;
 
 /* Card Gradient Backgrounds - Light & Subtle */
---card-gradient-primary: linear-gradient(135deg, #86efac 0%, #4ade80 100%) !important;
+--card-gradient-primary: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%) !important;
 --card-gradient-success: linear-gradient(135deg, #6ee7b7 0%, #34d399 100%) !important;
 --card-gradient-info: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%) !important;
 --card-gradient-warning: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
 
-/* Logo-Inspired Green-Blue Gradient */
---card-gradient-logo: linear-gradient(135deg, #86efac 0%, #b8d7fd 100%) !important;
---card-gradient-logo-alt: linear-gradient(135deg, #4ade80 0%, #fbffbb 100%) !important;
+/* Logo-Inspired Purple-Blue Gradient */
+--card-gradient-logo: linear-gradient(135deg, #c4b5fd 0%, #b8d7fd 100%) !important;
+--card-gradient-logo-alt: linear-gradient(135deg, #a78bfa 0%, #fbffbb 100%) !important;
 ```
 
 #### 8. **Gradient Utility Classes**
@@ -538,10 +538,10 @@ const handleThemeChange = (themeKey) => {
 
 #### 9. **Section Header Design Pattern**
 ```jsx
-// Standard Section Header with Green Theme
-<div className="d-flex align-items-center mb-4 pb-3 border-bottom border-success border-2">
-  <FontAwesomeIcon icon={faIcon} className="me-3 text-success fs-4" />
-  <h4 className="mb-0 text-success">Section Title</h4>
+// Standard Section Header with Purple/Violet Theme
+<div className="d-flex align-items-center mb-4 pb-3 border-bottom border-primary border-2">
+  <FontAwesomeIcon icon={faIcon} className="me-3 text-primary fs-4" />
+  <h4 className="mb-0 text-primary">Section Title</h4>
 </div>
 ```
 
@@ -556,12 +556,12 @@ const handleThemeChange = (themeKey) => {
 
 #### 11. **Clean Layout Guidelines**
 - **Avoid Nested Cards**: Use single container with subtle shadow instead of card-in-card
-- **Section Separation**: Use border-bottom dividers with green theme
+- **Section Separation**: Use border-bottom dividers with purple/violet theme
 - **Visual Hierarchy**: Clear typography hierarchy with proper font weights
 - **Consistent Spacing**: Use `mb-5` for section spacing, `mb-4` for internal spacing
 - **Enhanced Inputs**: Use `border-2` class for better input visibility
-- **Theme Consistency**: Apply green color (`text-success`, `border-success`) consistently
-- **Success Buttons**: Always use `text-white` class for better contrast
+- **Theme Consistency**: Apply purple/violet color (`text-primary`, `border-primary`) consistently
+- **Primary Buttons**: Always use `text-white` class for better contrast
 
 #### 12. **Component Reusability Guidelines**
 - **Dual-Mode Components**: Create components that support both create and edit modes
@@ -819,10 +819,10 @@ const userService = {
 - **Theme System**: Complete dark/light theme support with ThemeToggle component
 - **Theme Persistence**: localStorage integration for theme preference
 - **Clean Layout Pattern**: Single container with shadow, no nested cards
-- **Green Theme System**: Consistent use of Bootstrap success color (#16a34a)
+- **Purple/Violet Theme System**: Consistent use of purple/violet primary color (#8b5cf6) for Photo Studio creative theme
 - **Enhanced Forms**: Better input styling with border-2 and fw-semibold labels
 - **Gradient System**: CSS variables and utility classes for theme-based gradients
-- **Logo-Inspired Gradients**: Green-blue gradient variants matching brand colors
+- **Logo-Inspired Gradients**: Purple-blue gradient variants matching brand colors
 - **Branch Management**: Complete CRUD operations for branch management
 - **Package Management**: Complete CRUD operations for package management
 - **Order Management**: Complete order tracking with status management, customer details, and timeline
