@@ -12,16 +12,22 @@ import {
   faDownload,
   faBan,
   faCheckCircle,
-  faPlus
+  faPlus,
+  faEdit,
+  faFilePdf,
+  faCamera,
+  faFileExport
 } from '@fortawesome/free-solid-svg-icons'
-import { Table, Modal } from '../../components'
+import { Table, Modal, useToast } from '../../components'
 import CustomerDetailsModal from '../../components/pages/customers/CustomerDetailsModal'
 import SuspendCustomerModal from '../../components/pages/customers/SuspendCustomerModal'
 import { customerService } from '../../services/customerService'
-import customersData from '../../mock/customers.json'
+import photographersData from '../../mock/photographers.json'
+import { exportPhotographersToPDF, exportSinglePhotographerToPDF } from '../../utils/pdfExport'
 
 const CustomersList = () => {
   const navigate = useNavigate()
+  const { success, error } = useToast()
   
   // State management
   const [customers, setCustomers] = useState([])
@@ -64,14 +70,11 @@ const CustomersList = () => {
   const loadCustomers = async () => {
     try {
       setLoading(true)
-      // For now, use mock data. Replace with actual API call later
-      // const response = await customerService.getCustomers()
-      // if (response.success) {
-      //   setCustomers(response.data)
-      // }
-      setCustomers(customersData)
+      // Using photographers mock data
+      setCustomers(photographersData)
     } catch (error) {
-      console.error('Error loading customers:', error)
+      console.error('Error loading photographers:', error)
+      error('Failed to load photographers')
     } finally {
       setLoading(false)
     }
@@ -79,17 +82,11 @@ const CustomersList = () => {
 
   const loadStats = async () => {
     try {
-      // For now, calculate from mock data. Replace with actual API call later
-      // const response = await customerService.getCustomerStats()
-      // if (response.success) {
-      //   setStats(response.data)
-      // }
-      
-      const totalCustomers = customersData.length
-      const activeCustomers = customersData.filter(c => c.status === 'active').length
-      const suspendedCustomers = customersData.filter(c => c.status === 'suspended').length
-      const newThisMonth = customersData.filter(c => {
-        const joinedDate = new Date(c.joinedDate)
+      const totalCustomers = photographersData.length
+      const activeCustomers = photographersData.filter(p => p.status === 'active').length
+      const suspendedCustomers = photographersData.filter(p => p.status === 'suspended').length
+      const newThisMonth = photographersData.filter(p => {
+        const joinedDate = new Date(p.joinedDate)
         const now = new Date()
         return joinedDate.getMonth() === now.getMonth() && joinedDate.getFullYear() === now.getFullYear()
       }).length
@@ -105,17 +102,19 @@ const CustomersList = () => {
     }
   }
 
-  // Filter customers
-  const filteredCustomers = customers.filter(customer => {
-    const customerName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
-    const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.mobile?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.phone?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = !statusFilter || customer.status === statusFilter
+  // Filter photographers
+  const filteredCustomers = customers.filter(photographer => {
+    const photographerName = photographer.name || `${photographer.firstName || ''} ${photographer.lastName || ''}`.trim()
+    const matchesSearch = photographerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         photographer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         photographer.mobile?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         photographer.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         photographer.specialization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         photographer.photographerId?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = !statusFilter || photographer.status === statusFilter
     const matchesLocation = !locationFilter || 
-                           customer.address?.toLowerCase().includes(locationFilter.toLowerCase()) ||
-                           customer.location?.city?.toLowerCase().includes(locationFilter.toLowerCase())
+                           photographer.address?.toLowerCase().includes(locationFilter.toLowerCase()) ||
+                           photographer.location?.city?.toLowerCase().includes(locationFilter.toLowerCase())
     
     let matchesRegistrationDate = true
     if (registrationDateFilter) {
@@ -139,7 +138,7 @@ const CustomersList = () => {
           break
       }
       
-      const joinDate = customer.created_at || customer.joinedDate
+      const joinDate = photographer.created_at || photographer.joinedDate
       matchesRegistrationDate = joinDate ? new Date(joinDate) >= filterDate : true
     }
     
@@ -147,7 +146,7 @@ const CustomersList = () => {
   })
 
   // Get unique locations for filter
-  const locations = [...new Set(customers.map(c => c.location?.city).filter(Boolean))]
+  const locations = [...new Set(customers.map(p => p.location?.city).filter(Boolean))]
 
   // Status color mapping
   const getStatusColor = (status) => {
@@ -157,6 +156,41 @@ const CustomersList = () => {
       case 'pending': return 'warning'
       default: return 'secondary'
     }
+  }
+
+  // Get branch indicator (L for Lunawada, V for Vadodara)
+  const getBranchIndicator = (photographer) => {
+    if (!photographer) return ''
+    
+    const branchName = (photographer.branch_name || '').toLowerCase().trim()
+    const branchCode = (photographer.branch_code || '').toUpperCase().trim()
+    const branchId = photographer.branch_id
+    
+    // Check branch name first
+    if (branchName.includes('lunawada') || branchName.includes('luna') || branchName.includes('main')) {
+      return 'L'
+    }
+    if (branchName.includes('vadodara') || branchName.includes('vado') || branchName.includes('baroda') || branchName.includes('mumbai')) {
+      return 'V'
+    }
+    
+    // Check branch code - if starts with L or V
+    if (branchCode && branchCode.length > 0) {
+      const firstChar = branchCode.charAt(0)
+      if (firstChar === 'L') return 'L'
+      if (firstChar === 'V') return 'V'
+      // If starts with M, check if it's MB001 (Lunawada) or MB002 (Vadodara)
+      if (firstChar === 'M' && branchCode.includes('001')) return 'L'
+      if (firstChar === 'M' && branchCode.includes('002')) return 'V'
+    }
+    
+    // Check branch_id - branch_id 1 = Lunawada (L), branch_id 2 = Vadodara (V)
+    if (branchId) {
+      if (branchId === 1) return 'L'
+      if (branchId === 2) return 'V'
+    }
+    
+    return ''
   }
 
   // Generate initials for avatar
@@ -192,28 +226,31 @@ const CustomersList = () => {
   // Table columns
   const columns = [
     {
-      key: 'customer',
-      label: 'Customer',
-      render: (value, customer, index) => {
-        const customerName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+      key: 'photographer',
+      label: 'Photographer',
+      render: (value, photographer, index) => {
+        const photographerName = photographer.name || `${photographer.firstName || ''} ${photographer.lastName || ''}`.trim()
+        const branchIndicator = getBranchIndicator(photographer)
+        const displayName = branchIndicator ? `${photographerName} (${branchIndicator})` : photographerName
         return (
-          <div className="d-flex align-items-center">
+          <div className="d-flex align-items-center" style={{ minWidth: '140px' }}>
             <div 
-              className="d-flex align-items-center justify-content-center rounded-circle me-3"
+              className="d-flex align-items-center justify-content-center rounded-circle me-2"
               style={{ 
-                width: '40px', 
-                height: '40px', 
-                backgroundColor: '#8b5cf6',
+                width: '35px', 
+                height: '35px', 
+                backgroundColor: '#22c55e',
                 color: 'white',
-                fontSize: '14px',
-                fontWeight: 'bold'
+                fontSize: '12px',
+                fontWeight: 'bold',
+                flexShrink: 0
               }}
             >
-              {getInitials(customer)}
+              {getInitials(photographer)}
             </div>
-            <div>
-              <div className="fw-semibold text-dark">{customerName}</div>
-              <small className="text-muted">{customer.mobile || customer.phone || 'N/A'}</small>
+            <div style={{ minWidth: 0 }}>
+              <div className="fw-semibold text-dark" style={{ fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</div>
+              <small className="text-muted" style={{ fontSize: '11px' }}>{photographer.photographerId || 'N/A'}</small>
             </div>
           </div>
         )
@@ -222,49 +259,67 @@ const CustomersList = () => {
     {
       key: 'contact',
       label: 'Contact',
-      render: (value, customer, index) => (
-        <div>
-          <div className="fw-semibold text-dark">{customer.mobile || customer.phone || 'N/A'}</div>
-          <small className="text-muted">{customer.email || 'No email'}</small>
+      render: (value, photographer, index) => (
+        <div style={{ minWidth: '130px' }}>
+          <div className="fw-semibold text-dark" style={{ fontSize: '13px' }}>{photographer.mobile || photographer.phone || 'N/A'}</div>
+          <small className="text-muted" style={{ fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{photographer.email || 'No email'}</small>
         </div>
       )
     },
     {
-      key: 'branch',
-      label: 'Branch',
-      render: (value, customer, index) => (
-        <div>
-          <div className="fw-semibold text-dark">{customer.branch_name || 'N/A'}</div>
-          <small className="text-muted">{customer.branch_code || ''}</small>
-        </div>
-      )
-    },
-    {
-      key: 'wallet',
-      label: 'Wallet Balance',
-      render: (value, customer, index) => {
-        const balance = customer.wallet_balance || 0
+      key: 'total_amount',
+      label: 'Total Amount',
+      render: (value, photographer, index) => {
+        const totalAmount = photographer.total_earnings || photographer.total_amount || 0
         return (
-          <div className={`fw-semibold ${balance >= 0 ? 'text-success' : 'text-danger'}`}>
-            {formatCurrency(balance)}
+          <div className="fw-semibold text-primary" style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '110px' }}>
+            {formatCurrency(totalAmount)}
+          </div>
+        )
+      }
+    },
+    {
+      key: 'paid_amount',
+      label: 'Paid Amount',
+      render: (value, photographer, index) => {
+        const totalAmount = photographer.total_earnings || photographer.total_amount || 0
+        const remainingAmount = photographer.remaining_amount || 0
+        const paidAmount = photographer.paid_amount || photographer.wallet_balance || (totalAmount - remainingAmount)
+        return (
+          <div className="fw-semibold text-success" style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '110px' }}>
+            {formatCurrency(paidAmount >= 0 ? paidAmount : 0)}
           </div>
         )
       }
     },
     {
       key: 'orders',
-      label: 'Total Orders',
-      render: (value, customer, index) => (
-        <Badge bg="info" className="px-2 py-1">
-          {customer.total_orders || customer.totalOrders || 0}
+      label: 'Services',
+      render: (value, photographer, index) => (
+        <Badge bg="info" className="px-2 py-1" style={{ fontSize: '12px' }}>
+          {photographer.total_orders || photographer.totalOrders || photographer.total_services || 0}
         </Badge>
       )
+    },
+    {
+      key: 'remaining_amount',
+      label: 'Remaining',
+      render: (value, photographer, index) => {
+        const totalAmount = photographer.total_earnings || photographer.total_amount || 0
+        const paidAmount = photographer.paid_amount || photographer.wallet_balance || 0
+        const remainingAmount = photographer.remaining_amount || (totalAmount - paidAmount)
+        return (
+          <div className={`fw-semibold ${remainingAmount > 0 ? 'text-danger' : 'text-success'}`} style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '110px' }}>
+            {formatCurrency(remainingAmount >= 0 ? remainingAmount : 0)}
+          </div>
+        )
+      }
     },
     {
       key: 'status',
       label: 'Status',
       render: (value, customer, index) => (
-        <Badge bg={getStatusColor(customer.status)} className="px-2 py-1">
+        <Badge bg={getStatusColor(customer.status)} className="px-2 py-1" style={{ fontSize: '12px' }}>
           {customer.status === 'active' ? 'Active' : 
            customer.status === 'suspended' ? 'Suspended' : 
            customer.status === 'pending' ? 'Pending' : customer.status}
@@ -275,7 +330,7 @@ const CustomersList = () => {
       key: 'joined',
       label: 'Joined',
       render: (value, customer, index) => (
-        <div className="text-muted">
+        <div className="text-muted" style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '100px' }}>
           {formatDate(customer.joinedDate)}
         </div>
       )
@@ -283,56 +338,45 @@ const CustomersList = () => {
     {
       key: 'actions',
       label: 'Actions',
-      render: (value, customer, index) => (
-        <div className="d-flex gap-2">
+      render: (value, photographer, index) => (
+        <div className="d-flex gap-1 align-items-center" style={{ flexWrap: 'nowrap', minWidth: '110px', justifyContent: 'flex-start' }}>
           <Button
             variant="outline-info"
             size="sm"
             onClick={(e) => {
               e.stopPropagation()
-              handleViewCustomer(customer)
+              handleViewCustomer(photographer)
             }}
-            title="View Customer"
+            title="View Photographer"
+            style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
           >
             <FontAwesomeIcon icon={faEye} />
           </Button>
-          {customer.status === 'active' ? (
-            <Button
-              variant="outline-danger"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleSuspendCustomer(customer)
-              }}
-              title="Suspend Customer"
-            >
-              <FontAwesomeIcon icon={faBan} />
-            </Button>
-          ) : customer.status === 'suspended' ? (
-            <Button
-              variant="outline-success"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleActivateCustomer(customer)
-              }}
-              title="Activate Customer"
-            >
-              <FontAwesomeIcon icon={faCheckCircle} />
-            </Button>
-          ) : (
-            <Button
-              variant="outline-danger"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDeleteCustomer(customer)
-              }}
-              title="Delete Customer"
-            >
-              <FontAwesomeIcon icon={faTrash} />
-            </Button>
-          )}
+          <Button
+            variant="outline-primary"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              navigate(`/customers/edit/${photographer.id}`)
+            }}
+            title="Edit Photographer"
+            style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
+          >
+            <FontAwesomeIcon icon={faEdit} />
+          </Button>
+          <Button
+            variant="outline-danger"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleExportSingle(photographer)
+            }}
+            title="Export PDF"
+            className="text-danger"
+            style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
+          >
+            <FontAwesomeIcon icon={faFilePdf} />
+          </Button>
         </div>
       )
     }
@@ -350,8 +394,14 @@ const CustomersList = () => {
 
 
   const handleViewCustomer = (customer) => {
+    console.log('View customer clicked:', customer)
+    if (!customer) {
+      console.error('Customer is null or undefined')
+      return
+    }
     setSelectedCustomer(customer)
     setShowDetailsModal(true)
+    console.log('Modal should be visible now')
   }
 
   const handleDeleteCustomer = (customer) => {
@@ -370,8 +420,34 @@ const CustomersList = () => {
   }
 
   const handleExport = () => {
-    // TODO: Implement export functionality
-    console.log('Export customers')
+    try {
+      const result = exportPhotographersToPDF(filteredCustomers, {
+        status: statusFilter,
+        search: searchTerm
+      })
+      if (result.success) {
+        success('PDF export initiated. Check your print dialog.')
+      } else {
+        error(result.message || 'Failed to export PDF')
+      }
+    } catch (err) {
+      console.error('Export error:', err)
+      error('Failed to export PDF')
+    }
+  }
+
+  const handleExportSingle = (photographer) => {
+    try {
+      const result = exportSinglePhotographerToPDF(photographer)
+      if (result.success) {
+        success(`PDF export initiated for ${photographer.name || 'photographer'}. Check your print dialog.`)
+      } else {
+        error(result.message || 'Failed to export PDF')
+      }
+    } catch (err) {
+      console.error('Export error:', err)
+      error('Failed to export PDF')
+    }
   }
 
   const handleReset = () => {
@@ -427,23 +503,25 @@ const CustomersList = () => {
   }
 
   return (
-    <Container fluid>
-      <Row>
-        <Col xs={12}>
+    <>
+    <div style={{ width: '100%', padding: 0, margin: 0 }}>
+      <Container fluid style={{ paddingLeft: 0, paddingRight: 0, maxWidth: '100%' }}>
+        <Row style={{ marginLeft: 0, marginRight: 0 }}>
+          <Col xs={12} style={{ paddingLeft: '1.5rem', paddingRight: '1.5rem' }}>
           {/* Page Header */}
           <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
             <div className="d-flex align-items-center">
-              <FontAwesomeIcon icon={faUsers} className="me-3 text-dark fs-4" />
-              <h2 className="mb-0 text-dark">Customer Management</h2>
+              <FontAwesomeIcon icon={faCamera} className="me-3 text-success fs-4" />
+              <h2 className="mb-0 text-dark">Photographer Management</h2>
             </div>
             <div className="ms-auto d-flex align-items-center gap-3">
-              <Button variant="primary" onClick={() => navigate('/customers/create')}>
+              <Button variant="success" onClick={() => navigate('/customers/create')} className="text-white">
                 <FontAwesomeIcon icon={faPlus} className="me-2" />
-                Add Customer
+                Add Photographer
               </Button>
-              <Button variant="primary" onClick={handleExport}>
-                <FontAwesomeIcon icon={faDownload} className="me-2" />
-                Export
+              <Button variant="danger" onClick={handleExport} className="text-white">
+                <FontAwesomeIcon icon={faFilePdf} className="me-2" />
+                Export PDF
               </Button>
             </div>
           </div>
@@ -460,7 +538,7 @@ const CustomersList = () => {
                       </div>
                     </div>
                     <div className="flex-grow-1 ms-4">
-                      <div className="text-muted small fw-semibold mb-1">Total Customers</div>
+                      <div className="text-muted small fw-semibold mb-1">Total Photographers</div>
                       <div className="h3 mb-2 fw-bold text-dark">{stats.totalCustomers}</div>
                     </div>
                   </div>
@@ -477,7 +555,7 @@ const CustomersList = () => {
                       </div>
                     </div>
                     <div className="flex-grow-1 ms-4">
-                      <div className="text-muted small fw-semibold mb-1">Active Customers</div>
+                      <div className="text-muted small fw-semibold mb-1">Active Photographers</div>
                       <div className="h3 mb-2 fw-bold text-dark">{stats.activeCustomers}</div>
                     </div>
                   </div>
@@ -520,120 +598,133 @@ const CustomersList = () => {
             </Col>
           </Row>
 
-          {/* Main Content Container */}
-          <div className="bg-white rounded-3 shadow-sm p-4">
-            {/* Search and Filter Section */}
-            <div className="mb-4">
-              <Row className="g-3">
-                <Col md={3}>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Search Customer</label>
-                    <FormControl
-                      placeholder="Name, email, or phone"
-                      value={searchTerm}
-                      onChange={handleSearch}
-                      className="border-2"
-                    />
+          {/* Search and Filter Section */}
+          <div className="mb-4">
+            <Row className="g-3">
+              <Col md={3}>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Search Photographer</label>
+                  <FormControl
+                    placeholder="Name, email, phone, or ID"
+                    value={searchTerm}
+                    onChange={handleSearch}
+                    className="border-2"
+                  />
+                </div>
+              </Col>
+              <Col md={2}>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Status</label>
+                  <FormSelect
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="border-2"
+                  >
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="pending">Pending</option>
+                  </FormSelect>
+                </div>
+              </Col>
+              <Col md={2}>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Location</label>
+                  <FormSelect
+                    value={locationFilter}
+                    onChange={(e) => setLocationFilter(e.target.value)}
+                    className="border-2"
+                  >
+                    <option value="">All Locations</option>
+                    {locations.map(location => (
+                      <option key={location} value={location}>{location}</option>
+                    ))}
+                  </FormSelect>
+                </div>
+              </Col>
+              <Col md={2}>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Registration Date</label>
+                  <FormSelect
+                    value={registrationDateFilter}
+                    onChange={(e) => setRegistrationDateFilter(e.target.value)}
+                    className="border-2"
+                  >
+                    <option value="">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="year">This Year</option>
+                  </FormSelect>
+                </div>
+              </Col>
+              <Col md={3}>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">&nbsp;</label>
+                  <div className="d-flex gap-2">
+                    <Button variant="success" onClick={() => {}} className="text-white">
+                      <FontAwesomeIcon icon={faSearch} className="me-2" />
+                      Search
+                    </Button>
+                    <Button variant="outline-secondary" onClick={handleReset}>
+                      <FontAwesomeIcon icon={faRefresh} className="me-2" />
+                      Reset
+                    </Button>
                   </div>
-                </Col>
-                <Col md={2}>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Status</label>
-                    <FormSelect
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="border-2"
-                    >
-                      <option value="">All Status</option>
-                      <option value="active">Active</option>
-                      <option value="suspended">Suspended</option>
-                      <option value="pending">Pending</option>
-                    </FormSelect>
-                  </div>
-                </Col>
-                <Col md={2}>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Location</label>
-                    <FormSelect
-                      value={locationFilter}
-                      onChange={(e) => setLocationFilter(e.target.value)}
-                      className="border-2"
-                    >
-                      <option value="">All Locations</option>
-                      {locations.map(location => (
-                        <option key={location} value={location}>{location}</option>
-                      ))}
-                    </FormSelect>
-                  </div>
-                </Col>
-                <Col md={2}>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Registration Date</label>
-                    <FormSelect
-                      value={registrationDateFilter}
-                      onChange={(e) => setRegistrationDateFilter(e.target.value)}
-                      className="border-2"
-                    >
-                      <option value="">All Time</option>
-                      <option value="today">Today</option>
-                      <option value="week">This Week</option>
-                      <option value="month">This Month</option>
-                      <option value="year">This Year</option>
-                    </FormSelect>
-                  </div>
-                </Col>
-                <Col md={3}>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">&nbsp;</label>
-                    <div className="d-flex gap-2">
-                      <Button variant="success" onClick={() => {}} className="text-white">
-                        <FontAwesomeIcon icon={faSearch} className="me-2" />
-                        Search
-                      </Button>
-                      <Button variant="outline-secondary" onClick={handleReset}>
-                        <FontAwesomeIcon icon={faRefresh} className="me-2" />
-                        Reset
-                      </Button>
-                    </div>
-                  </div>
-                </Col>
-              </Row>
-            </div>
+                </div>
+              </Col>
+            </Row>
+          </div>
 
-            {/* Customers Table */}
-            <div className="mb-4">
-              <div className="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-success border-2">
-                <div className="d-flex align-items-center">
-                  <FontAwesomeIcon icon={faUsers} className="me-3 text-success fs-4" />
-                  <h4 className="mb-0 text-success">Customer List</h4>
-                </div>
-                <div className="text-muted">
-                  Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, filteredCustomers.length)} of {filteredCustomers.length} customers
-                </div>
+          {/* Photographers Table */}
+          <div className="mb-4">
+            <div className="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-success border-2">
+              <div className="d-flex align-items-center">
+                <FontAwesomeIcon icon={faCamera} className="me-3 text-success fs-4" />
+                <h4 className="mb-0 text-success">Photographers List</h4>
               </div>
-              
-              <Table
-                data={filteredCustomers}
-                columns={columns}
-                sortableColumns={sortableColumns}
-                currentPage={currentPage}
-                pageSize={pageSize}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={setPageSize}
-                loading={loading}
-                hover
-                pagination={true}
-                sortable={true}
-                totalItems={filteredCustomers.length}
-              />
+              <div className="text-muted">
+                Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, filteredCustomers.length)} of {filteredCustomers.length} photographers
+              </div>
             </div>
           </div>
         </Col>
       </Row>
+      
+      {/* Full Width Table */}
+      <div 
+        style={{ 
+          width: '100%',
+          overflowX: 'auto',
+          overflowY: 'visible',
+          WebkitOverflowScrolling: 'touch',
+          marginLeft: 0,
+          marginRight: 0,
+          paddingLeft: 0,
+          paddingRight: 0
+        }}
+      >
+        <div style={{ minWidth: '1200px', paddingLeft: '1.5rem', paddingRight: '1.5rem' }}>
+          <Table
+            data={filteredCustomers}
+            columns={columns}
+            sortableColumns={sortableColumns}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            loading={loading}
+            hover
+            pagination={true}
+            sortable={true}
+            totalItems={filteredCustomers.length}
+          />
+        </div>
+      </div>
+    </Container>
+    </div>
 
-
-
-      {/* Customer Details Modal */}
+    {/* Customer Details Modal */}
       <CustomerDetailsModal
         visible={showDetailsModal}
         onClose={() => {
@@ -652,13 +743,13 @@ const CustomersList = () => {
           setShowDeleteModal(false)
           setCustomerToDelete(null)
         }}
-        title="Delete Customer"
+        title="Delete Photographer"
         onConfirm={confirmDeleteCustomer}
         confirmText="Delete"
         cancelText="Cancel"
         type="danger"
       >
-        <p>Are you sure you want to delete the customer <strong>"{customerToDelete?.firstName} {customerToDelete?.lastName}"</strong>?</p>
+        <p>Are you sure you want to delete the photographer <strong>"{customerToDelete?.name || `${customerToDelete?.firstName || ''} ${customerToDelete?.lastName || ''}`.trim()}"</strong>?</p>
         <p className="text-muted">This action cannot be undone.</p>
       </Modal>
 
@@ -681,16 +772,16 @@ const CustomersList = () => {
           setShowActivateModal(false)
           setCustomerToActivate(null)
         }}
-        title="Activate Customer"
+        title="Activate Photographer"
         onConfirm={confirmActivateCustomer}
         confirmText="Activate"
         cancelText="Cancel"
         type="success"
       >
-        <p>Are you sure you want to activate the customer <strong>"{customerToActivate?.firstName} {customerToActivate?.lastName}"</strong>?</p>
-        <p className="text-muted">The customer will be able to place orders again.</p>
+        <p>Are you sure you want to activate the photographer <strong>"{customerToActivate?.name || `${customerToActivate?.firstName || ''} ${customerToActivate?.lastName || ''}`.trim()}"</strong>?</p>
+        <p className="text-muted">The photographer will be able to accept orders again.</p>
       </Modal>
-    </Container>
+    </>
   )
 }
 

@@ -14,7 +14,10 @@ import {
   faCheckCircle,
   faBuilding,
   faBook,
-  faGift
+  faGift,
+  faCamera,
+  faStar,
+  faBriefcase
 } from '@fortawesome/free-solid-svg-icons'
 
 const CustomerDetailsModal = ({ 
@@ -26,13 +29,19 @@ const CustomerDetailsModal = ({
 }) => {
   const navigate = useNavigate()
   
-  if (!customer) return null
-
+  // Debug logging
+  React.useEffect(() => {
+    if (visible) {
+      console.log('CustomerDetailsModal - visible:', visible, 'customer:', customer)
+    }
+  }, [visible, customer])
+  
   // Get customer name
-  const customerName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+  const customerName = customer?.name || `${customer?.firstName || ''} ${customer?.lastName || ''}`.trim() || 'N/A'
 
   // Generate initials for avatar
   const getInitials = (customer) => {
+    if (!customer) return 'NA'
     if (customer.name) {
       const names = customer.name.split(' ')
       if (names.length >= 2) {
@@ -40,7 +49,7 @@ const CustomerDetailsModal = ({
       }
       return customer.name.substring(0, 2).toUpperCase()
     }
-    return `${customer.firstName?.charAt(0) || ''}${customer.lastName?.charAt(0) || ''}`.toUpperCase()
+    return `${customer.firstName?.charAt(0) || ''}${customer.lastName?.charAt(0) || ''}`.toUpperCase() || 'NA'
   }
 
   // Format date
@@ -83,13 +92,37 @@ const CustomerDetailsModal = ({
     }
   }
 
-  const walletBalance = customer.wallet_balance || 0
+  if (!customer) {
+    return (
+      <Modal show={visible} onHide={onClose} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Customer Details</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="p-4">
+          <div className="text-center py-4">
+            <p className="text-muted">No photographer data available</p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    )
+  }
+
   const totalOrders = customer.total_orders || customer.totalOrders || 0
+  const totalAmount = customer.total_earnings || customer.total_amount || 0
+  const paidAmount = customer.paid_amount || customer.wallet_balance || 0
+  const remainingAmount = customer.remaining_amount || (totalAmount - paidAmount)
+  const specialization = customer.specialization || 'N/A'
+  const experienceYears = customer.experience_years || 0
 
   return (
     <Modal show={visible} onHide={onClose} size="lg" centered>
       <Modal.Header closeButton>
-        <Modal.Title>Customer Details</Modal.Title>
+        <Modal.Title>Photographer Details</Modal.Title>
       </Modal.Header>
       
       <Modal.Body className="p-4">
@@ -109,44 +142,47 @@ const CustomerDetailsModal = ({
             {getInitials(customer)}
           </div>
           <h4 className="mb-1">{customerName}</h4>
-          <p className="text-muted mb-0">Customer ID: {customer.id || customer.customerId}</p>
+          <p className="text-muted mb-0">Photographer ID: {customer.photographerId || customer.id || 'N/A'}</p>
         </div>
 
-        {/* Wallet Balance Card */}
-        <div className="mb-4 p-3 bg-light rounded border border-success border-2">
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <div className="text-muted small mb-1">Wallet Balance</div>
-              <div className={`h4 mb-0 fw-bold ${walletBalance >= 0 ? 'text-success' : 'text-danger'}`}>
-                {formatCurrency(walletBalance)}
+        {/* Amount Cards */}
+        <Row className="mb-4">
+          <Col md={4}>
+            <div className="p-3 bg-light rounded border border-primary border-2">
+              <div className="text-muted small mb-1">Total Amount</div>
+              <div className="h4 mb-0 fw-bold text-primary">
+                {formatCurrency(totalAmount)}
               </div>
             </div>
-            <div className="d-flex gap-2">
-              <Button
-                variant="outline-success"
-                size="sm"
-                onClick={() => {
-                  onClose()
-                  navigate(`/customers/${customer.id}/wallet`)
-                }}
-              >
-                <FontAwesomeIcon icon={faWallet} className="me-2" />
-                View Wallet
-              </Button>
-              <Button
-                variant="outline-info"
-                size="sm"
-                onClick={() => {
-                  onClose()
-                  navigate(`/customers/${customer.id}/ledger`)
-                }}
-              >
-                <FontAwesomeIcon icon={faBook} className="me-2" />
-                View Ledger
-              </Button>
+          </Col>
+          <Col md={4}>
+            <div className="p-3 bg-light rounded border border-success border-2">
+              <div className="text-muted small mb-1">Paid Amount</div>
+              <div className="h4 mb-0 fw-bold text-success">
+                {formatCurrency(paidAmount >= 0 ? paidAmount : 0)}
+              </div>
             </div>
-          </div>
-        </div>
+          </Col>
+          <Col md={4}>
+            <div className="p-3 bg-light rounded border border-danger border-2">
+              <div className="text-muted small mb-1">Remaining Amount</div>
+              <div className={`h4 mb-0 fw-bold ${remainingAmount > 0 ? 'text-danger' : 'text-success'}`}>
+                {formatCurrency(remainingAmount >= 0 ? remainingAmount : 0)}
+              </div>
+            </div>
+          </Col>
+        </Row>
+
+        {/* Specialization Card */}
+        <Row className="mb-4">
+          <Col md={12}>
+            <div className="p-3 bg-light rounded border border-warning border-2">
+              <div className="text-muted small mb-1">Specialization</div>
+              <div className="h5 mb-0 fw-bold text-dark">{specialization}</div>
+              <small className="text-muted">{experienceYears} years experience</small>
+            </div>
+          </Col>
+        </Row>
 
         {/* Customer Information */}
         <Row className="g-4">
@@ -222,7 +258,7 @@ const CustomerDetailsModal = ({
             <div className="d-flex align-items-center mb-3">
               <FontAwesomeIcon icon={faShoppingCart} className="me-3 text-success" />
               <div>
-                <div className="fw-semibold">Total Orders</div>
+                <div className="fw-semibold">Total Services</div>
                 <div className="text-muted">{totalOrders}</div>
               </div>
             </div>

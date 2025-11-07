@@ -12,8 +12,25 @@ const authService = {
     try {
       const response = await apiClient.post('/auth/login', credentials)
       
-      // Handle successful login
-      const { access_token, user } = response.data
+      // Handle different response formats
+      // Format 1: { access_token, user }
+      // Format 2: { token, user }
+      // Format 3: { data: { access_token, user } }
+      // Format 4: { access_token, data: { user } }
+      
+      let access_token, user
+      
+      if (response.data) {
+        // Check for nested data structure
+        if (response.data.data) {
+          access_token = response.data.data.access_token || response.data.data.token
+          user = response.data.data.user || response.data.user
+        } else {
+          // Direct structure
+          access_token = response.data.access_token || response.data.token
+          user = response.data.user || response.data.data
+        }
+      }
       
       // Store token and user data
       if (access_token) {
@@ -33,6 +50,15 @@ const authService = {
         message: 'Login successful',
       }
     } catch (error) {
+      // Enhanced error logging for 401 errors
+      if (error.response?.status === 401) {
+        console.error('[Login 401 Error]', {
+          status: error.response.status,
+          data: error.response.data,
+          credentials: { email: credentials.email },
+          message: 'Invalid credentials or user does not exist in backend'
+        })
+      }
       return handleApiError(error)
     }
   },

@@ -50,8 +50,28 @@ apiClient.interceptors.response.use(
         url: error.config?.url,
         method: error.config?.method,
         status: error.response?.status,
-        message: error.response?.data || error.message,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.response?.data?.detail || error.response?.data?.message || error.message,
+        fullError: error.response || error,
       })
+      
+      // Special handling for 401 errors
+      if (error.response?.status === 401) {
+        console.warn('[401 Unauthorized]', {
+          endpoint: error.config?.url,
+          baseURL: error.config?.baseURL,
+          message: 'Authentication failed. Possible reasons:',
+          reasons: [
+            '1. Invalid email or password',
+            '2. User does not exist in backend database',
+            '3. Backend authentication endpoint format mismatch',
+            '4. CORS issues (check browser console)',
+          ],
+          requestData: error.config?.data,
+          responseData: error.response?.data,
+        })
+      }
     }
     
     // Handle 401 Unauthorized - token expired or invalid

@@ -86,23 +86,44 @@ const Login = () => {
       }
     } catch (err) {
       // Handle different types of login errors with appropriate toast types
-      if (err.message === 'Invalid email or password') {
-        warning('Invalid email or password. Please check your credentials and try again.', {
-          title: 'Login Failed',
-          duration: 6000
-        })
-      } else if (err.message.includes('network') || err.message.includes('connection')) {
-        error('Network error. Please check your internet connection and try again.', {
-          title: 'Connection Error',
-          duration: 8000
-        })
+      const errorMessage = err.message || 'Login failed. Please try again.'
+      
+      if (err.message === 'Invalid email or password' || errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+        const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://52.62.1.66:8000'
+        warning(
+          `Invalid email or password. Backend rejected these credentials.\n\n` +
+          `Email: ${formData.email}\n` +
+          `Backend: ${backendUrl}\n\n` +
+          `Possible issues:\n` +
+          `• User does not exist in backend database\n` +
+          `• Password is incorrect\n` +
+          `• Check browser console (F12) for details`,
+          {
+            title: 'Login Failed (401 Unauthorized)',
+            duration: 10000
+          }
+        )
+      } else if (err.message.includes('network') || err.message.includes('connection') || err.message.includes('Network Error')) {
+        const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://52.62.1.66:8000'
+        error(
+          `Network error. Backend server might be down or unreachable.\n\n` +
+          `Backend URL: ${backendUrl}\n\n` +
+          `Please check:\n` +
+          `• Backend server is running\n` +
+          `• Internet connection is working\n` +
+          `• Backend URL is correct`,
+          {
+            title: 'Connection Error',
+            duration: 10000
+          }
+        )
       } else if (err.message.includes('server') || err.message.includes('500')) {
         error('Server error. Please try again later.', {
           title: 'Server Error',
           duration: 8000
         })
       } else {
-        error(err.message || 'Login failed. Please try again.', {
+        error(errorMessage, {
           title: 'Login Error',
           duration: 6000
         })
