@@ -4,6 +4,21 @@
 
 ```
 admin/
+├── 📁 backup/                          # Backup files
+│   ├── Charts.jsx                      # Backup chart component
+│   ├── Colors.jsx                      # Backup color component
+│   ├── Page404.jsx                    # Backup 404 page
+│   ├── Page500.jsx                    # Backup 500 page
+│   ├── README.md                       # Backup documentation
+│   └── Typography.jsx                 # Backup typography component
+│
+├── 📁 dist/                            # Build output directory
+│   ├── 📁 assets/                      # Compiled assets
+│   ├── favicon.ico                     # Site favicon
+│   ├── index.html                      # Built HTML
+│   ├── manifest.json                   # PWA manifest
+│   └── vite.svg                        # Vite logo
+│
 ├── 📁 public/                          # Static assets
 │   ├── favicon.ico                     # Site favicon
 │   ├── manifest.json                   # PWA manifest
@@ -17,11 +32,14 @@ admin/
 │   │   ├── 📁 images/                 # Image assets
 │   │   │   ├── 📁 avatars/            # User avatars (1-9.jpg)
 │   │   │   ├── angular.jpg            # Framework images
+│   │   │   ├── components.webp        # Components image
+│   │   │   ├── icons.webp             # Icons image
 │   │   │   ├── react.jpg              # Framework images
 │   │   │   └── vue.jpg                # Framework images
 │   │   ├── 📁 logo/                   # Logo assets
 │   │   │   └── logo-transprant.png    # Main logo (transparent)
-│   │   └── login-background.png       # Auth background
+│   │   ├── login-background.png       # Auth background
+│   │   └── react.svg                  # React logo
 │   │
 │   ├── 📁 components/                 # Reusable components
 │   │   ├── 📁 common/                 # Common/shared components
@@ -29,19 +47,19 @@ admin/
 │   │   │   ├── Card.jsx               # Reusable card component
 │   │   │   ├── FormFields.jsx         # Form input components
 │   │   │   ├── FormModal.jsx          # Modal for forms
-│   │   │   ├── GlobalSpinner.jsx     # Global loading spinner
+│   │   │   ├── GlobalSpinner.jsx      # Global loading spinner
 │   │   │   ├── ImageUpload.jsx        # Drag-and-drop image upload component
 │   │   │   ├── Modal.jsx              # Reusable modal component
 │   │   │   ├── ScrollToTop.jsx        # Scroll to top component
 │   │   │   ├── StepIndicator.jsx      # Multi-step form progress indicator
 │   │   │   ├── Table.jsx              # Advanced data table with sorting/pagination
 │   │   │   ├── ThemeToggle.jsx        # Theme switching component (light/dark)
-│   │   │   └── ToastProvider.jsx     # Toast notifications
+│   │   │   └── ToastProvider.jsx      # Toast notifications
 │   │   │
 │   │   ├── 📁 docs/                   # Documentation components
 │   │   │   ├── DocsComponents.jsx     # Component documentation
 │   │   │   ├── DocsExample.jsx        # Example documentation
-│   │   │   ├── DocsIcons.jsx         # Icon documentation
+│   │   │   ├── DocsIcons.jsx          # Icon documentation
 │   │   │   └── DocsLink.jsx           # Link documentation
 │   │   │
 │   │   ├── 📁 layout/                 # Layout components
@@ -51,43 +69,32 @@ admin/
 │   │   │   ├── AppHeader.jsx          # Application header
 │   │   │   ├── AppSidebar.jsx         # Application sidebar (CoreUI)
 │   │   │   ├── AppSidebarNav.jsx      # Sidebar navigation
-│   │   │   ├── PermissionRoute.jsx     # Route permission wrapper
+│   │   │   ├── PermissionRoute.jsx    # Route permission wrapper
 │   │   │   └── 📁 header/             # Header sub-components
 │   │   │       ├── AppHeaderDropdown.jsx
 │   │   │       └── index.jsx
 │   │   │
 │   │   ├── 📁 pages/                  # Page-specific components
-│   │   │   ├── 📁 categories/          # Category management
-│   │   │   │   └── CategoryForm.jsx   # Category form component
-│   │   │   ├── 📁 content/             # Content management
-│   │   │   │   ├── BannerFormModal.jsx # Banner add/edit modal component
-│   │   │   │   ├── FAQFormModal.jsx    # FAQ add/edit modal component
-│   │   │   │   └── NotificationFormModal.jsx # Notification send modal component
+│   │   │   ├── 📁 branches/           # Branch management
+│   │   │   │   └── BranchForm.jsx     # Branch form component
 │   │   │   ├── 📁 customers/          # Customer management
 │   │   │   │   ├── CustomerDetailsModal.jsx # Customer details modal component
-│   │   │   │   ├── SuspendCustomerModal.jsx # Customer suspension modal
-│   │   │   │   └── README.md          # Customer components documentation
-│   │   │   ├── 📁 inventory/          # Inventory management
-│   │   │   │   ├── InventoryHistoryModal.jsx # Inventory history modal
-│   │   │   │   ├── StockAdjustmentForm.jsx # Stock adjustment form
-│   │   │   │   └── README.md          # Inventory components documentation
+│   │   │   │   ├── CustomerForm.jsx   # Customer form component
+│   │   │   │   ├── README.md          # Customer components documentation
+│   │   │   │   └── SuspendCustomerModal.jsx # Customer suspension modal
 │   │   │   ├── 📁 orders/             # Order management
 │   │   │   │   ├── OrderDetailsModal.jsx # Order details modal component
+│   │   │   │   ├── OrderForm.jsx      # Order form component
 │   │   │   │   └── README.md          # Order components documentation
-│   │   │   ├── 📁 products/           # Product management
-│   │   │   │   ├── AddProductWizard.jsx # Multi-step product creation wizard
-│   │   │   │   ├── ProductForm.jsx    # Product form component
-│   │   │   │   ├── README.md          # Product components documentation
-│   │   │   │   └── 📁 steps/          # Wizard step components
-│   │   │   │       ├── BasicInfoStep.jsx    # Basic information step
-│   │   │   │       ├── AttributesStep.jsx   # Product attributes step
-│   │   │   │       ├── VariantsStep.jsx     # Product variants step
-│   │   │   │       ├── ImageStep.jsx        # Product images step
-│   │   │   │       └── ReviewStep.jsx       # Review and submit step
+│   │   │   ├── 📁 packages/           # Package management
+│   │   │   │   └── PackageForm.jsx    # Package form component
+│   │   │   ├── 📁 payments/            # Payment management
+│   │   │   │   └── PaymentForm.jsx    # Payment form component
 │   │   │   ├── 📁 roles/              # Role management
 │   │   │   │   └── RoleForm.jsx       # Role form component
-│   │   │   ├── 📁 subcategories/      # Subcategory management
-│   │   │   │   └── SubCategoryForm.jsx # Subcategory form component
+│   │   │   ├── 📁 transactions/       # Transaction management
+│   │   │   │   ├── TransactionDetailsModal.jsx # Transaction details modal
+│   │   │   │   └── TransactionForm.jsx # Transaction form component
 │   │   │   └── 📁 users/              # User management
 │   │   │       ├── 📁 __tests__/      # User component tests
 │   │   │       │   └── ProfileForm.test.js
@@ -97,7 +104,11 @@ admin/
 │   │   │       ├── ProfilePictureSection.jsx # Profile picture section
 │   │   │       └── UserForm.jsx       # User form component
 │   │   │
-│   │   └── index.jsx                   # Component exports
+│   │   ├── index.jsx                  # Component exports
+│   │   └── README.md                  # Components documentation
+│   │
+│   ├── 📁 config/                      # Configuration files
+│   │   └── apiClient.js                # API client configuration
 │   │
 │   ├── 📁 constants/                   # Application constants
 │   │   ├── api.js                      # API endpoint constants
@@ -112,21 +123,20 @@ admin/
 │   │   ├── index.jsx                   # Hook exports
 │   │   └── README.md                   # Hooks documentation
 │   │
-│   ├── 📁 layout/                     # Layout components
+│   ├── 📁 layout/                      # Layout components
 │   │   ├── DefaultLayout.jsx          # Default page layout
 │   │   └── PrivateRoute.jsx           # Protected route wrapper
 │   │
 │   ├── 📁 mock/                       # Mock data for development
-│   │   ├── categories.json            # Mock category data
-│   │   ├── content.json               # Mock content management data
+│   │   ├── branches.json              # Mock branch data
 │   │   ├── customers.json             # Mock customer data
-│   │   ├── inventory.json             # Mock inventory data
 │   │   ├── orders.json                # Mock order data
-│   │   ├── products.json              # Mock product data
+│   │   ├── packages.json              # Mock package data
+│   │   ├── photographers.json         # Mock photographer data
 │   │   ├── profile.json               # Mock profile data
 │   │   ├── roles.json                 # Mock role data
 │   │   ├── settings.json              # Mock settings data
-│   │   ├── subCategories.json         # Mock subcategory data
+│   │   ├── transactions.json          # Mock transaction data
 │   │   └── users.json                 # Mock user data
 │   │
 │   ├── 📁 pages/                      # Page components
@@ -135,9 +145,6 @@ admin/
 │   │       ├── Login.jsx              # Login page
 │   │       └── ResetPassword.jsx      # Reset password page
 │   │
-│   ├── 📁 routes/                     # Routing configuration
-│   │   └── index.jsx                  # Route definitions (lazy loading)
-│   │
 │   ├── 📁 scss/                       # SCSS stylesheets
 │   │   ├── examples.scss              # Example styles
 │   │   ├── style.scss                 # Main stylesheet
@@ -145,57 +152,72 @@ admin/
 │   │       └── simplebar.scss         # SimpleBar styles
 │   │
 │   ├── 📁 services/                   # API service layer
-│   │   ├── categoryService.js         # Category API service
-│   │   ├── contentService.js          # Content management API service
+│   │   ├── authService.js             # Authentication API service
+│   │   ├── branchService.js           # Branch API service
 │   │   ├── customerService.js         # Customer API service
-│   │   ├── inventoryService.js        # Inventory API service
 │   │   ├── orderService.js            # Order API service
-│   │   ├── productService.js          # Product API service
+│   │   ├── packageService.js          # Package API service
+│   │   ├── paymentService.js          # Payment API service
 │   │   ├── profileService.js          # Profile API service
 │   │   ├── README.md                  # Services documentation
+│   │   ├── reportService.js           # Report API service
 │   │   ├── roleService.js             # Role API service
 │   │   ├── settingsService.js         # Settings API service
-│   │   ├── subCategoryService.js      # Subcategory API service
+│   │   ├── transactionService.js      # Transaction API service
 │   │   └── userService.js             # User API service
 │   │
 │   ├── 📁 styles/                     # Additional styles
 │   │   └── auth.css                   # Authentication styles
 │   │
+│   ├── 📁 utils/                      # Utility functions
+│   │   ├── errorHandler.js            # Error handling utilities
+│   │   ├── pdfExport.js               # PDF export utilities
+│   │   └── responseHandler.js         # Response handling utilities
+│   │
 │   ├── 📁 views/                      # Main view components
-│   │   ├── 📁 categories/             # Category management views
-│   │   │   └── CategoriesList.jsx     # Categories list view
-│   │   ├── 📁 content/                # Content management views
-│   │   │   ├── ContentManagement.jsx # Main content management with tabs
-│   │   │   ├── BannersPromotions.jsx  # Banners & promotions management
-│   │   │   ├── FAQManagement.jsx     # FAQ management with expandable cards
-│   │   │   └── Notifications.jsx     # System notifications management
+│   │   ├── 📁 branches/               # Branch management views
+│   │   │   ├── BranchesList.jsx       # Branches list view
+│   │   │   └── BranchFormView.jsx     # Branch form view
 │   │   ├── 📁 customers/              # Customer management views
-│   │   │   └── CustomersList.jsx      # Customers list view
+│   │   │   ├── CustomersList.jsx      # Customers list view
+│   │   │   ├── CustomerFormView.jsx   # Customer form view
+│   │   │   ├── CustomerLedgerView.jsx # Customer ledger view
+│   │   │   └── CustomerWalletView.jsx # Customer wallet view
 │   │   ├── 📁 dashboard/              # Dashboard views
-│   │   │   ├── Dashboard.jsx          # Main dashboard
+│   │   │   ├── Dashboard.jsx         # Main dashboard
 │   │   │   └── MainChart.jsx          # Dashboard chart component
-│   │   ├── 📁 inventory/              # Inventory management views
-│   │   │   └── InventoryManagement.jsx # Inventory management main view
 │   │   ├── 📁 orders/                 # Order management views
-│   │   │   └── OrdersList.jsx         # Orders list view
-│   │   ├── 📁 products/               # Product management views
-│   │   │   ├── ProductDetails.jsx     # Product details view
-│   │   │   └── ProductsList.jsx       # Products list view
+│   │   │   ├── OrdersList.jsx         # Orders list view
+│   │   │   └── OrderFormView.jsx      # Order form view
+│   │   ├── 📁 packages/               # Package management views
+│   │   │   ├── PackagesList.jsx       # Packages list view
+│   │   │   └── PackageFormView.jsx    # Package form view
+│   │   ├── 📁 payments/               # Payment management views
+│   │   │   ├── PaymentsList.jsx       # Payments list view
+│   │   │   └── PaymentFormView.jsx    # Payment form view
+│   │   ├── 📁 reports/                # Report views
+│   │   │   ├── BranchReport.jsx       # Branch report view
+│   │   │   ├── LedgerReport.jsx       # Ledger report view
+│   │   │   ├── SalesReport.jsx        # Sales report view
+│   │   │   └── StaffReport.jsx        # Staff report view
 │   │   ├── 📁 roles/                  # Role management views
 │   │   │   └── RolesList.jsx          # Roles list view
 │   │   ├── 📁 settings/               # Settings views
 │   │   │   └── Settings.jsx           # Settings page
-│   │   ├── 📁 subcategories/          # Subcategory management views
-│   │   │   └── SubCategoriesList.jsx  # Subcategories list view
+│   │   ├── 📁 transactions/           # Transaction management views
+│   │   │   ├── TransactionsList.jsx   # Transactions list view
+│   │   │   └── TransactionFormView.jsx # Transaction form view
 │   │   └── 📁 users/                  # User management views
 │   │       ├── Profile.jsx            # User profile view
 │   │       └── UsersList.jsx          # Users list view
 │   │
 │   ├── _nav.jsx                       # Navigation configuration
+│   ├── api.js                         # Mock API service setup
 │   ├── App.css                        # Main app styles
 │   ├── App.jsx                        # Main app component
 │   ├── config.js                      # App configuration
 │   ├── main.jsx                       # App entry point
+│   ├── routes.jsx                    # Route definitions (lazy loading)
 │   ├── routesConfig.jsx               # Route configuration
 │   ├── store.jsx                      # Redux store configuration
 │   └── utils.js                       # Utility functions
@@ -203,11 +225,7 @@ admin/
 ├── 📁 styles/                         # Global styles
 │   └── theme.css                      # Theme styles (CoreUI overrides)
 │
-├── .env.example                       # Environment variables example
-├── .env.local                         # Local environment variables
-├── .env.staging                       # Staging environment variables
-├── .env.production                    # Production environment variables
-├── .gitignore                         # Git ignore rules
+├── env.example                        # Environment variables example
 ├── eslint.config.js                   # ESLint configuration
 ├── index.html                         # HTML template
 ├── package.json                       # Dependencies and scripts
@@ -753,12 +771,16 @@ const userService = {
 ### 🧩 Component Library
 - **StepIndicator** - Multi-step form progress indicator
 - **ImageUpload** - Drag-and-drop image upload component
-- **AddProductWizard** - Complete multi-step product creation wizard (supports create/edit modes)
-- **ProductForm** - Single-step product form (legacy)
 - **FormModal** - Modal wrapper for forms
 - **Table** - Data table with sorting and pagination
 - **ThemeToggle** - Theme switching component (light/dark modes)
 - **ToastProvider** - Global notification system
+- **Button** - Reusable button component
+- **Card** - Reusable card component
+- **FormFields** - Form input components
+- **Modal** - Reusable modal component
+- **GlobalSpinner** - Global loading spinner
+- **ScrollToTop** - Scroll to top component
 
 ### 📊 Performance Monitoring
 - **Bundle size** monitoring
@@ -778,8 +800,13 @@ const userService = {
 
 ### 🎯 Navigation Structure
 - **Main Section**: Dashboard groups with multiple dashboard options
-- **Product Management**: Products, categories, subcategories, brands, units, inventory management
-- **Order Management**: Orders list, order details, order history, customer management
+- **Branch Management**: Branch list, branch form, branch operations
+- **Package Management**: Packages list, package form, package operations
+- **Order Management**: Orders list, order details, order form, order history
+- **Customer Management**: Customers list, customer form, customer ledger, customer wallet
+- **Payment Management**: Payments list, payment form, payment operations
+- **Transaction Management**: Transactions list, transaction form, transaction details
+- **Report Management**: Branch reports, ledger reports, sales reports, staff reports
 - **User Management**: Users and role & permission management
 - **Account Section**: Profile and settings
 
@@ -796,9 +823,13 @@ const userService = {
 - **Enhanced Forms**: Better input styling with border-2 and fw-semibold labels
 - **Gradient System**: CSS variables and utility classes for theme-based gradients
 - **Logo-Inspired Gradients**: Green-blue gradient variants matching brand colors
-- **Product Management**: Complete CRUD operations with dashboard-style summary cards
-- **Inventory Management**: Complete stock tracking with history, bulk operations, and alerts
+- **Branch Management**: Complete CRUD operations for branch management
+- **Package Management**: Complete CRUD operations for package management
 - **Order Management**: Complete order tracking with status management, customer details, and timeline
+- **Customer Management**: Complete customer management with ledger and wallet views
+- **Payment Management**: Complete payment tracking and management
+- **Transaction Management**: Complete transaction tracking with details modal
+- **Report Management**: Comprehensive reporting system with branch, ledger, sales, and staff reports
 - **Custom Table Component**: Reusable table with sorting, pagination, and loading states
 - **Multi-Step Forms**: StepIndicator component with wizard pattern for complex forms
 - **Image Management**: Drag-and-drop upload with primary image selection
