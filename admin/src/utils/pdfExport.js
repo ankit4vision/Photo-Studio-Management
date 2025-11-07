@@ -954,3 +954,336 @@ export const exportOrderToPDF = (order) => {
     }, 500)
   }
 }
+
+/**
+ * Export Transaction to PDF
+ * Generates a professional receipt/invoice for a transaction
+ */
+export const exportTransactionToPDF = (transaction) => {
+  if (!transaction) {
+    console.error('Transaction data is required')
+    return
+  }
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR'
+    }).format(amount || 0)
+  }
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A'
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const transactionType = transaction.type || 'credit'
+  const isCredit = transactionType === 'credit'
+  const receivedAmount = transaction.received_amount !== undefined 
+    ? transaction.received_amount 
+    : (isCredit ? transaction.amount : 0)
+  const remainingAmount = transaction.remaining_amount !== undefined 
+    ? transaction.remaining_amount 
+    : 0
+
+  const customerName = transaction.customer_name || `Customer #${transaction.customer_id}`
+  const transactionNumber = `#${transaction.id || 'N/A'}`
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Transaction Receipt - ${transactionNumber}</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #2c3e50;
+            background: #ffffff;
+            line-height: 1.6;
+            padding: 20px;
+          }
+          .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+          }
+          .header {
+            background: linear-gradient(135deg, ${isCredit ? '#22c55e' : '#ef4444'} 0%, ${isCredit ? '#16a34a' : '#dc2626'} 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+          }
+          .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+          }
+          .header .subtitle {
+            font-size: 14px;
+            opacity: 0.95;
+            margin-top: 10px;
+          }
+          .header .transaction-number {
+            background: rgba(255,255,255,0.2);
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            margin-top: 15px;
+            font-weight: 600;
+            font-size: 16px;
+          }
+          .content {
+            padding: 30px;
+          }
+          .info-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+          }
+          .info-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid ${isCredit ? '#22c55e' : '#ef4444'};
+          }
+          .info-box h3 {
+            font-size: 16px;
+            color: #1f2937;
+            margin-bottom: 15px;
+            font-weight: 600;
+          }
+          .info-item {
+            margin-bottom: 12px;
+          }
+          .info-item:last-child {
+            margin-bottom: 0;
+          }
+          .info-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            font-weight: 600;
+          }
+          .info-value {
+            font-size: 15px;
+            color: #1f2937;
+            font-weight: 600;
+          }
+          .amount-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 25px;
+            border-radius: 10px;
+            margin: 30px 0;
+            border: 2px solid ${isCredit ? '#22c55e' : '#ef4444'};
+          }
+          .amount-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+          }
+          .amount-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+          }
+          .amount-label {
+            font-size: 11px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            font-weight: 600;
+          }
+          .amount-value {
+            font-size: 24px;
+            font-weight: 700;
+          }
+          .amount-value.received {
+            color: #22c55e;
+          }
+          .amount-value.remaining {
+            color: #f59e0b;
+          }
+          .amount-value.transaction {
+            color: #3b82f6;
+          }
+          .remarks-section {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            margin-top: 20px;
+          }
+          .remarks-section h3 {
+            font-size: 16px;
+            color: #1f2937;
+            margin-bottom: 10px;
+            font-weight: 600;
+          }
+          .remarks-text {
+            color: #4b5563;
+            font-size: 14px;
+            line-height: 1.6;
+          }
+          .footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #6b7280;
+            font-size: 12px;
+            border-top: 1px solid #e5e7eb;
+          }
+          .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .badge.credit {
+            background: #d1fae5;
+            color: #065f46;
+          }
+          .badge.debit {
+            background: #fee2e2;
+            color: #991b1b;
+          }
+          @media print {
+            body {
+              padding: 0;
+            }
+            .container {
+              border: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>${isCredit ? '💰 Payment Receipt' : '💸 Refund Receipt'}</h1>
+            <div class="subtitle">Transaction Receipt</div>
+            <div class="transaction-number">Transaction ${transactionNumber}</div>
+            <div style="margin-top: 15px; font-size: 12px; opacity: 0.9;">
+              Generated on: ${new Date().toLocaleString('en-IN', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </div>
+          </div>
+          
+          <div class="content">
+            <!-- Transaction and Customer Information -->
+            <div class="info-section">
+              <div class="info-box">
+                <h3>Transaction Information</h3>
+                <div class="info-item">
+                  <div class="info-label">Transaction Number</div>
+                  <div class="info-value">${transactionNumber}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">Transaction Date</div>
+                  <div class="info-value">${formatDate(transaction.transaction_date)}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">Type</div>
+                  <div class="info-value">
+                    <span class="badge ${transactionType}">${isCredit ? 'Credit' : 'Debit'}</span>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">Branch</div>
+                  <div class="info-value">Branch #${transaction.branch_id || 'N/A'}</div>
+                </div>
+              </div>
+
+              <div class="info-box">
+                <h3>Customer Information</h3>
+                <div class="info-item">
+                  <div class="info-label">Customer Name</div>
+                  <div class="info-value">${customerName}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">Customer ID</div>
+                  <div class="info-value">#${transaction.customer_id || 'N/A'}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Amount Details -->
+            <div class="amount-section">
+              <h3 style="font-size: 18px; color: #1f2937; margin-bottom: 15px; font-weight: 600; text-align: center;">
+                Amount Details
+              </h3>
+              <div class="amount-grid">
+                <div class="amount-box">
+                  <div class="amount-label">Transaction Amount</div>
+                  <div class="amount-value transaction">${formatCurrency(transaction.amount || 0)}</div>
+                </div>
+                <div class="amount-box">
+                  <div class="amount-label">Received Amount</div>
+                  <div class="amount-value received">${receivedAmount > 0 ? formatCurrency(receivedAmount) : '-'}</div>
+                </div>
+                <div class="amount-box">
+                  <div class="amount-label">Remaining Amount</div>
+                  <div class="amount-value remaining">${formatCurrency(remainingAmount)}</div>
+                </div>
+              </div>
+            </div>
+
+            ${transaction.remarks ? `
+            <!-- Remarks -->
+            <div class="remarks-section">
+              <h3>Remarks</h3>
+              <div class="remarks-text">${transaction.remarks}</div>
+            </div>
+            ` : ''}
+          </div>
+
+          <div class="footer">
+            <p>This is a computer-generated receipt. No signature required.</p>
+            <p style="margin-top: 5px;">Transaction ID: ${transaction.id || 'N/A'}</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `
+
+  // Create a new window for printing
+  const printWindow = window.open('', '_blank')
+  printWindow.document.write(htmlContent)
+  printWindow.document.close()
+
+  // Wait for content to load, then print
+  printWindow.onload = () => {
+    setTimeout(() => {
+      printWindow.print()
+    }, 500)
+  }
+}

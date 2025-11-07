@@ -412,7 +412,25 @@ class OrderService {
     if (params.status) queryParams.append('status', params.status)
 
     const endpoint = `${API_ENDPOINTS.ORDERS.GET_BY_CUSTOMER(customerId)}?${queryParams.toString()}`
-    return apiService.get(endpoint)
+
+    try {
+      const response = await apiService.get(endpoint)
+      if (response && response.success) {
+        return response
+      }
+      return this.getMockOrdersByCustomer(customerId, params)
+    } catch (error) {
+      console.warn('API call failed, using mock data:', error)
+      return this.getMockOrdersByCustomer(customerId, params)
+    }
+  }
+
+  getMockOrdersByCustomer(customerId, params = {}) {
+    const mockParams = {
+      ...params,
+      customerId: customerId
+    }
+    return this.getMockOrders(mockParams)
   }
 
   // Get order items

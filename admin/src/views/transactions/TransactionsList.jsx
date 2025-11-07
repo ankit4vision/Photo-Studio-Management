@@ -1,33 +1,47 @@
 import React, { useState, useEffect } from 'react'
-import { Container, Row, Col, Button, FormControl, FormSelect, Badge } from 'react-bootstrap'
+import { Container, Row, Col, Button, FormControl } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
   faWallet,
-  faSearch, 
   faRefresh,
   faPlus,
+  faEdit,
+  faEye,
+  faFilePdf,
 } from '@fortawesome/free-solid-svg-icons'
 import { Table } from '../../components'
 import transactionService from '../../services/transactionService'
+import { useNavigate } from 'react-router-dom'
+import TransactionDetailsModal from '../../components/pages/transactions/TransactionDetailsModal'
+import { exportTransactionToPDF } from '../../utils/pdfExport'
 
 const TransactionsList = () => {
+  const navigate = useNavigate()
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [selectedTransaction, setSelectedTransaction] = useState(null)
+  const [showViewModal, setShowViewModal] = useState(false)
 
   useEffect(() => {
     loadTransactions()
   }, [])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm])
 
   const loadTransactions = async () => {
     try {
       setLoading(true)
       const response = await transactionService.getTransactions()
       if (response.success) {
-        setTransactions(response.data || [])
+        const rawData = Array.isArray(response.data)
+          ? response.data
+          : response.data?.transactions || response.data?.data || []
+        setTransactions(rawData)
       }
     } catch (error) {
       console.error('Error loading transactions:', error)
@@ -37,9 +51,12 @@ const TransactionsList = () => {
   }
 
   const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.remarks?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesType = !typeFilter || transaction.type === typeFilter
-    return matchesSearch && matchesType
+    const term = searchTerm.toLowerCase()
+    const matchesSearch = !term ||
+      transaction.remarks?.toLowerCase().includes(term) ||
+      transaction.customer_name?.toLowerCase().includes(term)
+    // Remove type filter since we're removing type column
+    return matchesSearch
   })
 
   const formatCurrency = (amount) => {
@@ -58,6 +75,19 @@ const TransactionsList = () => {
     })
   }
 
+  const handleViewTransaction = (transaction) => {
+    setSelectedTransaction(transaction)
+    setShowViewModal(true)
+  }
+
+  const handleEditTransaction = (transaction) => {
+    navigate(`/transactions/edit/${transaction.id}`)
+  }
+
+  const handleExportPDF = (transaction) => {
+    exportTransactionToPDF(transaction)
+  }
+
   const columns = [
     {
       key: 'date',
@@ -70,22 +100,34 @@ const TransactionsList = () => {
       render: (value, transaction) => transaction.customer_name || `Customer #${transaction.customer_id}`
     },
     {
-      key: 'type',
-      label: 'Type',
-      render: (value, transaction) => (
-        <Badge bg={transaction.type === 'credit' ? 'success' : 'danger'} className="px-2 py-1">
-          {transaction.type === 'credit' ? 'Credit' : 'Debit'}
-        </Badge>
-      )
+      key: 'received_amount',
+      label: 'Received Amount',
+      render: (value, transaction) => {
+        const receivedAmount = transaction.received_amount !== undefined 
+          ? transaction.received_amount 
+          : (transaction.type === 'credit' ? transaction.amount : 0)
+        return receivedAmount > 0 ? (
+          <div className="fw-semibold text-success">
+            {formatCurrency(receivedAmount)}
+          </div>
+        ) : (
+          <span className="text-muted">-</span>
+        )
+      }
     },
     {
-      key: 'amount',
-      label: 'Amount',
-      render: (value, transaction) => (
-        <div className={`fw-semibold ${transaction.type === 'credit' ? 'text-success' : 'text-danger'}`}>
-          {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}
-        </div>
-      )
+      key: 'remaining_amount',
+      label: 'Remaining Amount',
+      render: (value, transaction) => {
+        const remainingAmount = transaction.remaining_amount !== undefined 
+          ? transaction.remaining_amount 
+          : 0
+        return (
+          <div className={`fw-semibold ${remainingAmount > 0 ? 'text-warning' : 'text-success'}`}>
+            {formatCurrency(remainingAmount)}
+          </div>
+        )
+      }
     },
     {
       key: 'remarks',
@@ -93,13 +135,47 @@ const TransactionsList = () => {
       render: (value, transaction) => transaction.remarks || '-'
     },
     {
-      key: 'order',
-      label: 'Order',
-      render: (value, transaction) => transaction.order_id ? `Order #${transaction.order_id}` : '-'
+      key: 'actions',
+      label: 'Actions',
+      render: (value, transaction) => (
+        <div className="d-flex gap-1" style={{ flexWrap: 'nowrap' }}>
+          <Button
+            variant="outline-info"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleViewTransaction(transaction)
+            }}
+            title="View Transaction"
+          >
+            <FontAwesomeIcon icon={faEye} />
+          </Button>
+          <Button
+            variant="outline-success"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleEditTransaction(transaction)
+            }}
+            title="Edit Transaction"
+          >
+            <FontAwesomeIcon icon={faEdit} />
+          </Button>
+          <Button
+            variant="outline-danger"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleExportPDF(transaction)
+            }}
+            title="Export PDF"
+          >
+            <FontAwesomeIcon icon={faFilePdf} />
+          </Button>
+        </div>
+      )
     }
   ]
-
-  const transactionTypes = transactionService.getTransactionTypes()
 
   return (
     <Container fluid>
@@ -121,25 +197,13 @@ const TransactionsList = () => {
           <div className="bg-white rounded-3 shadow-sm p-4">
             <div className="mb-4">
               <Row className="g-3">
-                <Col md={4}>
+                <Col md={6}>
                   <FormControl
-                    placeholder="Search by remarks"
+                    placeholder="Search by customer name or remarks"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="border-2"
                   />
-                </Col>
-                <Col md={2}>
-                  <FormSelect
-                    value={typeFilter}
-                    onChange={(e) => setTypeFilter(e.target.value)}
-                    className="border-2"
-                  >
-                    <option value="">All Types</option>
-                    {transactionTypes.map(type => (
-                      <option key={type.value} value={type.value}>{type.label}</option>
-                    ))}
-                  </FormSelect>
                 </Col>
                 <Col md={2}>
                   <Button variant="outline-secondary" onClick={loadTransactions}>
@@ -163,6 +227,16 @@ const TransactionsList = () => {
           </div>
         </Col>
       </Row>
+
+      {/* Transaction Details Modal */}
+      <TransactionDetailsModal
+        visible={showViewModal}
+        onClose={() => {
+          setShowViewModal(false)
+          setSelectedTransaction(null)
+        }}
+        transaction={selectedTransaction}
+      />
     </Container>
   )
 }

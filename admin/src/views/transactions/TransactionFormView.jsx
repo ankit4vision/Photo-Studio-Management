@@ -11,7 +11,7 @@ const TransactionFormView = () => {
   const navigate = useNavigate()
   const { id } = useParams()
   const [searchParams] = useSearchParams()
-  const { showToast } = useToast()
+  const { success, error } = useToast()
   const formRef = useRef()
   const [loading, setLoading] = useState(false)
   const [transactionData, setTransactionData] = useState(null)
@@ -31,12 +31,12 @@ const TransactionFormView = () => {
           if (response.success) {
             setTransactionData(response.data)
           } else {
-            showToast('Error loading transaction data', 'error')
+            error('Error loading transaction data')
             navigate('/transactions')
           }
-        } catch (error) {
-          console.error('Error loading transaction:', error)
-          showToast('Error loading transaction data', 'error')
+        } catch (err) {
+          console.error('Error loading transaction:', err)
+          error('Error loading transaction data')
           navigate('/transactions')
         } finally {
           setLoadingData(false)
@@ -44,7 +44,7 @@ const TransactionFormView = () => {
       }
       loadTransaction()
     }
-  }, [id, mode, navigate, showToast])
+  }, [id, mode, navigate, error])
 
   const handleSubmit = async (formData) => {
     try {
@@ -53,27 +53,27 @@ const TransactionFormView = () => {
       if (mode === 'create') {
         const response = await transactionService.createTransaction(formData)
         if (response.success) {
-          showToast('Transaction created successfully', 'success')
+          success('Transaction created successfully')
           if (initialCustomerId) {
             navigate(`/customers/${initialCustomerId}/wallet`)
           } else {
             navigate('/transactions')
           }
         } else {
-          showToast(response.message || 'Error creating transaction', 'error')
+          error(response.message || 'Error creating transaction')
         }
       } else {
         const response = await transactionService.updateTransaction(id, formData)
         if (response.success) {
-          showToast('Transaction updated successfully', 'success')
+          success('Transaction updated successfully')
           navigate('/transactions')
         } else {
-          showToast(response.message || 'Error updating transaction', 'error')
+          error(response.message || 'Error updating transaction')
         }
       }
-    } catch (error) {
-      console.error('Error saving transaction:', error)
-      showToast('An error occurred while saving transaction', 'error')
+    } catch (err) {
+      console.error('Error saving transaction:', err)
+      error('An error occurred while saving transaction')
     } finally {
       setLoading(false)
     }
@@ -113,7 +113,7 @@ const TransactionFormView = () => {
             <div className="d-flex align-items-center">
               <FontAwesomeIcon icon={faWallet} className="me-3 text-dark fs-4" />
               <h2 className="mb-0 text-dark">
-                {mode === 'create' ? 'Create Transaction' : 'Edit Transaction'}
+                {mode === 'create' ? 'Add Payment Received' : 'Edit Transaction'}
               </h2>
             </div>
           </div>
@@ -149,7 +149,7 @@ const TransactionFormView = () => {
                   ) : (
                     <>
                       <FontAwesomeIcon icon={faSave} className="me-2" />
-                      {mode === 'create' ? 'Create Transaction' : 'Update Transaction'}
+                      {mode === 'create' ? 'Save Payment' : 'Update Transaction'}
                     </>
                   )}
                 </Button>
