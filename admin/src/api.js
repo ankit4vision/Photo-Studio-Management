@@ -1,247 +1,131 @@
-// Mock API Service Setup
-import config from './config'
-import usersData from './mock/users.json'
-import ordersData from './mock/orders.json'
+import apiClient from './config/apiClient'
+import { formatSuccessResponse, handleApiError } from './utils/errorHandler'
 
-class ApiService {
-  constructor() {
-    this.baseURL = config.api.baseURL
-    this.timeout = config.api.timeout
-    this.mockData = {
-      users: usersData.users,
-      roles: usersData.roles,
-      orders: ordersData.orders,
-      stats: ordersData.stats,
-      statusOptions: ordersData.statusOptions,
-      paymentStatusOptions: ordersData.paymentStatusOptions,
-      paymentMethodOptions: ordersData.paymentMethodOptions,
-      shippingMethodOptions: ordersData.shippingMethodOptions
+const extractData = (response) => response?.data ?? response
+
+const apiService = {
+  async request(method, endpoint, data, options = {}) {
+    try {
+      const config = { ...options, method }
+      if (data !== undefined) {
+        config.data = data
+      }
+
+      const response = await apiClient.request({ url: endpoint, ...config })
+      return extractData(response)
+    } catch (error) {
+      throw handleApiError(error)
     }
-  }
+  },
 
-  // Get auth token from localStorage
-  getAuthToken() {
-    return localStorage.getItem(config.auth.storageKey)
-  }
-
-  // Get user data from localStorage
-  getUser() {
-    const user = localStorage.getItem(config.auth.userStorageKey)
-    return user ? JSON.parse(user) : null
-  }
-
-  // Check if user is authenticated
-  isAuthenticated() {
-    const token = this.getAuthToken()
-    const user = this.getUser()
-    return !!(token && user)
-  }
-
-  // Simulate API delay
-  async delay(ms = 500) {
-    return new Promise(resolve => setTimeout(resolve, ms))
-  }
-
-  // Mock API request
-  async request(endpoint, options = {}) {
-    // Simulate network delay
-    await this.delay(300)
-
-    const method = options.method || 'GET'
-    
-    // Parse query parameters from endpoint
-    const [baseEndpoint, queryString] = endpoint.split('?')
-    const params = {}
-    if (queryString) {
-      queryString.split('&').forEach(param => {
-        const [key, value] = param.split('=')
-        if (key && value) {
-          params[key] = decodeURIComponent(value)
-        }
-      })
+  async get(endpoint, options = {}) {
+    try {
+      const response = await apiClient.get(endpoint, options)
+      return extractData(response)
+    } catch (error) {
+      throw handleApiError(error)
     }
-    
-    // Mock responses based on endpoint
-    switch (baseEndpoint) {
-      case '/users':
-        if (method === 'GET') {
-          return {
-            success: true,
-            data: this.mockData.users,
-            total: this.mockData.users.length
-          }
-        }
-        break
-        
-      case '/roles':
-        if (method === 'GET') {
-          return {
-            success: true,
-            data: this.mockData.roles,
-            total: this.mockData.roles.length
-          }
-        }
-        break
-        
-      case '/orders':
-        if (method === 'GET') {
-          // Handle query parameters for filtering
-          let filteredOrders = [...(this.mockData.orders || [])]
-          
-          // Apply filters based on query parameters
-          if (params) {
-            const { status, paymentStatus, search, customer } = params
-            
-            if (status && status !== 'all') {
-              filteredOrders = filteredOrders.filter(order => order.status === status)
-            }
-            
-            if (paymentStatus && paymentStatus !== 'all') {
-              filteredOrders = filteredOrders.filter(order => order.paymentStatus === paymentStatus)
-            }
-            
-            if (search) {
-              filteredOrders = filteredOrders.filter(order => 
-                order.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
-                order.customer.firstName.toLowerCase().includes(search.toLowerCase()) ||
-                order.customer.lastName.toLowerCase().includes(search.toLowerCase())
-              )
-            }
-            
-            if (customer) {
-              filteredOrders = filteredOrders.filter(order => 
-                order.customer.firstName.toLowerCase().includes(customer.toLowerCase()) ||
-                order.customer.lastName.toLowerCase().includes(customer.toLowerCase())
-              )
-            }
-          }
-          
-          return {
-            success: true,
-            data: {
-              orders: filteredOrders,
-              total: filteredOrders.length
-            }
-          }
-        }
-        break
-        
-      case '/orders/stats':
-        if (method === 'GET') {
-          return {
-            success: true,
-            data: this.mockData.stats
-          }
-        }
-        break
-        
-      case '/auth/login':
-        if (method === 'POST') {
-          const { email, password } = options.body ? JSON.parse(options.body) : {}
-          const user = this.mockData.users.find(u => u.email === email && u.password === password)
-          
-          if (user) {
-            const token = btoa(JSON.stringify({ 
-              userId: user.id, 
-              exp: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
-            }))
-            
-            return {
-              success: true,
-              user: { ...user, password: undefined }, // Remove password from response
-              token
-            }
-          } else {
-            throw new Error('Invalid credentials')
-          }
-        }
-        break
-        
-      default:
-        // Handle dynamic order endpoints
-        if (baseEndpoint.startsWith('/orders/') && !baseEndpoint.includes('/stats')) {
-          const orderId = baseEndpoint.split('/orders/')[1]
-          if (orderId && method === 'GET') {
-            const order = this.mockData.orders.find(o => o.id === orderId)
-            if (order) {
-              return {
-                success: true,
-                data: order
-              }
-            } else {
-              throw new Error('Order not found')
-            }
-          }
-        }
-        throw new Error(`Mock endpoint not implemented: ${baseEndpoint}`)
-    }
-  }
+  },
 
-  // HTTP Methods
-  get(endpoint, options = {}) {
-    return this.request(endpoint, { ...options, method: 'GET' })
-  }
+  async post(endpoint, data, options = {}) {
+    return this.request('post', endpoint, data, options)
+  },
 
-  post(endpoint, data, options = {}) {
-    return this.request(endpoint, {
-      ...options,
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  }
+  async put(endpoint, data, options = {}) {
+    return this.request('put', endpoint, data, options)
+  },
 
-  put(endpoint, data, options = {}) {
-    return this.request(endpoint, {
-      ...options,
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
-  }
+  async patch(endpoint, data, options = {}) {
+    return this.request('patch', endpoint, data, options)
+  },
 
-  delete(endpoint, options = {}) {
-    return this.request(endpoint, { ...options, method: 'DELETE' })
-  }
+  async delete(endpoint, options = {}) {
+    return this.request('delete', endpoint, undefined, options)
+  },
 
-  // Authentication Methods
   async login(credentials) {
-    return this.post('/auth/login', credentials)
-  }
+    try {
+      const response = await apiClient.post('/auth/login', credentials)
+      const payload = extractData(response)
 
-  async register(userData) {
-    return this.post('/auth/register', userData)
-  }
+      const accessToken = payload?.access_token || payload?.token || payload?.data?.access_token
+      const user = payload?.user || payload?.data?.user || payload?.data
 
-  async forgotPassword(email) {
-    return this.post('/auth/forgot-password', { email })
-  }
+      if (accessToken) {
+        localStorage.setItem('access_token', accessToken)
+      }
 
-  async resetPassword(token, newPassword) {
-    return this.post('/auth/reset-password', { token, password: newPassword })
-  }
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user))
+      }
+
+      return {
+        success: true,
+        token: accessToken,
+        user,
+        message: payload?.message || 'Login successful',
+      }
+    } catch (error) {
+      throw handleApiError(error)
+    }
+  },
 
   async logout() {
-    // Clear local storage
-    localStorage.removeItem(config.auth.storageKey)
-    localStorage.removeItem(config.auth.userStorageKey)
-    
-    // Call logout endpoint if needed
     try {
-      await this.post('/auth/logout')
+      await apiClient.post('/auth/logout')
     } catch (error) {
-      console.warn('Logout endpoint failed:', error)
+      // Even if API logout fails, continue clearing local storage
+      console.warn('Logout request failed', error)
+    } finally {
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('user')
     }
-  }
 
-  // User Methods
-  async getProfile() {
-    return this.get('/user/profile')
-  }
+    return {
+      success: true,
+      message: 'Logout successful',
+    }
+  },
 
-  async updateProfile(userData) {
-    return this.put('/user/profile', userData)
-  }
+  async register(userData) {
+    try {
+      const response = await apiClient.post('/auth/register', userData)
+      return formatSuccessResponse(response)
+    } catch (error) {
+      throw handleApiError(error)
+    }
+  },
+
+  async forgotPassword(email) {
+    try {
+      const response = await apiClient.post('/auth/forgot-password', { email })
+      return formatSuccessResponse(response)
+    } catch (error) {
+      throw handleApiError(error)
+    }
+  },
+
+  async resetPassword(token, password) {
+    try {
+      const response = await apiClient.post('/auth/reset-password', { token, password })
+      return formatSuccessResponse(response)
+    } catch (error) {
+      throw handleApiError(error)
+    }
+  },
+
+  getAuthToken() {
+    return localStorage.getItem('access_token')
+  },
+
+  getUser() {
+    const user = localStorage.getItem('user')
+    return user ? JSON.parse(user) : null
+  },
+
+  isAuthenticated() {
+    return !!(this.getAuthToken() && this.getUser())
+  },
 }
 
-// Create and export singleton instance
-const apiService = new ApiService()
 export default apiService

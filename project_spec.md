@@ -30,7 +30,7 @@ This document replaces the legacy specification with an up-to-date view of the c
 | Orders            | 🟡  | Create + edit (multi-package) working with mock data. Needs real API wiring. |
 | Branches          | 🟡  | Statistics built from photographer dataset. CRUD still mock-only. |
 | Packages          | 🟡  | Mock package catalogue, exposed in orders form. CRUD calls fall back to mock. |
-| Payments/Transactions | 🔴  | Placeholder pages only; services exist but rely on mock skeletons. |
+| Payments/Transactions | 🟡  | Create/Edit/view flows implemented with mock data, wallet maths auto-sync; needs real API persistence. |
 | Reports / Settings | 🔴  | Stubs / legacy CoreUI pages. Not aligned with current data model. |
 
 Legend: 🟢 Complete (mock OK) · 🟡 Functional but awaiting real API · 🔴 Needs implementation.
@@ -75,11 +75,23 @@ Legend: 🟢 Complete (mock OK) · 🟡 Functional but awaiting real API · 🔴
 - Package service delivers fallback CRUD to maintain UI functionality.
 - Orders form consumes packages to auto-populate pricing.
 
-### 6. PDF Utilities (`utils/pdfExport.js`)
-- `exportPhotographersToPDF`, `exportSinglePhotographerToPDF`, `exportOrderToPDF` deliver polished printable documents.
+### 6. Payments & Transactions
+- **TransactionsList**:
+  - Action column now offers View, Edit, and PDF export (receipt-style) buttons.
+  - Transaction details modal surfaces customer info, amounts, remarks with credit/debit badges.
+- **TransactionForm**:
+  - Customer selection auto-loads Total / Received / Remaining amounts derived from orders + transactions.
+  - Amount/type changes instantly preview remaining balance before save.
+  - Edit mode pre-fills data and recalculates wallet totals safely.
+- **Service layer** (`transactionService.js`):
+  - Fallback mock create/update/delete now re-compute customer wallet stats via `recalculateCustomerAmounts` (combines orders + payments).
+  - Ready to swap to Laravel endpoints once exposed.
+
+### 7. PDF Utilities (`utils/pdfExport.js`)
+- `exportPhotographersToPDF`, `exportSinglePhotographerToPDF`, `exportOrderToPDF`, `exportTransactionToPDF` deliver polished printable documents.
 - Based on HTML templates + `window.print()` (no external dependency yet). Conversion to jsPDF remains optional future work.
 
-### 7. Miscellaneous Improvements
+### 8. Miscellaneous Improvements
 - Enhanced logging & error handling around Axios client (`config/apiClient.js`).
 - Toast system centralised in `ToastProvider.jsx` with success/error helpers.
 - Mock service pattern standardised (try API → fallback to mock generator → return structured `{ success, data }`).
@@ -96,8 +108,8 @@ Legend: 🟢 Complete (mock OK) · 🟡 Functional but awaiting real API · 🔴
    - Orders created during a session live only in-memory; consider local storage or optimistic UI strategy until backend is ready.
 
 3. **Payments & Transactions**
-   - Views are placeholders; services must be extended beyond skeleton functions.
-   - Wallet balance currently derived from mock totals only.
+   - Wire mock flows to backend endpoints for persistence and reporting once available.
+   - Consider transaction history pagination / filters when API is ready.
 
 4. **Role-Based Access**
    - Implement role fetch (`/auth/me`) and adjust menu visibility / routing accordingly.
@@ -144,6 +156,7 @@ Use `customerService.*` and `orderService.*` helpers to generate consistent mock
 - Photographer table redesigned: compact actions, no horizontal scroll, branch indicator integrated into name column.
 - Customer modal displays Total/Paid/Remaining and gracefully handles missing data.
 - Orders form robust multi-select with automatic price/qty, pre-filling edits, and PDF invoice export.
+- Transactions module now supports view/edit/PDF export plus live wallet calculations tied to orders.
 - Order creation updates linked customer statistics (services count, amounts, last order date).
 
 ---

@@ -1,131 +1,65 @@
-import rolesData from '../mock/roles.json'
+import apiService from '../api'
+import { API_ENDPOINTS } from '../constants/api'
 
-// Simulate API delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+const mapRole = (role = {}) => ({
+  ...role,
+  isActive: role.status === true || role.status === 1,
+  createdAt: role.created_at || role.createdAt,
+  updatedAt: role.updated_at || role.updatedAt,
+  permissions: role.permissions || [],
+})
+
+const extractPayload = (response) => response?.data ?? response
 
 export const roleService = {
-  // Get all roles
   async getRoles() {
+    const payload = extractPayload(await apiService.get(API_ENDPOINTS.ROLES.LIST))
+    const roles = Array.isArray(payload?.data)
+      ? payload.data.map(mapRole)
+      : (Array.isArray(payload) ? payload.map(mapRole) : [])
+
     return {
-      success: true,
-      data: rolesData,
-      message: 'Roles fetched successfully'
+      success: payload?.success ?? true,
+      data: roles,
+      message: payload?.message ?? 'Roles fetched successfully',
     }
   },
 
-  // Get role by ID
   async getRoleById(id) {
-    const role = rolesData.find(r => r.id === parseInt(id))
-    if (role) {
-      return {
-        success: true,
-        data: role,
-        message: 'Role fetched successfully'
-      }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Role not found'
-      }
+    const payload = extractPayload(await apiService.get(API_ENDPOINTS.ROLES.GET_BY_ID(id)))
+    return {
+      success: payload?.success ?? true,
+      data: mapRole(payload?.data ?? payload),
+      message: payload?.message ?? 'Role fetched successfully',
     }
   },
 
-  // Create new role
   async createRole(roleData) {
-    await delay(800)
-    
-    // Generate unique ID
-    const existingIds = rolesData.map(r => parseInt(r.id)).filter(id => !isNaN(id))
-    const newId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1
-    
-    const newRole = {
-      id: newId,
-      ...roleData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-    
-    // In a real app, this would be saved to the backend
-    rolesData.push(newRole)
-    
+    const payload = extractPayload(await apiService.post(API_ENDPOINTS.ROLES.CREATE, roleData))
     return {
-      success: true,
-      data: newRole,
-      message: 'Role created successfully'
+      success: payload?.success ?? true,
+      data: mapRole(payload?.data ?? payload),
+      message: payload?.message ?? 'Role created successfully',
     }
   },
 
-  // Update role
   async updateRole(id, roleData) {
-    await delay(600)
-    const roleIndex = rolesData.findIndex(r => r.id === parseInt(id))
-    
-    if (roleIndex !== -1) {
-      rolesData[roleIndex] = {
-        ...rolesData[roleIndex],
-        ...roleData,
-        updatedAt: new Date().toISOString()
-      }
-      
-      return {
-        success: true,
-        data: rolesData[roleIndex],
-        message: 'Role updated successfully'
-      }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Role not found'
-      }
-    }
-  },
-
-  // Delete role
-  async deleteRole(id) {
-    await delay(400)
-    const roleIndex = rolesData.findIndex(r => r.id === parseInt(id))
-    
-    if (roleIndex !== -1) {
-      const deletedRole = rolesData.splice(roleIndex, 1)[0]
-      return {
-        success: true,
-        data: deletedRole,
-        message: 'Role deleted successfully'
-      }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Role not found'
-      }
-    }
-  },
-
-  // Get permissions
-  async getPermissions() {
-    await delay(200)
-    const permissions = [
-      { id: 'user:read', label: 'Read Users', category: 'User Management' },
-      { id: 'user:write', label: 'Create/Edit Users', category: 'User Management' },
-      { id: 'user:delete', label: 'Delete Users', category: 'User Management' },
-      { id: 'role:read', label: 'Read Roles', category: 'Role Management' },
-      { id: 'role:write', label: 'Create/Edit Roles', category: 'Role Management' },
-      { id: 'role:delete', label: 'Delete Roles', category: 'Role Management' },
-      { id: 'dashboard:read', label: 'View Dashboard', category: 'System Access' },
-      { id: 'dashboard:write', label: 'Edit Dashboard', category: 'System Access' },
-      { id: 'settings:access', label: 'System Settings', category: 'System Access' },
-      { id: 'reports:read', label: 'View Reports', category: 'Reports' },
-      { id: 'reports:write', label: 'Create Reports', category: 'Reports' }
-    ]
-    
+    const payload = extractPayload(await apiService.put(API_ENDPOINTS.ROLES.UPDATE(id), roleData))
     return {
-      success: true,
-      data: permissions,
-      message: 'Permissions fetched successfully'
+      success: payload?.success ?? true,
+      data: mapRole(payload?.data ?? payload),
+      message: payload?.message ?? 'Role updated successfully',
     }
-  }
+  },
+
+  async deleteRole(id) {
+    const payload = extractPayload(await apiService.delete(API_ENDPOINTS.ROLES.DELETE(id)))
+    return {
+      success: payload?.success ?? true,
+      data: payload?.data ?? null,
+      message: payload?.message ?? 'Role deleted successfully',
+    }
+  },
 }
 
 export default roleService

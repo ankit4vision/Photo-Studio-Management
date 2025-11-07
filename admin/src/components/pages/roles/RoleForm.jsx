@@ -113,10 +113,6 @@ const RoleForm = forwardRef(({
       newErrors.description = 'Description must be at least 5 characters if provided'
     }
 
-    if (formData.permissions.length === 0) {
-      newErrors.permissions = 'Please select at least one permission'
-    }
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -129,8 +125,7 @@ const RoleForm = forwardRef(({
     const submitData = {
       name: formData.name.trim(),
       description: formData.description.trim(),
-      permissions: formData.permissions,
-      isActive: formData.isActive
+      status: formData.isActive
     }
 
     onSubmit(submitData)

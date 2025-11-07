@@ -160,6 +160,7 @@ const OrdersList = () => {
       pending: 'warning',
       confirmed: 'info',
       processing: 'primary',
+      in_progress: 'primary',
       completed: 'success',
       cancelled: 'danger'
     }

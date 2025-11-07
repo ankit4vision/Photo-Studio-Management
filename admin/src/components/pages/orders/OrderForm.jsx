@@ -76,27 +76,13 @@ const OrderForm = forwardRef(({
   const loadPackages = async () => {
     try {
       const response = await packageService.getPackages({ status: 'active' })
-      if (response && response.success) {
-        setPackages(response.data || [])
-      } else {
-        // Fallback to mock data
-        console.warn('Failed to load packages from API, using mock data')
-        const mockResponse = packageService.getMockPackages({ status: 'active' })
-        if (mockResponse && mockResponse.success) {
-          setPackages(mockResponse.data || [])
-        }
+      if (response?.success) {
+        const packageList = Array.isArray(response.data) ? response.data : []
+        setPackages(packageList)
       }
     } catch (error) {
       console.error('Error loading packages:', error)
-      // Fallback to mock data on error
-      try {
-        const mockResponse = packageService.getMockPackages({ status: 'active' })
-        if (mockResponse && mockResponse.success) {
-          setPackages(mockResponse.data || [])
-        }
-      } catch (mockError) {
-        console.error('Error loading mock packages:', mockError)
-      }
+      setPackages([])
     }
   }
 
@@ -108,7 +94,6 @@ const OrderForm = forwardRef(({
       }
     } catch (error) {
       console.error('Error loading customers:', error)
-      // customerService already uses mock data, so if it fails, set empty array
       setCustomers([])
     }
   }
@@ -116,27 +101,13 @@ const OrderForm = forwardRef(({
   const loadBranches = async () => {
     try {
       const response = await branchService.getBranches({ status: 'active' })
-      if (response && response.success) {
-        setBranches(response.data || [])
-      } else {
-        // Fallback to mock data
-        console.warn('Failed to load branches from API, using mock data')
-        const mockResponse = branchService.getMockBranches({ status: 'active' })
-        if (mockResponse && mockResponse.success) {
-          setBranches(mockResponse.data || [])
-        }
+      if (response?.success) {
+        const branchList = Array.isArray(response.data) ? response.data : response.data?.data || []
+        setBranches(branchList)
       }
     } catch (error) {
       console.error('Error loading branches:', error)
-      // Fallback to mock data on error
-      try {
-        const mockResponse = branchService.getMockBranches({ status: 'active' })
-        if (mockResponse && mockResponse.success) {
-          setBranches(mockResponse.data || [])
-        }
-      } catch (mockError) {
-        console.error('Error loading mock branches:', mockError)
-      }
+      setBranches([])
     }
   }
 

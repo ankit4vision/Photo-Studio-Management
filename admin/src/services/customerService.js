@@ -1,390 +1,381 @@
 // Customer Service - API calls for customer management
-import customersData from '../mock/customers.json'
+import apiService from '../api'
+import { API_ENDPOINTS } from '../constants/api'
 
-// Simulate API delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+const formatStatus = (status) => {
+  if (typeof status === 'boolean') {
+    return status ? 'active' : 'inactive'
+  }
 
-const customerService = {
-  // Get all customers
-  getCustomers: async (params = {}) => {
-    await delay(500)
-    return {
-      success: true,
-      data: customersData,
-      message: 'Customers fetched successfully'
-    }
-  },
+  if (typeof status === 'number') {
+    return status === 1 ? 'active' : 'inactive'
+  }
 
-  // Get customer by ID
-  getCustomerById: async (id) => {
-    await delay(300)
-    const customer = customersData.find(c => c.id === parseInt(id))
-    if (customer) {
-      return {
-        success: true,
-        data: customer,
-        message: 'Customer fetched successfully'
-      }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Customer not found'
-      }
+  if (typeof status === 'string') {
+    const lower = status.toLowerCase()
+    if (['active', '1', 'true'].includes(lower)) {
+      return 'active'
     }
-  },
+    return 'inactive'
+  }
 
-  // Create new customer
-  createCustomer: async (customerData) => {
-    await delay(800)
-    
-    // Generate new ID
-    const existingIds = customersData.map(c => parseInt(c.id)).filter(id => !isNaN(id))
-    const newId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1
-    
-    // Handle both name format (single name field) and firstName/lastName format
-    let firstName = customerData.firstName || ''
-    let lastName = customerData.lastName || ''
-    
-    if (!firstName && !lastName && customerData.name) {
-      // Split single name field into firstName and lastName
-      const nameParts = customerData.name.trim().split(' ')
-      firstName = nameParts[0] || ''
-      lastName = nameParts.slice(1).join(' ') || ''
-    }
-    
-    const newCustomer = {
-      id: newId,
-      customerId: `#${String(newId).padStart(5, '0')}`,
-      name: customerData.name || `${firstName} ${lastName}`.trim(),
-      firstName: firstName,
-      lastName: lastName,
-      email: customerData.email || null,
-      phone: customerData.mobile || customerData.phone || '',
-      mobile: customerData.mobile || customerData.phone || '',
-      address: typeof customerData.address === 'string' ? customerData.address : (customerData.address || {}),
-      location: customerData.location || {},
-      branch_id: customerData.branch_id || null,
-      status: customerData.status || 'active',
-      totalOrders: 0,
-      totalSpent: 0,
-      joinedDate: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      lastOrderDate: null,
-      avatar: customerData.avatar || '',
-      notes: customerData.notes || '',
-      preferences: customerData.preferences || {},
-      dob: customerData.dob || null,
-      anniversary_date: customerData.anniversary_date || null
-    }
-    
-    customersData.push(newCustomer)
-    
-    return {
-      success: true,
-      data: newCustomer,
-      message: 'Customer created successfully'
-    }
-  },
+  return 'inactive'
+}
 
-  // Update customer
-  updateCustomer: async (id, customerData) => {
-    await delay(800)
-    
-    const customerIndex = customersData.findIndex(c => c.id === parseInt(id))
-    if (customerIndex !== -1) {
-      const existingCustomer = customersData[customerIndex]
-      
-      // Merge all fields from customerData, keeping existing values if not provided
-      customersData[customerIndex] = {
-        ...existingCustomer,
-        ...customerData, // Spread new data first
-        // Override with existing values if new data is undefined (to preserve existing data)
-        id: existingCustomer.id, // Never change ID
-        customerId: customerData.customerId !== undefined ? customerData.customerId : existingCustomer.customerId,
-        firstName: customerData.firstName !== undefined ? customerData.firstName : existingCustomer.firstName,
-        lastName: customerData.lastName !== undefined ? customerData.lastName : existingCustomer.lastName,
-        name: customerData.name !== undefined ? customerData.name : (existingCustomer.name || `${existingCustomer.firstName || ''} ${existingCustomer.lastName || ''}`.trim()),
-        email: customerData.email !== undefined ? customerData.email : existingCustomer.email,
-        phone: customerData.phone !== undefined ? customerData.phone : existingCustomer.phone,
-        mobile: customerData.mobile !== undefined ? customerData.mobile : (existingCustomer.mobile || existingCustomer.phone),
-        address: customerData.address !== undefined ? customerData.address : existingCustomer.address,
-        location: customerData.location !== undefined ? customerData.location : existingCustomer.location,
-        branch_id: customerData.branch_id !== undefined ? customerData.branch_id : existingCustomer.branch_id,
-        status: customerData.status !== undefined ? customerData.status : existingCustomer.status,
-        avatar: customerData.avatar !== undefined ? customerData.avatar : existingCustomer.avatar,
-        notes: customerData.notes !== undefined ? customerData.notes : existingCustomer.notes,
-        preferences: customerData.preferences !== undefined ? customerData.preferences : existingCustomer.preferences,
-        // Order-related fields
-        totalOrders: customerData.totalOrders !== undefined ? customerData.totalOrders : existingCustomer.totalOrders,
-        total_orders: customerData.total_orders !== undefined ? customerData.total_orders : (existingCustomer.total_orders || existingCustomer.totalOrders),
-        total_services: customerData.total_services !== undefined ? customerData.total_services : (existingCustomer.total_services || existingCustomer.total_orders || existingCustomer.totalOrders),
-        totalSpent: customerData.totalSpent !== undefined ? customerData.totalSpent : existingCustomer.totalSpent,
-        total_amount: customerData.total_amount !== undefined ? customerData.total_amount : (existingCustomer.total_amount || existingCustomer.totalSpent),
-        total_earnings: customerData.total_earnings !== undefined ? customerData.total_earnings : (existingCustomer.total_earnings || existingCustomer.total_amount || existingCustomer.totalSpent),
-        paid_amount: customerData.paid_amount !== undefined ? customerData.paid_amount : existingCustomer.paid_amount,
-        remaining_amount: customerData.remaining_amount !== undefined ? customerData.remaining_amount : existingCustomer.remaining_amount,
-        wallet_balance: customerData.wallet_balance !== undefined ? customerData.wallet_balance : existingCustomer.wallet_balance,
-        lastOrderDate: customerData.lastOrderDate !== undefined ? customerData.lastOrderDate : existingCustomer.lastOrderDate,
-        dob: customerData.dob !== undefined ? customerData.dob : existingCustomer.dob,
-        anniversary_date: customerData.anniversary_date !== undefined ? customerData.anniversary_date : existingCustomer.anniversary_date,
-        joinedDate: customerData.joinedDate !== undefined ? customerData.joinedDate : existingCustomer.joinedDate,
-        createdAt: existingCustomer.createdAt || existingCustomer.created_at || existingCustomer.joinedDate, // Preserve creation date
-        created_at: existingCustomer.created_at || existingCustomer.createdAt || existingCustomer.joinedDate,
-        updatedAt: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-      
-      return {
-        success: true,
-        data: customersData[customerIndex],
-        message: 'Customer updated successfully'
-      }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Customer not found'
-      }
-    }
-  },
+const statusToBoolean = (status) => {
+  if (typeof status === 'boolean') {
+    return status
+  }
 
-  // Delete customer
-  deleteCustomer: async (id) => {
-    await delay(600)
-    
-    const customerIndex = customersData.findIndex(c => c.id === parseInt(id))
-    if (customerIndex !== -1) {
-      const deletedCustomer = customersData.splice(customerIndex, 1)[0]
-      
-      return {
-        success: true,
-        data: deletedCustomer,
-        message: 'Customer deleted successfully'
-      }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Customer not found'
-      }
-    }
-  },
+  if (typeof status === 'number') {
+    return status === 1
+  }
 
-  // Update customer status
-  updateCustomerStatus: async (id, status) => {
-    await delay(300)
-    
-    const customerIndex = customersData.findIndex(c => c.id === parseInt(id))
-    if (customerIndex !== -1) {
-      customersData[customerIndex].status = status
-      customersData[customerIndex].updatedAt = new Date().toISOString()
-      
-      return {
-        success: true,
-        data: customersData[customerIndex],
-        message: 'Customer status updated successfully'
-      }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Customer not found'
-      }
-    }
-  },
+  if (typeof status === 'string') {
+    return ['active', '1', 'true'].includes(status.toLowerCase())
+  }
 
-  // Suspend customer with detailed information
-  suspendCustomer: async (id, suspensionData) => {
-    await delay(800)
-    
-    const customerIndex = customersData.findIndex(c => c.id === parseInt(id))
-    if (customerIndex !== -1) {
-      const customer = customersData[customerIndex]
-      
-      // Update customer status
-      customer.status = 'suspended'
-      customer.updatedAt = new Date().toISOString()
-      
-      // Add suspension details
-      customer.suspensionDetails = {
-        reason: suspensionData.reason,
-        durationType: suspensionData.durationType,
-        durationValue: suspensionData.durationValue,
-        durationUnit: suspensionData.durationUnit,
-        notes: suspensionData.notes,
-        suspendedAt: new Date().toISOString(),
-        suspendedBy: 'admin', // In real app, this would be the current user
-        notifications: {
-          emailSent: suspensionData.sendEmailNotification,
-          supportNotified: suspensionData.notifySupportTeam,
-          supportTicketCreated: suspensionData.createSupportTicket
-        }
-      }
-      
-      // Calculate suspension end date if temporary
-      if (suspensionData.durationType === 'temporary') {
-        const endDate = new Date()
-        const duration = parseInt(suspensionData.durationValue)
-        
-        switch (suspensionData.durationUnit) {
-          case 'day':
-            endDate.setDate(endDate.getDate() + duration)
-            break
-          case 'week':
-            endDate.setDate(endDate.getDate() + (duration * 7))
-            break
-          case 'month':
-            endDate.setMonth(endDate.getMonth() + duration)
-            break
-        }
-        
-        customer.suspensionDetails.suspendedUntil = endDate.toISOString()
-      }
-      
-      return {
-        success: true,
-        data: customer,
-        message: 'Customer suspended successfully'
-      }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Customer not found'
-      }
-    }
-  },
+  return true
+}
 
-  // Activate suspended customer
-  activateCustomer: async (id) => {
-    await delay(500)
-    
-    const customerIndex = customersData.findIndex(c => c.id === parseInt(id))
-    if (customerIndex !== -1) {
-      const customer = customersData[customerIndex]
-      
-      // Update customer status
-      customer.status = 'active'
-      customer.updatedAt = new Date().toISOString()
-      
-      // Add activation details
-      if (customer.suspensionDetails) {
-        customer.suspensionDetails.activatedAt = new Date().toISOString()
-        customer.suspensionDetails.activatedBy = 'admin' // In real app, this would be the current user
-      }
-      
-      return {
-        success: true,
-        data: customer,
-        message: 'Customer activated successfully'
-      }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Customer not found'
-      }
-    }
-  },
+const buildCustomerCode = (id) => `#${String(id ?? '').padStart(5, '0')}`
 
-  // Get customer statistics
-  getCustomerStats: async () => {
-    await delay(300)
-    
-    const totalCustomers = customersData.length
-    const activeCustomers = customersData.filter(c => c.status === 'active').length
-    const suspendedCustomers = customersData.filter(c => c.status === 'suspended').length
-    const newThisMonth = customersData.filter(c => {
-      const joinedDate = new Date(c.joinedDate)
-      const now = new Date()
-      return joinedDate.getMonth() === now.getMonth() && joinedDate.getFullYear() === now.getFullYear()
-    }).length
-    
-    return {
-      success: true,
-      data: {
-        totalCustomers,
-        activeCustomers,
-        suspendedCustomers,
-        newThisMonth
-      },
-      message: 'Customer statistics fetched successfully'
-    }
-  },
+const mapCustomer = (customer = {}) => {
+  if (!customer) {
+    return null
+  }
 
-  // Search customers
-  searchCustomers: async (searchTerm, filters = {}) => {
-    await delay(300)
-    
-    let filteredCustomers = customersData
-    
-    if (searchTerm) {
-      filteredCustomers = filteredCustomers.filter(c => 
-        `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.phone?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    }
-    
-    if (filters.status) {
-      filteredCustomers = filteredCustomers.filter(c => c.status === filters.status)
-    }
-    
-    if (filters.location) {
-      filteredCustomers = filteredCustomers.filter(c => 
-        c.location.city?.toLowerCase().includes(filters.location.toLowerCase()) ||
-        c.location.country?.toLowerCase().includes(filters.location.toLowerCase())
-      )
-    }
-    
-    if (filters.registrationDate) {
-      const now = new Date()
-      const filterDate = new Date()
-      
-      switch (filters.registrationDate) {
-        case 'today':
-          filterDate.setDate(now.getDate() - 1)
-          break
-        case 'week':
-          filterDate.setDate(now.getDate() - 7)
-          break
-        case 'month':
-          filterDate.setMonth(now.getMonth() - 1)
-          break
-        case 'year':
-          filterDate.setFullYear(now.getFullYear() - 1)
-          break
-        default:
-          break
-      }
-      
-      filteredCustomers = filteredCustomers.filter(c => new Date(c.joinedDate) >= filterDate)
-    }
-    
-    return {
-      success: true,
-      data: filteredCustomers,
-      message: 'Customers searched successfully'
-    }
-  },
+  const statusBoolean = statusToBoolean(customer.status)
+  const status = formatStatus(customer.status)
+  const branch = customer.branch || {}
 
-  // Export customers
-  exportCustomers: async (format = 'csv', filters = {}) => {
-    await delay(1000)
-    
-    // Simulate export functionality
-    const filteredCustomers = customersData // In real app, apply filters here
-    
-    return {
-      success: true,
-      data: filteredCustomers,
-      message: 'Customers exported successfully'
-    }
+  return {
+    ...customer,
+    status,
+    isActive: statusBoolean,
+    branch_id: customer.branch_id ?? branch.id ?? null,
+    branch_name: branch.branch_name ?? customer.branch_name ?? null,
+    branch_code: branch.branch_code ?? customer.branch_code ?? null,
+    phone: customer.phone ?? customer.mobile ?? '',
+    mobile: customer.mobile ?? customer.phone ?? '',
+    customerId: customer.customerId ?? buildCustomerCode(customer.id),
+    photographerId: customer.photographerId ?? customer.customerId ?? buildCustomerCode(customer.id),
+    joinedDate: customer.joinedDate || customer.created_at || customer.createdAt,
+    createdAt: customer.createdAt || customer.created_at,
+    updatedAt: customer.updatedAt || customer.updated_at,
+    total_orders: customer.total_orders ?? customer.orders_count ?? 0,
+    totalOrders: customer.totalOrders ?? customer.total_orders ?? customer.orders_count ?? 0,
+    total_services: customer.total_services ?? customer.total_orders ?? customer.orders_count ?? 0,
+    totalSpent: customer.totalSpent ?? customer.total_amount ?? 0,
+    total_amount: customer.total_amount ?? 0,
+    total_earnings: customer.total_earnings ?? customer.total_amount ?? 0,
+    paid_amount: customer.paid_amount ?? 0,
+    remaining_amount: customer.remaining_amount ?? 0,
+    wallet_balance: Number(customer.wallet_balance ?? 0),
   }
 }
 
-export { customerService }
+const normalizeCustomerPayload = (payload = {}) => ({
+  branch_id: payload.branch_id,
+  name: payload.name,
+  mobile: payload.mobile,
+  email: payload.email ?? null,
+  address: payload.address ?? null,
+  dob: payload.dob ?? null,
+  anniversary_date: payload.anniversary_date ?? null,
+  status: statusToBoolean(payload.status),
+})
+
+export const customerService = {
+  async getCustomers(params = {}) {
+    try {
+      const query = { ...params }
+      if (query.status) {
+        query.status = statusToBoolean(query.status)
+      }
+      if (query.branch_id === '') {
+        delete query.branch_id
+      }
+
+      const response = await apiService.get(API_ENDPOINTS.CUSTOMERS.LIST, { params: query })
+      const data = Array.isArray(response?.data) ? response.data : response
+
+      const customers = Array.isArray(data)
+        ? data.map(mapCustomer)
+        : []
+
+      return {
+        success: response?.success ?? true,
+        data: customers,
+        total: response?.total ?? customers.length,
+        message: response?.message,
+      }
+    } catch (error) {
+      return error
+    }
+  },
+
+  async getCustomerById(id) {
+    try {
+      const response = await apiService.get(API_ENDPOINTS.CUSTOMERS.GET_BY_ID(id))
+      return {
+        success: response?.success ?? true,
+        data: mapCustomer(response?.data ?? response),
+        message: response?.message,
+      }
+    } catch (error) {
+      return error
+    }
+  },
+
+  async createCustomer(customerData) {
+    try {
+      const payload = normalizeCustomerPayload(customerData)
+      const response = await apiService.post(API_ENDPOINTS.CUSTOMERS.CREATE, payload)
+      return {
+        success: response?.success ?? true,
+        data: mapCustomer(response?.data ?? response),
+        message: response?.message ?? 'Customer created successfully',
+      }
+    } catch (error) {
+      return error
+    }
+  },
+
+  async updateCustomer(id, customerData) {
+    try {
+      const payload = normalizeCustomerPayload(customerData)
+      const response = await apiService.put(API_ENDPOINTS.CUSTOMERS.UPDATE(id), payload)
+      return {
+        success: response?.success ?? true,
+        data: mapCustomer(response?.data ?? response),
+        message: response?.message ?? 'Customer updated successfully',
+      }
+    } catch (error) {
+      return error
+    }
+  },
+
+  async deleteCustomer(id) {
+    try {
+      const response = await apiService.delete(API_ENDPOINTS.CUSTOMERS.DELETE(id))
+      return {
+        success: response?.success ?? true,
+        message: response?.message ?? 'Customer deleted successfully',
+      }
+    } catch (error) {
+      return error
+    }
+  },
+
+  async updateCustomerStatus(id, status) {
+    try {
+      const response = await apiService.put(API_ENDPOINTS.CUSTOMERS.UPDATE(id), {
+        status: statusToBoolean(status),
+      })
+
+      return {
+        success: response?.success ?? true,
+        data: mapCustomer(response?.data ?? response),
+        message: response?.message ?? 'Customer status updated successfully',
+      }
+    } catch (error) {
+      return error
+    }
+  },
+
+  async suspendCustomer(id, suspensionData = {}) {
+    const payload = {
+      status: false,
+      suspension_reason: suspensionData.reason ?? null,
+      suspension_notes: suspensionData.notes ?? null,
+    }
+
+    try {
+      const response = await apiService.put(API_ENDPOINTS.CUSTOMERS.UPDATE(id), payload)
+      const mappedCustomer = mapCustomer(response?.data ?? response)
+
+      return {
+        success: response?.success ?? true,
+        data: {
+          ...mappedCustomer,
+          suspensionDetails: {
+            reason: suspensionData.reason ?? 'Suspended by admin',
+            notes: suspensionData.notes ?? '',
+            suspendedAt: new Date().toISOString(),
+          },
+        },
+        message: response?.message ?? 'Customer suspended successfully',
+      }
+    } catch (error) {
+      return error
+    }
+  },
+
+  async activateCustomer(id) {
+    try {
+      const response = await apiService.put(API_ENDPOINTS.CUSTOMERS.UPDATE(id), {
+        status: true,
+      })
+
+      return {
+        success: response?.success ?? true,
+        data: mapCustomer(response?.data ?? response),
+        message: response?.message ?? 'Customer activated successfully',
+      }
+    } catch (error) {
+      return error
+    }
+  },
+
+  async getCustomerStats() {
+    try {
+      const response = await this.getCustomers({ limit: 500 })
+      if (!response.success) {
+        return response
+      }
+
+      const customers = response.data || []
+      const now = new Date()
+
+      const stats = {
+        totalCustomers: customers.length,
+        activeCustomers: customers.filter(c => formatStatus(c.status) === 'active').length,
+        suspendedCustomers: customers.filter(c => formatStatus(c.status) !== 'active').length,
+        newThisMonth: customers.filter(c => {
+          if (!c.joinedDate) return false
+          const joined = new Date(c.joinedDate)
+          return joined.getMonth() === now.getMonth() && joined.getFullYear() === now.getFullYear()
+        }).length,
+      }
+
+      return {
+        success: true,
+        data: stats,
+        message: 'Customer statistics fetched successfully',
+      }
+    } catch (error) {
+      return error
+    }
+  },
+
+  async searchCustomers(searchTerm, filters = {}) {
+    try {
+      const params = {
+        search: searchTerm,
+        status: filters.status,
+        branch_id: filters.branch_id,
+      }
+
+      const response = await this.getCustomers(params)
+      if (!response.success) {
+        return response
+      }
+
+      const customers = response.data || []
+
+      // Additional client-side filters
+      let filtered = customers
+
+      if (filters.location) {
+        const locationFilter = filters.location.toLowerCase()
+        filtered = filtered.filter(c => {
+          const address = typeof c.address === 'string' ? c.address : ''
+          return address.toLowerCase().includes(locationFilter)
+        })
+      }
+
+      if (filters.registrationDate) {
+        const now = new Date()
+        const filterDate = new Date()
+
+        switch (filters.registrationDate) {
+          case 'today':
+            filterDate.setDate(now.getDate() - 1)
+            break
+          case 'week':
+            filterDate.setDate(now.getDate() - 7)
+            break
+          case 'month':
+            filterDate.setMonth(now.getMonth() - 1)
+            break
+          case 'year':
+            filterDate.setFullYear(now.getFullYear() - 1)
+            break
+          default:
+            break
+        }
+
+        filtered = filtered.filter(c => {
+          if (!c.joinedDate) return false
+          return new Date(c.joinedDate) >= filterDate
+        })
+      }
+
+      return {
+        success: true,
+        data: filtered,
+        message: 'Customers searched successfully',
+      }
+    } catch (error) {
+      return error
+    }
+  },
+
+  async exportCustomers(format = 'csv', filters = {}) {
+    try {
+      const response = await this.getCustomers(filters)
+      if (!response.success) {
+        return response
+      }
+
+      return {
+        success: true,
+        data: response.data,
+        format,
+        message: 'Customers fetched successfully',
+      }
+    } catch (error) {
+      return error
+    }
+  },
+
+  async getCustomerWallet(id) {
+    try {
+      const response = await apiService.get(API_ENDPOINTS.CUSTOMERS.WALLET(id))
+      return {
+        success: response?.success ?? true,
+        data: response?.data ?? response,
+        message: response?.message ?? 'Wallet fetched successfully',
+      }
+    } catch (error) {
+      return error
+    }
+  },
+
+  async getCustomerLedger(id) {
+    try {
+      const response = await apiService.get(API_ENDPOINTS.CUSTOMERS.LEDGER(id))
+      const payload = response?.data ?? response
+
+      if (!payload) {
+        return {
+          success: false,
+          data: null,
+          message: 'Unable to fetch customer ledger',
+        }
+      }
+
+      return {
+        success: response?.success ?? true,
+        data: {
+          ...payload,
+          customer: mapCustomer(payload.customer),
+        },
+        message: response?.message ?? 'Customer ledger fetched successfully',
+      }
+    } catch (error) {
+      return error
+    }
+  },
+}

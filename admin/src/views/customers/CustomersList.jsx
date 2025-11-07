@@ -22,7 +22,6 @@ import { Table, Modal, useToast } from '../../components'
 import CustomerDetailsModal from '../../components/pages/customers/CustomerDetailsModal'
 import SuspendCustomerModal from '../../components/pages/customers/SuspendCustomerModal'
 import { customerService } from '../../services/customerService'
-import photographersData from '../../mock/photographers.json'
 import { exportPhotographersToPDF, exportSinglePhotographerToPDF } from '../../utils/pdfExport'
 import { useLocation } from 'react-router-dom'
 
@@ -72,53 +71,15 @@ const CustomersList = () => {
   const loadCustomers = async () => {
     try {
       setLoading(true)
-      // Load from service (includes newly created customers)
       const response = await customerService.getCustomers()
-      
-      // Always combine customers from service with photographers data
-      let allCustomers = []
-      
-      // Add customers from service
-      if (response && response.success && response.data && Array.isArray(response.data)) {
-        const convertedCustomers = response.data.map(customer => ({
-          ...customer,
-          name: customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim(),
-          mobile: customer.mobile || customer.phone,
-          phone: customer.phone || customer.mobile,
-          joinedDate: customer.joinedDate || customer.createdAt || customer.created_at,
-          created_at: customer.created_at || customer.createdAt || customer.joinedDate,
-          // Map customer fields to photographer fields for table compatibility
-          photographerId: customer.photographerId || customer.customerId || `#${customer.id}`,
-          total_earnings: customer.total_earnings || customer.total_amount || customer.totalSpent || 0,
-          total_amount: customer.total_amount || customer.total_earnings || customer.totalSpent || 0,
-          paid_amount: customer.paid_amount || 0,
-          remaining_amount: customer.remaining_amount || (customer.total_amount || customer.total_earnings || customer.totalSpent || 0),
-          total_orders: customer.total_orders || customer.total_services || customer.totalOrders || 0,
-          total_services: customer.total_services || customer.total_orders || customer.totalOrders || 0,
-          wallet_balance: customer.wallet_balance || 0,
-          // Ensure branch_id and branch_name for branch indicator
-          branch_id: customer.branch_id || null,
-          branch_name: customer.branch_name || null
-        }))
-        allCustomers = [...convertedCustomers]
+
+      if (response?.success) {
+        const fetchedCustomers = Array.isArray(response.data) ? response.data : []
+        setCustomers(fetchedCustomers)
       }
-      
-      // Add photographers data (excluding duplicates)
-      const existingIds = new Set(allCustomers.map(c => c.id))
-      const uniquePhotographers = photographersData.filter(p => !existingIds.has(p.id))
-      allCustomers = [...allCustomers, ...uniquePhotographers]
-      
-      // If no data at all, use photographers as fallback
-      if (allCustomers.length === 0) {
-        allCustomers = photographersData
-      }
-      
-      setCustomers(allCustomers)
-      console.log('Loaded customers:', allCustomers.length, 'items')
     } catch (err) {
       console.error('Error loading customers:', err)
-      // Fallback to photographers mock data on error
-      setCustomers(photographersData)
+      setCustomers([])
     } finally {
       setLoading(false)
     }
@@ -126,25 +87,15 @@ const CustomersList = () => {
 
   const loadStats = async () => {
     try {
-      // Use current customers state for stats
-      const allCustomers = customers.length > 0 ? customers : photographersData
-      const totalCustomers = allCustomers.length
-      const activeCustomers = allCustomers.filter(p => p.status === 'active').length
-      const suspendedCustomers = allCustomers.filter(p => p.status === 'suspended').length
-      const newThisMonth = allCustomers.filter(p => {
-        const joinedDate = p.joinedDate || p.createdAt || p.created_at
-        if (!joinedDate) return false
-        const joinDate = new Date(joinedDate)
-        const now = new Date()
-        return joinDate.getMonth() === now.getMonth() && joinDate.getFullYear() === now.getFullYear()
-      }).length
-      
-      setStats({
-        totalCustomers,
-        activeCustomers,
-        suspendedCustomers,
-        newThisMonth
-      })
+      const response = await customerService.getCustomerStats()
+      if (response?.success) {
+        setStats(response.data || {
+          totalCustomers: 0,
+          activeCustomers: 0,
+          suspendedCustomers: 0,
+          newThisMonth: 0,
+        })
+      }
     } catch (err) {
       console.error('Error loading stats:', err)
     }

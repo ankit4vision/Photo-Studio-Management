@@ -12,7 +12,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { Table, Modal } from '../../components'
 import branchService from '../../services/branchService'
-import photographersData from '../../mock/photographers.json'
+import { customerService } from '../../services/customerService'
 
 const BranchesList = () => {
   const navigate = useNavigate()
@@ -32,28 +32,39 @@ const BranchesList = () => {
     calculateBranchStats()
   }, [])
 
-  // Calculate branch statistics from photographers data
-  const calculateBranchStats = () => {
-    const stats = {}
-    
-    photographersData.forEach(photographer => {
-      const branchId = photographer.branch_id
-      if (!branchId) return
-      
-      if (!stats[branchId]) {
-        stats[branchId] = {
-          revenue: 0,
-          customers: 0,
-          services: 0
-        }
+  // Calculate branch statistics from customer data
+  const calculateBranchStats = async () => {
+    try {
+      const response = await customerService.getCustomers({ limit: 500 })
+      if (!response?.success) {
+        return
       }
-      
-      stats[branchId].revenue += photographer.total_earnings || photographer.total_amount || 0
-      stats[branchId].customers += 1
-      stats[branchId].services += photographer.total_orders || photographer.total_services || 0
-    })
-    
-    setBranchStats(stats)
+
+      const stats = {}
+      const customers = Array.isArray(response.data) ? response.data : []
+
+      customers.forEach((customer) => {
+        const branchId = customer.branch_id
+        if (!branchId) return
+
+        if (!stats[branchId]) {
+          stats[branchId] = {
+            revenue: 0,
+            customers: 0,
+            services: 0,
+          }
+        }
+
+        stats[branchId].revenue += Number(customer.total_earnings || customer.total_amount || 0)
+        stats[branchId].customers += 1
+        stats[branchId].services += Number(customer.total_services || customer.total_orders || 0)
+      })
+
+      setBranchStats(stats)
+    } catch (error) {
+      console.error('Error calculating branch stats:', error)
+      setBranchStats({})
+    }
   }
 
   // Format currency in Indian Rupees
@@ -74,31 +85,14 @@ const BranchesList = () => {
     try {
       setLoading(true)
       const response = await branchService.getBranches()
-      if (response && response.success) {
-        setBranches(response.data || [])
-        // Recalculate stats after loading branches
-        calculateBranchStats()
-      } else {
-        // If response is not successful, try to use mock data directly
-        console.warn('Failed to load branches from API, using mock data')
-        const mockResponse = branchService.getMockBranches()
-        if (mockResponse && mockResponse.success) {
-          setBranches(mockResponse.data || [])
-          calculateBranchStats()
-        }
+      if (response?.success) {
+        const branchList = Array.isArray(response.data) ? response.data : []
+        setBranches(branchList)
+        await calculateBranchStats()
       }
     } catch (error) {
       console.error('Error loading branches:', error)
-      // Fallback to mock data on error
-      try {
-        const mockResponse = branchService.getMockBranches()
-        if (mockResponse && mockResponse.success) {
-          setBranches(mockResponse.data || [])
-          calculateBranchStats()
-        }
-      } catch (mockError) {
-        console.error('Error loading mock branches:', mockError)
-      }
+      setBranches([])
     } finally {
       setLoading(false)
     }
