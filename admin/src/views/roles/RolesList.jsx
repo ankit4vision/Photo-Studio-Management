@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Container, Row, Col, Button, FormControl, FormSelect, Card } from 'react-bootstrap'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { Container, Row, Col, Button, Form, FormControl, FormSelect, InputGroup, Badge } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faPencil, faTrash, faInfo, faMagnifyingGlass, faLock } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from '../../components'
 import { Table, Modal, FormModal } from '../../components'
 import RoleForm from '../../components/pages/roles/RoleForm'
 import roleService from '../../services/roleService'
+import { usePermissions } from '../../hooks'
+import { PERMISSIONS } from '../../constants/permissions'
 
 const RolesList = () => {
   const [roles, setRoles] = useState([])
@@ -28,6 +30,21 @@ const RolesList = () => {
   const addRoleFormRef = useRef()
   const editRoleFormRef = useRef()
   
+  const { hasPermission } = usePermissions()
+
+  const canCreateRole = hasPermission
+    ? hasPermission(PERMISSIONS.ROLE_WRITE) || hasPermission(PERMISSIONS.ROLE_MANAGE)
+    : true
+  const canUpdateRole = hasPermission
+    ? hasPermission(PERMISSIONS.ROLE_WRITE) || hasPermission(PERMISSIONS.ROLE_MANAGE)
+    : true
+  const canDeleteRole = hasPermission
+    ? hasPermission(PERMISSIONS.ROLE_DELETE) || hasPermission(PERMISSIONS.ROLE_MANAGE)
+    : true
+  const canViewRole = hasPermission
+    ? hasPermission(PERMISSIONS.ROLE_READ) || hasPermission(PERMISSIONS.ROLE_MANAGE)
+    : true
+
   const { success, error } = useToast()
 
   useEffect(() => {
@@ -121,17 +138,36 @@ const RolesList = () => {
   }
 
   // Filter roles based on search and status
-  const filteredRoles = roles.filter(role => {
-    const matchesSearch = 
-      role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      role.description.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStatus = !statusFilter || 
-      (statusFilter === 'active' && role.isActive) ||
-      (statusFilter === 'inactive' && !role.isActive)
-    
-    return matchesSearch && matchesStatus
-  })
+  const filteredRoles = useMemo(() => {
+    return roles.filter(role => {
+      const matchesSearch = 
+        role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        role.description.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      const matchesStatus = !statusFilter || 
+        (statusFilter === 'active' && role.isActive) ||
+        (statusFilter === 'inactive' && !role.isActive)
+      
+      return matchesSearch && matchesStatus
+    })
+  }, [roles, searchTerm, statusFilter])
+
+  const roleStats = useMemo(() => {
+    const total = filteredRoles.length
+    const active = filteredRoles.filter(role => role.isActive).length
+    const inactive = total - active
+    const totalPermissions = filteredRoles.reduce(
+      (sum, role) => sum + (role.permissions?.length || 0),
+      0
+    )
+
+    return {
+      total,
+      active,
+      inactive,
+      totalPermissions,
+    }
+  }, [filteredRoles])
 
   const columns = [
     {
@@ -181,98 +217,174 @@ const RolesList = () => {
       label: 'Actions',
       render: (value, role, index) => (
         <div className="d-flex gap-2">
-          <Button
-            variant="info"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleViewRole(role)
-            }}
-            title="View Role"
-          >
-            <FontAwesomeIcon icon={faInfo} />
-          </Button>
-          <Button
-            variant="warning"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleOpenEditModal(role)
-            }}
-            title="Edit Role"
-          >
-            <FontAwesomeIcon icon={faPencil} />
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleDeleteRole(role)
-            }}
-            title="Delete Role"
-          >
-            <FontAwesomeIcon icon={faTrash} />
-          </Button>
+          {canViewRole && (
+            <Button
+              variant="info"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleViewRole(role)
+              }}
+              title="View Role"
+            >
+              <FontAwesomeIcon icon={faInfo} />
+            </Button>
+          )}
+          {canUpdateRole && (
+            <Button
+              variant="warning"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleOpenEditModal(role)
+              }}
+              title="Edit Role"
+            >
+              <FontAwesomeIcon icon={faPencil} />
+            </Button>
+          )}
+          {canDeleteRole && (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDeleteRole(role)
+              }}
+              title="Delete Role"
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </Button>
+          )}
         </div>
       )
     }
   ]
 
   return (
-    <Container fluid>
-      <Row>
+    <Container fluid className="px-0 px-xl-3">
+      <Row className="g-4">
         <Col xs={12}>
-          {/* Roles Table Card */}
-          <Card>
-            <Card.Header>
-              <div className="d-flex justify-content-between align-items-center w-100">
-                <Card.Title className="mb-0">Roles</Card.Title>
+          <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
+            <div>
+              <h2 className="mb-1 text-dark">Roles &amp; Permissions</h2>
+              <p className="text-muted mb-0">
+                Configure access policies, assign capabilities, and maintain a secure workspace.
+              </p>
+            </div>
+            {canCreateRole && (
+              <div className="ms-auto">
                 <Button
                   variant="primary"
+                  className="shadow-sm text-white"
                   onClick={handleAddRole}
                 >
                   <FontAwesomeIcon icon={faPlus} className="me-2" />
-                  Add Role
+                  Create Role
                 </Button>
               </div>
-            </Card.Header>
-            <Card.Body>
-              {/* Filters */}
-              <div className="d-flex gap-2 align-items-center mb-3">
-                <FormControl
-                  placeholder="Search roles..."
-                  value={searchTerm}
-                  onChange={handleSearch}
-                  style={{ width: '200px' }}
-                />
-                <FormSelect
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  style={{ width: '150px' }}
-                >
-                  <option value="">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </FormSelect>
+            )}
+          </div>
+
+          <div className="bg-white rounded-3 shadow-sm p-4">
+            <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-primary border-2">
+              <FontAwesomeIcon icon={faLock} className="me-3 text-primary fs-4" />
+              <div>
+                <h4 className="mb-1 text-primary">Access Control Center</h4>
+                <span className="text-muted">Total of {roleStats.total} roles in view</span>
               </div>
-              
-              <Table
-                data={filteredRoles}
-                columns={columns}
-                loading={loading}
-                hover
-                pagination={true}
-                sortable={true}
-                sortableColumns={['name', 'status', 'createdAt']}
-                currentPage={currentPage}
-                pageSize={pageSize}
-                totalItems={filteredRoles.length}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={setPageSize}
-              />
-            </Card.Body>
-          </Card>
+              <Badge bg="light" text="primary" className="ms-auto border border-primary fw-semibold">
+                {roleStats.totalPermissions} Permission assignments
+              </Badge>
+            </div>
+
+            <Row className="g-3 mb-4">
+              <Col md={4} sm={6}>
+                <div className="rounded-3 border border-light-subtle p-3 bg-gradient-primary-subtle h-100">
+                  <p className="text-uppercase text-muted mb-1 small">Active Roles</p>
+                  <div className="d-flex align-items-end">
+                    <h3 className="mb-0 text-primary fw-semibold">{roleStats.active}</h3>
+                    <span className="ms-2 text-muted">assigned</span>
+                  </div>
+                </div>
+              </Col>
+              <Col md={4} sm={6}>
+                <div className="rounded-3 border border-light-subtle p-3 bg-gradient-info h-100 text-white">
+                  <p className="text-uppercase mb-1 small opacity-75">Total Roles</p>
+                  <div className="d-flex align-items-end">
+                    <h3 className="mb-0 fw-semibold">{roleStats.total}</h3>
+                    <span className="ms-2 opacity-75">configurations</span>
+                  </div>
+                </div>
+              </Col>
+              <Col md={4} sm={12}>
+                <div className="rounded-3 border border-light-subtle p-3 bg-gradient-warning h-100">
+                  <p className="text-uppercase text-muted mb-1 small">Inactive Roles</p>
+                  <div className="d-flex align-items-end">
+                    <h3 className="mb-0 text-warning fw-semibold">{roleStats.inactive}</h3>
+                    <span className="ms-2 text-muted">disabled</span>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+
+            <Form className="mb-4">
+              <Row className="g-3 align-items-end">
+                <Col md={6} sm={12}>
+                  <Form.Label className="fw-semibold text-muted">Search</Form.Label>
+                  <InputGroup>
+                    <InputGroup.Text className="bg-white border-2 text-muted">
+                      <FontAwesomeIcon icon={faMagnifyingGlass} />
+                    </InputGroup.Text>
+                    <FormControl
+                      placeholder="Search by name or description"
+                      value={searchTerm}
+                      onChange={handleSearch}
+                      className="border-2"
+                    />
+                  </InputGroup>
+                </Col>
+                <Col md={3} sm={6}>
+                  <Form.Label className="fw-semibold text-muted">Status</Form.Label>
+                  <FormSelect
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="border-2"
+                  >
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </FormSelect>
+                </Col>
+                <Col md={3} sm={6}>
+                  <Form.Label className="fw-semibold text-muted">Quick Insights</Form.Label>
+                  <div className="d-flex gap-2">
+                    <Badge bg="secondary" className="bg-gradient-primary text-white">
+                      {roleStats.totalPermissions} Permissions
+                    </Badge>
+                    <Badge bg="secondary" className="bg-gradient-success text-white">
+                      {roleStats.active} Active
+                    </Badge>
+                  </div>
+                </Col>
+              </Row>
+            </Form>
+            
+            <Table
+              data={filteredRoles}
+              columns={columns}
+              loading={loading}
+              hover
+              pagination={true}
+              sortable={true}
+              sortableColumns={['name', 'status', 'createdAt']}
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalItems={filteredRoles.length}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
         </Col>
       </Row>
 

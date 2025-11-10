@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Container, Row, Col, Button, FormControl, FormSelect, Card } from 'react-bootstrap'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { Container, Row, Col, Button, Form, FormControl, FormSelect, InputGroup, Badge } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faPencil, faTrash, faInfo, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
+import { faPlus, faPencil, faTrash, faInfo, faMagnifyingGlass, faUsers } from '@fortawesome/free-solid-svg-icons'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../../components'
 import { useUserManagement, usePermissions } from '../../hooks'
 import { Table, Modal, FormModal, UserForm } from '../../components'
+import { PERMISSIONS } from '../../constants/permissions'
 
 const UsersList = () => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -38,6 +39,19 @@ const UsersList = () => {
   const { success, error } = useToast()
   const { users, loading, fetchUsers, deleteUser } = useUserManagement()
   const { hasPermission } = usePermissions()
+
+  const canCreateUser = hasPermission
+    ? hasPermission(PERMISSIONS.USER_WRITE) || hasPermission(PERMISSIONS.USER_MANAGE)
+    : true
+  const canUpdateUser = hasPermission
+    ? hasPermission(PERMISSIONS.USER_WRITE) || hasPermission(PERMISSIONS.USER_MANAGE)
+    : true
+  const canDeleteUser = hasPermission
+    ? hasPermission(PERMISSIONS.USER_DELETE) || hasPermission(PERMISSIONS.USER_MANAGE)
+    : true
+  const canViewUser = hasPermission
+    ? hasPermission(PERMISSIONS.USER_READ) || hasPermission(PERMISSIONS.USER_MANAGE)
+    : true
 
   useEffect(() => {
     fetchUsers()
@@ -132,18 +146,37 @@ const UsersList = () => {
       error('Please select users to delete')
       return
     }
-    // Implement bulk delete
+    if (!canDeleteUser) {
+      error('You do not have permission to delete users')
+      return
+    }
+    // Implement bulk delete functionality when API is ready
   }
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (user.phone && user.phone.toLowerCase().includes(searchTerm.toLowerCase()))
-    const matchesRole = !roleFilter || user.role === roleFilter
-    const matchesStatus = !statusFilter || user.isActive === (statusFilter === 'active')
-    return matchesSearch && matchesRole && matchesStatus
-  })
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      const matchesSearch =
+        user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.phone && user.phone.toLowerCase().includes(searchTerm.toLowerCase()))
+
+      const matchesRole = !roleFilter || user.role === roleFilter
+      const matchesStatus = !statusFilter || user.isActive === (statusFilter === 'active')
+      return matchesSearch && matchesRole && matchesStatus
+    })
+  }, [users, searchTerm, roleFilter, statusFilter])
+
+  const userStats = useMemo(() => {
+    const total = filteredUsers.length
+    const active = filteredUsers.filter(user => user.isActive).length
+    const inactive = total - active
+    return {
+      total,
+      active,
+      inactive,
+    }
+  }, [filteredUsers])
 
   const columns = [
     {
@@ -214,115 +247,189 @@ const UsersList = () => {
       label: 'Actions',
       render: (value, user, index) => (
         <div className="d-flex gap-2">
-          <Button
-            variant="info"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleViewUser(user)
-            }}
-            title="View User"
-          >
-            <FontAwesomeIcon icon={faInfo} />
-          </Button>
-          <Button
-            variant="warning"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleOpenEditModal(user)
-            }}
-            title="Edit User"
-          >
-            <FontAwesomeIcon icon={faPencil} />
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleDeleteUser(user)
-            }}
-            title="Delete User"
-          >
-            <FontAwesomeIcon icon={faTrash} />
-          </Button>
+          {canViewUser && (
+            <Button
+              variant="info"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleViewUser(user)
+              }}
+              title="View User"
+            >
+              <FontAwesomeIcon icon={faInfo} />
+            </Button>
+          )}
+          {canUpdateUser && (
+            <Button
+              variant="warning"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleOpenEditModal(user)
+              }}
+              title="Edit User"
+            >
+              <FontAwesomeIcon icon={faPencil} />
+            </Button>
+          )}
+          {canDeleteUser && (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDeleteUser(user)
+              }}
+              title="Delete User"
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </Button>
+          )}
         </div>
       )
     }
   ]
 
   return (
-    <Container fluid>
-      <Row>
+    <Container fluid className="px-0 px-xl-3">
+      <Row className="g-4">
         <Col xs={12}>
-          {/* Users Table Card */}
-          <Card>
-            <Card.Header>
-              <div className="d-flex justify-content-between align-items-center w-100">
-                <Card.Title className="mb-0">Users</Card.Title>
+          <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
+            <div>
+              <h2 className="mb-1 text-dark">Users Management</h2>
+              <p className="text-muted mb-0">
+                Monitor team members, manage access levels, and keep account details up to date.
+              </p>
+            </div>
+            {canCreateUser && (
+              <div className="ms-auto">
                 <Button
                   variant="primary"
+                  className="shadow-sm text-white"
                   onClick={handleCreateUser}
                 >
                   <FontAwesomeIcon icon={faPlus} className="me-2" />
                   Add User
                 </Button>
               </div>
-            </Card.Header>
-            <Card.Body>
-              {/* Filters */}
-              <div className="d-flex gap-2 align-items-center mb-3">
-                <FormControl
-                  placeholder="Search users..."
-                  value={searchTerm}
-                  onChange={handleSearch}
-                  style={{ width: '200px' }}
-                />
-                <FormSelect
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  style={{ width: '120px' }}
-                >
-                  <option value="">All Roles</option>
-                  <option value="admin">Admin</option>
-                  <option value="manager">Manager</option>
-                  <option value="user">User</option>
-                </FormSelect>
-                <FormSelect
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  style={{ width: '120px' }}
-                >
-                  <option value="">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </FormSelect>
-                {selectedUsers.length > 0 && (
-                  <Button
-                    variant="danger"
-                    onClick={handleBulkDelete}
-                  >
-                    Delete ({selectedUsers.length})
-                  </Button>
-                )}
+            )}
+          </div>
+
+          <div className="bg-white rounded-3 shadow-sm p-4">
+            <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-primary border-2">
+              <FontAwesomeIcon icon={faUsers} className="me-3 text-primary fs-4" />
+              <div>
+                <h4 className="mb-1 text-primary">User Directory</h4>
+                <span className="text-muted">Total of {userStats.total} users in view</span>
               </div>
-              <Table
-                data={filteredUsers}
-                columns={columns}
-                loading={loading}
-                hover
-                pagination={true}
-                sortable={true}
-                sortableColumns={['name', 'email', 'phone']}
-                currentPage={currentPage}
-                pageSize={pageSize}
-                totalItems={filteredUsers.length}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={setPageSize}
-              />
-            </Card.Body>
-          </Card>
+              <Badge bg="light" text="primary" className="ms-auto border border-primary fw-semibold">
+                {userStats.active} Active · {userStats.inactive} Inactive
+              </Badge>
+            </div>
+
+            <Row className="g-3 mb-4">
+              <Col md={4} sm={6}>
+                <div className="rounded-3 border border-light-subtle p-3 bg-gradient-primary-subtle h-100">
+                  <p className="text-uppercase text-muted mb-1 small">Active Users</p>
+                  <div className="d-flex align-items-end">
+                    <h3 className="mb-0 text-primary fw-semibold">{userStats.active}</h3>
+                    <span className="ms-2 text-muted">onboarded</span>
+                  </div>
+                </div>
+              </Col>
+              <Col md={4} sm={6}>
+                <div className="rounded-3 border border-light-subtle p-3 bg-gradient-info h-100 text-white">
+                  <p className="text-uppercase mb-1 small opacity-75">Total Users</p>
+                  <div className="d-flex align-items-end">
+                    <h3 className="mb-0 fw-semibold">{userStats.total}</h3>
+                    <span className="ms-2 opacity-75">records</span>
+                  </div>
+                </div>
+              </Col>
+              <Col md={4} sm={12}>
+                <div className="rounded-3 border border-light-subtle p-3 bg-gradient-warning h-100">
+                  <p className="text-uppercase text-muted mb-1 small">Inactive Users</p>
+                  <div className="d-flex align-items-end">
+                    <h3 className="mb-0 text-warning fw-semibold">{userStats.inactive}</h3>
+                    <span className="ms-2 text-muted">flagged</span>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+
+            <Form className="mb-4">
+              <Row className="g-3 align-items-end">
+                <Col md={4} sm={12}>
+                  <Form.Label className="fw-semibold text-muted">Search</Form.Label>
+                  <InputGroup>
+                    <InputGroup.Text className="bg-white border-2 text-muted">
+                      <FontAwesomeIcon icon={faMagnifyingGlass} />
+                    </InputGroup.Text>
+                    <FormControl
+                      placeholder="Search by name, email, or phone"
+                      value={searchTerm}
+                      onChange={handleSearch}
+                      className="border-2"
+                    />
+                  </InputGroup>
+                </Col>
+                <Col md={3} sm={6}>
+                  <Form.Label className="fw-semibold text-muted">Role</Form.Label>
+                  <FormSelect
+                    value={roleFilter}
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                    className="border-2"
+                  >
+                    <option value="">All Roles</option>
+                    <option value="admin">Admin</option>
+                    <option value="manager">Manager</option>
+                    <option value="user">User</option>
+                  </FormSelect>
+                </Col>
+                <Col md={3} sm={6}>
+                  <Form.Label className="fw-semibold text-muted">Status</Form.Label>
+                  <FormSelect
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="border-2"
+                  >
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </FormSelect>
+                </Col>
+                <Col md={2} sm={12}>
+                  {selectedUsers.length > 0 && canDeleteUser && (
+                    <div className="d-grid">
+                      <Button
+                        variant="danger"
+                        className="text-white fw-semibold"
+                        onClick={handleBulkDelete}
+                      >
+                        Delete ({selectedUsers.length})
+                      </Button>
+                    </div>
+                  )}
+                </Col>
+              </Row>
+            </Form>
+
+            <Table
+              data={filteredUsers}
+              columns={columns}
+              loading={loading}
+              hover
+              pagination={true}
+              sortable={true}
+              sortableColumns={['name', 'email', 'phone']}
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalItems={filteredUsers.length}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
         </Col>
       </Row>
 
