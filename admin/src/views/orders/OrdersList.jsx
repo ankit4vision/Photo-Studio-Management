@@ -13,12 +13,15 @@ import {
   faPlus,
   faSave,
   faFilter,
-  faRupeeSign
+  faRupeeSign,
+  faCreditCard
 } from '@fortawesome/free-solid-svg-icons'
 import orderService from '../../services/orderService'
+import paymentService from '../../services/paymentService'
 import { Table, FormModal, useToast } from '../../components'
 import OrderForm from '../../components/pages/orders/OrderForm'
 import OrderDetailsModal from '../../components/pages/orders/OrderDetailsModal'
+import PaymentForm from '../../components/pages/payments/PaymentForm'
 import { formatCurrency, formatDate } from '../../utils'
 
 const OrdersList = () => {
@@ -36,10 +39,14 @@ const OrdersList = () => {
   const [orderToEdit, setOrderToEdit] = useState(null)
   const [addLoading, setAddLoading] = useState(false)
   const [editLoading, setEditLoading] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentOrder, setPaymentOrder] = useState(null)
+  const [paymentLoading, setPaymentLoading] = useState(false)
   
   // Refs for form components
   const addFormRef = useRef()
   const editFormRef = useRef()
+  const paymentFormRef = useRef()
   
   // Filters
   const [filters, setFilters] = useState({
@@ -162,6 +169,94 @@ const OrdersList = () => {
     }
   }
 
+  const getOrderIdentifier = (order) => {
+    if (!order) return null
+    const candidates = [
+      order.id,
+      order.order_id,
+      order.orderId,
+      order.order_number,
+      order.orderNumber,
+      order.order_code,
+      order.orderCode,
+      order.reference,
+      order.reference_code,
+      order.referenceCode
+    ]
+    const rawId = candidates.find(Boolean)
+    if (!rawId) return null
+    return rawId.toString().replace(/^#/, '').trim()
+  }
+
+  const getOrderDisplayNumber = (order) => {
+    if (!order) return ''
+    return (
+      order.order_number ||
+      order.orderNumber ||
+      order.id ||
+      getOrderIdentifier(order) ||
+      ''
+    )
+  }
+
+  const getOrderFinancials = (order) => {
+    if (!order) {
+      return { total: 0, paid: 0, balance: 0 }
+    }
+    const total = Number(order.total_amount ?? order.total ?? 0)
+    const paid = Number(order.paid_amount ?? order.paid ?? 0)
+    const balance = Math.max(0, total - paid)
+    return { total, paid, balance }
+  }
+
+  const handleOpenPaymentModal = (order) => {
+    setPaymentOrder(order)
+    setShowPaymentModal(true)
+  }
+
+  const handlePaymentModalClose = () => {
+    setShowPaymentModal(false)
+    setPaymentOrder(null)
+    setPaymentLoading(false)
+  }
+
+  const handlePaymentSubmit = () => {
+    if (paymentFormRef.current) {
+      paymentFormRef.current.handleSubmit()
+    }
+  }
+
+  const handlePaymentFormSubmit = async (formData) => {
+    if (!paymentOrder) {
+      showError('No order selected for payment')
+      return
+    }
+
+    try {
+      setPaymentLoading(true)
+      const payload = {
+        ...formData,
+        order_id: (formData.order_id || getOrderIdentifier(paymentOrder) || '').toString().replace(/^#/, ''),
+        payment_method: formData.payment_method || 'cash'
+      }
+
+      const response = await paymentService.createPayment(payload)
+      if (response.success) {
+        success('Payment recorded successfully')
+        handlePaymentModalClose()
+        fetchOrders()
+        fetchStats()
+      } else {
+        showError(response.message || 'Failed to record payment')
+      }
+    } catch (err) {
+      console.error('Error recording payment:', err)
+      showError('An error occurred while recording payment')
+    } finally {
+      setPaymentLoading(false)
+    }
+  }
+
   // Add Order Handlers
   const handleAddOrder = () => {
     setShowAddModal(true)
@@ -246,7 +341,12 @@ const OrdersList = () => {
   // Edit Order Handlers
   const handleEditOrder = (order) => {
     const normalized = normalizeOrderData(order)
-    setOrderToEdit(normalized)
+    const identifier = getOrderIdentifier(order)
+    setOrderToEdit({
+      ...normalized,
+      id: identifier,
+      originalId: order?.id || order?.order_number || order?.orderNumber || identifier
+    })
     setShowEditModal(true)
   }
 
@@ -259,7 +359,12 @@ const OrdersList = () => {
   const handleEditOrderFormSubmit = async (formData) => {
     try {
       setEditLoading(true)
-      const response = await orderService.updateOrder(orderToEdit.id, formData)
+      const updateId = getOrderIdentifier(orderToEdit) || orderToEdit?.id
+      if (!updateId) {
+        showError('Missing order identifier')
+        return
+      }
+      const response = await orderService.updateOrder(updateId, formData)
       if (response.success) {
         success('Order updated successfully')
         setShowEditModal(false)
@@ -379,7 +484,7 @@ const OrdersList = () => {
             <div className="fw-bold">Total: {formatCurrency(totalAmount)}</div>
             <div className="text-primary small">Paid: {formatCurrency(paidAmount)}</div>
             <div className={`small ${balanceAmount > 0 ? 'text-danger' : 'text-success'}`}>
-              Balance: {formatCurrency(balanceAmount)}
+              Remaining: {formatCurrency(balanceAmount)}
             </div>
           </div>
         )
@@ -439,6 +544,14 @@ const OrdersList = () => {
               <FontAwesomeIcon icon={faEye} />
             </Button>
             <Button
+              variant="outline-success"
+              size="sm"
+              onClick={() => handleOpenPaymentModal(order)}
+              title="Record Payment"
+            >
+              <FontAwesomeIcon icon={faCreditCard} />
+            </Button>
+            <Button
               variant="outline-primary"
               size="sm"
               onClick={() => handleEditOrder(order)}
@@ -453,6 +566,13 @@ const OrdersList = () => {
   ]
 
   const sortableColumns = ['orderNumber', 'orderDate', 'total', 'status']
+
+  const paymentFinancials = paymentOrder ? getOrderFinancials(paymentOrder) : null
+  const paymentOrderId = paymentOrder ? getOrderIdentifier(paymentOrder) : ''
+  const paymentDisplayNumber = paymentOrder ? getOrderDisplayNumber(paymentOrder) : ''
+  const paymentDefaultAmount = paymentFinancials && paymentFinancials.balance > 0
+    ? paymentFinancials.balance
+    : ''
 
   return (
     <Container fluid>
@@ -664,9 +784,10 @@ const OrdersList = () => {
           setShowDetailsModal(false)
           setSelectedOrder(null)
         }}
-        orderId={selectedOrder?.id}
+        orderId={getOrderIdentifier(selectedOrder)}
         onOrderUpdate={handleOrderUpdate}
         onEdit={handleEditOrder}
+        orderSnapshot={selectedOrder}
       />
 
       {/* Add Order Modal */}
@@ -713,6 +834,27 @@ const OrdersList = () => {
             setShowEditModal(false)
             setOrderToEdit(null)
           }}
+        />
+      </FormModal>
+
+      <FormModal
+        visible={showPaymentModal}
+        onClose={handlePaymentModalClose}
+        title={`Record Payment${paymentDisplayNumber ? ` - #${paymentDisplayNumber}` : ''}`}
+        onSubmit={handlePaymentSubmit}
+        submitText="Save Payment"
+        submitIcon={faCreditCard}
+        loading={paymentLoading}
+        loadingText="Saving..."
+        size="lg"
+      >
+        <PaymentForm
+          key={`payment-form-${paymentOrderId || 'new'}`}
+          ref={paymentFormRef}
+          mode="create"
+          initialOrderId={paymentOrderId}
+          initialAmount={paymentDefaultAmount}
+          onSubmit={handlePaymentFormSubmit}
         />
       </FormModal>
     </Container>

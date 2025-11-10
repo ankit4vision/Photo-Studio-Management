@@ -3,6 +3,11 @@ import apiService from '../api'
 import { API_ENDPOINTS } from '../constants/api'
 
 class PaymentService {
+  // Get all payments
+  async getPayments() {
+    return apiService.get(API_ENDPOINTS.PAYMENTS.BASE)
+  }
+
   // Create new payment
   async createPayment(paymentData) {
     return apiService.post(API_ENDPOINTS.PAYMENTS.CREATE, paymentData)
@@ -11,6 +16,11 @@ class PaymentService {
   // Get payment by ID
   async getPaymentById(id) {
     return apiService.get(API_ENDPOINTS.PAYMENTS.GET_BY_ID(id))
+  }
+
+  // Update payment
+  async updatePayment(id, paymentData) {
+    return apiService.put(API_ENDPOINTS.PAYMENTS.GET_BY_ID(id), paymentData)
   }
 
   // Get payments by order

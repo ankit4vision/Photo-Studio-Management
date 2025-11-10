@@ -12,17 +12,28 @@ const TransactionForm = forwardRef(({
   transactionData = null,
   initialCustomerId = null,
   initialOrderId = null,
+  initialBranchId = null,
+  initialAmount = '',
+  initialRemarks = '',
+  orderDetails = null,
   onSubmit, 
   onCancel,
   loading = false 
 }, ref) => {
+  const toAmountString = (value) => {
+    if (value === null || value === undefined || value === '') return ''
+    const numeric = Number(value)
+    return Number.isNaN(numeric) ? '' : numeric.toString()
+  }
+
   const [formData, setFormData] = useState({
     customer_id: initialCustomerId || '',
-    branch_id: '',
+    branch_id: initialBranchId || '',
+    order_id: initialOrderId || '',
     transaction_date: new Date().toISOString().split('T')[0],
     type: 'credit', // Default to credit (payment received)
-    amount: '',
-    remarks: ''
+    amount: toAmountString(initialAmount),
+    remarks: initialRemarks || ''
   })
   const [customers, setCustomers] = useState([])
   const [branches, setBranches] = useState([])
@@ -34,10 +45,41 @@ const TransactionForm = forwardRef(({
   })
   const [loadingAmounts, setLoadingAmounts] = useState(false)
 
+  const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR'
+  }).format(Number(amount) || 0)
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A'
+    const date = new Date(dateString)
+    if (Number.isNaN(date.getTime())) return 'N/A'
+    return date.toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
   useEffect(() => {
     loadCustomers()
     loadBranches()
   }, [])
+
+  useEffect(() => {
+    if (mode !== 'create') return
+
+    setFormData(prev => ({
+      ...prev,
+      customer_id: initialCustomerId || '',
+      branch_id: initialBranchId || '',
+      order_id: initialOrderId || '',
+      amount: initialAmount !== undefined && initialAmount !== null && initialAmount !== ''
+        ? toAmountString(initialAmount)
+        : prev.amount,
+      remarks: initialRemarks || prev.remarks
+    }))
+  }, [initialCustomerId, initialOrderId, initialBranchId, initialAmount, initialRemarks, mode])
 
   // Load customer amounts when customer is selected
   useEffect(() => {
@@ -57,9 +99,10 @@ const TransactionForm = forwardRef(({
       setFormData({
         customer_id: transactionData.customer_id?.toString() || '',
         branch_id: transactionData.branch_id?.toString() || '',
+        order_id: transactionData.order_id?.toString() || transactionData.order?.id?.toString() || '',
         transaction_date: transactionData.transaction_date ? transactionData.transaction_date.split('T')[0] : new Date().toISOString().split('T')[0],
         type: transactionData.type || 'credit',
-        amount: transactionData.amount || '',
+        amount: toAmountString(transactionData.amount),
         remarks: transactionData.remarks || ''
       })
       
@@ -222,12 +265,17 @@ const TransactionForm = forwardRef(({
       return
     }
 
+    const customerId = parseInt(formData.customer_id, 10)
+    const branchId = formData.branch_id ? parseInt(formData.branch_id, 10) : null
+    const amountValue = parseFloat(formData.amount)
+
     const submitData = {
-      customer_id: parseInt(formData.customer_id),
-      branch_id: parseInt(formData.branch_id),
+      customer_id: customerId,
+      branch_id: branchId,
+      order_id: formData.order_id ? formData.order_id.toString() : null,
       transaction_date: formData.transaction_date,
       type: formData.type || 'credit', // Default to credit for photographer business
-      amount: parseFloat(formData.amount),
+      amount: amountValue,
       remarks: formData.remarks.trim() || null
     }
 
@@ -258,6 +306,62 @@ const TransactionForm = forwardRef(({
 
   return (
     <div>
+      {orderDetails && (
+        <FormRow className="mb-3">
+          <Col xs={12}>
+            <Card className="border-primary border-2 bg-gradient-primary-subtle">
+              <Card.Body className="p-3">
+                <Row className="g-3 align-items-center">
+                  <Col md={4}>
+                    <div>
+                      <div className="text-muted small">Order</div>
+                      <div className="fw-bold fs-5 text-primary">
+                        #{orderDetails.orderNumber || orderDetails.id || formData.order_id || 'N/A'}
+                      </div>
+                      {orderDetails.orderDate && (
+                        <div className="text-muted small">
+                          {formatDate(orderDetails.orderDate)}
+                        </div>
+                      )}
+                    </div>
+                  </Col>
+                  <Col md={4}>
+                    <div>
+                      <div className="text-muted small">Customer</div>
+                      <div className="fw-semibold">
+                        {orderDetails.customerName || 'N/A'}
+                      </div>
+                    </div>
+                  </Col>
+                  <Col md={4}>
+                    <div className="d-flex justify-content-between flex-wrap gap-2">
+                      <div>
+                        <div className="text-muted small">Total</div>
+                        <div className="fw-bold text-dark">
+                          {formatCurrency(orderDetails.total)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-muted small">Paid</div>
+                        <div className="fw-bold text-success">
+                          {formatCurrency(orderDetails.paid)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-muted small">Balance</div>
+                        <div className={`fw-bold ${orderDetails.balance > 0 ? 'text-danger' : 'text-success'}`}>
+                          {formatCurrency(orderDetails.balance)}
+                        </div>
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </FormRow>
+      )}
+
       <FormRow>
         <SelectField
           id="customer_id"
@@ -404,8 +508,12 @@ const TransactionForm = forwardRef(({
 TransactionForm.propTypes = {
   mode: PropTypes.oneOf(['create', 'edit']),
   transactionData: PropTypes.object,
-  initialCustomerId: PropTypes.string,
-  initialOrderId: PropTypes.string,
+  initialCustomerId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  initialOrderId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  initialBranchId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  initialAmount: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  initialRemarks: PropTypes.string,
+  orderDetails: PropTypes.object,
   onSubmit: PropTypes.func.isRequired,
   onCancel: PropTypes.func,
   loading: PropTypes.bool

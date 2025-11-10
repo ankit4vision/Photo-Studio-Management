@@ -9,13 +9,17 @@ const PaymentForm = forwardRef(({
   mode = 'create', 
   paymentData = null,
   initialOrderId = null,
+  initialAmount = '',
   onSubmit, 
   onCancel,
   loading = false 
 }, ref) => {
   const [formData, setFormData] = useState({
     order_id: initialOrderId || '',
-    amount: '',
+    amount: initialAmount !== undefined && initialAmount !== null && initialAmount !== ''
+      ? initialAmount.toString()
+      : '',
+    payment_type: 'credit',
     payment_method: 'cash',
     payment_date: new Date().toISOString().split('T')[0],
     remarks: ''
@@ -29,6 +33,42 @@ const PaymentForm = forwardRef(({
   useEffect(() => {
     loadOrders()
   }, [])
+
+  useEffect(() => {
+    if (mode === 'edit' && paymentData) {
+      setFormData({
+        order_id: paymentData.order_id?.toString() || paymentData.orderId?.toString() || '',
+        amount: paymentData.amount !== undefined && paymentData.amount !== null
+          ? paymentData.amount.toString()
+          : '',
+        payment_type: paymentData.payment_type || paymentData.paymentType || 'credit',
+        payment_method: paymentData.payment_method || paymentData.paymentMethod || 'cash',
+        payment_date: paymentData.payment_date
+          ? paymentData.payment_date.split('T')[0]
+          : (paymentData.paymentDate ? paymentData.paymentDate.split('T')[0] : new Date().toISOString().split('T')[0]),
+        remarks: paymentData.remarks || ''
+      })
+    } else if (mode === 'create') {
+      setFormData(prev => {
+        const nextOrderId = initialOrderId ? initialOrderId.toString() : ''
+        const hasOrderChanged = nextOrderId !== prev.order_id
+
+        const nextAmount = initialAmount !== undefined && initialAmount !== null && initialAmount !== ''
+          ? initialAmount.toString()
+          : (hasOrderChanged ? '' : prev.amount)
+
+        if (!hasOrderChanged && nextAmount === prev.amount) {
+          return prev
+        }
+
+        return {
+          ...prev,
+          order_id: nextOrderId,
+          amount: nextAmount
+        }
+      })
+    }
+  }, [mode, paymentData, initialOrderId, initialAmount])
 
   useEffect(() => {
     if (formData.order_id) {
@@ -52,30 +92,49 @@ const PaymentForm = forwardRef(({
     }
   }
 
-  useEffect(() => {
-    if (mode === 'edit' && paymentData) {
-      setFormData({
-        order_id: paymentData.order_id?.toString() || '',
-        amount: paymentData.amount || '',
-        payment_method: paymentData.payment_method || 'cash',
-        payment_date: paymentData.payment_date ? paymentData.payment_date.split('T')[0] : new Date().toISOString().split('T')[0],
-        remarks: paymentData.remarks || ''
-      })
-    }
-  }, [mode, paymentData])
-
   const loadOrderDetails = async (orderId) => {
+    const sanitizedId = orderId.toString().replace(/^#/, '').trim()
     try {
       setLoadingOrder(true)
-      const response = await orderService.getOrderById(orderId)
+      const response = await orderService.getOrderById(sanitizedId)
       if (response.success) {
-        setOrder(response.data)
-        // Auto-fill amount with balance if available
-        if (response.data.balance_amount && !formData.amount) {
-          setFormData(prev => ({
-            ...prev,
-            amount: response.data.balance_amount.toString()
-          }))
+        const fetchedOrder = response.data || {}
+        const totalAmount = Number(fetchedOrder.total_amount ?? fetchedOrder.total ?? 0)
+        const paidAmount = Number(fetchedOrder.paid_amount ?? fetchedOrder.paid ?? 0)
+        const balanceAmount = Math.max(0, Number(fetchedOrder.balance_amount ?? (totalAmount - paidAmount)))
+
+        const normalizedOrder = {
+          ...fetchedOrder,
+          total_amount: totalAmount,
+          paid_amount: paidAmount,
+          balance_amount: balanceAmount
+        }
+
+        setOrder(normalizedOrder)
+        if (mode !== 'edit') {
+          setFormData(prev => {
+            const suggestion = prev.payment_type === 'debit' ? paidAmount : balanceAmount
+
+            if (prev.order_id !== sanitizedId) {
+              return suggestion > 0
+                ? {
+                    ...prev,
+                    order_id: sanitizedId,
+                    amount: suggestion.toString()
+                  }
+                : prev
+            }
+
+            if (!prev.amount && suggestion > 0) {
+              return {
+                ...prev,
+                order_id: sanitizedId,
+                amount: suggestion.toString()
+              }
+            }
+
+            return prev
+          })
         }
       }
     } catch (error) {
@@ -85,11 +144,39 @@ const PaymentForm = forwardRef(({
     }
   }
 
+  useEffect(() => {
+    if (!order || mode === 'edit') return
+
+    setFormData(prev => {
+      if (prev.amount) return prev
+
+      const totalAmount = Number(order.total_amount ?? order.total ?? 0)
+      const paidAmount = Number(order.paid_amount ?? order.paid ?? 0)
+      const balanceAmount = Math.max(0, Number(order.balance_amount ?? (totalAmount - paidAmount)))
+      const suggestion = prev.payment_type === 'debit' ? paidAmount : balanceAmount
+
+      if (suggestion > 0) {
+        return {
+          ...prev,
+          amount: suggestion.toString()
+        }
+      }
+
+      return prev
+    })
+  }, [formData.payment_type, order, mode])
+
   const handleChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [field]: value
+      }
+      if (field === 'payment_type' && mode === 'create') {
+        updated.amount = ''
+      }
+      return updated
+    })
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
@@ -102,10 +189,25 @@ const PaymentForm = forwardRef(({
       newErrors.order_id = 'Order selection is required'
     }
 
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+    if (!formData.payment_type) {
+      newErrors.payment_type = 'Payment type is required'
+    }
+
+    const numericAmount = parseFloat(formData.amount)
+    if (!formData.amount || Number.isNaN(numericAmount) || numericAmount <= 0) {
       newErrors.amount = 'Amount is required and must be greater than 0'
-    } else if (order && parseFloat(formData.amount) > parseFloat(order.balance_amount || order.total_amount)) {
-      newErrors.amount = `Amount cannot exceed order balance of ${formatCurrency(order.balance_amount || order.total_amount)}`
+    } else if (formData.payment_type === 'credit' && order) {
+      const totalAmount = Number(order.total_amount ?? order.total ?? 0)
+      const paidAmount = Number(order.paid_amount ?? order.paid ?? 0)
+      const balanceAmount = Math.max(0, Number(order.balance_amount ?? (totalAmount - paidAmount)))
+      if (balanceAmount >= 0 && numericAmount > balanceAmount) {
+        newErrors.amount = `Amount cannot exceed order balance of ${formatCurrency(balanceAmount)}`
+      }
+    } else if (formData.payment_type === 'debit' && order) {
+      const paidAmount = Number(order.paid_amount ?? order.paid ?? 0)
+      if (numericAmount > paidAmount) {
+        newErrors.amount = `Debit amount cannot exceed total paid amount of ${formatCurrency(paidAmount)}`
+      }
     }
 
     if (!formData.payment_method) {
@@ -125,9 +227,14 @@ const PaymentForm = forwardRef(({
       return
     }
 
+    const sanitizedOrderId = formData.order_id
+      ? formData.order_id.toString().replace(/^#/, '').trim()
+      : ''
+
     const submitData = {
-      order_id: parseInt(formData.order_id),
+      order_id: sanitizedOrderId,
       amount: parseFloat(formData.amount),
+      payment_type: formData.payment_type || 'credit',
       payment_method: formData.payment_method,
       payment_date: formData.payment_date,
       remarks: formData.remarks.trim() || null
@@ -140,8 +247,6 @@ const PaymentForm = forwardRef(({
     handleSubmit: handleSubmit
   }), [formData, order])
 
-  const paymentMethods = paymentService.getPaymentMethods()
-
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -149,30 +254,44 @@ const PaymentForm = forwardRef(({
     }).format(amount || 0)
   }
 
+  const paymentMethods = paymentService.getPaymentMethods()
+  const paymentTypeOptions = [
+    { value: 'credit', label: 'Credit (Payment Received)' },
+    { value: 'debit', label: 'Debit (Refund to Customer)' }
+  ]
+  const totalAmount = order ? Number(order.total_amount ?? order.total ?? 0) : 0
+  const paidAmount = order ? Number(order.paid_amount ?? order.paid ?? 0) : 0
+  const balanceAmount = order ? Math.max(0, Number(order.balance_amount ?? (totalAmount - paidAmount))) : 0
+  const amountHelpText = formData.payment_type === 'debit'
+    ? (order ? `Max refund: ${formatCurrency(paidAmount)}` : 'Debit: amount returned to customer')
+    : (order ? `Max payment: ${formatCurrency(balanceAmount)}` : 'Credit: amount received from customer')
+  const amountLabel = formData.payment_type === 'debit' ? 'Refund Amount' : 'Payment Amount'
+  const amountPlaceholder = formData.payment_type === 'debit' ? 'Enter refund amount' : 'Enter payment amount'
+
   return (
     <div>
       <FormRow>
         <SelectField
           id="order_id"
-          label="Order"
+          label="Order (with Customer)"
           value={formData.order_id}
           onChange={(e) => handleChange('order_id', e.target.value)}
           options={[
             { value: '', label: 'Select Order' },
             ...orders.map(order => ({
               value: order.id.toString(),
-              label: `Order #${order.id} - ${order.customer_name || 'Customer'} - ${formatCurrency(order.total_amount)} (Balance: ${formatCurrency(order.balance_amount || order.total_amount)})`
+              label: `#${order.id} • ${(order.customer_name || order.customer?.name || `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim() || 'Customer')} • Total ${formatCurrency(order.total_amount)}`
             }))
           ]}
           required
           col={6}
           invalid={!!errors.order_id}
           feedback={errors.order_id}
-          helpText={loadingOrders ? 'Loading orders...' : 'Select order to record payment'}
+          helpText={loadingOrders ? 'Loading orders...' : 'Select order to record payment or refund'}
         />
         <TextField
           id="payment_date"
-          label="Payment Date"
+          label={formData.payment_type === 'debit' ? 'Refund Date' : 'Payment Date'}
           type="date"
           value={formData.payment_date}
           onChange={(e) => handleChange('payment_date', e.target.value)}
@@ -183,56 +302,17 @@ const PaymentForm = forwardRef(({
         />
       </FormRow>
 
-      {/* Order Details Card */}
-      {order && (
-        <Card className="mb-3 border-info">
-          <Card.Body>
-            <h6 className="text-info mb-3">Order Details</h6>
-            <div className="row">
-              <div className="col-md-6">
-                <div className="d-flex justify-content-between mb-2">
-                  <span className="text-muted">Order ID:</span>
-                  <span className="fw-semibold">#{order.id}</span>
-                </div>
-                <div className="d-flex justify-content-between mb-2">
-                  <span className="text-muted">Total Amount:</span>
-                  <span className="fw-semibold">{formatCurrency(order.total_amount)}</span>
-                </div>
-                <div className="d-flex justify-content-between mb-2">
-                  <span className="text-muted">Paid Amount:</span>
-                  <span className="fw-semibold text-success">{formatCurrency(order.paid_amount || 0)}</span>
-                </div>
-              </div>
-              <div className="col-md-6">
-                <div className="d-flex justify-content-between mb-2">
-                  <span className="text-muted">Balance Amount:</span>
-                  <span className="fw-semibold text-danger">{formatCurrency(order.balance_amount || order.total_amount)}</span>
-                </div>
-                <div className="d-flex justify-content-between mb-2">
-                  <span className="text-muted">Order Date:</span>
-                  <span>{new Date(order.order_date).toLocaleDateString()}</span>
-                </div>
-              </div>
-            </div>
-          </Card.Body>
-        </Card>
-      )}
-
       <FormRow>
-        <TextField
-          id="amount"
-          label="Payment Amount"
-          type="number"
-          min="0.01"
-          step="0.01"
-          value={formData.amount}
-          onChange={(e) => handleChange('amount', e.target.value)}
-          placeholder="Enter payment amount"
+        <SelectField
+          id="payment_type"
+          label="Payment Type"
+          value={formData.payment_type}
+          onChange={(e) => handleChange('payment_type', e.target.value)}
+          options={paymentTypeOptions}
           required
           col={6}
-          invalid={!!errors.amount}
-          feedback={errors.amount}
-          helpText={order ? `Max: ${formatCurrency(order.balance_amount || order.total_amount)}` : 'Enter payment amount'}
+          invalid={!!errors.payment_type}
+          feedback={errors.payment_type}
         />
         <SelectField
           id="payment_method"
@@ -244,6 +324,24 @@ const PaymentForm = forwardRef(({
           col={6}
           invalid={!!errors.payment_method}
           feedback={errors.payment_method}
+        />
+      </FormRow>
+
+      <FormRow>
+        <TextField
+          id="amount"
+          label={amountLabel}
+          type="number"
+          min="0.01"
+          step="0.01"
+          value={formData.amount}
+          onChange={(e) => handleChange('amount', e.target.value)}
+          placeholder={amountPlaceholder}
+          required
+          col={12}
+          invalid={!!errors.amount}
+          feedback={errors.amount}
+          helpText={amountHelpText}
         />
       </FormRow>
 
@@ -264,7 +362,8 @@ const PaymentForm = forwardRef(({
 PaymentForm.propTypes = {
   mode: PropTypes.oneOf(['create', 'edit']),
   paymentData: PropTypes.object,
-  initialOrderId: PropTypes.string,
+  initialOrderId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  initialAmount: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onSubmit: PropTypes.func.isRequired,
   onCancel: PropTypes.func,
   loading: PropTypes.bool

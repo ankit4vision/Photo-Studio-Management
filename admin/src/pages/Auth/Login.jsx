@@ -89,7 +89,7 @@ const Login = () => {
       const errorMessage = err.message || 'Login failed. Please try again.'
       
       if (err.message === 'Invalid email or password' || errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
-        const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://52.62.1.66:8000'
+        const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://3.106.58.15:8000'
         warning(
           `Invalid email or password. Backend rejected these credentials.\n\n` +
           `Email: ${formData.email}\n` +
@@ -104,7 +104,7 @@ const Login = () => {
           }
         )
       } else if (err.message.includes('network') || err.message.includes('connection') || err.message.includes('Network Error')) {
-        const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://52.62.1.66:8000'
+        const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://3.106.58.15:8000'
         error(
           `Network error. Backend server might be down or unreachable.\n\n` +
           `Backend URL: ${backendUrl}\n\n` +

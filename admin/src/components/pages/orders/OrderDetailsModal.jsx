@@ -14,14 +14,15 @@ import {
   faInfoCircle,
   faList,
   faHistory,
-  faDownload
+  faDownload,
+  faEdit
 } from '@fortawesome/free-solid-svg-icons'
 import orderService from '../../../services/orderService'
 import paymentService from '../../../services/paymentService'
 import { formatCurrency, formatDate } from '../../../utils'
 import { useToast } from '../../common/ToastProvider'
 
-const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit }) => {
+const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, orderSnapshot }) => {
   const { success, error: showError } = useToast()
   const [order, setOrder] = useState(null)
   const [payments, setPayments] = useState([])
@@ -29,17 +30,30 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit }) => 
   const [activeTab, setActiveTab] = useState('details')
   const [exportingPdf, setExportingPdf] = useState(false)
 
+  const getSanitizedOrderId = (value) => {
+    if (!value) return null
+    return value.toString().replace(/^#/, '').trim()
+  }
+
+  const sanitizedOrderId = getSanitizedOrderId(orderId)
+
   useEffect(() => {
-    if (show && orderId) {
+    if (orderSnapshot) {
+      setOrder(orderSnapshot)
+    }
+  }, [orderSnapshot])
+
+  useEffect(() => {
+    if (show && sanitizedOrderId) {
       fetchOrderDetails()
       fetchOrderPayments()
     }
-  }, [show, orderId])
+  }, [show, sanitizedOrderId])
 
   const fetchOrderDetails = async () => {
     setLoading(true)
     try {
-      const response = await orderService.getOrderById(orderId)
+      const response = await orderService.getOrderById(sanitizedOrderId)
       if (response.success) {
         setOrder(response.data)
       } else {
@@ -55,7 +69,7 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit }) => 
 
   const fetchOrderPayments = async () => {
     try {
-      const response = await paymentService.getPaymentsByOrder(orderId)
+      const response = await paymentService.getPaymentsByOrder(sanitizedOrderId)
       if (response.success) {
         setPayments(response.data || [])
       }
@@ -531,7 +545,7 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit }) => 
                   onEdit(order)
                 }}
               >
-                <FontAwesomeIcon icon={faCheck} className="me-2" />
+                <FontAwesomeIcon icon={faEdit} className="me-2" />
                 Edit Order
               </Button>
             )}

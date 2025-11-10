@@ -609,7 +609,8 @@ const OrderForm = forwardRef(({
                     </div>
                     <div className="p-2">
                       {packages.map(pkg => {
-                        const isSelected = formData.items.some(item => item.package_id === pkg.id)
+                        const pkgIdStr = pkg.id?.toString()
+                        const isSelected = formData.items.some(item => item.package_id?.toString() === pkgIdStr)
                         
                         return (
                           <div

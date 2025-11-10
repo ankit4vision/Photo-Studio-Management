@@ -3,8 +3,8 @@ import { Container, Row, Col, Button, Card, Spinner } from 'react-bootstrap'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faWallet, faArrowLeft, faSave } from '@fortawesome/free-solid-svg-icons'
-import TransactionForm from '../../components/pages/transactions/TransactionForm'
-import transactionService from '../../services/transactionService'
+import PaymentForm from '../../components/pages/payments/PaymentForm'
+import paymentService from '../../services/paymentService'
 import { useToast } from '../../components/common/ToastProvider'
 
 const TransactionFormView = () => {
@@ -14,35 +14,34 @@ const TransactionFormView = () => {
   const { success, error } = useToast()
   const formRef = useRef()
   const [loading, setLoading] = useState(false)
-  const [transactionData, setTransactionData] = useState(null)
+  const [paymentData, setPaymentData] = useState(null)
   const [loadingData, setLoadingData] = useState(!!id)
 
   const mode = id ? 'edit' : 'create'
-  const initialCustomerId = searchParams.get('customer_id') || null
   const initialOrderId = searchParams.get('order_id') || null
 
-  // Load transaction data for edit mode
+  // Load payment data for edit mode
   React.useEffect(() => {
     if (mode === 'edit' && id) {
-      const loadTransaction = async () => {
+      const loadPayment = async () => {
         try {
           setLoadingData(true)
-          const response = await transactionService.getTransactionById(id)
+          const response = await paymentService.getPaymentById(id)
           if (response.success) {
-            setTransactionData(response.data)
+            setPaymentData(response.data)
           } else {
-            error('Error loading transaction data')
+            error('Error loading payment data')
             navigate('/transactions')
           }
         } catch (err) {
-          console.error('Error loading transaction:', err)
-          error('Error loading transaction data')
+          console.error('Error loading payment:', err)
+          error('Error loading payment data')
           navigate('/transactions')
         } finally {
           setLoadingData(false)
         }
       }
-      loadTransaction()
+      loadPayment()
     }
   }, [id, mode, navigate, error])
 
@@ -51,40 +50,32 @@ const TransactionFormView = () => {
       setLoading(true)
       
       if (mode === 'create') {
-        const response = await transactionService.createTransaction(formData)
+        const response = await paymentService.createPayment(formData)
         if (response.success) {
-          success('Transaction created successfully')
-          if (initialCustomerId) {
-            navigate(`/customers/${initialCustomerId}/wallet`)
-          } else {
-            navigate('/transactions')
-          }
-        } else {
-          error(response.message || 'Error creating transaction')
-        }
-      } else {
-        const response = await transactionService.updateTransaction(id, formData)
-        if (response.success) {
-          success('Transaction updated successfully')
+          success('Payment recorded successfully')
           navigate('/transactions')
         } else {
-          error(response.message || 'Error updating transaction')
+          error(response.message || 'Error recording payment')
+        }
+      } else {
+        const response = await paymentService.updatePayment(id, formData)
+        if (response.success) {
+          success('Payment updated successfully')
+          navigate('/transactions')
+        } else {
+          error(response.message || 'Error updating payment')
         }
       }
     } catch (err) {
-      console.error('Error saving transaction:', err)
-      error('An error occurred while saving transaction')
+      console.error('Error saving payment:', err)
+      error('An error occurred while saving payment')
     } finally {
       setLoading(false)
     }
   }
 
   const handleCancel = () => {
-    if (initialCustomerId) {
-      navigate(`/customers/${initialCustomerId}/wallet`)
-    } else {
-      navigate('/transactions')
-    }
+    navigate('/transactions')
   }
 
   if (loadingData) {
@@ -113,18 +104,17 @@ const TransactionFormView = () => {
             <div className="d-flex align-items-center">
               <FontAwesomeIcon icon={faWallet} className="me-3 text-dark fs-4" />
               <h2 className="mb-0 text-dark">
-                {mode === 'create' ? 'Add Payment Received' : 'Edit Transaction'}
+                {mode === 'create' ? 'Add Payment Received' : 'Edit Payment'}
               </h2>
             </div>
           </div>
 
           <Card className="shadow-sm">
             <Card.Body className="p-4">
-              <TransactionForm
+              <PaymentForm
                 ref={formRef}
                 mode={mode}
-                transactionData={transactionData}
-                initialCustomerId={initialCustomerId}
+                paymentData={paymentData}
                 initialOrderId={initialOrderId}
                 onSubmit={handleSubmit}
                 onCancel={handleCancel}
@@ -149,7 +139,7 @@ const TransactionFormView = () => {
                   ) : (
                     <>
                       <FontAwesomeIcon icon={faSave} className="me-2" />
-                      {mode === 'create' ? 'Save Payment' : 'Update Transaction'}
+                      {mode === 'create' ? 'Save Payment' : 'Update Payment'}
                     </>
                   )}
                 </Button>

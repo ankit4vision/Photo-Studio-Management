@@ -1,29 +1,33 @@
-import React, { useState, useEffect } from 'react'
-import { Container, Row, Col, Button, FormControl } from 'react-bootstrap'
+import React, { useState, useEffect, useRef } from 'react'
+import { Container, Row, Col, Button, FormControl, Badge } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
   faWallet,
   faRefresh,
   faPlus,
-  faEdit,
   faEye,
-  faFilePdf,
+  faEdit,
+  faSave
 } from '@fortawesome/free-solid-svg-icons'
-import { Table } from '../../components'
-import transactionService from '../../services/transactionService'
+import { Table, FormModal, useToast } from '../../components'
+import paymentService from '../../services/paymentService'
+import orderService from '../../services/orderService'
 import { useNavigate } from 'react-router-dom'
-import TransactionDetailsModal from '../../components/pages/transactions/TransactionDetailsModal'
-import { exportTransactionToPDF } from '../../utils/pdfExport'
+import PaymentDetailsModal from '../../components/pages/payments/PaymentDetailsModal'
+import PaymentForm from '../../components/pages/payments/PaymentForm'
 
 const TransactionsList = () => {
   const navigate = useNavigate()
-  const [transactions, setTransactions] = useState([])
+  const { success, error: showError } = useToast()
+  const editFormRef = useRef()
+  const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [selectedTransaction, setSelectedTransaction] = useState(null)
+  const [selectedPayment, setSelectedPayment] = useState(null)
   const [showViewModal, setShowViewModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   useEffect(() => {
     loadTransactions()
@@ -33,29 +37,100 @@ const TransactionsList = () => {
     setCurrentPage(1)
   }, [searchTerm])
 
+  const getOrderIdentifier = (order) => {
+    if (!order) return ''
+    const candidates = [
+      order.id,
+      order.order_id,
+      order.orderId,
+      order.order_number,
+      order.orderNumber
+    ]
+    const rawId = candidates.find(Boolean)
+    return rawId ? rawId.toString().replace(/^#/, '').trim() : ''
+  }
+
   const loadTransactions = async () => {
     try {
       setLoading(true)
-      const response = await transactionService.getTransactions()
-      if (response.success) {
-        const rawData = Array.isArray(response.data)
-          ? response.data
-          : response.data?.transactions || response.data?.data || []
-        setTransactions(rawData)
-      }
+      const [paymentsResponse, ordersResponse] = await Promise.all([
+        paymentService.getPayments(),
+        orderService.getOrders({ limit: 1000 })
+      ])
+
+      const rawPaymentsSource = paymentsResponse?.success ? paymentsResponse.data : paymentsResponse
+      const rawPayments = Array.isArray(rawPaymentsSource)
+        ? rawPaymentsSource
+        : rawPaymentsSource?.payments || rawPaymentsSource?.data || rawPaymentsSource || []
+
+      const ordersList = ordersResponse?.data?.orders || ordersResponse?.data || []
+      const orderMap = {}
+      ordersList.forEach(order => {
+        const key = getOrderIdentifier(order)
+        if (key) {
+          orderMap[key] = order
+        }
+      })
+
+      const normalizedPayments = rawPayments.map(payment => {
+        const paymentType = payment.payment_type || payment.paymentType || 'credit'
+        const sanitizedOrderId = payment.order_id
+          ? payment.order_id.toString().replace(/^#/, '').trim()
+          : ''
+        const order = orderMap[sanitizedOrderId]
+        const orderNumber = order
+          ? (order.order_number || order.orderNumber || order.id)
+          : (payment.order_number || payment.orderNumber || payment.order_id || sanitizedOrderId || '-')
+
+        const totalAmount = order ? Number(order.total_amount ?? order.total ?? 0) : null
+        const paidAmount = order ? Number(order.paid_amount ?? order.paid ?? 0) : null
+        const remainingAmount = order
+          ? Math.max(0, Number(order.balance_amount ?? (totalAmount - paidAmount)))
+          : null
+
+        const customerId = payment.customer_id || order?.customer_id || order?.customer?.id || null
+
+        const customerName = order
+          ? (order.customer_name ||
+              (order.customer
+                ? (order.customer.name ||
+                  `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim())
+                : ''))
+          : (payment.customer_name || '')
+
+        return {
+          ...payment,
+          orderId: sanitizedOrderId,
+          orderNumber,
+          customerName,
+          customer_id: customerId,
+          totalAmount,
+          paidAmount,
+          remainingAmount,
+          paymentAmount: Number(payment.amount || 0),
+          paymentDate: payment.payment_date || payment.paymentDate,
+          paymentMethod: payment.payment_method || payment.paymentMethod || 'cash',
+          payment_type: paymentType,
+          paymentType
+        }
+      })
+
+      setPayments(normalizedPayments)
     } catch (error) {
-      console.error('Error loading transactions:', error)
+      console.error('Error loading payments:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const filteredTransactions = transactions.filter(transaction => {
+  const filteredPayments = payments.filter(payment => {
     const term = searchTerm.toLowerCase()
     const matchesSearch = !term ||
-      transaction.remarks?.toLowerCase().includes(term) ||
-      transaction.customer_name?.toLowerCase().includes(term)
-    // Remove type filter since we're removing type column
+      payment.remarks?.toLowerCase().includes(term) ||
+      payment.customerName?.toLowerCase().includes(term) ||
+      payment.orderNumber?.toString().toLowerCase().includes(term) ||
+      payment.paymentMethod?.toLowerCase().includes(term) ||
+      payment.paymentType?.toLowerCase().includes(term)
     return matchesSearch
   })
 
@@ -75,78 +150,107 @@ const TransactionsList = () => {
     })
   }
 
-  const handleViewTransaction = (transaction) => {
-    setSelectedTransaction(transaction)
+  const handleViewTransaction = (payment) => {
+    setSelectedPayment(payment)
     setShowViewModal(true)
   }
 
-  const handleEditTransaction = (transaction) => {
-    navigate(`/transactions/edit/${transaction.id}`)
-  }
-
-  const handleExportPDF = (transaction) => {
-    exportTransactionToPDF(transaction)
+  const handleEditSubmit = async (formData) => {
+    if (!selectedPayment) return
+    try {
+      setLoading(true)
+      const response = await paymentService.updatePayment(selectedPayment.id, formData)
+      if (response.success) {
+        await loadTransactions()
+        setShowEditModal(false)
+        setSelectedPayment(null)
+        success('Payment updated successfully')
+      } else {
+        showError(response.message || 'Failed to update payment')
+      }
+    } catch (error) {
+      console.error('Error updating payment:', error)
+      showError('An error occurred while updating payment')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const columns = [
     {
-      key: 'date',
-      label: 'Date',
-      render: (value, transaction) => formatDate(transaction.transaction_date)
+      key: 'paymentDate',
+      label: 'Payment Date',
+      render: (value, payment) => formatDate(payment.paymentDate)
     },
     {
-      key: 'customer',
-      label: 'Customer',
-      render: (value, transaction) => transaction.customer_name || `Customer #${transaction.customer_id}`
+      key: 'orderNumber',
+      label: 'Order',
+      render: (value, payment) => (
+        <div>
+          <div className="fw-semibold">#{payment.orderNumber || payment.orderId || '-'}</div>
+          {payment.customerName && (
+            <small className="text-muted">{payment.customerName}</small>
+          )}
+        </div>
+      )
     },
     {
-      key: 'received_amount',
-      label: 'Received Amount',
-      render: (value, transaction) => {
-        const receivedAmount = transaction.received_amount !== undefined 
-          ? transaction.received_amount 
-          : (transaction.type === 'credit' ? transaction.amount : 0)
-        return receivedAmount > 0 ? (
-          <div className="fw-semibold text-success">
-            {formatCurrency(receivedAmount)}
-          </div>
-        ) : (
-          <span className="text-muted">-</span>
-        )
-      }
+      key: 'paymentType',
+      label: 'Type',
+      render: (value, payment) => (
+        <Badge bg={payment.paymentType === 'debit' ? 'warning' : 'success'}>
+          {payment.paymentType === 'debit' ? 'Debit' : 'Credit'}
+        </Badge>
+      )
     },
     {
-      key: 'remaining_amount',
-      label: 'Remaining Amount',
-      render: (value, transaction) => {
-        const remainingAmount = transaction.remaining_amount !== undefined 
-          ? transaction.remaining_amount 
-          : 0
+      key: 'paymentAmount',
+      label: 'Payment Amount',
+      render: (value, payment) => {
+        const formattedAmount = formatCurrency(payment.paymentAmount || payment.amount)
         return (
-          <div className={`fw-semibold ${remainingAmount > 0 ? 'text-warning' : 'text-success'}`}>
-            {formatCurrency(remainingAmount)}
+          <div className={`fw-semibold ${payment.paymentType === 'debit' ? 'text-danger' : 'text-success'}`}>
+            {payment.paymentType === 'debit' ? `-${formattedAmount}` : formattedAmount}
           </div>
         )
       }
+    },
+    {
+      key: 'paymentMethod',
+      label: 'Payment Method',
+      render: (value, payment) => payment.paymentMethod
+        ? payment.paymentMethod.toString().replace(/_/g, ' ').toUpperCase()
+        : 'N/A'
+    },
+    {
+      key: 'remainingAmount',
+      label: 'Remaining Amount',
+      render: (value, payment) => (
+        <div className={`fw-semibold ${payment.remainingAmount > 0 ? 'text-warning' : 'text-success'}`}>
+          {payment.remainingAmount !== null && payment.remainingAmount !== undefined
+            ? formatCurrency(payment.remainingAmount)
+            : '-'}
+        </div>
+      )
     },
     {
       key: 'remarks',
       label: 'Remarks',
-      render: (value, transaction) => transaction.remarks || '-'
+      render: (value, payment) => payment.remarks || '-'
     },
     {
       key: 'actions',
       label: 'Actions',
-      render: (value, transaction) => (
+      render: (value, payment) => (
         <div className="d-flex gap-1" style={{ flexWrap: 'nowrap' }}>
           <Button
             variant="outline-info"
             size="sm"
             onClick={(e) => {
               e.stopPropagation()
-              handleViewTransaction(transaction)
+              handleViewTransaction(payment)
             }}
-            title="View Transaction"
+            title="View Payment"
           >
             <FontAwesomeIcon icon={faEye} />
           </Button>
@@ -155,27 +259,19 @@ const TransactionsList = () => {
             size="sm"
             onClick={(e) => {
               e.stopPropagation()
-              handleEditTransaction(transaction)
+              setSelectedPayment(payment)
+              setShowEditModal(true)
             }}
-            title="Edit Transaction"
+            title="Edit Payment"
           >
             <FontAwesomeIcon icon={faEdit} />
-          </Button>
-          <Button
-            variant="outline-danger"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleExportPDF(transaction)
-            }}
-            title="Export PDF"
-          >
-            <FontAwesomeIcon icon={faFilePdf} />
           </Button>
         </div>
       )
     }
   ]
+
+  const sortableColumns = ['paymentDate', 'orderNumber', 'paymentAmount']
 
   return (
     <Container fluid>
@@ -189,7 +285,7 @@ const TransactionsList = () => {
             <div className="ms-auto">
               <Button variant="primary" onClick={() => navigate('/transactions/create')}>
                 <FontAwesomeIcon icon={faPlus} className="me-2" />
-                Add Transaction
+                Add Payment
               </Button>
             </div>
           </div>
@@ -215,12 +311,13 @@ const TransactionsList = () => {
             </div>
 
             <Table
-              data={filteredTransactions}
+              data={filteredPayments}
               columns={columns}
               currentPage={currentPage}
               pageSize={pageSize}
               onPageChange={setCurrentPage}
               onPageSizeChange={setPageSize}
+              sortableColumns={sortableColumns}
               loading={loading}
               pagination={true}
             />
@@ -228,15 +325,39 @@ const TransactionsList = () => {
         </Col>
       </Row>
 
-      {/* Transaction Details Modal */}
-      <TransactionDetailsModal
+      {/* Payment Details Modal */}
+      <PaymentDetailsModal
         visible={showViewModal}
         onClose={() => {
           setShowViewModal(false)
-          setSelectedTransaction(null)
+          setSelectedPayment(null)
         }}
-        transaction={selectedTransaction}
+        payment={selectedPayment}
       />
+
+      <FormModal
+        visible={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setSelectedPayment(null)
+        }}
+        title="Edit Payment"
+        onSubmit={() => editFormRef.current?.handleSubmit()}
+        submitText="Update Payment"
+        submitIcon={faSave}
+        loading={loading}
+        loadingText="Updating..."
+        size="lg"
+      >
+        <PaymentForm
+          ref={editFormRef}
+          mode="edit"
+          paymentData={selectedPayment}
+          initialOrderId={selectedPayment?.orderId}
+          initialAmount={selectedPayment?.paymentAmount || selectedPayment?.amount}
+          onSubmit={handleEditSubmit}
+        />
+      </FormModal>
     </Container>
   )
 }
