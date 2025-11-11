@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import {
@@ -18,11 +18,35 @@ import logoImg from 'src/assets/logo/logo-transprant.png'
 
 // sidebar nav config
 import navigation from '../../_nav.jsx'
+import { usePermissions } from '../../hooks'
 
 const AppSidebar = () => {
   const dispatch = useDispatch()
   const unfoldable = useSelector((state) => state.sidebarUnfoldable)
   const sidebarShow = useSelector((state) => state.sidebarShow)
+  const { hasPermission } = usePermissions()
+
+  const filterNavItems = (items = []) => {
+    return items
+      .map((item) => {
+        if (item.items) {
+          const filteredChildren = filterNavItems(item.items)
+          if (filteredChildren.length === 0) {
+            return null
+          }
+          return { ...item, items: filteredChildren }
+        }
+
+        if (item.permission && hasPermission && !hasPermission(item.permission)) {
+          return null
+        }
+
+        return item
+      })
+      .filter(Boolean)
+  }
+
+  const filteredNavigation = useMemo(() => filterNavItems(navigation), [navigation, hasPermission])
 
   return (
     <CSidebar
@@ -51,7 +75,7 @@ const AppSidebar = () => {
       </CSidebarHeader>
       
       {/* Navigation */}
-      <AppSidebarNav items={navigation} />
+      <AppSidebarNav items={filteredNavigation} />
       
     </CSidebar>
   )

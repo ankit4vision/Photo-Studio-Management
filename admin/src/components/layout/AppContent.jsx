@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { CContainer, CSpinner } from '@coreui/react'
+import { CSpinner } from '@coreui/react'
 
 // Import components
 const Dashboard = React.lazy(() => import('../../views/dashboard/Dashboard'))
@@ -39,6 +39,9 @@ const LedgerReport = React.lazy(() => import('../../views/reports/LedgerReport')
 const BranchReport = React.lazy(() => import('../../views/reports/BranchReport'))
 const StaffReport = React.lazy(() => import('../../views/reports/StaffReport'))
 
+import PermissionRoute from './PermissionRoute'
+import { PERMISSIONS } from '../../constants/permissions'
+
 const AppContent = () => {
   return (
     <div className="app-content">
@@ -48,15 +51,43 @@ const AppContent = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           
           {/* User Management Routes */}
-          <Route path="/users" element={<UsersList />} />
+          <Route
+            path="/users"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.USER_READ} showAccessDenied>
+                <UsersList />
+              </PermissionRoute>
+            }
+          />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/roles" element={<RolesList />} />
+          <Route
+            path="/roles"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.ROLE_READ} showAccessDenied>
+                <RolesList />
+              </PermissionRoute>
+            }
+          />
           
           {/* Settings Routes */}
-          <Route path="/settings" element={<Settings />} />
+          <Route
+            path="/settings"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.SETTINGS_READ} showAccessDenied>
+                <Settings />
+              </PermissionRoute>
+            }
+          />
           
           {/* Branch Management Routes */}
-          <Route path="/branches" element={<BranchesList />} />
+          <Route
+            path="/branches"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.BRANCH_READ} showAccessDenied>
+                <BranchesList />
+              </PermissionRoute>
+            }
+          />
           <Route path="/branches/create" element={<Navigate to="/branches" replace />} />
           <Route path="/branches/edit/:id" element={<Navigate to="/branches" replace />} />
           

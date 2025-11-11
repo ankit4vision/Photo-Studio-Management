@@ -234,12 +234,12 @@ admin/
 └── vite.config.js                     # Vite build configuration
 ```
 
-### 🔌 API Integration Updates (2025-11)
+### 🔐 Permission-Aware Frontend (2025-11 update)
 
-- `src/config.js` now normalizes `VITE_API_BASE_URL`, ensuring the value (default `http://localhost:8000`) always resolves to the `/api` namespace even if the trailing segment is omitted.
-- `src/config/apiClient.js` sources the Axios client base URL from that normalized config so every service call automatically targets the Laravel backend.
-- Local development expects the backend to run on port `8000`. Override `VITE_API_BASE_URL` in `.env.local` (or environment-specific files) when pointing to remote servers.
-- Update CORS on the backend (`config/cors.php`) if you serve the admin from a different origin/port.
+- Sidebar navigation (`src/_nav.jsx` + `AppSidebar`) now tags each entry with a required permission (leveraging `PERMISSIONS` constants) and filters items for the current user via `usePermissions()`.
+- Routing (`AppContent.jsx`) wraps protected views (users, roles, branches, settings, etc.) with `PermissionRoute`, returning a friendly access-restricted panel when permission checks fail.
+- Feature UIs (e.g. `UsersList.jsx`, `RolesList.jsx`, `BranchesList.jsx`, `Settings.jsx`) guard action buttons, modals, and handlers so create/edit/delete flows only appear and execute when a user has the matching permission alias (e.g. `user:write`, `branch:delete`, `settings:write`).
+- `authService` maps backend permission slugs (`view_branch`, `edit_role`, etc.) into frontend aliases so role assignments in Laravel seeders drive the entire admin experience.
 
 ## 🎯 Development Rules & Guidelines
 

@@ -14,6 +14,10 @@ const PERMISSION_ALIAS_MAP = {
   view_permission: ['role:read'],
   view_setting: ['settings:read'],
   edit_setting: ['settings:write'],
+  view_branch: ['branch:read'],
+  create_branch: ['branch:write', 'branch:manage'],
+  edit_branch: ['branch:write', 'branch:manage'],
+  delete_branch: ['branch:delete', 'branch:manage'],
 }
 
 const startCase = (value = '') =>

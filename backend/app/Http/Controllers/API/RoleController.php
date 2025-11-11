@@ -114,7 +114,10 @@ class RoleController extends Controller
     {
         $role->softDelete();
 
-        return response()->json(['message' => 'Role deleted successfully']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Role deleted successfully',
+        ]);
     }
 }
 

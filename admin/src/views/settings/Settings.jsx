@@ -1,11 +1,24 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Container, Row, Col, Card, Button, Spinner, Form, FormControl, FormSelect, FormText, Alert } from 'react-bootstrap'
+import { Container, Row, Col, Button, Spinner, Form, FormControl, FormSelect, FormText, Alert } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPercentage, faBuilding, faEnvelope, faGlobe, faShieldAlt, faSave, faCheckCircle, faFileInvoice } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from '../../components'
 import { settingsService } from '../../services/settingsService'
+import { usePermissions } from '../../hooks'
+import { PERMISSIONS } from '../../constants/permissions'
 
 const Settings = () => {
+  const { hasPermission } = usePermissions()
+  const { success, error, warning } = useToast()
+
+  const canViewSettings = hasPermission
+    ? hasPermission(PERMISSIONS.SETTINGS_READ) || hasPermission(PERMISSIONS.SETTINGS_WRITE)
+    : true
+  const canEditSettings = hasPermission
+    ? hasPermission(PERMISSIONS.SETTINGS_WRITE)
+    : true
+  const isReadOnly = !canEditSettings
+
   const [settingsData, setSettingsData] = useState({
     taxPricing: {
       tax_percentage: 15,
@@ -41,7 +54,6 @@ const Settings = () => {
   const [errors, setErrors] = useState({})
   const [autoSaving, setAutoSaving] = useState({}) // Track which fields are auto-saving
   const [autoSaved, setAutoSaved] = useState({}) // Track which fields were recently saved
-  const { success, error } = useToast()
   
   const isInitialLoadRef = useRef(true) // Track if we're still loading initial data
   
@@ -66,6 +78,12 @@ const Settings = () => {
   }
 
   useEffect(() => {
+    if (!canViewSettings) {
+      setLoading(false)
+      warning && warning('You do not have permission to view settings.', { title: 'Access restricted' })
+      return
+    }
+
     const fetchSettings = async () => {
       setLoading(true)
       try {
@@ -98,10 +116,14 @@ const Settings = () => {
     }
     fetchSettings()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [canViewSettings, warning])
 
   // Auto-save function (triggered on blur)
   const autoSaveSetting = useCallback(async (fieldPath, key, section, value) => {
+    if (!canEditSettings) {
+      return
+    }
+    
     const fieldId = fieldPath
     
     // Set auto-saving state
@@ -140,9 +162,13 @@ const Settings = () => {
         return newState
       })
     }
-  }, [error])
+  }, [error, canEditSettings])
 
   const handleChange = (section, field, value) => {
+    if (!canEditSettings) {
+      warning && warning('You do not have permission to modify settings.', { title: 'Read only' })
+      return
+    }
     const fieldPath = `${section}.${field}`
     
     // Update form data
@@ -165,6 +191,9 @@ const Settings = () => {
 
   // Handle blur event (save when field loses focus)
   const handleBlur = (section, field, value) => {
+    if (!canEditSettings) {
+      return
+    }
     const fieldPath = `${section}.${field}`
     
     // Auto-save if field mapping exists and not during initial load
@@ -213,6 +242,11 @@ const Settings = () => {
   }
 
   const handleSaveAll = async () => {
+    if (!canEditSettings) {
+      error('You do not have permission to update settings.')
+      return
+    }
+    
     if (!validateForm()) {
       error('Please fix the validation errors before saving')
       return
@@ -625,6 +659,22 @@ const Settings = () => {
     )
   }
 
+  if (!canViewSettings) {
+    return (
+      <Container fluid className="py-5">
+        <Row className="justify-content-center">
+          <Col md={6} className="text-center">
+            <FontAwesomeIcon icon={faShieldAlt} className="text-muted mb-3" size="3x" />
+            <h4 className="text-muted">Access Restricted</h4>
+            <p className="text-muted">
+              You do not have permission to view application settings. Please contact your administrator if you need additional access.
+            </p>
+          </Col>
+        </Row>
+      </Container>
+    )
+  }
+
   return (
     <Container fluid>
       <Row>
@@ -632,60 +682,73 @@ const Settings = () => {
           {/* Page Header */}
           <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
             <h2 className="mb-0 text-dark">Global Settings</h2>
-            <div className="ms-auto">
-              <Button 
-                variant="primary" 
-                size="lg" 
-                onClick={handleSaveAll}
-                disabled={saving}
-                className="px-4"
-              >
-                {saving ? (
-                  <>
-                    <Spinner size="sm" className="me-2" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <FontAwesomeIcon icon={faSave} className="me-2" />
-                    Save All Settings
-                  </>
-                )}
-              </Button>
-            </div>
+            {canEditSettings && (
+              <div className="ms-auto">
+                <Button 
+                  variant="primary" 
+                  size="lg" 
+                  onClick={handleSaveAll}
+                  disabled={saving}
+                  className="px-4"
+                >
+                  {saving ? (
+                    <>
+                      <Spinner size="sm" className="me-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <FontAwesomeIcon icon={faSave} className="me-2" />
+                      Save All Settings
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Settings Sections */}
           <div className="bg-white rounded-3 shadow-sm p-4">
-            {renderTaxPricingSettings()}
-            {renderBusinessInfo()}
-            {renderInvoiceSettings()}
-            {renderEmailNotifications()}
-            {renderCurrencyRegional()}
-            {renderSecuritySettings()}
+            <fieldset disabled={isReadOnly} style={{ border: 'none', padding: 0, margin: 0 }}>
+              {renderTaxPricingSettings()}
+              {renderBusinessInfo()}
+              {renderInvoiceSettings()}
+              {renderEmailNotifications()}
+              {renderCurrencyRegional()}
+              {renderSecuritySettings()}
+            </fieldset>
             
             {/* Bottom Save Button */}
-            <div className="text-center mt-4 pt-4 border-top">
-              <Button 
-                variant="primary" 
-                size="lg" 
-                onClick={handleSaveAll}
-                disabled={saving}
-                className="px-5"
-              >
-                {saving ? (
-                  <>
-                    <Spinner size="sm" className="me-2" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <FontAwesomeIcon icon={faSave} className="me-2" />
-                    Save All Settings
-                  </>
-                )}
-              </Button>
-            </div>
+            {canEditSettings && (
+              <div className="text-center mt-4 pt-4 border-top">
+                <Button 
+                  variant="primary" 
+                  size="lg" 
+                  onClick={handleSaveAll}
+                  disabled={saving}
+                  className="px-5"
+                >
+                  {saving ? (
+                    <>
+                      <Spinner size="sm" className="me-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <FontAwesomeIcon icon={faSave} className="me-2" />
+                      Save All Settings
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            {!canEditSettings && (
+              <div className="text-center mt-4 pt-4 border-top">
+                <Alert variant="info" className="mb-0">
+                  You have read-only access to settings.
+                </Alert>
+              </div>
+            )}
           </div>
         </Col>
       </Row>

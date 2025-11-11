@@ -86,6 +86,8 @@ const RoleForm = forwardRef(({
     }))
   }
 
+  const controlsDisabled = loading || permissionsLoading
+
   const validateForm = () => {
     const newErrors = {}
 
@@ -164,6 +166,7 @@ const RoleForm = forwardRef(({
           col={6}
           invalid={!!errors.name}
           feedback={errors.name}
+          disabled={controlsDisabled}
         />
         <SelectField
           id="status"
@@ -174,6 +177,7 @@ const RoleForm = forwardRef(({
           col={6}
           invalid={!!errors.status}
           feedback={errors.status}
+          disabled={controlsDisabled}
         />
       </FormRow>
 
@@ -188,6 +192,7 @@ const RoleForm = forwardRef(({
           col={12}
           invalid={!!errors.description}
           feedback={errors.description}
+          disabled={controlsDisabled}
         />
       </FormRow>
 
@@ -220,6 +225,7 @@ const RoleForm = forwardRef(({
                           label={permission.label}
                           checked={formData.permissions.includes(permission.id)}
                           onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
+                          disabled={controlsDisabled}
                         />
                       </div>
                     ))}

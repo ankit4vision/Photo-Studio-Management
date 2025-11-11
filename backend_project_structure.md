@@ -222,6 +222,7 @@ The heart of your Laravel application containing all business logic.
   - `database.php` - Database connections
   - `sanctum.php` - Sanctum token auth config
   - **2025-11 Update:** the default connection is MySQL-only. SQLite scaffolding was removed, `composer.json` now requires `ext-pdo_mysql`, and `phpunit.xml` targets a MySQL testing database (`photo_studio_test`).
+  - **2025-11 Update:** user/role/permission endpoints are protected per action (e.g. `permission:view_user`, `permission:create_role`, `permission:view_permission`), matching the frontend alias map for fine-grained access control.
 - **Note:** Settings can be overridden by database (via Setting model)
 
 ### `/database`
@@ -242,6 +243,7 @@ The heart of your Laravel application containing all business logic.
   - `RolesTableSeeder.php` - Default roles
   - `PermissionsTableSeeder.php` - System permissions
   - `UserSeeder.php` - Admin user
+  - `RolePermissionSeeder.php` - Maps manager/staff roles to the new permission set (including branch CRUD) while keeping admin unrestricted.
 
 ### `/public`
 - **Purpose:** Web server document root

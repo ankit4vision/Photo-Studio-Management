@@ -35,10 +35,10 @@ const UsersList = () => {
   const addUserFormRef = useRef()
   const editUserFormRef = useRef()
 
-  const { success, error } = useToast()
+  const { success, error, warning } = useToast()
   const { users, loading, fetchUsers, createUser, updateUser, deleteUser } = useUserManagement()
   const { roles, fetchRoles, loading: rolesLoading } = useRoleManagement()
-  const { hasPermission } = usePermissions()
+  const { hasPermission, user: currentUser } = usePermissions()
 
   const canCreateUser = hasPermission
     ? hasPermission(PERMISSIONS.USER_WRITE) || hasPermission(PERMISSIONS.USER_MANAGE)
@@ -54,9 +54,29 @@ const UsersList = () => {
     : true
 
   useEffect(() => {
+    if (!canViewUser) {
+      warning && warning('You do not have permission to view users.', { title: 'Access restricted' })
+      return
+    }
     fetchUsers()
     fetchRoles()
-  }, [fetchUsers, fetchRoles])
+  }, [canViewUser, fetchUsers, fetchRoles, warning])
+
+  if (!canViewUser) {
+    return (
+      <Container fluid className="py-5">
+        <Row className="justify-content-center">
+          <Col md={6} className="text-center">
+            <FontAwesomeIcon icon={faUsers} className="text-muted mb-3" size="3x" />
+            <h4 className="text-muted">Access Restricted</h4>
+            <p className="text-muted">
+              You do not have permission to view user information. Please contact your administrator if you need additional access.
+            </p>
+          </Col>
+        </Row>
+      </Container>
+    )
+  }
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value)
@@ -64,16 +84,28 @@ const UsersList = () => {
   }
 
   const handleCreateUser = () => {
+    if (!canCreateUser) {
+      error('You do not have permission to create users')
+      return
+    }
     setShowAddModal(true)
   }
 
   const handleAddUser = async () => {
+    if (!canCreateUser) {
+      error('You do not have permission to create users')
+      return
+    }
     if (addUserFormRef.current) {
       addUserFormRef.current.handleSubmit()
     }
   }
 
   const handleAddUserSubmit = async (userData) => {
+    if (!canCreateUser) {
+      error('You do not have permission to create users')
+      return
+    }
     setAddUserLoading(true)
     try {
       const response = await createUser(userData)
@@ -92,6 +124,10 @@ const UsersList = () => {
   }
 
   const handleEditUser = async () => {
+    if (!canUpdateUser) {
+      error('You do not have permission to update users')
+      return
+    }
     if (editUserFormRef.current) {
       editUserFormRef.current.handleSubmit()
     }
@@ -99,6 +135,11 @@ const UsersList = () => {
 
   const handleEditUserSubmit = async (userData) => {
     if (!userToEdit) {
+      return
+    }
+
+    if (!canUpdateUser) {
+      error('You do not have permission to update users')
       return
     }
 
@@ -121,6 +162,10 @@ const UsersList = () => {
   }
 
   const handleOpenEditModal = (user) => {
+    if (!canUpdateUser) {
+      error('You do not have permission to update users')
+      return
+    }
     setUserToEdit(user)
     setShowEditModal(true)
   }
@@ -131,11 +176,19 @@ const UsersList = () => {
   }
 
   const handleDeleteUser = (user) => {
+    if (!canDeleteUser) {
+      error('You do not have permission to delete users')
+      return
+    }
     setUserToDelete(user)
     setShowDeleteModal(true)
   }
 
   const confirmDeleteUser = async () => {
+    if (!canDeleteUser) {
+      error('You do not have permission to delete users')
+      return
+    }
     try {
       const response = await deleteUser(userToDelete.id)
       if (response.success) {
@@ -163,14 +216,50 @@ const UsersList = () => {
   }
 
   const roleOptions = useMemo(() => {
-    return roles
-      .filter((role) => !role.isDeleted)
-      .map((role) => ({
+    const activeRoles = roles.filter((role) => !role.isDeleted && role.isActive !== false)
+
+    if (!hasPermission) {
+      return activeRoles.map((role) => ({
         value: role.id,
         label: capitalize(role.name),
         name: role.name,
       }))
-  }, [roles])
+    }
+
+    if (hasPermission(PERMISSIONS.ROLE_MANAGE)) {
+      return activeRoles.map((role) => ({
+        value: role.id,
+        label: capitalize(role.name),
+        name: role.name,
+      }))
+    }
+
+    if (hasPermission(PERMISSIONS.ROLE_WRITE)) {
+      return activeRoles
+        .filter((role) => role.name !== 'admin')
+        .map((role) => ({
+          value: role.id,
+          label: capitalize(role.name),
+          name: role.name,
+        }))
+    }
+
+    const currentRoleNames = currentUser?.roleNames?.length
+      ? currentUser.roleNames
+      : currentUser?.role
+        ? [currentUser.role]
+        : []
+
+    const filteredRoles = currentRoleNames.length > 0
+      ? activeRoles.filter((role) => currentRoleNames.includes(role.name))
+      : activeRoles
+
+    return filteredRoles.map((role) => ({
+      value: role.id,
+      label: capitalize(role.name),
+      name: role.name,
+    }))
+  }, [roles, hasPermission, currentUser])
 
   const roleOptionsForFilter = useMemo(() => {
     return [

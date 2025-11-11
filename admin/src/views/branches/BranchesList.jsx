@@ -17,10 +17,13 @@ import { Table, Modal, FormModal } from '../../components'
 import BranchForm from '../../components/pages/branches/BranchForm'
 import branchService from '../../services/branchService'
 import photographersData from '../../mock/photographers.json'
-import { useToast } from '../../components/common/ToastProvider'
+import { useToast } from '../../components'
+import { usePermissions } from '../../hooks'
+import { PERMISSIONS } from '../../constants/permissions'
 
 const BranchesList = () => {
-  const { success, error } = useToast()
+  const { success, error, warning } = useToast()
+  const { hasPermission } = usePermissions()
   
   const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
@@ -42,6 +45,41 @@ const BranchesList = () => {
   // Refs for form components
   const addFormRef = useRef()
   const editFormRef = useRef()
+
+  const canCreateBranch = hasPermission
+    ? hasPermission(PERMISSIONS.BRANCH_WRITE) || hasPermission(PERMISSIONS.BRANCH_MANAGE)
+    : true
+  const canUpdateBranch = hasPermission
+    ? hasPermission(PERMISSIONS.BRANCH_WRITE) || hasPermission(PERMISSIONS.BRANCH_MANAGE)
+    : true
+  const canDeleteBranch = hasPermission
+    ? hasPermission(PERMISSIONS.BRANCH_DELETE) || hasPermission(PERMISSIONS.BRANCH_MANAGE)
+    : true
+  const canViewBranch = hasPermission
+    ? hasPermission(PERMISSIONS.BRANCH_READ) || hasPermission(PERMISSIONS.BRANCH_MANAGE)
+    : true
+
+  useEffect(() => {
+    if (!canViewBranch) {
+      warning && warning('You do not have permission to view branches.', { title: 'Access limited' })
+    }
+  }, [canViewBranch, warning])
+
+  if (!canViewBranch) {
+    return (
+      <Container fluid className="py-5">
+        <Row className="justify-content-center">
+          <Col md={6} className="text-center">
+            <FontAwesomeIcon icon={faBuilding} className="text-muted mb-3" size="3x" />
+            <h4 className="text-muted">Access Restricted</h4>
+            <p className="text-muted">
+              You do not have permission to view branch information. Please contact your administrator if you need additional access.
+            </p>
+          </Col>
+        </Row>
+      </Container>
+    )
+  }
 
   useEffect(() => {
     loadBranches()
@@ -137,6 +175,10 @@ const BranchesList = () => {
   }
 
   const handleDeleteBranch = (branch) => {
+    if (!canDeleteBranch) {
+      error('You do not have permission to delete branches')
+      return
+    }
     setBranchToDelete(branch)
     setShowDeleteModal(true)
   }
@@ -160,6 +202,10 @@ const BranchesList = () => {
 
   // Add Branch Handlers
   const handleAddBranch = () => {
+    if (!canCreateBranch) {
+      error('You do not have permission to create branches')
+      return
+    }
     setShowAddModal(true)
   }
 
@@ -190,6 +236,10 @@ const BranchesList = () => {
 
   // Edit Branch Handlers
   const handleEditBranch = (branch) => {
+    if (!canUpdateBranch) {
+      error('You do not have permission to edit branches')
+      return
+    }
     setBranchToEdit(branch)
     setShowEditModal(true)
   }
@@ -279,24 +329,28 @@ const BranchesList = () => {
       label: 'Actions',
       render: (value, branch) => (
         <div className="d-flex gap-1 align-items-center" style={{ flexWrap: 'nowrap' }}>
-          <Button
-            variant="outline-primary"
-            size="sm"
-            onClick={() => handleEditBranch(branch)}
-            title="Edit Branch"
-            style={{ minWidth: '32px', padding: '4px 8px' }}
-          >
-            <FontAwesomeIcon icon={faEdit} />
-          </Button>
-          <Button
-            variant="outline-danger"
-            size="sm"
-            onClick={() => handleDeleteBranch(branch)}
-            title="Delete Branch"
-            style={{ minWidth: '32px', padding: '4px 8px' }}
-          >
-            <FontAwesomeIcon icon={faTrash} />
-          </Button>
+          {canUpdateBranch && (
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={() => handleEditBranch(branch)}
+              title="Edit Branch"
+              style={{ minWidth: '32px', padding: '4px 8px' }}
+            >
+              <FontAwesomeIcon icon={faEdit} />
+            </Button>
+          )}
+          {canDeleteBranch && (
+            <Button
+              variant="outline-danger"
+              size="sm"
+              onClick={() => handleDeleteBranch(branch)}
+              title="Delete Branch"
+              style={{ minWidth: '32px', padding: '4px 8px' }}
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </Button>
+          )}
         </div>
       )
     }
@@ -323,12 +377,14 @@ const BranchesList = () => {
               <FontAwesomeIcon icon={faBuilding} className="me-3 text-primary fs-4" />
               <h2 className="mb-0 text-dark">Branch Management</h2>
             </div>
-            <div className="ms-auto">
-              <Button variant="primary" onClick={handleAddBranch} className="text-white">
-                <FontAwesomeIcon icon={faPlus} className="me-2" />
-                Add Branch
-              </Button>
-            </div>
+            {canCreateBranch && (
+              <div className="ms-auto">
+                <Button variant="primary" onClick={handleAddBranch} className="text-white">
+                  <FontAwesomeIcon icon={faPlus} className="me-2" />
+                  Add Branch
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Statistics Cards */}

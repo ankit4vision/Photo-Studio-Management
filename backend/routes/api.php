@@ -30,15 +30,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/user', [AuthController::class, 'user']);
 
     // User Management
-    Route::apiResource('users', UserController::class);
+    Route::get('/users', [UserController::class, 'index'])->middleware('permission:view_user');
+    Route::post('/users', [UserController::class, 'store'])->middleware('permission:create_user');
+    Route::get('/users/{user}', [UserController::class, 'show'])->middleware('permission:view_user');
+    Route::put('/users/{user}', [UserController::class, 'update'])->middleware('permission:edit_user');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->middleware('permission:delete_user');
 
     // Role Management
-    Route::apiResource('roles', RoleController::class);
-    Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions']);
+    Route::get('/roles', [RoleController::class, 'index'])->middleware('permission:view_role');
+    Route::post('/roles', [RoleController::class, 'store'])->middleware('permission:create_role');
+    Route::get('/roles/{role}', [RoleController::class, 'show'])->middleware('permission:view_role');
+    Route::put('/roles/{role}', [RoleController::class, 'update'])->middleware('permission:edit_role');
+    Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->middleware('permission:delete_role');
+    Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions'])->middleware('permission:edit_role');
 
     // Permission Management
-    Route::get('/permissions', [PermissionController::class, 'index']);
-    Route::get('/permissions/{permission}', [PermissionController::class, 'show']);
+    Route::get('/permissions', [PermissionController::class, 'index'])->middleware('permission:view_permission');
+    Route::get('/permissions/{permission}', [PermissionController::class, 'show'])->middleware('permission:view_permission');
 
     // Branch Management
     Route::get('/branches', [BranchController::class, 'index'])->middleware('permission:view_branch');

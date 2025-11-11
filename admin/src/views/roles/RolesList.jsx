@@ -5,13 +5,19 @@ import { faPlus, faPencil, faTrash, faInfo, faMagnifyingGlass, faLock } from '@f
 import { useToast } from '../../components'
 import { Table, Modal, FormModal } from '../../components'
 import RoleForm from '../../components/pages/roles/RoleForm'
-import roleService from '../../services/roleService'
-import { usePermissions } from '../../hooks'
+import { usePermissions, useRoleManagement } from '../../hooks'
 import { PERMISSIONS } from '../../constants/permissions'
 
 const RolesList = () => {
-  const [roles, setRoles] = useState([])
-  const [loading, setLoading] = useState(false)
+  const {
+    roles,
+    loading: rolesLoading,
+    error: rolesError,
+    fetchRoles,
+    createRole,
+    updateRole,
+    deleteRole,
+  } = useRoleManagement()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -25,12 +31,17 @@ const RolesList = () => {
   const [roleToEdit, setRoleToEdit] = useState(null)
   const [roleToView, setRoleToView] = useState(null)
   const [roleToDelete, setRoleToDelete] = useState(null)
+
+  const [createRoleLoading, setCreateRoleLoading] = useState(false)
+  const [editRoleLoading, setEditRoleLoading] = useState(false)
+  const [deleteRoleLoading, setDeleteRoleLoading] = useState(false)
   
   // Form refs
   const addRoleFormRef = useRef()
   const editRoleFormRef = useRef()
   
   const { hasPermission } = usePermissions()
+  const { success: showSuccess, error: showError, warning: showWarning } = useToast()
 
   const canCreateRole = hasPermission
     ? hasPermission(PERMISSIONS.ROLE_WRITE) || hasPermission(PERMISSIONS.ROLE_MANAGE)
@@ -45,37 +56,53 @@ const RolesList = () => {
     ? hasPermission(PERMISSIONS.ROLE_READ) || hasPermission(PERMISSIONS.ROLE_MANAGE)
     : true
 
-  const { success, error } = useToast()
+  useEffect(() => {
+    if (!canViewRole) {
+      showWarning && showWarning('You do not have permission to view roles.', { title: 'Access restricted' })
+      return
+    }
+    fetchRoles()
+  }, [canViewRole, fetchRoles, showWarning])
+
+  if (!canViewRole) {
+    return (
+      <Container fluid className="py-5">
+        <Row className="justify-content-center">
+          <Col md={6} className="text-center">
+            <FontAwesomeIcon icon={faLock} className="text-muted mb-3" size="3x" />
+            <h4 className="text-muted">Access Restricted</h4>
+            <p className="text-muted">
+              You do not have permission to view role information. Please contact your administrator if you need additional access.
+            </p>
+          </Col>
+        </Row>
+      </Container>
+    )
+  }
 
   useEffect(() => {
-    fetchRoles()
-  }, [])
-
-  const fetchRoles = async () => {
-    setLoading(true)
-    try {
-      const response = await roleService.getRoles()
-      if (response.success) {
-        setRoles(response.data)
-      } else {
-        error('Failed to fetch roles')
-      }
-    } catch (err) {
-      error('Failed to fetch roles')
-    } finally {
-      setLoading(false)
+    if (rolesError) {
+      showError(rolesError)
     }
-  }
+  }, [rolesError, showError])
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value)
   }
 
   const handleAddRole = () => {
+    if (!canCreateRole) {
+      showError('You do not have permission to create roles')
+      return
+    }
     setShowAddModal(true)
   }
 
   const handleOpenEditModal = (role) => {
+    if (!canUpdateRole) {
+      showError('You do not have permission to update roles')
+      return
+    }
     setRoleToEdit(role)
     setShowEditModal(true)
   }
@@ -86,54 +113,86 @@ const RolesList = () => {
   }
 
   const handleDeleteRole = (role) => {
+    if (!canDeleteRole) {
+      showError('You do not have permission to delete roles')
+      return
+    }
     setRoleToDelete(role)
     setShowDeleteModal(true)
   }
 
   const handleAddRoleSubmit = async (formData) => {
+    if (!canCreateRole) {
+      showError('You do not have permission to create roles')
+      return
+    }
+
+    setCreateRoleLoading(true)
     try {
-      const response = await roleService.createRole(formData)
+      const response = await createRole(formData)
       if (response.success) {
-        success('Role created successfully!')
+        showSuccess('Role created successfully!')
         setShowAddModal(false)
-        fetchRoles() // Refresh the list
+        await fetchRoles()
       } else {
-        error(response.message || 'Failed to create role')
+        showError(response.message || 'Failed to create role')
       }
     } catch (err) {
-      error('Failed to create role')
+      showError(err.message || 'Failed to create role')
+    } finally {
+      setCreateRoleLoading(false)
     }
   }
 
   const handleEditRoleSubmit = async (formData) => {
+    if (!roleToEdit) return
+
+    if (!canUpdateRole) {
+      showError('You do not have permission to update roles')
+      return
+    }
+
+    setEditRoleLoading(true)
     try {
-      const response = await roleService.updateRole(roleToEdit.id, formData)
+      const response = await updateRole(roleToEdit.id, formData)
       if (response.success) {
-        success('Role updated successfully!')
+        showSuccess('Role updated successfully!')
         setShowEditModal(false)
         setRoleToEdit(null)
-        fetchRoles() // Refresh the list
+        await fetchRoles()
       } else {
-        error(response.message || 'Failed to update role')
+        showError(response.message || 'Failed to update role')
       }
     } catch (err) {
-      error('Failed to update role')
+      showError(err.message || 'Failed to update role')
+    } finally {
+      setEditRoleLoading(false)
     }
   }
 
   const confirmDeleteRole = async () => {
+    if (!roleToDelete) return
+
+    if (!canDeleteRole) {
+      showError('You do not have permission to delete roles')
+      return
+    }
+
+    setDeleteRoleLoading(true)
     try {
-      const response = await roleService.deleteRole(roleToDelete.id)
+      const response = await deleteRole(roleToDelete.id)
       if (response.success) {
-        success('Role deleted successfully!')
+        showSuccess('Role deleted successfully!')
         setShowDeleteModal(false)
         setRoleToDelete(null)
-        fetchRoles() // Refresh the list
+        await fetchRoles()
       } else {
-        error(response.message || 'Failed to delete role')
+        showError(response.message || 'Failed to delete role')
       }
     } catch (err) {
-      error('Failed to delete role')
+      showError(err.message || 'Failed to delete role')
+    } finally {
+      setDeleteRoleLoading(false)
     }
   }
 
@@ -373,7 +432,7 @@ const RolesList = () => {
             <Table
               data={filteredRoles}
               columns={columns}
-              loading={loading}
+              loading={rolesLoading}
               hover
               pagination={true}
               sortable={true}
@@ -394,16 +453,17 @@ const RolesList = () => {
         onClose={() => setShowAddModal(false)}
         title="Add New Role"
         size="xl"
-        onConfirm={() => addRoleFormRef.current?.handleSubmit()}
+        onSubmit={() => addRoleFormRef.current?.handleSubmit()}
         confirmText="Create Role"
         cancelText="Cancel"
-        loading={false}
+        loading={createRoleLoading}
       >
         <RoleForm
           ref={addRoleFormRef}
           mode="create"
           onSubmit={handleAddRoleSubmit}
           onCancel={() => setShowAddModal(false)}
+          loading={createRoleLoading}
         />
       </FormModal>
 
@@ -416,10 +476,10 @@ const RolesList = () => {
         }}
         title="Edit Role"
         size="xl"
-        onConfirm={() => editRoleFormRef.current?.handleSubmit()}
+        onSubmit={() => editRoleFormRef.current?.handleSubmit()}
         confirmText="Update Role"
         cancelText="Cancel"
-        loading={false}
+        loading={editRoleLoading}
       >
         <RoleForm
           ref={editRoleFormRef}
@@ -430,6 +490,7 @@ const RolesList = () => {
             setShowEditModal(false)
             setRoleToEdit(null)
           }}
+          loading={editRoleLoading}
         />
       </FormModal>
 
@@ -512,6 +573,7 @@ const RolesList = () => {
         confirmText="Delete"
         cancelText="Cancel"
         type="danger"
+        loading={deleteRoleLoading}
       >
         <p>Are you sure you want to delete role <strong>{roleToDelete?.name}</strong>?</p>
         <p className="text-muted">This action cannot be undone and may affect users assigned to this role.</p>
