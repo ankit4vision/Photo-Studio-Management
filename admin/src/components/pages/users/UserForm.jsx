@@ -7,7 +7,9 @@ const UserForm = forwardRef(({
   userData = null, 
   onSubmit, 
   onCancel,
-  loading = false 
+  loading = false,
+  roleOptions = [],
+  rolesLoading = false,
 }, ref) => {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -31,7 +33,10 @@ const UserForm = forwardRef(({
         phone: userData.phone || '',
         password: '',
         confirmPassword: '',
-        role: userData.role || '',
+        role:
+          userData.roleId !== undefined && userData.roleId !== null
+            ? String(userData.roleId)
+            : userData.role || '',
         isActive: userData.isActive !== undefined ? userData.isActive : true
       })
     }
@@ -96,17 +101,27 @@ const UserForm = forwardRef(({
       return
     }
 
+    const roleIdentifier = formData.role !== '' ? formData.role : null
+
     const submitData = {
       firstName: formData.firstName.trim(),
       lastName: formData.lastName.trim(),
       email: formData.email.trim(),
-      role: formData.role,
       phone: formData.phone.trim(),
-      isActive: formData.isActive
+      isActive: formData.isActive,
+      status: formData.isActive ? 'active' : 'inactive',
     }
 
     if (mode === 'create') {
       submitData.password = formData.password
+    }
+
+    if (roleIdentifier !== null) {
+      if (!Number.isNaN(Number(roleIdentifier))) {
+        submitData.roleId = Number(roleIdentifier)
+      } else {
+        submitData.role = roleIdentifier
+      }
     }
 
     onSubmit(submitData)
@@ -117,11 +132,12 @@ const UserForm = forwardRef(({
     handleSubmit: handleSubmit
   }), [formData])
 
-  const roleOptions = [
-    { value: '', label: 'Select Role' },
-    { value: 'user', label: 'User' },
-    { value: 'manager', label: 'Manager' },
-    { value: 'admin', label: 'Admin' }
+  const computedRoleOptions = [
+    { value: '', label: rolesLoading ? 'Loading roles...' : 'Select Role' },
+    ...roleOptions.map((option) => ({
+      value: String(option.value),
+      label: option.label,
+    })),
   ]
 
   const statusOptions = [
@@ -218,9 +234,10 @@ const UserForm = forwardRef(({
           label="Role"
           value={formData.role}
           onChange={(e) => handleChange('role', e.target.value)}
-          options={roleOptions}
+          options={computedRoleOptions}
           required
           col={6}
+          disabled={rolesLoading}
           invalid={!!errors.role}
           feedback={errors.role}
         />
@@ -244,7 +261,20 @@ UserForm.propTypes = {
   userData: PropTypes.object,
   onSubmit: PropTypes.func.isRequired,
   onCancel: PropTypes.func,
-  loading: PropTypes.bool
+  loading: PropTypes.bool,
+  roleOptions: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      label: PropTypes.string.isRequired,
+      name: PropTypes.string,
+    })
+  ),
+  rolesLoading: PropTypes.bool,
+}
+
+UserForm.defaultProps = {
+  roleOptions: [],
+  rolesLoading: false,
 }
 
 export default UserForm

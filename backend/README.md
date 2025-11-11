@@ -137,6 +137,8 @@ Settings are stored in the `settings` table and organized by groups:
 php artisan test
 ```
 
+Ensure you have a MySQL database named `photo_studio_test` configured with credentials matching the values in `phpunit.xml` or override the `DB_*` variables before running the suite.
+
 ## License
 
 MIT

@@ -1,8 +1,14 @@
+const resolveApiBaseUrl = () => {
+  const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+  const trimmedBaseUrl = rawBaseUrl.replace(/\/$/, '')
+  return trimmedBaseUrl.endsWith('/api') ? trimmedBaseUrl : `${trimmedBaseUrl}/api`
+}
+
 // App Configuration
 const config = {
   // API Configuration
   api: {
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api',
+    baseURL: resolveApiBaseUrl(),
     timeout: parseInt(import.meta.env.VITE_API_TIMEOUT) || 10000,
   },
 

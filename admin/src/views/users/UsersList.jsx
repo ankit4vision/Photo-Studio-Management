@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { Container, Row, Col, Button, Form, FormControl, FormSelect, InputGroup, Badge } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faPencil, faTrash, faInfo, faMagnifyingGlass, faUsers } from '@fortawesome/free-solid-svg-icons'
-import { useNavigate } from 'react-router-dom'
 import { useToast } from '../../components'
-import { useUserManagement, usePermissions } from '../../hooks'
+import { useUserManagement, usePermissions, useRoleManagement } from '../../hooks'
+import { capitalize } from '../../utils'
 import { Table, Modal, FormModal, UserForm } from '../../components'
 import { PERMISSIONS } from '../../constants/permissions'
 
@@ -35,7 +35,6 @@ const UsersList = () => {
   const addUserFormRef = useRef()
   const editUserFormRef = useRef()
 
-  const navigate = useNavigate()
   const { success, error } = useToast()
   const { users, loading, fetchUsers, deleteUser } = useUserManagement()
   const { hasPermission } = usePermissions()
@@ -55,7 +54,8 @@ const UsersList = () => {
 
   useEffect(() => {
     fetchUsers()
-  }, [fetchUsers])
+    fetchRoles()
+  }, [fetchUsers, fetchRoles])
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value)
@@ -75,14 +75,16 @@ const UsersList = () => {
   const handleAddUserSubmit = async (userData) => {
     setAddUserLoading(true)
     try {
-      // Simulate API call - in real app, this would be actual API
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      success('User created successfully!')
-      setShowAddModal(false)
-      // In real app, you would refresh the users list here
+      const response = await createUser(userData)
+      if (response.success) {
+        success('User created successfully!')
+        setShowAddModal(false)
+        await fetchUsers()
+      } else {
+        error(response.message || 'Failed to create user')
+      }
     } catch (err) {
-      error('Failed to create user')
+      error(err.message || 'Failed to create user')
     } finally {
       setAddUserLoading(false)
     }
@@ -95,17 +97,23 @@ const UsersList = () => {
   }
 
   const handleEditUserSubmit = async (userData) => {
+    if (!userToEdit) {
+      return
+    }
+
     setEditUserLoading(true)
     try {
-      // Simulate API call - in real app, this would be actual API
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      success('User updated successfully!')
-      setShowEditModal(false)
-      setUserToEdit(null)
-      // In real app, you would refresh the users list here
+      const response = await updateUser(userToEdit.id, userData)
+      if (response.success) {
+        success('User updated successfully!')
+        setShowEditModal(false)
+        setUserToEdit(null)
+        await fetchUsers()
+      } else {
+        error(response.message || 'Failed to update user')
+      }
     } catch (err) {
-      error('Failed to update user')
+      error(err.message || 'Failed to update user')
     } finally {
       setEditUserLoading(false)
     }
@@ -114,10 +122,6 @@ const UsersList = () => {
   const handleOpenEditModal = (user) => {
     setUserToEdit(user)
     setShowEditModal(true)
-  }
-
-  const handleEditUserOld = (user) => {
-    navigate(`/users/edit/${user.id}`)
   }
 
   const handleViewUser = (user) => {
@@ -132,12 +136,16 @@ const UsersList = () => {
 
   const confirmDeleteUser = async () => {
     try {
-      await deleteUser(userToDelete.id)
-      success('User deleted successfully!')
-      setShowDeleteModal(false)
-      setUserToDelete(null)
+      const response = await deleteUser(userToDelete.id)
+      if (response.success) {
+        success('User deleted successfully!')
+        setShowDeleteModal(false)
+        setUserToDelete(null)
+      } else {
+        error(response.message || 'Failed to delete user')
+      }
     } catch (err) {
-      error('Failed to delete user')
+      error(err.message || 'Failed to delete user')
     }
   }
 
@@ -153,15 +161,39 @@ const UsersList = () => {
     // Implement bulk delete functionality when API is ready
   }
 
+  const roleOptions = useMemo(() => {
+    return roles
+      .filter((role) => !role.isDeleted)
+      .map((role) => ({
+        value: role.id,
+        label: capitalize(role.name),
+        name: role.name,
+      }))
+  }, [roles])
+
+  const roleOptionsForFilter = useMemo(() => {
+    return [
+      { value: '', label: 'All Roles' },
+      ...roleOptions.map((option) => ({
+        value: option.name,
+        label: option.label,
+      })),
+    ]
+  }, [roleOptions])
+
   const filteredUsers = useMemo(() => {
-    return users.filter(user => {
+    return users.filter((user) => {
       const matchesSearch =
         user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (user.phone && user.phone.toLowerCase().includes(searchTerm.toLowerCase()))
+        (user.phone && user.phone.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (user.role && user.role.toLowerCase().includes(searchTerm.toLowerCase()))
 
-      const matchesRole = !roleFilter || user.role === roleFilter
+      const matchesRole =
+        !roleFilter ||
+        user.role === roleFilter ||
+        user.roleNames?.some((name) => name === roleFilter)
       const matchesStatus = !statusFilter || user.isActive === (statusFilter === 'active')
       return matchesSearch && matchesRole && matchesStatus
     })
@@ -381,10 +413,11 @@ const UsersList = () => {
                     onChange={(e) => setRoleFilter(e.target.value)}
                     className="border-2"
                   >
-                    <option value="">All Roles</option>
-                    <option value="admin">Admin</option>
-                    <option value="manager">Manager</option>
-                    <option value="user">User</option>
+                    {roleOptionsForFilter.map((option) => (
+                      <option key={option.value || 'all-roles'} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </FormSelect>
                 </Col>
                 <Col md={3} sm={6}>
@@ -458,7 +491,14 @@ const UsersList = () => {
         loading={addUserLoading}
         loadingText="Creating..."
       >
-        <UserForm ref={addUserFormRef} mode="create" onSubmit={handleAddUserSubmit} />
+        <UserForm
+          ref={addUserFormRef}
+          mode="create"
+          onSubmit={handleAddUserSubmit}
+          loading={addUserLoading}
+          roleOptions={roleOptions}
+          rolesLoading={rolesLoading}
+        />
       </FormModal>
 
       {/* Edit User Modal */}
@@ -480,6 +520,9 @@ const UsersList = () => {
           mode="edit" 
           userData={userToEdit} 
           onSubmit={handleEditUserSubmit} 
+          loading={editUserLoading}
+          roleOptions={roleOptions}
+          rolesLoading={rolesLoading}
         />
       </FormModal>
 

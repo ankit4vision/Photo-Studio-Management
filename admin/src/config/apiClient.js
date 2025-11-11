@@ -1,8 +1,9 @@
 import axios from 'axios'
+import config from '../config'
 import { REQUEST_CONFIG } from '../constants/api'
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://3.106.58.15:8000',
+  baseURL: config.api.baseURL,
   timeout: REQUEST_CONFIG.TIMEOUT,
   headers: {
     'Content-Type': 'application/json',

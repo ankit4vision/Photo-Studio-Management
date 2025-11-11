@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -52,21 +54,22 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
             'phone' => 'nullable|string|max:20',
-            'status' => 'nullable|string',
+            'status' => 'nullable|in:active,inactive',
             'address' => 'nullable|string',
             'city' => 'nullable|string',
             'country' => 'nullable|string',
             'bio' => 'nullable|string',
             'roles' => 'nullable|array',
-            'roles.*' => 'exists:roles,id',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
+        $validated['status'] = $validated['status'] ?? 'active';
 
         $user = User::create($validated);
 
-        if ($request->has('roles')) {
-            $user->roles()->sync($request->roles);
+        $roleIds = $this->normalizeRoleIds($request->input('roles', []));
+        if (!empty($roleIds)) {
+            $user->roles()->sync($roleIds);
         }
 
         return response()->json($user->load('roles'), 201);
@@ -98,13 +101,12 @@ class UserController extends Controller
             'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => 'sometimes|nullable|string|min:8',
             'phone' => 'nullable|string|max:20',
-            'status' => 'nullable|string',
+            'status' => 'nullable|in:active,inactive',
             'address' => 'nullable|string',
             'city' => 'nullable|string',
             'country' => 'nullable|string',
             'bio' => 'nullable|string',
             'roles' => 'nullable|array',
-            'roles.*' => 'exists:roles,id',
         ]);
 
         if (isset($validated['password']) && $validated['password']) {
@@ -113,10 +115,12 @@ class UserController extends Controller
             unset($validated['password']);
         }
 
+        $rolesInput = $request->input('roles', null);
         $user->update($validated);
 
-        if ($request->has('roles')) {
-            $user->roles()->sync($request->roles);
+        if (!is_null($rolesInput)) {
+            $roleIds = $this->normalizeRoleIds($rolesInput);
+            $user->roles()->sync($roleIds);
         }
 
         return response()->json($user->load('roles'));
@@ -133,6 +137,44 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(['message' => 'User deleted successfully']);
+    }
+
+    /**
+     * Normalize role identifiers (IDs or names) into role IDs.
+     *
+     * @param array $roles
+     * @return array
+     *
+     * @throws ValidationException
+     */
+    protected function normalizeRoleIds($roles)
+    {
+        if (empty($roles)) {
+            return [];
+        }
+
+        $roles = is_array($roles) ? $roles : [$roles];
+
+        $resolvedIds = collect($roles)
+            ->map(function ($role) {
+                if (is_numeric($role)) {
+                    return Role::notDeleted()->where('is_active', true)->where('id', (int) $role)->value('id');
+                }
+
+                return Role::notDeleted()->where('is_active', true)->where('name', $role)->value('id');
+            });
+
+        if ($resolvedIds->contains(null)) {
+            throw ValidationException::withMessages([
+                'roles' => ['One or more roles are invalid or inactive.'],
+            ]);
+        }
+
+        return $resolvedIds
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }
 

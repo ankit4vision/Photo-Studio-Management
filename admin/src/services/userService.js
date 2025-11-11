@@ -1,213 +1,198 @@
-// User Management Service
-import apiService from '../api'
-import { API_ENDPOINTS } from '../constants/api'
+import apiClient from '../config/apiClient'
+import { handleApiError } from '../utils/errorHandler'
 
-class UserService {
-  // Get all users with pagination and filters
-  async getUsers(params = {}) {
-    const queryParams = new URLSearchParams()
-    
-    if (params.page) queryParams.append('page', params.page)
-    if (params.limit) queryParams.append('limit', params.limit)
-    if (params.search) queryParams.append('search', params.search)
-    if (params.role) queryParams.append('role', params.role)
-    if (params.status) queryParams.append('status', params.status)
-    if (params.sortBy) queryParams.append('sortBy', params.sortBy)
-    if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder)
+const normalizeRole = (role) => ({
+  id: role.id,
+  name: role.name,
+  description: role.description || '',
+  isActive: role.is_active ?? true,
+  isDeleted: role.is_deleted ?? false,
+  createdAt: role.created_at || null,
+  updatedAt: role.updated_at || null,
+})
 
-    const endpoint = `${API_ENDPOINTS.USERS.LIST}?${queryParams.toString()}`
-    return apiService.get(endpoint)
-  }
+const normalizeUser = (user) => {
+  const roles = Array.isArray(user?.roles) ? user.roles.map(normalizeRole) : []
+  const primaryRole = roles[0] || null
 
-  // Get user by ID
-  async getUserById(userId) {
-    return apiService.get(API_ENDPOINTS.USERS.GET_BY_ID(userId))
-  }
-
-  // Create new user
-  async createUser(userData) {
-    return apiService.post(API_ENDPOINTS.USERS.CREATE, userData)
-  }
-
-  // Update user
-  async updateUser(userId, userData) {
-    return apiService.put(API_ENDPOINTS.USERS.UPDATE(userId), userData)
-  }
-
-  // Delete user
-  async deleteUser(userId) {
-    return apiService.delete(API_ENDPOINTS.USERS.DELETE(userId))
-  }
-
-  // Bulk delete users
-  async bulkDeleteUsers(userIds) {
-    return apiService.post(API_ENDPOINTS.USERS.BULK_DELETE, { userIds })
-  }
-
-  // Search users
-  async searchUsers(query, filters = {}) {
-    const searchParams = { query, ...filters }
-    return apiService.post(API_ENDPOINTS.USERS.SEARCH, searchParams)
-  }
-
-  // Export users
-  async exportUsers(format = 'csv', filters = {}) {
-    const queryParams = new URLSearchParams()
-    queryParams.append('format', format)
-    
-    Object.keys(filters).forEach(key => {
-      if (filters[key]) queryParams.append(key, filters[key])
-    })
-
-    const endpoint = `${API_ENDPOINTS.USERS.EXPORT}?${queryParams.toString()}`
-    return apiService.get(endpoint, { responseType: 'blob' })
-  }
-
-  // Import users
-  async importUsers(file, options = {}) {
-    const formData = new FormData()
-    formData.append('file', file)
-    
-    Object.keys(options).forEach(key => {
-      formData.append(key, options[key])
-    })
-
-    return apiService.post(API_ENDPOINTS.USERS.IMPORT, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
-  }
-
-  // Get user profile
-  async getUserProfile() {
-    return apiService.get(API_ENDPOINTS.USERS.GET_PROFILE)
-  }
-
-  // Update user profile
-  async updateUserProfile(profileData) {
-    return apiService.put(API_ENDPOINTS.USERS.UPDATE_PROFILE, profileData)
-  }
-
-  // Upload user avatar
-  async uploadAvatar(file) {
-    const formData = new FormData()
-    formData.append('avatar', file)
-
-    return apiService.post(API_ENDPOINTS.USERS.UPLOAD_AVATAR, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
-  }
-
-  // Change user status (active/inactive)
-  async changeUserStatus(userId, status) {
-    return apiService.patch(API_ENDPOINTS.USERS.CHANGE_STATUS(userId), { status })
-  }
-
-  // Reset user password
-  async resetUserPassword(userId, newPassword) {
-    return apiService.post(API_ENDPOINTS.USERS.RESET_PASSWORD(userId), { 
-      password: newPassword 
-    })
-  }
-
-  // Get users by role
-  async getUsersByRole(roleId) {
-    return apiService.get(API_ENDPOINTS.ROLES.GET_USERS_WITH_ROLE(roleId))
-  }
-
-  // Assign role to user
-  async assignRoleToUser(userId, roleId) {
-    return apiService.post(`/users/${userId}/roles`, { roleId })
-  }
-
-  // Remove role from user
-  async removeRoleFromUser(userId, roleId) {
-    return apiService.delete(`/users/${userId}/roles/${roleId}`)
-  }
-
-  // Get user permissions
-  async getUserPermissions(userId) {
-    return apiService.get(`/users/${userId}/permissions`)
-  }
-
-  // Assign permissions to user
-  async assignPermissionsToUser(userId, permissions) {
-    return apiService.post(`/users/${userId}/permissions`, { permissions })
-  }
-
-  // Remove permissions from user
-  async removePermissionsFromUser(userId, permissions) {
-    return apiService.delete(`/users/${userId}/permissions`, { 
-      data: { permissions } 
-    })
-  }
-
-  // Get user activity logs
-  async getUserActivityLogs(userId, params = {}) {
-    const queryParams = new URLSearchParams()
-    
-    if (params.page) queryParams.append('page', params.page)
-    if (params.limit) queryParams.append('limit', params.limit)
-    if (params.startDate) queryParams.append('startDate', params.startDate)
-    if (params.endDate) queryParams.append('endDate', params.endDate)
-
-    const endpoint = `/users/${userId}/activity-logs?${queryParams.toString()}`
-    return apiService.get(endpoint)
-  }
-
-  // Get user statistics
-  async getUserStats() {
-    return apiService.get('/users/stats')
-  }
-
-  // Validate user data
-  validateUserData(userData, isUpdate = false) {
-    const errors = {}
-
-    if (!isUpdate || userData.firstName !== undefined) {
-      if (!userData.firstName || userData.firstName.trim() === '') {
-        errors.firstName = 'First name is required'
-      }
-    }
-
-    if (!isUpdate || userData.lastName !== undefined) {
-      if (!userData.lastName || userData.lastName.trim() === '') {
-        errors.lastName = 'Last name is required'
-      }
-    }
-
-    if (!isUpdate || userData.email !== undefined) {
-      if (!userData.email || userData.email.trim() === '') {
-        errors.email = 'Email is required'
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.email)) {
-        errors.email = 'Please enter a valid email address'
-      }
-    }
-
-    if (!isUpdate || userData.password !== undefined) {
-      if (!isUpdate && (!userData.password || userData.password.trim() === '')) {
-        errors.password = 'Password is required'
-      } else if (userData.password && userData.password.length < 6) {
-        errors.password = 'Password must be at least 6 characters long'
-      }
-    }
-
-    if (!isUpdate || userData.role !== undefined) {
-      if (!userData.role || userData.role.trim() === '') {
-        errors.role = 'Role is required'
-      }
-    }
-
-    return {
-      isValid: Object.keys(errors).length === 0,
-      errors,
-    }
+  return {
+    id: user.id,
+    firstName: user.first_name || '',
+    lastName: user.last_name || '',
+    email: user.email || '',
+    phone: user.phone || '',
+    status: user.status || 'active',
+    isActive: (user.status || 'active') === 'active',
+    address: user.address || '',
+    city: user.city || '',
+    country: user.country || '',
+    bio: user.bio || '',
+    role: primaryRole?.name || '',
+    roleId: primaryRole?.id || null,
+    roles,
+    roleNames: roles.map((role) => role.name),
+    createdAt: user.created_at || null,
+    updatedAt: user.updated_at || null,
+    fullName: [user.first_name, user.last_name].filter(Boolean).join(' ').trim(),
   }
 }
 
-// Create and export singleton instance
-const userService = new UserService()
+const toRoleIdentifier = (value) => {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  if (typeof value === 'number') {
+    return value
+  }
+
+  const parsed = Number(value)
+  if (!Number.isNaN(parsed)) {
+    return parsed
+  }
+
+  return value
+}
+
+const serializeUserPayload = (userData, { isUpdate = false } = {}) => {
+  const payload = {}
+
+  if (userData.firstName !== undefined) payload.first_name = userData.firstName?.trim() || ''
+  if (userData.lastName !== undefined) payload.last_name = userData.lastName?.trim() || ''
+  if (userData.email !== undefined) payload.email = userData.email?.trim() || ''
+  if (userData.phone !== undefined) payload.phone = userData.phone || ''
+  if (userData.address !== undefined) payload.address = userData.address || ''
+  if (userData.city !== undefined) payload.city = userData.city || ''
+  if (userData.country !== undefined) payload.country = userData.country || ''
+  if (userData.bio !== undefined) payload.bio = userData.bio || ''
+
+  const status =
+    userData.status ||
+    (userData.isActive === false ? 'inactive' : userData.isActive === true ? 'active' : undefined)
+
+  if (status) {
+    payload.status = status
+  }
+
+  if (!isUpdate && userData.password) {
+    payload.password = userData.password
+  } else if (isUpdate && userData.password) {
+    payload.password = userData.password
+  }
+
+  const roleIdentifiers = []
+
+  if (Array.isArray(userData.roleIds)) {
+    userData.roleIds.forEach((role) => {
+      const identifier = toRoleIdentifier(role)
+      if (identifier !== null) {
+        roleIdentifiers.push(identifier)
+      }
+    })
+  }
+
+  if (userData.roleId !== undefined) {
+    const identifier = toRoleIdentifier(userData.roleId)
+    if (identifier !== null) {
+      roleIdentifiers.push(identifier)
+    }
+  }
+
+  if (Array.isArray(userData.roles)) {
+    userData.roles.forEach((role) => {
+      const identifier = toRoleIdentifier(role)
+      if (identifier !== null) {
+        roleIdentifiers.push(identifier)
+      }
+    })
+  }
+
+  if (userData.role !== undefined) {
+    const identifier = toRoleIdentifier(userData.role)
+    if (identifier !== null) {
+      roleIdentifiers.push(identifier)
+    }
+  }
+
+  if (roleIdentifiers.length > 0) {
+    payload.roles = Array.from(new Set(roleIdentifiers))
+  }
+
+  return payload
+}
+
+const userService = {
+  async getUsers(params = {}) {
+    try {
+      const query = {}
+
+      if (params.page) query.page = params.page
+      if (params.limit) query.per_page = params.limit
+      if (params.search) query.search = params.search
+      if (params.status) query.status = params.status
+
+      const response = await apiClient.get('/users', { params: query })
+      const { data = [], meta = null } = response.data || {}
+
+      return {
+        success: true,
+        data: data.map(normalizeUser),
+        pagination: meta
+          ? {
+              currentPage: meta.current_page,
+              perPage: meta.per_page,
+              total: meta.total,
+              lastPage: meta.last_page,
+            }
+          : null,
+      }
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  async createUser(userData) {
+    try {
+      const payload = serializeUserPayload(userData, { isUpdate: false })
+      const response = await apiClient.post('/users', payload)
+
+      return {
+        success: true,
+        data: normalizeUser(response.data),
+        message: 'User created successfully',
+      }
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  async updateUser(userId, userData) {
+    try {
+      const payload = serializeUserPayload(userData, { isUpdate: true })
+      const response = await apiClient.put(`/users/${userId}`, payload)
+
+      return {
+        success: true,
+        data: normalizeUser(response.data),
+        message: 'User updated successfully',
+      }
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  async deleteUser(userId) {
+    try {
+      const response = await apiClient.delete(`/users/${userId}`)
+      return {
+        success: true,
+        data: response.data,
+        message: response.data?.message || 'User deleted successfully',
+      }
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+}
+
 export default userService

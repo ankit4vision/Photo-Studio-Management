@@ -1,156 +1,231 @@
 // Authentication Service - API calls for authentication
 import apiClient from '../config/apiClient'
-import { handleApiError, formatSuccessResponse } from '../utils/errorHandler'
+import { handleApiError } from '../utils/errorHandler'
+
+const PERMISSION_ALIAS_MAP = {
+  view_user: ['user:read'],
+  create_user: ['user:write', 'user:manage'],
+  edit_user: ['user:write', 'user:manage'],
+  delete_user: ['user:delete', 'user:manage'],
+  view_role: ['role:read'],
+  create_role: ['role:write', 'role:manage'],
+  edit_role: ['role:write', 'role:manage'],
+  delete_role: ['role:delete', 'role:manage'],
+  view_permission: ['role:read'],
+  view_setting: ['settings:read'],
+  edit_setting: ['settings:write'],
+}
+
+const startCase = (value = '') =>
+  value
+    .toString()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+
+const applyPermissionAliases = (permissionNames = []) => {
+  const permissionSet = new Set(permissionNames)
+
+  permissionNames.forEach((name) => {
+    const aliases = PERMISSION_ALIAS_MAP[name]
+    if (aliases) {
+      aliases.forEach((alias) => permissionSet.add(alias))
+    }
+  })
+
+  return Array.from(permissionSet)
+}
+
+const normalizeRole = (role) => ({
+  id: role.id,
+  name: role.name,
+  description: role.description || '',
+  isActive: role.is_active ?? true,
+  isDeleted: role.is_deleted ?? false,
+  createdAt: role.created_at || null,
+  updatedAt: role.updated_at || null,
+})
+
+const normalizePermission = (permission) => ({
+  id: permission.id,
+  name: permission.name,
+  label: permission.description || startCase(permission.name),
+  description: permission.description || '',
+  module: permission.module || 'general',
+  submodule: permission.submodule || 'general',
+  type: permission.type || null,
+  isActive: permission.is_active ?? true,
+  isDeleted: permission.is_deleted ?? false,
+})
+
+const normalizeUser = (apiUser, permissions = [], permissionsByModule = {}) => {
+  const roles = Array.isArray(apiUser?.roles) ? apiUser.roles.map(normalizeRole) : []
+  const primaryRole = roles[0] || null
+
+  const permissionObjects = Array.isArray(permissions)
+    ? permissions.map(normalizePermission)
+    : []
+
+  const canonicalPermissionNames = permissionObjects
+    .filter((permission) => permission?.name)
+    .map((permission) => permission.name)
+
+  const permissionNamesWithAliases = applyPermissionAliases(canonicalPermissionNames)
+
+  return {
+    id: apiUser.id,
+    firstName: apiUser.first_name || '',
+    lastName: apiUser.last_name || '',
+    email: apiUser.email || '',
+    phone: apiUser.phone || '',
+    status: apiUser.status || 'active',
+    isActive: (apiUser.status || 'active') === 'active',
+    address: apiUser.address || '',
+    city: apiUser.city || '',
+    country: apiUser.country || '',
+    bio: apiUser.bio || '',
+    role: primaryRole?.name || null,
+    roleId: primaryRole?.id || null,
+    roles,
+    roleNames: roles.map((role) => role.name),
+    permissions: permissionNamesWithAliases,
+    permissionIdentifiers: canonicalPermissionNames,
+    permissionObjects,
+    permissionsByModule,
+    createdAt: apiUser.created_at || null,
+    updatedAt: apiUser.updated_at || null,
+    fullName: [apiUser.first_name, apiUser.last_name].filter(Boolean).join(' ').trim(),
+  }
+}
+
+const storeSession = (token, user) => {
+  if (token) {
+    localStorage.setItem('access_token', token)
+  }
+
+  if (user) {
+    localStorage.setItem('user', JSON.stringify(user))
+  }
+}
+
+const clearSession = () => {
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('user')
+}
 
 const authService = {
   /**
    * Login user
    * @param {Object} credentials - User credentials { email, password }
-   * @returns {Promise} Login response with token and user data
+   * @returns {Promise<{success: boolean, data?: {token: string, user: object}}>}
    */
   async login(credentials) {
     try {
       const response = await apiClient.post('/auth/login', credentials)
-      
-      // Handle different response formats
-      // Format 1: { access_token, user }
-      // Format 2: { token, user }
-      // Format 3: { data: { access_token, user } }
-      // Format 4: { access_token, data: { user } }
-      
-      let access_token, user
-      
-      if (response.data) {
-        // Check for nested data structure
-        if (response.data.data) {
-          access_token = response.data.data.access_token || response.data.data.token
-          user = response.data.data.user || response.data.user
-        } else {
-          // Direct structure
-          access_token = response.data.access_token || response.data.token
-          user = response.data.user || response.data.data
+      const { token, user, permissions, permissionsByModule } = response.data || {}
+
+      if (!token || !user) {
+        return {
+          success: false,
+          data: null,
+          message: 'Invalid authentication response received from server.',
         }
       }
-      
-      // Store token and user data
-      if (access_token) {
-        localStorage.setItem('access_token', access_token)
-      }
-      
-      if (user) {
-        localStorage.setItem('user', JSON.stringify(user))
-      }
-      
+
+      const normalizedUser = normalizeUser(user, permissions, permissionsByModule)
+      storeSession(token, normalizedUser)
+
       return {
         success: true,
         data: {
-          token: access_token,
-          user: user,
+          token,
+          user: normalizedUser,
         },
         message: 'Login successful',
       }
     } catch (error) {
-      // Enhanced error logging for 401 errors
       if (error.response?.status === 401) {
-        console.error('[Login 401 Error]', {
+        console.error('[AuthService] Login failed', {
           status: error.response.status,
           data: error.response.data,
-          credentials: { email: credentials.email },
-          message: 'Invalid credentials or user does not exist in backend'
+          email: credentials.email,
         })
       }
+
+      clearSession()
       return handleApiError(error)
     }
   },
 
   /**
    * Logout user
-   * @returns {Promise} Logout response
+   * @returns {Promise<{success: boolean, message: string}>}
    */
   async logout() {
     try {
-      // Call logout endpoint if available
-      // await apiClient.post('/auth/logout')
-      
-      // Clear local storage
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('user')
-      
-      return {
-        success: true,
-        message: 'Logout successful',
-      }
+      await apiClient.post('/auth/logout')
     } catch (error) {
-      // Even if logout fails, clear local storage
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('user')
-      
-      return {
-        success: true,
-        message: 'Logout successful',
-      }
+      // Log error but continue clearing the local session
+      console.warn('[AuthService] Logout request failed', error)
+    } finally {
+      clearSession()
     }
-  },
 
-  /**
-   * Register new user
-   * @param {Object} userData - User registration data
-   * @returns {Promise} Registration response
-   */
-  async register(userData) {
-    try {
-      const response = await apiClient.post('/auth/register', userData)
-      return formatSuccessResponse(response)
-    } catch (error) {
-      return handleApiError(error)
+    return {
+      success: true,
+      message: 'Logout successful',
     }
   },
 
   /**
    * Forgot password
    * @param {String} email - User email
-   * @returns {Promise} Forgot password response
+   * @returns {Promise}
    */
   async forgotPassword(email) {
     try {
       const response = await apiClient.post('/auth/forgot-password', { email })
-      return formatSuccessResponse(response)
-    } catch (error) {
-      return handleApiError(error)
-    }
-  },
-
-  /**
-   * Reset password
-   * @param {String} token - Reset token
-   * @param {String} password - New password
-   * @returns {Promise} Reset password response
-   */
-  async resetPassword(token, password) {
-    try {
-      const response = await apiClient.post('/auth/reset-password', { token, password })
-      return formatSuccessResponse(response)
-    } catch (error) {
-      return handleApiError(error)
-    }
-  },
-
-  /**
-   * Refresh auth token
-   * @returns {Promise} Token refresh response
-   */
-  async refreshToken() {
-    try {
-      const response = await apiClient.post('/auth/refresh')
-      
-      const { access_token } = response.data
-      
-      if (access_token) {
-        localStorage.setItem('access_token', access_token)
+      return {
+        success: true,
+        data: response.data,
+        message: response.data?.message || 'Password reset email sent',
       }
-      
-      return formatSuccessResponse(response)
     } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  /**
+   * Fetch authenticated user using existing token
+   * @returns {Promise<{success: boolean, data?: object}>}
+   */
+  async fetchCurrentUser() {
+    try {
+      const response = await apiClient.get('/auth/user')
+      const { user, permissions, permissionsByModule } = response.data || {}
+
+      if (!user) {
+        return {
+          success: false,
+          data: null,
+          message: 'Unable to load authenticated user.',
+        }
+      }
+
+      const normalizedUser = normalizeUser(user, permissions, permissionsByModule)
+      localStorage.setItem('user', JSON.stringify(normalizedUser))
+
+      return {
+        success: true,
+        data: normalizedUser,
+      }
+    } catch (error) {
+      if (error.response?.status === 401) {
+        clearSession()
+      }
       return handleApiError(error)
     }
   },
@@ -161,11 +236,11 @@ const authService = {
    */
   isAuthenticated() {
     const token = localStorage.getItem('access_token')
-    return !!token
+    return Boolean(token)
   },
 
   /**
-   * Get current auth token
+   * Get stored auth token
    * @returns {String|null}
    */
   getToken() {
@@ -173,12 +248,17 @@ const authService = {
   },
 
   /**
-   * Get current user data
+   * Get stored user object (if any)
    * @returns {Object|null}
    */
-  getUser() {
-    const user = localStorage.getItem('user')
-    return user ? JSON.parse(user) : null
+  getStoredUser() {
+    try {
+      const stored = localStorage.getItem('user')
+      return stored ? JSON.parse(stored) : null
+    } catch (error) {
+      console.error('[AuthService] Failed to parse stored user', error)
+      return null
+    }
   },
 }
 

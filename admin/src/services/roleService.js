@@ -1,131 +1,158 @@
-import rolesData from '../mock/roles.json'
+import apiClient from '../config/apiClient'
+import { handleApiError } from '../utils/errorHandler'
 
-// Simulate API delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+const startCase = (value = '') =>
+  value
+    .toString()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 
-export const roleService = {
-  // Get all roles
+const normalizePermission = (permission) => ({
+  id: permission.id,
+  name: permission.name,
+  label: permission.description || startCase(permission.name),
+  description: permission.description || '',
+  module: permission.module || 'general',
+  submodule: permission.submodule || 'general',
+  type: permission.type || null,
+  isActive: permission.is_active ?? true,
+  isDeleted: permission.is_deleted ?? false,
+})
+
+const normalizeRole = (role) => ({
+  id: role.id,
+  name: role.name,
+  description: role.description || '',
+  isActive: role.is_active ?? true,
+  isDeleted: role.is_deleted ?? false,
+  permissions: Array.isArray(role.permissions)
+    ? role.permissions.map(normalizePermission)
+    : [],
+  createdAt: role.created_at || null,
+  updatedAt: role.updated_at || null,
+})
+
+const serializeRolePayload = (roleData) => {
+  const payload = {}
+
+  if (roleData.name !== undefined) payload.name = roleData.name?.trim()
+  if (roleData.description !== undefined) payload.description = roleData.description || ''
+  if (roleData.isActive !== undefined) payload.is_active = Boolean(roleData.isActive)
+
+  return payload
+}
+
+const roleService = {
   async getRoles() {
-    return {
-      success: true,
-      data: rolesData,
-      message: 'Roles fetched successfully'
+    try {
+      const response = await apiClient.get('/roles')
+
+      return {
+        success: true,
+        data: Array.isArray(response.data) ? response.data.map(normalizeRole) : [],
+      }
+    } catch (error) {
+      return handleApiError(error)
     }
   },
 
-  // Get role by ID
   async getRoleById(id) {
-    const role = rolesData.find(r => r.id === parseInt(id))
-    if (role) {
+    try {
+      const response = await apiClient.get(`/roles/${id}`)
       return {
         success: true,
-        data: role,
-        message: 'Role fetched successfully'
+        data: normalizeRole(response.data),
       }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Role not found'
-      }
+    } catch (error) {
+      return handleApiError(error)
     }
   },
 
-  // Create new role
   async createRole(roleData) {
-    await delay(800)
-    
-    // Generate unique ID
-    const existingIds = rolesData.map(r => parseInt(r.id)).filter(id => !isNaN(id))
-    const newId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1
-    
-    const newRole = {
-      id: newId,
-      ...roleData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-    
-    // In a real app, this would be saved to the backend
-    rolesData.push(newRole)
-    
-    return {
-      success: true,
-      data: newRole,
-      message: 'Role created successfully'
-    }
-  },
+    try {
+      const payload = serializeRolePayload(roleData)
+      const response = await apiClient.post('/roles', payload)
 
-  // Update role
-  async updateRole(id, roleData) {
-    await delay(600)
-    const roleIndex = rolesData.findIndex(r => r.id === parseInt(id))
-    
-    if (roleIndex !== -1) {
-      rolesData[roleIndex] = {
-        ...rolesData[roleIndex],
-        ...roleData,
-        updatedAt: new Date().toISOString()
+      if (Array.isArray(roleData.permissions) && roleData.permissions.length) {
+        await apiClient.put(`/roles/${response.data.id}/permissions`, {
+          permissions: roleData.permissions,
+        })
+        const roleWithPermissions = await apiClient.get(`/roles/${response.data.id}`)
+        return {
+          success: true,
+          data: normalizeRole(roleWithPermissions.data),
+          message: 'Role created successfully',
+        }
       }
-      
+
       return {
         success: true,
-        data: rolesData[roleIndex],
-        message: 'Role updated successfully'
+        data: normalizeRole(response.data),
+        message: 'Role created successfully',
       }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Role not found'
-      }
+    } catch (error) {
+      return handleApiError(error)
     }
   },
 
-  // Delete role
-  async deleteRole(id) {
-    await delay(400)
-    const roleIndex = rolesData.findIndex(r => r.id === parseInt(id))
-    
-    if (roleIndex !== -1) {
-      const deletedRole = rolesData.splice(roleIndex, 1)[0]
+  async updateRole(roleId, roleData) {
+    try {
+      const payload = serializeRolePayload(roleData)
+      const response = await apiClient.put(`/roles/${roleId}`, payload)
+
+      if (Array.isArray(roleData.permissions)) {
+        await apiClient.put(`/roles/${roleId}/permissions`, {
+          permissions: roleData.permissions,
+        })
+        const roleWithPermissions = await apiClient.get(`/roles/${roleId}`)
+        return {
+          success: true,
+          data: normalizeRole(roleWithPermissions.data),
+          message: 'Role updated successfully',
+        }
+      }
+
       return {
         success: true,
-        data: deletedRole,
-        message: 'Role deleted successfully'
+        data: normalizeRole(response.data),
+        message: 'Role updated successfully',
       }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Role not found'
-      }
+    } catch (error) {
+      return handleApiError(error)
     }
   },
 
-  // Get permissions
-  async getPermissions() {
-    await delay(200)
-    const permissions = [
-      { id: 'user:read', label: 'Read Users', category: 'User Management' },
-      { id: 'user:write', label: 'Create/Edit Users', category: 'User Management' },
-      { id: 'user:delete', label: 'Delete Users', category: 'User Management' },
-      { id: 'role:read', label: 'Read Roles', category: 'Role Management' },
-      { id: 'role:write', label: 'Create/Edit Roles', category: 'Role Management' },
-      { id: 'role:delete', label: 'Delete Roles', category: 'Role Management' },
-      { id: 'dashboard:read', label: 'View Dashboard', category: 'System Access' },
-      { id: 'dashboard:write', label: 'Edit Dashboard', category: 'System Access' },
-      { id: 'settings:access', label: 'System Settings', category: 'System Access' },
-      { id: 'reports:read', label: 'View Reports', category: 'Reports' },
-      { id: 'reports:write', label: 'Create Reports', category: 'Reports' }
-    ]
-    
-    return {
-      success: true,
-      data: permissions,
-      message: 'Permissions fetched successfully'
+  async deleteRole(roleId) {
+    try {
+      const response = await apiClient.delete(`/roles/${roleId}`)
+      return {
+        success: true,
+        data: response.data,
+        message: response.data?.message || 'Role deleted successfully',
+      }
+    } catch (error) {
+      return handleApiError(error)
     }
-  }
+  },
+
+  async updateRolePermissions(roleId, permissions) {
+    try {
+      const response = await apiClient.put(`/roles/${roleId}/permissions`, {
+        permissions,
+      })
+      return {
+        success: true,
+        data: normalizeRole(response.data),
+        message: 'Role permissions updated successfully',
+      }
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
 }
 
 export default roleService
