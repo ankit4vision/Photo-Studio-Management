@@ -46,14 +46,62 @@ const serializeRolePayload = (roleData) => {
   return payload
 }
 
+const enhanceRoleError = (errorResponse) => {
+  if (!errorResponse || errorResponse.status !== 422 || !errorResponse.errors) {
+    return errorResponse
+  }
+
+  const { errors } = errorResponse
+  const nameErrors = Array.isArray(errors.name) ? errors.name : []
+
+  if (nameErrors.includes('validation.unique')) {
+    return {
+      ...errorResponse,
+      message: 'Role name already exists. Please choose a different name.',
+    }
+  }
+
+  if (nameErrors.includes('validation.required')) {
+    return {
+      ...errorResponse,
+      message: 'Role name is required.',
+    }
+  }
+
+  return errorResponse
+}
+
 const roleService = {
-  async getRoles() {
+  async getRoles(params = {}) {
     try {
-      const response = await apiClient.get('/roles')
+      const response = await apiClient.get('/roles', {
+        params: {
+          page: params.page,
+          limit: params.limit,
+          search: params.search,
+          active: params.active,
+          sort_by: params.sortBy,
+          sort_direction: params.sortDirection,
+        },
+      })
+
+      const payload = response.data || {}
+      const rows = Array.isArray(payload.data) ? payload.data : []
+      const meta = payload.meta || {}
 
       return {
-        success: true,
-        data: Array.isArray(response.data) ? response.data.map(normalizeRole) : [],
+        success: payload.success ?? true,
+        data: rows.map(normalizeRole),
+        meta: {
+          total: meta.total ?? rows.length,
+          page: meta.page ?? params.page ?? 1,
+          limit: meta.limit ?? params.limit ?? 20,
+          totalPages: meta.totalPages ?? 1,
+          hasNext: meta.hasNext ?? false,
+          hasPrev: meta.hasPrev ?? false,
+          sortBy: meta.sortBy ?? params.sortBy ?? null,
+          sortDirection: meta.sortDirection ?? params.sortDirection ?? null,
+        },
       }
     } catch (error) {
       return handleApiError(error)
@@ -95,7 +143,7 @@ const roleService = {
         message: 'Role created successfully',
       }
     } catch (error) {
-      return handleApiError(error)
+      return enhanceRoleError(handleApiError(error))
     }
   },
 
@@ -122,7 +170,7 @@ const roleService = {
         message: 'Role updated successfully',
       }
     } catch (error) {
-      return handleApiError(error)
+      return enhanceRoleError(handleApiError(error))
     }
   },
 

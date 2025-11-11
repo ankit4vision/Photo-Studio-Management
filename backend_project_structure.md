@@ -16,6 +16,8 @@ backend/
 │   │   │   │   ├── RoleController.php
 │   │   │   │   ├── SettingController.php
 │   │   │   │   └── UserController.php
+│   │   │   ├── Concerns/        # Shared controller traits
+│   │   │   │   └── PaginatesResults.php
 │   │   │   ├── AuthController.php
 │   │   │   └── Controller.php   # Base controller
 │   │   ├── Kernel.php           # HTTP kernel (middleware)
@@ -151,6 +153,7 @@ The heart of your Laravel application containing all business logic.
 - **Purpose:** Handle HTTP requests and return responses
 - **Structure:**
   - `API/` - All API controllers (RESTful)
+  - `Concerns/` - Reusable controller traits (e.g., `PaginatesResults`)
   - `AuthController.php` - Authentication endpoints
   - `Controller.php` - Base controller class
 - **Guidelines:**
@@ -331,6 +334,11 @@ public function __construct(EmailService $emailService, S3Service $s3Service)
 }
 ```
 
+### 5. **Controller Traits (2025-11 update)**
+- Use `App\Http\Controllers\Concerns\PaginatesResults` to standardize pagination, sorting, and meta responses across list endpoints.
+- Compose the trait in controllers (`use PaginatesResults;`) and call `$this->buildPaginator($request, $query, $sortableColumns, $defaultSort);`.
+- Return JSON payloads that include the paginator meta via `$this->paginationMeta($paginator, $sortBy, $sortDirection);`.
+
 ---
 
 ## 📋 Development Guidelines
@@ -342,6 +350,7 @@ public function __construct(EmailService $emailService, S3Service $s3Service)
 - Delegate business logic to services
 - Handle HTTP concerns only (request/response)
 - Use dependency injection
+- Reuse the `PaginatesResults` trait for consistent pagination, sorting, and meta payloads.
 
 **Good:**
 ```php
@@ -480,6 +489,12 @@ return response()->json($data, 201);
 // Error
 return response()->json(['message' => 'Error'], 400);
 ```
+
+#### Pagination Format (2025-11 update)
+- List endpoints return `{ success, data, meta }`.
+- `meta` must contain `total`, `page`, `limit`, `totalPages`, `hasNext`, `hasPrev`, `sortBy`, and `sortDirection`.
+- Use the `PaginatesResults` trait to clamp pagination limits (1-100), append whitelisted sorts, and include `appends()` links.
+- Controllers should pass normalized data arrays (resources or transformed models) into the `data` key.
 
 #### HTTP Status Codes
 - `200` - Success (GET, PUT, PATCH)

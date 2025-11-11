@@ -585,6 +585,7 @@ const handleThemeChange = (themeKey) => {
 - **Pagination Integration**: Use built-in pagination with currentPage, pageSize, and totalItems
 - **Loading States**: Leverage built-in loading states and empty message handling
 - **Consistent Styling**: Inherit responsive design and proper table styling automatically
+- **Server-side Mode**: Set `serverSide` to true with meta from API responses and use `onSortChange` + `onPageChange` to request new data.
 
 
 ### 🔧 State Management Rules
@@ -605,6 +606,12 @@ const handleThemeChange = (themeKey) => {
 - **Immutable updates** for objects and arrays
 - **Functional updates** for state that depends on previous state
 - **Batch updates** when possible
+
+#### 4. **Management Hooks (2025-11 update)**
+- **Encapsulate CRUD** flows with feature hooks (`useUserManagement`, `useRoleManagement`) that expose `data`, `meta`, `loading`, and action callbacks.
+- **Delegate service calls** to hooks so views stay declarative and use optimistic state updates when responses succeed.
+- **Centralize errors** inside hooks and surface human-readable `message` strings back to the caller.
+- **Share request state** with `useApi` when you need a lightweight loading/error wrapper for ad-hoc service calls.
 
 ### 🌐 API Service Rules
 
@@ -631,6 +638,12 @@ const userService = {
 - **User-friendly error messages**
 - **Logging** for debugging purposes
 - **Fallback values** for failed requests
+
+#### 4. **Paginated Response Helpers (2025-11 update)**
+- **List endpoints** must respond with `{ success, data, meta }` where `meta` tracks pagination and sorting.
+- **Meta shape** standardizes `{ total, page, limit, totalPages, hasNext, hasPrev, sortBy, sortDirection }`.
+- **Service adapters** (`transformListResponse`, `transformItemResponse`) normalize responses and provide graceful fallbacks to mock data.
+- **Query params** follow snake_case (`page`, `limit`, `sort_by`, `sort_direction`) and only include filters that are truthy.
 
 ### 🎯 Code Quality Rules
 
@@ -846,6 +859,7 @@ const userService = {
 - **Order Details Modal**: Comprehensive order view with timeline, customer info, and quick actions
 - **Authentication Pages**: Complete dark theme support for login, forgot password, and reset password
 - **Sidebar Theme Adaptation**: Sidebar changes color scheme based on selected theme
+- **Server-side Tables (2025-11)**: Feature lists consume normalized `{ success, data, meta }` responses and run the custom Table component in `serverSide` mode with sort + pagination callbacks.
 
 ---
 

@@ -1,16 +1,17 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Container, Row, Col, Button, Form, FormControl, FormSelect, InputGroup, Badge } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faPencil, faTrash, faInfo, faMagnifyingGlass, faLock } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from '../../components'
 import { Table, Modal, FormModal } from '../../components'
 import RoleForm from '../../components/pages/roles/RoleForm'
-import { usePermissions, useRoleManagement } from '../../hooks'
+import { usePermissions, useRoleManagement, useDebounce } from '../../hooks'
 import { PERMISSIONS } from '../../constants/permissions'
 
 const RolesList = () => {
   const {
     roles,
+    meta,
     loading: rolesLoading,
     error: rolesError,
     fetchRoles,
@@ -22,6 +23,11 @@ const RolesList = () => {
   const [statusFilter, setStatusFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [sortState, setSortState] = useState({
+    columnKey: 'createdAt',
+    sortBy: 'created_at',
+    sortDirection: 'desc',
+  })
   
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false)
@@ -42,6 +48,7 @@ const RolesList = () => {
   
   const { hasPermission } = usePermissions()
   const { success: showSuccess, error: showError, warning: showWarning } = useToast()
+  const debouncedSearch = useDebounce(searchTerm, 400)
 
   const canCreateRole = hasPermission
     ? hasPermission(PERMISSIONS.ROLE_WRITE) || hasPermission(PERMISSIONS.ROLE_MANAGE)
@@ -56,13 +63,34 @@ const RolesList = () => {
     ? hasPermission(PERMISSIONS.ROLE_READ) || hasPermission(PERMISSIONS.ROLE_MANAGE)
     : true
 
+  const fetchRolesWithParams = useCallback(async () => {
+    const searchValue = (debouncedSearch || '').trim()
+
+    await fetchRoles({
+      page: currentPage,
+      limit: pageSize,
+      search: searchValue || undefined,
+      active: statusFilter === '' ? undefined : statusFilter === 'active',
+      sortBy: sortState.sortBy,
+      sortDirection: sortState.sortDirection,
+    })
+  }, [
+    currentPage,
+    pageSize,
+    debouncedSearch,
+    statusFilter,
+    sortState.sortBy,
+    sortState.sortDirection,
+    fetchRoles,
+  ])
+
   useEffect(() => {
     if (!canViewRole) {
       showWarning && showWarning('You do not have permission to view roles.', { title: 'Access restricted' })
       return
     }
-    fetchRoles()
-  }, [canViewRole, fetchRoles, showWarning])
+    fetchRolesWithParams()
+  }, [canViewRole, fetchRolesWithParams, showWarning])
 
   if (!canViewRole) {
     return (
@@ -88,6 +116,7 @@ const RolesList = () => {
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value)
+    setCurrentPage(1)
   }
 
   const handleAddRole = () => {
@@ -133,7 +162,7 @@ const RolesList = () => {
       if (response.success) {
         showSuccess('Role created successfully!')
         setShowAddModal(false)
-        await fetchRoles()
+        await fetchRolesWithParams()
       } else {
         showError(response.message || 'Failed to create role')
       }
@@ -159,7 +188,7 @@ const RolesList = () => {
         showSuccess('Role updated successfully!')
         setShowEditModal(false)
         setRoleToEdit(null)
-        await fetchRoles()
+        await fetchRolesWithParams()
       } else {
         showError(response.message || 'Failed to update role')
       }
@@ -185,7 +214,7 @@ const RolesList = () => {
         showSuccess('Role deleted successfully!')
         setShowDeleteModal(false)
         setRoleToDelete(null)
-        await fetchRoles()
+        await fetchRolesWithParams()
       } else {
         showError(response.message || 'Failed to delete role')
       }
@@ -196,37 +225,41 @@ const RolesList = () => {
     }
   }
 
-  // Filter roles based on search and status
-  const filteredRoles = useMemo(() => {
-    return roles.filter(role => {
-      const matchesSearch = 
-        role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        role.description.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      const matchesStatus = !statusFilter || 
-        (statusFilter === 'active' && role.isActive) ||
-        (statusFilter === 'inactive' && !role.isActive)
-      
-      return matchesSearch && matchesStatus
-    })
-  }, [roles, searchTerm, statusFilter])
-
   const roleStats = useMemo(() => {
-    const total = filteredRoles.length
-    const active = filteredRoles.filter(role => role.isActive).length
-    const inactive = total - active
-    const totalPermissions = filteredRoles.reduce(
+    const visibleRoles = roles || []
+    const active = visibleRoles.filter((role) => role.isActive).length
+    const inactive = visibleRoles.length - active
+    const totalPermissions = visibleRoles.reduce(
       (sum, role) => sum + (role.permissions?.length || 0),
       0
     )
 
     return {
-      total,
+      total: meta?.total ?? visibleRoles.length,
       active,
       inactive,
       totalPermissions,
     }
-  }, [filteredRoles])
+  }, [roles, meta])
+
+  const sortKeyMap = {
+    name: 'name',
+    status: 'is_active',
+    createdAt: 'created_at',
+  }
+
+  const handleSortChange = (columnKey, direction) => {
+    const sortBy = sortKeyMap[columnKey]
+    if (!sortBy) {
+      return
+    }
+    setSortState({
+      columnKey,
+      sortBy,
+      sortDirection: direction,
+    })
+    setCurrentPage(1)
+  }
 
   const columns = [
     {
@@ -407,7 +440,10 @@ const RolesList = () => {
                   <Form.Label className="fw-semibold text-muted">Status</Form.Label>
                   <FormSelect
                     value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value)
+                      setCurrentPage(1)
+                    }}
                     className="border-2"
                   >
                     <option value="">All Status</option>
@@ -430,18 +466,23 @@ const RolesList = () => {
             </Form>
             
             <Table
-              data={filteredRoles}
+              data={roles}
               columns={columns}
               loading={rolesLoading}
               hover
               pagination={true}
               sortable={true}
-              sortableColumns={['name', 'status', 'createdAt']}
-              currentPage={currentPage}
-              pageSize={pageSize}
-              totalItems={filteredRoles.length}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
+              sortableColumns={Object.keys(sortKeyMap)}
+              serverSide={true}
+              meta={meta}
+              onPageChange={(page) => setCurrentPage(page)}
+              onPageSizeChange={(size) => {
+                setPageSize(size)
+                setCurrentPage(1)
+              }}
+              sortBy={sortState.columnKey}
+              sortDirection={sortState.sortDirection}
+              onSortChange={handleSortChange}
             />
           </div>
         </Col>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Container, Row, Col, Button, Spinner, Form, FormControl, FormSelect, FormText, Alert } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPercentage, faBuilding, faEnvelope, faGlobe, faShieldAlt, faSave, faCheckCircle, faFileInvoice } from '@fortawesome/free-solid-svg-icons'
+import { faBuilding, faEnvelope, faGlobe, faSave, faCheckCircle, faFileInvoice, faCloud } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from '../../components'
 import { settingsService } from '../../services/settingsService'
 import { usePermissions } from '../../hooks'
@@ -20,33 +20,30 @@ const Settings = () => {
   const isReadOnly = !canEditSettings
 
   const [settingsData, setSettingsData] = useState({
-    taxPricing: {
-      tax_percentage: 15,
-      defaultProfitMargin: 25
-    },
     businessInfo: {
       company_name: 'Photo Studio Management',
-      logo: '',
       gstNumber: '',
       businessAddress: ''
     },
     invoiceSettings: {
       invoice_prefix: 'INV'
     },
-    emailNotifications: {
+    emailSettings: {
       supportEmail: 'support@photostudio.com',
       adminEmail: 'admin@photostudio.com',
       enableOrderNotifications: false
     },
     currencyRegional: {
-      currency: 'NZD',
+      currency: 'INR',
       dateFormat: 'DD/MM/YYYY',
-      timeZone: 'Pacific/Auckland'
+      timeZone: 'Asia/Kolkata'
     },
-    security: {
-      sessionTimeout: 30,
-      passwordExpiry: 90,
-      enableTwoFactor: false
+    s3Settings: {
+      bucketName: '',
+      region: 'ap-south-1',
+      accessKey: '',
+      secretKey: '',
+      useSSL: true
     }
   })
   const [loading, setLoading] = useState(true)
@@ -59,22 +56,21 @@ const Settings = () => {
   
   // Mapping from form fields to API keys and sections
   const fieldMapping = {
-    'taxPricing.tax_percentage': { key: 'tax_percentage', section: 'Tax & Pricing' },
-    'taxPricing.defaultProfitMargin': { key: 'defaultProfitMargin', section: 'Tax & Pricing' },
     'businessInfo.company_name': { key: 'company_name', section: 'Business Information' },
-    'businessInfo.logo': { key: 'logo', section: 'Business Information' },
     'businessInfo.gstNumber': { key: 'gstNumber', section: 'Business Information' },
     'businessInfo.businessAddress': { key: 'businessAddress', section: 'Business Information' },
     'invoiceSettings.invoice_prefix': { key: 'invoice_prefix', section: 'Invoice Settings' },
-    'emailNotifications.supportEmail': { key: 'supportEmail', section: 'Email & Notification' },
-    'emailNotifications.adminEmail': { key: 'adminEmail', section: 'Email & Notification' },
-    'emailNotifications.enableOrderNotifications': { key: 'enableOrderNotifications', section: 'Email & Notification' },
+    'emailSettings.supportEmail': { key: 'supportEmail', section: 'Email Settings' },
+    'emailSettings.adminEmail': { key: 'adminEmail', section: 'Email Settings' },
+    'emailSettings.enableOrderNotifications': { key: 'enableOrderNotifications', section: 'Email Settings' },
     'currencyRegional.currency': { key: 'currency', section: 'Currency & Regional' },
     'currencyRegional.dateFormat': { key: 'dateFormat', section: 'Currency & Regional' },
     'currencyRegional.timeZone': { key: 'timeZone', section: 'Currency & Regional' },
-    'security.sessionTimeout': { key: 'sessionTimeout', section: 'Security' },
-    'security.passwordExpiry': { key: 'passwordExpiry', section: 'Security' },
-    'security.enableTwoFactor': { key: 'enableTwoFactor', section: 'Security' }
+    's3Settings.bucketName': { key: 's3_bucket_name', section: 'S3 Settings' },
+    's3Settings.region': { key: 's3_region', section: 'S3 Settings' },
+    's3Settings.accessKey': { key: 's3_access_key', section: 'S3 Settings' },
+    's3Settings.secretKey': { key: 's3_secret_key', section: 'S3 Settings' },
+    's3Settings.useSSL': { key: 's3_use_ssl', section: 'S3 Settings' }
   }
 
   useEffect(() => {
@@ -121,6 +117,10 @@ const Settings = () => {
   // Auto-save function (triggered on blur)
   const autoSaveSetting = useCallback(async (fieldPath, key, section, value) => {
     if (!canEditSettings) {
+      return
+    }
+
+    if (fieldPath === 's3Settings.secretKey' && !value) {
       return
     }
     
@@ -208,33 +208,31 @@ const Settings = () => {
   const validateForm = () => {
     const newErrors = {}
     
-    // Validate Tax Percentage
-    if (settingsData.taxPricing.tax_percentage < 0 || settingsData.taxPricing.tax_percentage > 100) {
-      newErrors['taxPricing.tax_percentage'] = 'Tax percentage must be between 0 and 100'
+    // Validate Business Information
+    if (!settingsData.businessInfo.company_name?.trim()) {
+      newErrors['businessInfo.company_name'] = 'Company name is required'
     }
-    
-    // Validate Profit Margin
-    if (settingsData.taxPricing.defaultProfitMargin < 0 || settingsData.taxPricing.defaultProfitMargin > 100) {
-      newErrors['taxPricing.defaultProfitMargin'] = 'Profit margin must be between 0 and 100'
-    }
-    
+
     // Validate Email addresses
     const emailRegex = /\S+@\S+\.\S+/
-    if (settingsData.emailNotifications.supportEmail && !emailRegex.test(settingsData.emailNotifications.supportEmail)) {
-      newErrors['emailNotifications.supportEmail'] = 'Please enter a valid email address'
+    if (settingsData.emailSettings.supportEmail && !emailRegex.test(settingsData.emailSettings.supportEmail)) {
+      newErrors['emailSettings.supportEmail'] = 'Please enter a valid email address'
     }
-    if (settingsData.emailNotifications.adminEmail && !emailRegex.test(settingsData.emailNotifications.adminEmail)) {
-      newErrors['emailNotifications.adminEmail'] = 'Please enter a valid email address'
-    }
-    
-    // Validate Session Timeout
-    if (settingsData.security.sessionTimeout < 5 || settingsData.security.sessionTimeout > 480) {
-      newErrors['security.sessionTimeout'] = 'Session timeout must be between 5 and 480 minutes'
+    if (settingsData.emailSettings.adminEmail && !emailRegex.test(settingsData.emailSettings.adminEmail)) {
+      newErrors['emailSettings.adminEmail'] = 'Please enter a valid email address'
     }
     
-    // Validate Password Expiry
-    if (settingsData.security.passwordExpiry < 30 || settingsData.security.passwordExpiry > 365) {
-      newErrors['security.passwordExpiry'] = 'Password expiry must be between 30 and 365 days'
+    // Validate S3 settings
+    if (settingsData.s3Settings.bucketName && settingsData.s3Settings.bucketName.length < 3) {
+      newErrors['s3Settings.bucketName'] = 'Bucket name must be at least 3 characters'
+    }
+    const hasS3Config =
+      settingsData.s3Settings.bucketName ||
+      settingsData.s3Settings.accessKey ||
+      settingsData.s3Settings.secretKey
+
+    if (hasS3Config && !settingsData.s3Settings.region?.trim()) {
+      newErrors['s3Settings.region'] = 'Region is required'
     }
     
     setErrors(newErrors)
@@ -266,95 +264,6 @@ const Settings = () => {
     setSaving(false)
   }
 
-  const renderTaxPricingSettings = () => (
-    <div className="mb-5">
-      {/* Section Header */}
-      <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-success border-2">
-        <FontAwesomeIcon icon={faPercentage} className="me-3 text-success fs-4" />
-        <h4 className="mb-0 text-success">Tax & Pricing Settings</h4>
-      </div>
-
-      {/* Summary Stats */}
-      <Row className="mb-4">
-        <Col md={6}>
-            <div className="p-4 rounded-3 bg-gradient-logo text-dark mb-3 shadow-sm">
-            <div className="text-center">
-              <h3 className="mb-1 text-dark">{settingsData.taxPricing.tax_percentage}%</h3>
-              <p className="mb-0 fw-semibold text-dark">Tax Percentage</p>
-              <small className="text-muted">Tax percentage applied to all orders unless specified individually.</small>
-            </div>
-          </div>
-        </Col>
-        <Col md={6}>
-          <div className="p-4 rounded-3 bg-gradient-logo-alt text-dark mb-3 shadow-sm">
-            <div className="text-center">
-              <h3 className="mb-1 text-dark">{settingsData.taxPricing.defaultProfitMargin}%</h3>
-              <p className="mb-0 fw-semibold text-dark">Default Profit Margin</p>
-              <small className="text-muted">Default profit margin applied to all packages unless specified individually.</small>
-            </div>
-          </div>
-        </Col>
-      </Row>
-
-      {/* Input Fields */}
-      <Row>
-        <Col md={6}>
-          <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">
-              Tax Percentage (%)
-              {autoSaving['taxPricing.tax_percentage'] && (
-                <Spinner size="sm" className="ms-2" variant="primary" />
-              )}
-              {autoSaved['taxPricing.tax_percentage'] && (
-                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
-              )}
-            </Form.Label>
-            <FormControl
-              type="number"
-              min="0"
-              max="100"
-              value={settingsData.taxPricing.tax_percentage}
-              onChange={(e) => handleChange('taxPricing', 'tax_percentage', parseInt(e.target.value) || 0)}
-              onBlur={(e) => handleBlur('taxPricing', 'tax_percentage', parseInt(e.target.value) || 0)}
-              isInvalid={!!errors['taxPricing.tax_percentage']}
-              className="border-2"
-            />
-            <FormText className="text-muted">This will be used for orders that don't have a specific tax percentage set.</FormText>
-            {errors['taxPricing.tax_percentage'] && (
-              <FormText className="text-danger">{errors['taxPricing.tax_percentage']}</FormText>
-            )}
-          </Form.Group>
-        </Col>
-        <Col md={6}>
-          <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">
-              Default Profit Margin (%)
-              {autoSaving['taxPricing.defaultProfitMargin'] && (
-                <Spinner size="sm" className="ms-2" variant="primary" />
-              )}
-              {autoSaved['taxPricing.defaultProfitMargin'] && (
-                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
-              )}
-            </Form.Label>
-            <FormControl
-              type="number"
-              min="0"
-              max="100"
-              value={settingsData.taxPricing.defaultProfitMargin}
-              onChange={(e) => handleChange('taxPricing', 'defaultProfitMargin', parseInt(e.target.value) || 0)}
-              onBlur={(e) => handleBlur('taxPricing', 'defaultProfitMargin', parseInt(e.target.value) || 0)}
-              isInvalid={!!errors['taxPricing.defaultProfitMargin']}
-              className="border-2"
-            />
-            <FormText className="text-muted">This will be used for packages that don't have a specific margin set.</FormText>
-            {errors['taxPricing.defaultProfitMargin'] && (
-              <FormText className="text-danger">{errors['taxPricing.defaultProfitMargin']}</FormText>
-            )}
-          </Form.Group>
-        </Col>
-      </Row>
-    </div>
-  )
 
   const renderBusinessInfo = () => (
     <div className="mb-5">
@@ -365,7 +274,7 @@ const Settings = () => {
       </div>
 
       <Row>
-        <Col md={6}>
+        <Col md={12}>
           <Form.Group className="mb-3">
             <Form.Label className="fw-semibold">
               Company Name
@@ -380,21 +289,12 @@ const Settings = () => {
               value={settingsData.businessInfo.company_name}
               onChange={(e) => handleChange('businessInfo', 'company_name', e.target.value)}
               onBlur={(e) => handleBlur('businessInfo', 'company_name', e.target.value)}
+              isInvalid={!!errors['businessInfo.company_name']}
               className="border-2"
             />
-          </Form.Group>
-        </Col>
-        <Col md={6}>
-          <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">Logo URL</Form.Label>
-            <FormControl
-              placeholder="Enter logo URL or upload image"
-              value={settingsData.businessInfo.logo}
-              onChange={(e) => handleChange('businessInfo', 'logo', e.target.value)}
-              onBlur={(e) => handleBlur('businessInfo', 'logo', e.target.value)}
-              className="border-2"
-            />
-            <FormText className="text-muted">URL or path to your company logo</FormText>
+            {errors['businessInfo.company_name'] && (
+              <FormText className="text-danger">{errors['businessInfo.company_name']}</FormText>
+            )}
           </Form.Group>
         </Col>
       </Row>
@@ -464,44 +364,60 @@ const Settings = () => {
     </div>
   )
 
-  const renderEmailNotifications = () => (
+  const renderEmailSettings = () => (
     <div className="mb-5">
       {/* Section Header */}
       <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-success border-2">
         <FontAwesomeIcon icon={faEnvelope} className="me-3 text-success fs-4" />
-        <h4 className="mb-0 text-success">Email & Notification Settings</h4>
+        <h4 className="mb-0 text-success">Email Settings</h4>
       </div>
 
       <Row>
         <Col md={6}>
           <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">Support Email</Form.Label>
+            <Form.Label className="fw-semibold">
+              Support Email
+              {autoSaving['emailSettings.supportEmail'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['emailSettings.supportEmail'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
             <FormControl
               type="email"
-              value={settingsData.emailNotifications.supportEmail}
-              onChange={(e) => handleChange('emailNotifications', 'supportEmail', e.target.value)}
-              onBlur={(e) => handleBlur('emailNotifications', 'supportEmail', e.target.value)}
-              isInvalid={!!errors['emailNotifications.supportEmail']}
+              value={settingsData.emailSettings.supportEmail}
+              onChange={(e) => handleChange('emailSettings', 'supportEmail', e.target.value)}
+              onBlur={(e) => handleBlur('emailSettings', 'supportEmail', e.target.value)}
+              isInvalid={!!errors['emailSettings.supportEmail']}
               className="border-2"
             />
-            {errors['emailNotifications.supportEmail'] && (
-              <FormText className="text-danger">{errors['emailNotifications.supportEmail']}</FormText>
+            {errors['emailSettings.supportEmail'] && (
+              <FormText className="text-danger">{errors['emailSettings.supportEmail']}</FormText>
             )}
           </Form.Group>
         </Col>
         <Col md={6}>
           <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">Admin Email</Form.Label>
+            <Form.Label className="fw-semibold">
+              Admin Email
+              {autoSaving['emailSettings.adminEmail'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['emailSettings.adminEmail'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
             <FormControl
               type="email"
-              value={settingsData.emailNotifications.adminEmail}
-              onChange={(e) => handleChange('emailNotifications', 'adminEmail', e.target.value)}
-              onBlur={(e) => handleBlur('emailNotifications', 'adminEmail', e.target.value)}
-              isInvalid={!!errors['emailNotifications.adminEmail']}
+              value={settingsData.emailSettings.adminEmail}
+              onChange={(e) => handleChange('emailSettings', 'adminEmail', e.target.value)}
+              onBlur={(e) => handleBlur('emailSettings', 'adminEmail', e.target.value)}
+              isInvalid={!!errors['emailSettings.adminEmail']}
               className="border-2"
             />
-            {errors['emailNotifications.adminEmail'] && (
-              <FormText className="text-danger">{errors['emailNotifications.adminEmail']}</FormText>
+            {errors['emailSettings.adminEmail'] && (
+              <FormText className="text-danger">{errors['emailSettings.adminEmail']}</FormText>
             )}
           </Form.Group>
         </Col>
@@ -511,10 +427,21 @@ const Settings = () => {
           <Form.Group className="mb-3">
             <Form.Check
               type="checkbox"
-              label="Enable email notifications for new orders"
-              checked={settingsData.emailNotifications.enableOrderNotifications}
-              onChange={(e) => handleChange('emailNotifications', 'enableOrderNotifications', e.target.checked)}
-              onBlur={(e) => handleBlur('emailNotifications', 'enableOrderNotifications', e.target.checked)}
+              id="email-enable-order-notifications"
+              label={
+                <span className="fw-semibold">
+                  Enable email notifications for new orders
+                  {autoSaving['emailSettings.enableOrderNotifications'] && (
+                    <Spinner size="sm" className="ms-2" variant="primary" />
+                  )}
+                  {autoSaved['emailSettings.enableOrderNotifications'] && (
+                    <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+                  )}
+                </span>
+              }
+              checked={settingsData.emailSettings.enableOrderNotifications}
+              onChange={(e) => handleChange('emailSettings', 'enableOrderNotifications', e.target.checked)}
+              onBlur={(e) => handleBlur('emailSettings', 'enableOrderNotifications', e.target.checked)}
               className="fs-6"
             />
           </Form.Group>
@@ -541,6 +468,7 @@ const Settings = () => {
               onBlur={(e) => handleBlur('currencyRegional', 'currency', e.target.value)}
               className="border-2"  
             >
+              <option value="INR">Indian Rupee (INR)</option>
               <option value="NZD">New Zealand Dollar (NZD)</option>
               <option value="USD">US Dollar (USD)</option>
               <option value="EUR">Euro (EUR)</option>
@@ -574,6 +502,7 @@ const Settings = () => {
               onBlur={(e) => handleBlur('currencyRegional', 'timeZone', e.target.value)}
               className="border-2"
             >
+              <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
               <option value="Pacific/Auckland">Pacific/Auckland (NZDT/NZST)</option>
               <option value="UTC">UTC</option>
               <option value="America/New_York">America/New_York (EST/EDT)</option>
@@ -586,63 +515,120 @@ const Settings = () => {
     </div>
   )
 
-  const renderSecuritySettings = () => (
+  const renderS3Settings = () => (
     <div className="mb-5">
       {/* Section Header */}
       <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-success border-2">
-        <FontAwesomeIcon icon={faShieldAlt} className="me-3 text-success fs-4" />
-        <h4 className="mb-0 text-success">Security Settings</h4>
+        <FontAwesomeIcon icon={faCloud} className="me-3 text-success fs-4" />
+        <h4 className="mb-0 text-success">S3 Bucket Settings</h4>
       </div>
 
       <Row>
         <Col md={6}>
           <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">Session Timeout (minutes)</Form.Label>
+            <Form.Label className="fw-semibold">
+              Bucket Name
+              {autoSaving['s3Settings.bucketName'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['s3Settings.bucketName'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
             <FormControl
-              type="number"
-              min="5"
-              max="480"
-              value={settingsData.security.sessionTimeout}
-              onChange={(e) => handleChange('security', 'sessionTimeout', parseInt(e.target.value) || 30)}
-              onBlur={(e) => handleBlur('security', 'sessionTimeout', parseInt(e.target.value) || 30)}
-              isInvalid={!!errors['security.sessionTimeout']}
+              placeholder="e.g., my-photo-bucket"
+              value={settingsData.s3Settings.bucketName}
+              onChange={(e) => handleChange('s3Settings', 'bucketName', e.target.value)}
+              onBlur={(e) => handleBlur('s3Settings', 'bucketName', e.target.value)}
+              isInvalid={!!errors['s3Settings.bucketName']}
               className="border-2"
             />
-            <FormText className="text-muted">Automatically log out inactive users after this period.</FormText>
-            {errors['security.sessionTimeout'] && (
-              <FormText className="text-danger">{errors['security.sessionTimeout']}</FormText>
+            {errors['s3Settings.bucketName'] && (
+              <FormText className="text-danger">{errors['s3Settings.bucketName']}</FormText>
             )}
           </Form.Group>
         </Col>
         <Col md={6}>
           <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">Password Expiry (days)</Form.Label>
+            <Form.Label className="fw-semibold">
+              Region
+              {autoSaving['s3Settings.region'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['s3Settings.region'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
             <FormControl
-              type="number"
-              min="30"
-              max="365"
-              value={settingsData.security.passwordExpiry}
-              onChange={(e) => handleChange('security', 'passwordExpiry', parseInt(e.target.value) || 90)}
-              onBlur={(e) => handleBlur('security', 'passwordExpiry', parseInt(e.target.value) || 90)}
-              isInvalid={!!errors['security.passwordExpiry']}
+              placeholder="e.g., ap-south-1"
+              value={settingsData.s3Settings.region}
+              onChange={(e) => handleChange('s3Settings', 'region', e.target.value)}
+              onBlur={(e) => handleBlur('s3Settings', 'region', e.target.value)}
+              isInvalid={!!errors['s3Settings.region']}
               className="border-2"
             />
-            <FormText className="text-muted">Force password change after this period.</FormText>
-            {errors['security.passwordExpiry'] && (
-              <FormText className="text-danger">{errors['security.passwordExpiry']}</FormText>
+            {errors['s3Settings.region'] && (
+              <FormText className="text-danger">{errors['s3Settings.region']}</FormText>
             )}
           </Form.Group>
         </Col>
       </Row>
+
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Access Key ID
+              {autoSaving['s3Settings.accessKey'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['s3Settings.accessKey'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              placeholder="AWS access key ID"
+              value={settingsData.s3Settings.accessKey}
+              onChange={(e) => handleChange('s3Settings', 'accessKey', e.target.value)}
+              onBlur={(e) => handleBlur('s3Settings', 'accessKey', e.target.value)}
+              className="border-2"
+            />
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Secret Access Key
+              {autoSaving['s3Settings.secretKey'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['s3Settings.secretKey'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              type="password"
+              placeholder="AWS secret access key"
+              value={settingsData.s3Settings.secretKey}
+              onChange={(e) => handleChange('s3Settings', 'secretKey', e.target.value)}
+              onBlur={(e) => handleBlur('s3Settings', 'secretKey', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">We store this encrypted. Leave blank to keep the current secret.</FormText>
+          </Form.Group>
+        </Col>
+      </Row>
+
       <Row>
         <Col md={12}>
           <Form.Group className="mb-3">
             <Form.Check
               type="checkbox"
-              label="Enable Two-Factor Authentication for admin accounts"
-              checked={settingsData.security.enableTwoFactor}
-              onChange={(e) => handleChange('security', 'enableTwoFactor', e.target.checked)}
-              onBlur={(e) => handleBlur('security', 'enableTwoFactor', e.target.checked)}
+              label="Use SSL when connecting to S3"
+              checked={settingsData.s3Settings.useSSL}
+              onChange={(e) => handleChange('s3Settings', 'useSSL', e.target.checked)}
+              onBlur={(e) => handleBlur('s3Settings', 'useSSL', e.target.checked)}
+              disabled={autoSaving['s3Settings.useSSL']}
               className="fs-6"
             />
           </Form.Group>
@@ -664,7 +650,7 @@ const Settings = () => {
       <Container fluid className="py-5">
         <Row className="justify-content-center">
           <Col md={6} className="text-center">
-            <FontAwesomeIcon icon={faShieldAlt} className="text-muted mb-3" size="3x" />
+            <FontAwesomeIcon icon={faCloud} className="text-muted mb-3" size="3x" />
             <h4 className="text-muted">Access Restricted</h4>
             <p className="text-muted">
               You do not have permission to view application settings. Please contact your administrator if you need additional access.
@@ -710,12 +696,11 @@ const Settings = () => {
           {/* Settings Sections */}
           <div className="bg-white rounded-3 shadow-sm p-4">
             <fieldset disabled={isReadOnly} style={{ border: 'none', padding: 0, margin: 0 }}>
-              {renderTaxPricingSettings()}
               {renderBusinessInfo()}
               {renderInvoiceSettings()}
-              {renderEmailNotifications()}
+              {renderEmailSettings()}
               {renderCurrencyRegional()}
-              {renderSecuritySettings()}
+              {renderS3Settings()}
             </fieldset>
             
             {/* Bottom Save Button */}

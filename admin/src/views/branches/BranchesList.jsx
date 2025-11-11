@@ -1,50 +1,52 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Container, Row, Col, Button, Badge, Card, FormControl, FormSelect } from 'react-bootstrap'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { Container, Row, Col, Button, Badge, Card, Form, FormControl, FormSelect, InputGroup } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { 
-  faTrash, 
-  faEdit, 
+import {
+  faTrash,
+  faEdit,
   faPlus,
   faBuilding,
   faUsers,
-  faRupeeSign,
   faSearch,
   faFilter,
   faRefresh,
-  faSave,
 } from '@fortawesome/free-solid-svg-icons'
 import { Table, Modal, FormModal } from '../../components'
 import BranchForm from '../../components/pages/branches/BranchForm'
 import branchService from '../../services/branchService'
-import photographersData from '../../mock/photographers.json'
 import { useToast } from '../../components'
-import { usePermissions } from '../../hooks'
+import { usePermissions, useDebounce } from '../../hooks'
 import { PERMISSIONS } from '../../constants/permissions'
 
 const BranchesList = () => {
   const { success, error, warning } = useToast()
   const { hasPermission } = usePermissions()
-  
+
   const [branches, setBranches] = useState([])
+  const [meta, setMeta] = useState(null)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [sortState, setSortState] = useState({
+    columnKey: 'created_at',
+    sortBy: 'created_at',
+    sortDirection: 'desc',
+  })
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [branchToDelete, setBranchToDelete] = useState(null)
-  const [branchStats, setBranchStats] = useState({})
-  
-  // Add/Edit Modal States
+
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [branchToEdit, setBranchToEdit] = useState(null)
   const [addLoading, setAddLoading] = useState(false)
   const [editLoading, setEditLoading] = useState(false)
-  
-  // Refs for form components
+
   const addFormRef = useRef()
   const editFormRef = useRef()
+
+  const debouncedSearch = useDebounce(searchTerm, 400)
 
   const canCreateBranch = hasPermission
     ? hasPermission(PERMISSIONS.BRANCH_WRITE) || hasPermission(PERMISSIONS.BRANCH_MANAGE)
@@ -59,11 +61,60 @@ const BranchesList = () => {
     ? hasPermission(PERMISSIONS.BRANCH_READ) || hasPermission(PERMISSIONS.BRANCH_MANAGE)
     : true
 
+  const fetchBranchesWithParams = useCallback(async () => {
+    setLoading(true)
+    const searchValue = (debouncedSearch || '').trim()
+    try {
+      const response = await branchService.getBranches({
+        page: currentPage,
+        limit: pageSize,
+        search: searchValue || undefined,
+        status: statusFilter || undefined,
+        sortBy: sortState.sortBy,
+        sortDirection: sortState.sortDirection,
+      })
+
+      if (response && response.success) {
+        setBranches(response.data || [])
+        setMeta(response.meta || null)
+      } else {
+        console.warn('Failed to load branches from API, using mock data')
+        const fallback = branchService.getMockBranches({
+          page: currentPage,
+          limit: pageSize,
+          search: searchValue || undefined,
+          status: statusFilter || undefined,
+        })
+        setBranches(fallback.data || [])
+        setMeta(fallback.meta || null)
+      }
+    } catch (err) {
+      console.error('Error loading branches:', err)
+      const fallback = branchService.getMockBranches({
+        page: currentPage,
+        limit: pageSize,
+        search: searchValue || undefined,
+        status: statusFilter || undefined,
+      })
+      setBranches(fallback.data || [])
+      setMeta(fallback.meta || null)
+    } finally {
+      setLoading(false)
+    }
+  }, [currentPage, pageSize, debouncedSearch, statusFilter, sortState.sortBy, sortState.sortDirection])
+
   useEffect(() => {
     if (!canViewBranch) {
       warning && warning('You do not have permission to view branches.', { title: 'Access limited' })
     }
   }, [canViewBranch, warning])
+
+  useEffect(() => {
+    if (!canViewBranch) {
+      return
+    }
+    fetchBranchesWithParams()
+  }, [canViewBranch, fetchBranchesWithParams])
 
   if (!canViewBranch) {
     return (
@@ -81,96 +132,26 @@ const BranchesList = () => {
     )
   }
 
-  useEffect(() => {
-    loadBranches()
-    calculateBranchStats()
-  }, [])
+  const branchSummary = useMemo(() => {
+    const visibleBranches = branches || []
+    const active = visibleBranches.filter((branch) => branch.status === 'active').length
+    const inactive = visibleBranches.filter((branch) => branch.status === 'inactive').length
 
-  // Calculate branch statistics from photographers data
-  const calculateBranchStats = () => {
-    const stats = {}
-    
-    photographersData.forEach(photographer => {
-      const branchId = photographer.branch_id
-      if (!branchId) return
-      
-      if (!stats[branchId]) {
-        stats[branchId] = {
-          revenue: 0,
-          customers: 0,
-          services: 0
-        }
-      }
-      
-      stats[branchId].revenue += photographer.total_earnings || photographer.total_amount || 0
-      stats[branchId].customers += 1
-      stats[branchId].services += photographer.total_orders || photographer.total_services || 0
-    })
-    
-    setBranchStats(stats)
-  }
-
-  // Format currency in Indian Rupees
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(amount || 0)
-  }
-
-  // Get branch statistics
-  const getBranchStats = (branchId) => {
-    return branchStats[branchId] || { revenue: 0, customers: 0, services: 0 }
-  }
-
-  const loadBranches = async () => {
-    try {
-      setLoading(true)
-      const response = await branchService.getBranches()
-      if (response && response.success) {
-        setBranches(response.data || [])
-        // Recalculate stats after loading branches
-        calculateBranchStats()
-      } else {
-        // If response is not successful, try to use mock data directly
-        console.warn('Failed to load branches from API, using mock data')
-        const mockResponse = branchService.getMockBranches()
-        if (mockResponse && mockResponse.success) {
-          setBranches(mockResponse.data || [])
-          calculateBranchStats()
-        }
-      }
-    } catch (error) {
-      console.error('Error loading branches:', error)
-      // Fallback to mock data on error
-      try {
-        const mockResponse = branchService.getMockBranches()
-        if (mockResponse && mockResponse.success) {
-          setBranches(mockResponse.data || [])
-          calculateBranchStats()
-        }
-      } catch (mockError) {
-        console.error('Error loading mock branches:', mockError)
-      }
-    } finally {
-      setLoading(false)
+    return {
+      total: meta?.total ?? visibleBranches.length,
+      active,
+      inactive,
     }
-  }
-
-  const filteredBranches = branches.filter(branch => {
-    const matchesSearch = branch.branch_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         branch.branch_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         branch.city?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = !statusFilter || branch.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  }, [branches, meta])
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active': return 'success'
-      case 'inactive': return 'secondary'
-      default: return 'secondary'
+      case 'active':
+        return 'success'
+      case 'inactive':
+        return 'secondary'
+      default:
+        return 'secondary'
     }
   }
 
@@ -190,7 +171,7 @@ const BranchesList = () => {
         success('Branch deleted successfully')
         setShowDeleteModal(false)
         setBranchToDelete(null)
-        loadBranches()
+        await fetchBranchesWithParams()
       } else {
         error(response.message || 'Failed to delete branch')
       }
@@ -200,7 +181,6 @@ const BranchesList = () => {
     }
   }
 
-  // Add Branch Handlers
   const handleAddBranch = () => {
     if (!canCreateBranch) {
       error('You do not have permission to create branches')
@@ -222,7 +202,7 @@ const BranchesList = () => {
       if (response.success) {
         success('Branch created successfully')
         setShowAddModal(false)
-        loadBranches()
+        await fetchBranchesWithParams()
       } else {
         error(response.message || 'Failed to create branch')
       }
@@ -234,7 +214,6 @@ const BranchesList = () => {
     }
   }
 
-  // Edit Branch Handlers
   const handleEditBranch = (branch) => {
     if (!canUpdateBranch) {
       error('You do not have permission to edit branches')
@@ -258,7 +237,7 @@ const BranchesList = () => {
         success('Branch updated successfully')
         setShowEditModal(false)
         setBranchToEdit(null)
-        loadBranches()
+        await fetchBranchesWithParams()
       } else {
         error(response.message || 'Failed to update branch')
       }
@@ -270,40 +249,41 @@ const BranchesList = () => {
     }
   }
 
+  const sortKeyMap = {
+    branch_name: 'branch_name',
+    city: 'city',
+    status: 'status',
+    created_at: 'created_at',
+  }
+
+  const handleSortChange = (columnKey, direction) => {
+    const sortBy = sortKeyMap[columnKey]
+    if (!sortBy) {
+      return
+    }
+    setSortState({
+      columnKey,
+      sortBy,
+      sortDirection: direction,
+    })
+    setCurrentPage(1)
+  }
+
   const columns = [
     {
-      key: 'branch',
+      key: 'branch_name',
       label: 'Branch',
       render: (value, branch) => (
         <div>
           <div className="fw-semibold text-dark" style={{ fontSize: '14px' }}>{branch.branch_name}</div>
           <small className="text-muted" style={{ fontSize: '12px' }}>Code: {branch.branch_code}</small>
         </div>
-      )
+      ),
     },
     {
-      key: 'revenue',
-      label: 'Revenue',
-      render: (value, branch) => {
-        const stats = getBranchStats(branch.id)
-        return (
-          <div className="fw-semibold text-primary" style={{ fontSize: '14px' }}>
-            {formatCurrency(stats.revenue)}
-          </div>
-        )
-      }
-    },
-    {
-      key: 'customers',
-      label: 'Customers',
-      render: (value, branch) => {
-        const stats = getBranchStats(branch.id)
-        return (
-          <div className="fw-semibold text-dark" style={{ fontSize: '14px' }}>
-            {stats.customers}
-          </div>
-        )
-      }
+      key: 'city',
+      label: 'City',
+      render: (value, branch) => <span className="text-muted">{branch.city || 'N/A'}</span>,
     },
     {
       key: 'contact',
@@ -313,7 +293,7 @@ const BranchesList = () => {
           <div style={{ fontSize: '13px' }}>{branch.contact_number || 'N/A'}</div>
           {branch.email && <small className="text-muted" style={{ fontSize: '11px' }}>{branch.email}</small>}
         </div>
-      )
+      ),
     },
     {
       key: 'status',
@@ -322,7 +302,14 @@ const BranchesList = () => {
         <Badge bg={getStatusColor(branch.status)} className="px-2 py-1" style={{ fontSize: '12px' }}>
           {branch.status || 'inactive'}
         </Badge>
-      )
+      ),
+    },
+    {
+      key: 'created_at',
+      label: 'Created',
+      render: (value, branch) => (
+        <span className="text-muted">{branch.created_at ? new Date(branch.created_at).toLocaleDateString() : '—'}</span>
+      ),
     },
     {
       key: 'actions',
@@ -352,26 +339,14 @@ const BranchesList = () => {
             </Button>
           )}
         </div>
-      )
-    }
+      ),
+    },
   ]
 
-  const sortableColumns = ['branch', 'revenue', 'customers']
-
-  // Calculate total statistics
-  const totalStats = filteredBranches.reduce((acc, branch) => {
-    const stats = getBranchStats(branch.id)
-    acc.revenue += stats.revenue
-    acc.customers += stats.customers
-    acc.services += stats.services
-    return acc
-  }, { revenue: 0, customers: 0, services: 0 })
-
   return (
-    <Container fluid>
-      <Row>
+    <Container fluid className="px-0 px-xl-3">
+      <Row className="g-4">
         <Col xs={12}>
-          {/* Page Header */}
           <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
             <div className="d-flex align-items-center">
               <FontAwesomeIcon icon={faBuilding} className="me-3 text-primary fs-4" />
@@ -387,14 +362,13 @@ const BranchesList = () => {
             )}
           </div>
 
-          {/* Statistics Cards */}
-          <Row className="mb-4">
-            <Col md={3}>
+          <Row className="mb-4 g-3">
+            <Col md={4} sm={12}>
               <Card className="bg-gradient-primary text-white border-0 shadow-sm">
                 <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
                     <div className="flex-grow-1">
-                      <h4 className="mb-0">{filteredBranches.length}</h4>
+                      <h4 className="mb-0">{branchSummary.total}</h4>
                       <p className="mb-0 opacity-75">Total Branches</p>
                     </div>
                     <FontAwesomeIcon icon={faBuilding} className="fs-1 opacity-50" />
@@ -402,158 +376,136 @@ const BranchesList = () => {
                 </Card.Body>
               </Card>
             </Col>
-            <Col md={3}>
-              <Card className="bg-gradient-info text-white border-0 shadow-sm">
-                <Card.Body className="p-4">
-                  <div className="d-flex align-items-center">
-                    <div className="flex-grow-1">
-                      <h4 className="mb-0">{formatCurrency(totalStats.revenue)}</h4>
-                      <p className="mb-0 opacity-75">Total Revenue</p>
-                    </div>
-                    <FontAwesomeIcon icon={faRupeeSign} className="fs-1 opacity-50" />
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={3}>
+            <Col md={4} sm={6}>
               <Card className="bg-gradient-success text-white border-0 shadow-sm">
                 <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
                     <div className="flex-grow-1">
-                      <h4 className="mb-0">{totalStats.customers}</h4>
-                      <p className="mb-0 opacity-75">Total Customers</p>
+                      <h4 className="mb-0">{branchSummary.active}</h4>
+                      <p className="mb-0 opacity-75">Active Branches</p>
                     </div>
                     <FontAwesomeIcon icon={faUsers} className="fs-1 opacity-50" />
                   </div>
                 </Card.Body>
               </Card>
             </Col>
-            <Col md={3}>
-              <Card className="bg-gradient-warning text-white border-0 shadow-sm">
+            <Col md={4} sm={6}>
+              <Card className="bg-gradient-info text-white border-0 shadow-sm">
                 <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
                     <div className="flex-grow-1">
-                      <h4 className="mb-0">{filteredBranches.filter(b => b.status === 'active').length}</h4>
-                      <p className="mb-0 opacity-75">Active Branches</p>
+                      <h4 className="mb-0">{branchSummary.inactive}</h4>
+                      <p className="mb-0 opacity-75">Inactive Branches</p>
                     </div>
-                    <FontAwesomeIcon icon={faBuilding} className="fs-1 opacity-50" />
+                    <FontAwesomeIcon icon={faFilter} className="fs-1 opacity-50" />
                   </div>
                 </Card.Body>
               </Card>
             </Col>
           </Row>
 
-          {/* Main Content Container */}
-          <div className="bg-white rounded-3 shadow-sm p-4">
-            {/* Search and Filter Section */}
-            <div className="mb-4">
-              <Row className="g-3">
-                <Col md={6}>
-                  <div className="position-relative">
-                    <FontAwesomeIcon 
-                      icon={faSearch} 
-                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
-                      style={{ zIndex: 10 }}
-                    />
-                    <FormControl
-                      placeholder="Search by branch name, code, or city..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="border-2 ps-5"
-                    />
-                  </div>
-                </Col>
-                <Col md={3}>
-                  <div className="position-relative">
-                    <FontAwesomeIcon 
-                      icon={faFilter} 
-                      className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
-                      style={{ zIndex: 10 }}
-                    />
+          <Card className="shadow-sm">
+            <Card.Body>
+              <Form className="mb-4">
+                <Row className="g-3 align-items-end">
+                  <Col md={4} sm={12}>
+                    <Form.Label className="fw-semibold text-muted">Search</Form.Label>
+                    <InputGroup>
+                      <InputGroup.Text className="bg-white border-2 text-muted">
+                        <FontAwesomeIcon icon={faSearch} />
+                      </InputGroup.Text>
+                      <FormControl
+                        placeholder="Search by name, code, or city"
+                        value={searchTerm}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value)
+                          setCurrentPage(1)
+                        }}
+                        className="border-2"
+                      />
+                    </InputGroup>
+                  </Col>
+                  <Col md={3} sm={6}>
+                    <Form.Label className="fw-semibold text-muted">Status</Form.Label>
                     <FormSelect
                       value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="border-2 ps-5"
+                      onChange={(e) => {
+                        setStatusFilter(e.target.value)
+                        setCurrentPage(1)
+                      }}
+                      className="border-2"
                     >
                       <option value="">All Status</option>
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
                     </FormSelect>
-                  </div>
-                </Col>
-                <Col md={3}>
-                  <Button 
-                    variant="outline-secondary" 
-                    onClick={() => {
-                      setSearchTerm('')
-                      setStatusFilter('')
-                    }}
-                    className="w-100"
-                  >
-                    <FontAwesomeIcon icon={faRefresh} className="me-2" />
-                    Reset
-                  </Button>
-                </Col>
-              </Row>
-            </div>
+                  </Col>
+                  <Col md={3} sm={6}>
+                    <Form.Label className="fw-semibold text-muted">Actions</Form.Label>
+                    <div className="d-flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline-secondary"
+                        className="border-2"
+                        onClick={() => {
+                          setSearchTerm('')
+                          setStatusFilter('')
+                          setCurrentPage(1)
+                        }}
+                      >
+                        Clear
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline-primary"
+                        className="border-2"
+                        disabled={loading}
+                        onClick={fetchBranchesWithParams}
+                      >
+                        <FontAwesomeIcon icon={faRefresh} className="me-1" /> Refresh
+                      </Button>
+                    </div>
+                  </Col>
+                </Row>
+              </Form>
 
-            {/* Section Header */}
-            <div className="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-primary border-2">
-              <div className="d-flex align-items-center">
-                <FontAwesomeIcon icon={faBuilding} className="me-3 text-primary fs-4" />
-                <h4 className="mb-0 text-primary">Branches List</h4>
-              </div>
-              <div className="text-muted">
-                Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, filteredBranches.length)} of {filteredBranches.length} branches
-              </div>
-            </div>
-
-            {/* Table */}
-            <div 
-              style={{ 
-                width: '100%',
-                overflowX: 'auto',
-                overflowY: 'visible',
-                WebkitOverflowScrolling: 'touch'
-              }}
-            >
               <Table
-                data={filteredBranches}
+                data={branches}
                 columns={columns}
-                sortableColumns={sortableColumns}
-                currentPage={currentPage}
-                pageSize={pageSize}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={setPageSize}
                 loading={loading}
+                hover
                 pagination={true}
                 sortable={true}
-                totalItems={filteredBranches.length}
-                emptyMessage="No branches found"
+                sortableColumns={['branch_name', 'city', 'status', 'created_at']}
+                serverSide={true}
+                meta={meta}
+                onPageChange={(page) => setCurrentPage(page)}
+                onPageSizeChange={(size) => {
+                  setPageSize(size)
+                  setCurrentPage(1)
+                }}
+                sortBy={sortState.columnKey}
+                sortDirection={sortState.sortDirection}
+                onSortChange={handleSortChange}
               />
-            </div>
-          </div>
+            </Card.Body>
+          </Card>
         </Col>
       </Row>
 
-      {/* Delete Confirmation Modal */}
       <Modal
         visible={showDeleteModal}
-        onClose={() => {
-          setShowDeleteModal(false)
-          setBranchToDelete(null)
-        }}
+        onClose={() => setShowDeleteModal(false)}
         title="Delete Branch"
         onConfirm={confirmDeleteBranch}
         confirmText="Delete"
         cancelText="Cancel"
         type="danger"
       >
-        <p>Are you sure you want to delete the branch <strong>"{branchToDelete?.branch_name}"</strong>?</p>
+        <p>Are you sure you want to delete branch <strong>{branchToDelete?.branch_name}</strong>?</p>
         <p className="text-muted">This action cannot be undone.</p>
       </Modal>
 
-      {/* Add Branch Modal */}
       <FormModal
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
@@ -563,17 +515,16 @@ const BranchesList = () => {
         submitIcon={faPlus}
         loading={addLoading}
         loadingText="Creating..."
-        size="lg"
       >
         <BranchForm
           ref={addFormRef}
           mode="create"
           onSubmit={handleAddBranchFormSubmit}
           onCancel={() => setShowAddModal(false)}
+          loading={addLoading}
         />
       </FormModal>
 
-      {/* Edit Branch Modal */}
       <FormModal
         visible={showEditModal}
         onClose={() => {
@@ -583,10 +534,9 @@ const BranchesList = () => {
         title="Edit Branch"
         onSubmit={handleEditBranchSubmit}
         submitText="Update Branch"
-        submitIcon={faSave}
+        submitIcon={faEdit}
         loading={editLoading}
         loadingText="Updating..."
-        size="lg"
       >
         <BranchForm
           ref={editFormRef}
@@ -597,6 +547,7 @@ const BranchesList = () => {
             setShowEditModal(false)
             setBranchToEdit(null)
           }}
+          loading={editLoading}
         />
       </FormModal>
     </Container>
@@ -604,4 +555,3 @@ const BranchesList = () => {
 }
 
 export default BranchesList
-

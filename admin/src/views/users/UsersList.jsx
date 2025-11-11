@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Container, Row, Col, Button, Form, FormControl, FormSelect, InputGroup, Badge } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faPencil, faTrash, faInfo, faMagnifyingGlass, faUsers } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from '../../components'
-import { useUserManagement, usePermissions, useRoleManagement } from '../../hooks'
+import { useUserManagement, usePermissions, useRoleManagement, useDebounce } from '../../hooks'
 import { capitalize } from '../../utils'
 import { Table, Modal, FormModal, UserForm } from '../../components'
 import { PERMISSIONS } from '../../constants/permissions'
@@ -17,6 +17,11 @@ const UsersList = () => {
   const [userToDelete, setUserToDelete] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [sortState, setSortState] = useState({
+    columnKey: 'createdAt',
+    sortBy: 'created_at',
+    sortDirection: 'desc',
+  })
   
   // Add User Modal States
   const [showAddModal, setShowAddModal] = useState(false)
@@ -36,9 +41,32 @@ const UsersList = () => {
   const editUserFormRef = useRef()
 
   const { success, error, warning } = useToast()
-  const { users, loading, fetchUsers, createUser, updateUser, deleteUser } = useUserManagement()
+  const { users, meta, loading, fetchUsers, createUser, updateUser, deleteUser } = useUserManagement()
   const { roles, fetchRoles, loading: rolesLoading } = useRoleManagement()
   const { hasPermission, user: currentUser } = usePermissions()
+  const debouncedSearch = useDebounce(searchTerm, 400)
+
+  const fetchUsersWithParams = useCallback(() => {
+    const searchValue = (debouncedSearch || '').trim()
+    return fetchUsers({
+      page: currentPage,
+      limit: pageSize,
+      search: searchValue || undefined,
+      status: statusFilter || undefined,
+      role: roleFilter || undefined,
+      sortBy: sortState.sortBy,
+      sortDirection: sortState.sortDirection,
+    })
+  }, [
+    currentPage,
+    pageSize,
+    debouncedSearch,
+    statusFilter,
+    roleFilter,
+    sortState.sortBy,
+    sortState.sortDirection,
+    fetchUsers,
+  ])
 
   const canCreateUser = hasPermission
     ? hasPermission(PERMISSIONS.USER_WRITE) || hasPermission(PERMISSIONS.USER_MANAGE)
@@ -58,9 +86,16 @@ const UsersList = () => {
       warning && warning('You do not have permission to view users.', { title: 'Access restricted' })
       return
     }
-    fetchUsers()
-    fetchRoles()
-  }, [canViewUser, fetchUsers, fetchRoles, warning])
+    fetchRoles({ limit: 100, active: true })
+  }, [canViewUser, fetchRoles, warning])
+
+  useEffect(() => {
+    if (!canViewUser) {
+      return
+    }
+
+    fetchUsersWithParams()
+  }, [canViewUser, fetchUsersWithParams])
 
   if (!canViewUser) {
     return (
@@ -80,7 +115,7 @@ const UsersList = () => {
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value)
-    // Debounce search implementation
+    setCurrentPage(1)
   }
 
   const handleCreateUser = () => {
@@ -112,7 +147,7 @@ const UsersList = () => {
       if (response.success) {
         success('User created successfully!')
         setShowAddModal(false)
-        await fetchUsers()
+        await fetchUsersWithParams()
       } else {
         error(response.message || 'Failed to create user')
       }
@@ -150,7 +185,7 @@ const UsersList = () => {
         success('User updated successfully!')
         setShowEditModal(false)
         setUserToEdit(null)
-        await fetchUsers()
+        await fetchUsersWithParams()
       } else {
         error(response.message || 'Failed to update user')
       }
@@ -195,6 +230,7 @@ const UsersList = () => {
         success('User deleted successfully!')
         setShowDeleteModal(false)
         setUserToDelete(null)
+        await fetchUsersWithParams()
       } else {
         error(response.message || 'Failed to delete user')
       }
@@ -271,34 +307,40 @@ const UsersList = () => {
     ]
   }, [roleOptions])
 
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      const matchesSearch =
-        user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (user.phone && user.phone.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (user.role && user.role.toLowerCase().includes(searchTerm.toLowerCase()))
-
-      const matchesRole =
-        !roleFilter ||
-        user.role === roleFilter ||
-        user.roleNames?.some((name) => name === roleFilter)
-      const matchesStatus = !statusFilter || user.isActive === (statusFilter === 'active')
-      return matchesSearch && matchesRole && matchesStatus
-    })
-  }, [users, searchTerm, roleFilter, statusFilter])
-
   const userStats = useMemo(() => {
-    const total = filteredUsers.length
-    const active = filteredUsers.filter(user => user.isActive).length
-    const inactive = total - active
+    const visibleUsers = users || []
+    const active = visibleUsers.filter((user) => user.isActive).length
+    const inactive = visibleUsers.length - active
+
     return {
-      total,
+      total: meta?.total ?? visibleUsers.length,
       active,
       inactive,
     }
-  }, [filteredUsers])
+  }, [users, meta])
+
+  const sortKeyMap = useMemo(() => ({
+    name: 'first_name',
+    email: 'email',
+    status: 'status',
+    createdAt: 'created_at',
+  }), [])
+
+  const handleSortChange = useCallback((columnKey, direction) => {
+    if (!columnKey) {
+      return
+    }
+
+    const apiSortKey = sortKeyMap[columnKey] || columnKey
+
+    setSortState({
+      columnKey,
+      sortBy: apiSortKey,
+      sortDirection: direction || 'asc',
+    })
+
+    setCurrentPage(1)
+  }, [sortKeyMap])
 
   const columns = [
     {
@@ -500,7 +542,10 @@ const UsersList = () => {
                   <Form.Label className="fw-semibold text-muted">Role</Form.Label>
                   <FormSelect
                     value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value)}
+                      onChange={(e) => {
+                      setRoleFilter(e.target.value)
+                      setCurrentPage(1)
+                    }}
                     className="border-2"
                   >
                     {roleOptionsForFilter.map((option) => (
@@ -514,7 +559,10 @@ const UsersList = () => {
                   <Form.Label className="fw-semibold text-muted">Status</Form.Label>
                   <FormSelect
                     value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value)
+                      setCurrentPage(1)
+                    }}
                     className="border-2"
                   >
                     <option value="">All Status</option>
@@ -539,18 +587,23 @@ const UsersList = () => {
             </Form>
 
             <Table
-              data={filteredUsers}
+              data={users}
               columns={columns}
               loading={loading}
               hover
               pagination={true}
               sortable={true}
-              sortableColumns={['name', 'email', 'phone']}
-              currentPage={currentPage}
-              pageSize={pageSize}
-              totalItems={filteredUsers.length}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
+              sortableColumns={Object.keys(sortKeyMap)}
+              serverSide={true}
+              meta={meta}
+              onPageChange={(page) => setCurrentPage(page)}
+              onPageSizeChange={(size) => {
+                setPageSize(size)
+                setCurrentPage(1)
+              }}
+              sortBy={sortState.columnKey}
+              sortDirection={sortState.sortDirection}
+              onSortChange={handleSortChange}
             />
           </div>
         </Col>

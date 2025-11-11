@@ -137,7 +137,7 @@ export const usePermissions = () => {
 // useUserManagement Hook - User management operations
 export const useUserManagement = () => {
   const [users, setUsers] = useState([])
-  const [pagination, setPagination] = useState(null)
+  const [meta, setMeta] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -149,7 +149,7 @@ export const useUserManagement = () => {
       const response = await userService.getUsers(params)
       if (response.success) {
         setUsers(response.data || [])
-        setPagination(response.pagination || null)
+        setMeta(response.meta || null)
       } else {
         setError(response.message || 'Failed to fetch users')
       }
@@ -226,7 +226,7 @@ export const useUserManagement = () => {
 
   return {
     users,
-    pagination,
+    meta,
     loading,
     error,
     fetchUsers,
@@ -239,17 +239,19 @@ export const useUserManagement = () => {
 // useRoleManagement Hook - Role management operations
 export const useRoleManagement = () => {
   const [roles, setRoles] = useState([])
+  const [meta, setMeta] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const fetchRoles = useCallback(async () => {
+  const fetchRoles = useCallback(async (params = {}) => {
     setLoading(true)
     setError(null)
 
     try {
-      const response = await roleService.getRoles()
+      const response = await roleService.getRoles(params)
       if (response.success) {
         setRoles(response.data || [])
+        setMeta(response.meta || null)
       } else {
         setError(response.message || 'Failed to fetch roles')
       }
@@ -270,6 +272,14 @@ export const useRoleManagement = () => {
       const response = await roleService.createRole(roleData)
       if (response.success && response.data) {
         setRoles((prev) => [...prev, response.data])
+        setMeta((prev) =>
+          prev
+            ? {
+                ...prev,
+                total: prev.total + 1,
+              }
+            : prev,
+        )
       } else {
         setError(response.message || 'Failed to create role')
       }
@@ -312,6 +322,14 @@ export const useRoleManagement = () => {
       const response = await roleService.deleteRole(roleId)
       if (response.success) {
         setRoles((prev) => prev.filter((role) => role.id !== roleId))
+        setMeta((prev) =>
+          prev
+            ? {
+                ...prev,
+                total: Math.max(prev.total - 1, 0),
+              }
+            : prev,
+        )
       } else {
         setError(response.message || 'Failed to delete role')
       }
@@ -326,6 +344,7 @@ export const useRoleManagement = () => {
 
   return {
     roles,
+    meta,
     loading,
     error,
     fetchRoles,

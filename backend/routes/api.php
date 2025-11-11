@@ -56,9 +56,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/branches/{branch}', [BranchController::class, 'destroy'])->middleware('permission:delete_branch');
 
     // Settings
-    Route::get('/settings', [SettingController::class, 'index']);
-    Route::post('/settings/{group}', [SettingController::class, 'updateGroup']);
-    Route::post('/settings/test-s3', [SettingController::class, 'testS3']);
-    Route::post('/settings/test-email', [SettingController::class, 'testEmail']);
+    Route::get('/settings', [SettingController::class, 'index'])->middleware('permission:view_setting');
+    Route::post('/settings/{group}', [SettingController::class, 'updateGroup'])->middleware('permission:edit_setting');
+    Route::post('/settings/test-s3', [SettingController::class, 'testS3'])->middleware('permission:edit_setting');
+    Route::post('/settings/test-email', [SettingController::class, 'testEmail'])->middleware('permission:edit_setting');
+
+    Route::prefix('global-settings')->group(function () {
+        Route::middleware('permission:view_setting')->group(function () {
+            Route::get('/', [SettingController::class, 'listAll']);
+            Route::get('/by-section', [SettingController::class, 'listBySection']);
+            Route::get('/by-section/{section}', [SettingController::class, 'getSection']);
+            Route::get('/key/{key}', [SettingController::class, 'showByKey']);
+            Route::get('/{setting}', [SettingController::class, 'show']);
+        });
+
+        Route::middleware('permission:edit_setting')->group(function () {
+            Route::post('/', [SettingController::class, 'store']);
+            Route::put('/key/{key}', [SettingController::class, 'updateByKey']);
+            Route::put('/{setting}', [SettingController::class, 'update']);
+            Route::delete('/key/{key}', [SettingController::class, 'destroyByKey']);
+            Route::delete('/{setting}', [SettingController::class, 'destroy']);
+        });
+    });
 });
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\PaginatesResults;
 use App\Http\Requests\BranchStoreRequest;
 use App\Http\Requests\BranchUpdateRequest;
 use App\Http\Resources\BranchResource;
@@ -11,6 +12,8 @@ use Illuminate\Http\Request;
 
 class BranchController extends Controller
 {
+    use PaginatesResults;
+
     /**
      * Display a listing of branches.
      */
@@ -35,24 +38,26 @@ class BranchController extends Controller
             $query->where('city', 'like', "%{$city}%");
         }
 
-        if ($request->boolean('paginate', true)) {
-            $perPage = (int) $request->input('per_page', 15);
-            $branches = $query->orderBy('branch_name')->paginate($perPage > 0 ? $perPage : 15);
+        $pagination = $this->buildPaginator(
+            $request,
+            $query,
+            ['branch_name', 'branch_code', 'city', 'created_at', 'status'],
+            ['column' => 'created_at', 'direction' => 'desc']
+        );
 
-            return BranchResource::collection($branches)
-                ->additional([
-                    'success' => true,
-                    'message' => 'Branches retrieved successfully.',
-                ]);
-        }
+        /** @var \Illuminate\Pagination\LengthAwarePaginator $paginator */
+        $paginator = $pagination['paginator'];
 
-        $branches = $query->orderBy('branch_name')->get();
+        $branches = array_map(
+            fn (Branch $branch) => (new BranchResource($branch))->toArray($request),
+            $paginator->items()
+        );
 
-        return BranchResource::collection($branches)
-            ->additional([
-                'success' => true,
-                'message' => 'Branches retrieved successfully.',
-            ]);
+        return response()->json([
+            'success' => true,
+            'data' => $branches,
+            'meta' => $this->paginationMeta($paginator, $pagination['sortBy'], $pagination['sortDirection']),
+        ]);
     }
 
     /**

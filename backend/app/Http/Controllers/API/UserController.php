@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\PaginatesResults;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -12,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
+    use PaginatesResults;
+
     /**
      * Display a listing of users.
      *
@@ -35,9 +38,38 @@ class UserController extends Controller
             $query->where('status', $request->status);
         }
 
-        $users = $query->paginate($request->get('per_page', 15));
+        if ($role = $request->input('role')) {
+            $query->whereHas('roles', function ($roleQuery) use ($role) {
+                if (is_numeric($role)) {
+                    $roleQuery->where('id', (int) $role);
+                } else {
+                    $roleQuery->where('name', $role);
+                }
+            });
+        }
 
-        return response()->json($users);
+        $pagination = $this->buildPaginator(
+            $request,
+            $query,
+            ['first_name', 'last_name', 'email', 'created_at', 'status'],
+            ['column' => 'created_at', 'direction' => 'desc']
+        );
+
+        /** @var \Illuminate\Pagination\LengthAwarePaginator $paginator */
+        $paginator = $pagination['paginator'];
+
+        $users = array_map(
+            static function (User $user) {
+                return $user->toArray();
+            },
+            $paginator->items()
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => $users,
+            'meta' => $this->paginationMeta($paginator, $pagination['sortBy'], $pagination['sortDirection']),
+        ]);
     }
 
     /**

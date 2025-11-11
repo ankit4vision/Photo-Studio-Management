@@ -20,10 +20,21 @@ class BranchService {
         ? payload.data.data
         : payload.data || []
 
+    const meta = payload.meta ?? {}
+
     return {
       success: payload.success ?? true,
       data,
-      meta: payload.meta ?? null,
+      meta: {
+        total: meta.total ?? data.length,
+        page: meta.page ?? 1,
+        limit: meta.limit ?? (data.length || 1),
+        totalPages: meta.totalPages ?? 1,
+        hasNext: meta.hasNext ?? false,
+        hasPrev: meta.hasPrev ?? false,
+        sortBy: meta.sortBy ?? null,
+        sortDirection: meta.sortDirection ?? null,
+      },
       links: payload.links ?? null,
       message: payload.message ?? '',
     }
@@ -49,14 +60,13 @@ class BranchService {
     const query = {}
 
     if (params.page) query.page = params.page
-    if (params.limit) query.per_page = params.limit
-    if (params.per_page) query.per_page = params.per_page
+    if (params.limit) query.limit = params.limit
+    if (params.per_page) query.limit = params.per_page
     if (params.search) query.search = params.search
     if (params.status) query.status = params.status
     if (params.city) query.city = params.city
-    if (params.paginate === false || params.all === true) {
-      query.paginate = false
-    }
+    if (params.sortBy) query.sort_by = params.sortBy
+    if (params.sortDirection) query.sort_direction = params.sortDirection
 
     return query
   }
@@ -65,7 +75,7 @@ class BranchService {
   async getBranches(params = {}) {
     try {
       const response = await apiClient.get(API_ENDPOINTS.BRANCHES.LIST, {
-        params: this.buildQueryParams({ paginate: false, ...params }),
+        params: this.buildQueryParams(params),
       })
 
       const payload = this.transformListResponse(response?.data)
@@ -108,7 +118,7 @@ class BranchService {
     
     // Apply pagination
     const page = params.page || 1
-    const limit = params.limit || 10
+    const limit = params.limit || 20
     const startIndex = (page - 1) * limit
     const endIndex = startIndex + limit
     const paginatedBranches = branches.slice(startIndex, endIndex)
@@ -116,9 +126,14 @@ class BranchService {
     return {
       success: true,
       data: paginatedBranches,
-      total: branches.length,
-      page: page,
-      limit: limit
+      meta: {
+        total: branches.length,
+        page,
+        limit,
+        totalPages: Math.ceil(branches.length / limit) || 1,
+        hasNext: endIndex < branches.length,
+        hasPrev: page > 1,
+      },
     }
   }
 

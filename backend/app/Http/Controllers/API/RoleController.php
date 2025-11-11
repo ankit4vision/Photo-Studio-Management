@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\PaginatesResults;
 use App\Models\Role;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
 {
+    use PaginatesResults;
+
     /**
      * Display a listing of roles.
      *
@@ -24,9 +28,32 @@ class RoleController extends Controller
 
         $query->where('is_deleted', false);
 
-        $roles = $query->get();
+        if ($search = $request->input('search')) {
+            $query->where('name', 'like', "%{$search}%");
+        }
 
-        return response()->json($roles);
+        $pagination = $this->buildPaginator(
+            $request,
+            $query,
+            ['name', 'description', 'created_at'],
+            ['column' => 'created_at', 'direction' => 'desc']
+        );
+
+        /** @var \Illuminate\Pagination\LengthAwarePaginator $paginator */
+        $paginator = $pagination['paginator'];
+
+        $roles = array_map(
+            static function (Role $role) {
+                return $role->toArray();
+            },
+            $paginator->items()
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => $roles,
+            'meta' => $this->paginationMeta($paginator, $pagination['sortBy'], $pagination['sortDirection']),
+        ]);
     }
 
     /**
@@ -38,17 +65,57 @@ class RoleController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:roles',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('roles', 'name')->where(function ($query) {
+                    return $query->where('is_deleted', false)->orWhereNull('is_deleted');
+                }),
+            ],
             'description' => 'nullable|string',
             'is_active' => 'boolean',
             'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permissions,id',
         ]);
 
+        $permissions = $validated['permissions'] ?? null;
+        unset($validated['permissions']);
+
+        if (!array_key_exists('is_active', $validated)) {
+            $validated['is_active'] = true;
+        }
+
+        $existingRole = Role::where('name', $validated['name'])->first();
+
+        if ($existingRole) {
+            if ($existingRole->is_deleted) {
+                $existingRole->fill([
+                    'description' => $validated['description'] ?? $existingRole->description,
+                    'is_active' => $validated['is_active'] ?? $existingRole->is_active ?? true,
+                    'is_deleted' => false,
+                ]);
+                $existingRole->save();
+
+                if (is_array($permissions)) {
+                    $existingRole->permissions()->sync($permissions);
+                }
+
+                return response()->json($existingRole->load('permissions'), 200);
+            }
+
+            return response()->json([
+                'message' => 'A role with this name already exists.',
+                'errors' => [
+                    'name' => ['The role name must be unique.'],
+                ],
+            ], 422);
+        }
+
         $role = Role::create($validated);
 
-        if ($request->has('permissions')) {
-            $role->permissions()->sync($request->permissions);
+        if (is_array($permissions)) {
+            $role->permissions()->sync($permissions);
         }
 
         return response()->json($role->load('permissions'), 201);
@@ -75,7 +142,17 @@ class RoleController extends Controller
     public function update(Request $request, Role $role)
     {
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255|unique:roles,name,' . $role->id,
+            'name' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('roles', 'name')
+                    ->ignore($role->id)
+                    ->where(function ($query) {
+                        return $query->where('is_deleted', false)->orWhereNull('is_deleted');
+                    }),
+            ],
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);

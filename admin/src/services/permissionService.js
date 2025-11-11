@@ -32,14 +32,20 @@ const permissionService = {
       if (options.submodule) params.submodule = options.submodule
       if (options.active !== undefined) params.active = options.active ? 1 : 0
       if (options.groupByModule) params.group_by_module = 1
+      if (options.page) params.page = options.page
+      if (options.limit) params.limit = options.limit
+      if (options.search) params.search = options.search
+      if (options.sortBy) params.sort_by = options.sortBy
+      if (options.sortDirection) params.sort_direction = options.sortDirection
 
       const response = await apiClient.get('/permissions', { params })
-      const payload = response.data
+      const payload = response.data || {}
 
       if (options.groupByModule) {
+        const grouped = payload.data || {}
         const flattened = []
 
-        Object.entries(payload || {}).forEach(([moduleKey, modulePermissions]) => {
+        Object.entries(grouped).forEach(([moduleKey, modulePermissions]) => {
           Object.entries(modulePermissions || {}).forEach(([submoduleKey, permissions]) => {
             (permissions || []).forEach((permission) => {
               flattened.push(normalizePermission(permission, moduleKey, submoduleKey))
@@ -48,15 +54,18 @@ const permissionService = {
         })
 
         return {
-          success: true,
+          success: payload.success ?? true,
           data: flattened,
-          grouped: payload,
+          grouped,
         }
       }
 
+      const rows = Array.isArray(payload.data) ? payload.data : []
+
       return {
-        success: true,
-        data: Array.isArray(payload) ? payload.map((permission) => normalizePermission(permission)) : [],
+        success: payload.success ?? true,
+        data: rows.map((permission) => normalizePermission(permission)),
+        meta: payload.meta || null,
       }
     } catch (error) {
       return handleApiError(error)

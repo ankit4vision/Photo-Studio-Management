@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Services\EmailService;
 use App\Services\S3Service;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SettingController extends Controller
 {
@@ -27,13 +28,7 @@ class SettingController extends Controller
      */
     public function index(Request $request)
     {
-        if ($request->has('group')) {
-            $settings = Setting::getByGroup($request->group);
-        } else {
-            $settings = Setting::all();
-        }
-
-        return response()->json($settings);
+        return $this->listAll($request);
     }
 
     /**
@@ -96,6 +91,273 @@ class SettingController extends Controller
         }
 
         return response()->json(['success' => false, 'message' => 'Failed to send test email'], 500);
+    }
+
+    /**
+     * List all settings with optional section filter.
+     */
+    public function listAll(Request $request)
+    {
+        $query = Setting::query();
+
+        if ($request->filled('section')) {
+            $query->where('group', $request->input('section'));
+        }
+
+        if ($request->filled('sections')) {
+            $sections = array_filter((array) $request->input('sections'));
+            if (!empty($sections)) {
+                $query->whereIn('group', $sections);
+            }
+        }
+
+        $settings = $query
+            ->orderBy('group')
+            ->orderBy('key')
+            ->get()
+            ->map(fn (Setting $setting) => $this->formatSetting($setting));
+
+        return response()->json($settings);
+    }
+
+    /**
+     * Return settings grouped by section.
+     */
+    public function listBySection()
+    {
+        $grouped = Setting::query()
+            ->orderBy('group')
+            ->orderBy('key')
+            ->get()
+            ->groupBy('group')
+            ->map(function ($settings, $group) {
+                return [
+                    'section' => $group,
+                    'settings' => $settings
+                        ->map(fn (Setting $setting) => $this->formatSetting($setting))
+                        ->values(),
+                ];
+            })
+            ->values();
+
+        return response()->json($grouped);
+    }
+
+    /**
+     * Return all settings within a specific section.
+     */
+    public function getSection(string $section)
+    {
+        $settings = Setting::where('group', $section)
+            ->orderBy('key')
+            ->get();
+
+        if ($settings->isEmpty()) {
+            return response()->json([
+                'message' => 'Section not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'section' => $section,
+            'settings' => $settings
+                ->map(fn (Setting $setting) => $this->formatSetting($setting))
+                ->values(),
+        ]);
+    }
+
+    /**
+     * Store a newly created setting.
+     */
+    public function store(Request $request)
+    {
+        $section = $request->input('section', 'general');
+
+        $validated = $request->validate([
+            'key' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('settings')->where(fn ($query) => $query->where('group', $section)),
+            ],
+            'value' => 'nullable',
+            'section' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+
+        $setting = Setting::create([
+            'key' => $validated['key'],
+            'value' => $this->normalizeValue($validated['value'] ?? null),
+            'group' => $section,
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        return response()->json($this->formatSetting($setting), 201);
+    }
+
+    /**
+     * Display the specified setting.
+     */
+    public function show(Setting $setting)
+    {
+        return response()->json($this->formatSetting($setting));
+    }
+
+    /**
+     * Display a setting by key (optional section filter).
+     */
+    public function showByKey(Request $request, string $key)
+    {
+        $section = $request->input('section');
+
+        $query = Setting::where('key', $key);
+
+        if ($section) {
+            $query->where('group', $section);
+        }
+
+        $setting = $query->first();
+
+        if (!$setting) {
+            return response()->json(['message' => 'Setting not found'], 404);
+        }
+
+        return response()->json($this->formatSetting($setting));
+    }
+
+    /**
+     * Update the specified setting.
+     */
+    public function update(Request $request, Setting $setting)
+    {
+        $section = $request->input('section', $setting->group);
+
+        $validated = $request->validate([
+            'key' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('settings')->ignore($setting->id)->where(fn ($query) => $query->where('group', $section)),
+            ],
+            'value' => 'nullable',
+            'section' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+
+        if (isset($validated['key'])) {
+            $setting->key = $validated['key'];
+        }
+
+        if (array_key_exists('value', $validated)) {
+            $setting->value = $this->normalizeValue($validated['value']);
+        }
+
+        if (isset($validated['section'])) {
+            $setting->group = $validated['section'];
+        } elseif ($section !== $setting->group) {
+            $setting->group = $section;
+        }
+
+        if (array_key_exists('description', $validated)) {
+            $setting->description = $validated['description'];
+        }
+
+        $setting->save();
+
+        return response()->json($this->formatSetting($setting));
+    }
+
+    /**
+     * Update a setting by key (optionally scoped by section).
+     */
+    public function updateByKey(Request $request, string $key)
+    {
+        $section = $request->input('section');
+
+        $query = Setting::where('key', $key);
+
+        if ($section) {
+            $query->where('group', $section);
+        }
+
+        $setting = $query->first();
+
+        if (!$setting) {
+            return response()->json(['message' => 'Setting not found'], 404);
+        }
+
+        return $this->update($request, $setting);
+    }
+
+    /**
+     * Remove the specified setting.
+     */
+    public function destroy(Setting $setting)
+    {
+        $setting->delete();
+
+        return response()->json(['message' => 'Setting deleted successfully']);
+    }
+
+    /**
+     * Remove a setting by key (optionally scoped by section).
+     */
+    public function destroyByKey(Request $request, string $key)
+    {
+        $section = $request->input('section');
+
+        $query = Setting::where('key', $key);
+
+        if ($section) {
+            $query->where('group', $section);
+        }
+
+        $setting = $query->first();
+
+        if (!$setting) {
+            return response()->json(['message' => 'Setting not found'], 404);
+        }
+
+        $setting->delete();
+
+        return response()->json(['message' => 'Setting deleted successfully']);
+    }
+
+    /**
+     * Normalize values prior to persistence.
+     */
+    protected function normalizeValue($value): ?string
+    {
+        if (is_null($value)) {
+            return null;
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (is_array($value) || is_object($value)) {
+            return json_encode($value);
+        }
+
+        return (string) $value;
+    }
+
+    /**
+     * Format a setting for API responses.
+     */
+    protected function formatSetting(Setting $setting): array
+    {
+        return [
+            'id' => $setting->id,
+            'key' => $setting->key,
+            'value' => $setting->value,
+            'section' => $setting->group,
+            'description' => $setting->description,
+            'created_at' => $setting->created_at,
+            'updated_at' => $setting->updated_at,
+        ];
     }
 }
 

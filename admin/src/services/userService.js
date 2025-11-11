@@ -124,27 +124,35 @@ const serializeUserPayload = (userData, { isUpdate = false } = {}) => {
 const userService = {
   async getUsers(params = {}) {
     try {
-      const query = {}
+      const response = await apiClient.get('/users', {
+        params: {
+          page: params.page,
+          limit: params.limit,
+          search: params.search,
+          status: params.status,
+          role: params.role,
+          sort_by: params.sortBy,
+          sort_direction: params.sortDirection,
+        },
+      })
 
-      if (params.page) query.page = params.page
-      if (params.limit) query.per_page = params.limit
-      if (params.search) query.search = params.search
-      if (params.status) query.status = params.status
-
-      const response = await apiClient.get('/users', { params: query })
-      const { data = [], meta = null } = response.data || {}
+      const payload = response.data || {}
+      const rows = Array.isArray(payload.data) ? payload.data : []
+      const meta = payload.meta || {}
 
       return {
-        success: true,
-        data: data.map(normalizeUser),
-        pagination: meta
-          ? {
-              currentPage: meta.current_page,
-              perPage: meta.per_page,
-              total: meta.total,
-              lastPage: meta.last_page,
-            }
-          : null,
+        success: payload.success ?? true,
+        data: rows.map(normalizeUser),
+        meta: {
+          total: meta.total ?? rows.length,
+          page: meta.page ?? params.page ?? 1,
+          limit: meta.limit ?? params.limit ?? 20,
+          totalPages: meta.totalPages ?? 1,
+          hasNext: meta.hasNext ?? false,
+          hasPrev: meta.hasPrev ?? false,
+          sortBy: meta.sortBy ?? params.sortBy ?? null,
+          sortDirection: meta.sortDirection ?? params.sortDirection ?? null,
+        },
       }
     } catch (error) {
       return handleApiError(error)
