@@ -1,29 +1,79 @@
 // Branch Service - API calls for branch management
-import apiService from '../api'
+import apiClient from '../config/apiClient'
 import { API_ENDPOINTS } from '../constants/api'
 import branchesMockData from '../mock/branches.json'
 
 class BranchService {
+  transformListResponse(payload) {
+    if (!payload) {
+      return {
+        success: false,
+        data: [],
+        meta: null,
+        message: 'No response received from server.',
+      }
+    }
+
+    const data = Array.isArray(payload.data)
+      ? payload.data
+      : Array.isArray(payload.data?.data)
+        ? payload.data.data
+        : payload.data || []
+
+    return {
+      success: payload.success ?? true,
+      data,
+      meta: payload.meta ?? null,
+      links: payload.links ?? null,
+      message: payload.message ?? '',
+    }
+  }
+
+  transformItemResponse(payload) {
+    if (!payload) {
+      return {
+        success: false,
+        data: null,
+        message: 'No response received from server.',
+      }
+    }
+
+    return {
+      success: payload.success ?? true,
+      data: payload.data ?? payload,
+      message: payload.message ?? '',
+    }
+  }
+
+  buildQueryParams(params = {}) {
+    const query = {}
+
+    if (params.page) query.page = params.page
+    if (params.limit) query.per_page = params.limit
+    if (params.per_page) query.per_page = params.per_page
+    if (params.search) query.search = params.search
+    if (params.status) query.status = params.status
+    if (params.city) query.city = params.city
+    if (params.paginate === false || params.all === true) {
+      query.paginate = false
+    }
+
+    return query
+  }
+
   // Get all branches
   async getBranches(params = {}) {
     try {
-      const queryParams = new URLSearchParams()
-      
-      if (params.page) queryParams.append('page', params.page)
-      if (params.limit) queryParams.append('limit', params.limit)
-      if (params.search) queryParams.append('search', params.search)
-      if (params.status) queryParams.append('status', params.status)
-      if (params.city) queryParams.append('city', params.city)
+      const response = await apiClient.get(API_ENDPOINTS.BRANCHES.LIST, {
+        params: this.buildQueryParams({ paginate: false, ...params }),
+      })
 
-      const endpoint = `${API_ENDPOINTS.BRANCHES.LIST}?${queryParams.toString()}`
-      const response = await apiService.get(endpoint)
-      
-      // If API call succeeds, return the response
-      if (response && response.success) {
-        return response
+      const payload = this.transformListResponse(response?.data)
+
+      if (payload.success) {
+        return payload
       }
-      
-      // Fallback to mock data if API fails
+
       return this.getMockBranches(params)
     } catch (error) {
       console.warn('API call failed, using mock data:', error)
@@ -75,9 +125,11 @@ class BranchService {
   // Get branch by ID
   async getBranchById(id) {
     try {
-      const response = await apiService.get(API_ENDPOINTS.BRANCHES.GET_BY_ID(id))
-      if (response && response.success) {
-        return response
+      const response = await apiClient.get(API_ENDPOINTS.BRANCHES.GET_BY_ID(id))
+      const payload = this.transformItemResponse(response?.data)
+
+      if (payload.success) {
+        return payload
       }
       // Fallback to mock data
       return this.getMockBranchById(id)
@@ -105,9 +157,10 @@ class BranchService {
   // Create new branch
   async createBranch(branchData) {
     try {
-      const response = await apiService.post(API_ENDPOINTS.BRANCHES.CREATE, branchData)
-      if (response && response.success) {
-        return response
+      const response = await apiClient.post(API_ENDPOINTS.BRANCHES.CREATE, branchData)
+      const payload = this.transformItemResponse(response?.data)
+      if (payload.success) {
+        return payload
       }
       // Fallback to mock data (simulate creation)
       return this.createMockBranch(branchData)
@@ -136,9 +189,10 @@ class BranchService {
   // Update branch
   async updateBranch(id, branchData) {
     try {
-      const response = await apiService.put(API_ENDPOINTS.BRANCHES.UPDATE(id), branchData)
-      if (response && response.success) {
-        return response
+      const response = await apiClient.put(API_ENDPOINTS.BRANCHES.UPDATE(id), branchData)
+      const payload = this.transformItemResponse(response?.data)
+      if (payload.success) {
+        return payload
       }
       // Fallback to mock data (simulate update)
       return this.updateMockBranch(id, branchData)
@@ -173,9 +227,10 @@ class BranchService {
   // Delete branch
   async deleteBranch(id) {
     try {
-      const response = await apiService.delete(API_ENDPOINTS.BRANCHES.DELETE(id))
-      if (response && response.success) {
-        return response
+      const response = await apiClient.delete(API_ENDPOINTS.BRANCHES.DELETE(id))
+      const payload = this.transformItemResponse(response?.data ?? { success: true })
+      if (payload.success) {
+        return payload
       }
       // Fallback to mock data (simulate delete)
       return this.deleteMockBranch(id)

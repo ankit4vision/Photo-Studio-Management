@@ -36,7 +36,8 @@ const UsersList = () => {
   const editUserFormRef = useRef()
 
   const { success, error } = useToast()
-  const { users, loading, fetchUsers, deleteUser } = useUserManagement()
+  const { users, loading, fetchUsers, createUser, updateUser, deleteUser } = useUserManagement()
+  const { roles, fetchRoles, loading: rolesLoading } = useRoleManagement()
   const { hasPermission } = usePermissions()
 
   const canCreateUser = hasPermission

@@ -6,6 +6,7 @@ use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\API\PermissionController;
 use App\Http\Controllers\API\SettingController;
+use App\Http\Controllers\API\BranchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,6 +39,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // Permission Management
     Route::get('/permissions', [PermissionController::class, 'index']);
     Route::get('/permissions/{permission}', [PermissionController::class, 'show']);
+
+    // Branch Management
+    Route::get('/branches', [BranchController::class, 'index'])->middleware('permission:view_branch');
+    Route::post('/branches', [BranchController::class, 'store'])->middleware('permission:create_branch');
+    Route::get('/branches/{branch}', [BranchController::class, 'show'])->middleware('permission:view_branch');
+    Route::put('/branches/{branch}', [BranchController::class, 'update'])->middleware('permission:edit_branch');
+    Route::delete('/branches/{branch}', [BranchController::class, 'destroy'])->middleware('permission:delete_branch');
 
     // Settings
     Route::get('/settings', [SettingController::class, 'index']);

@@ -33,13 +33,22 @@ class PermissionsTableSeeder extends Seeder
             // Settings Management
             ['name' => 'view_setting', 'description' => 'View settings', 'module' => 'settings', 'submodule' => 'management', 'type' => 'read'],
             ['name' => 'edit_setting', 'description' => 'Edit settings', 'module' => 'settings', 'submodule' => 'management', 'type' => 'write'],
+
+            // Branch Management
+            ['name' => 'view_branch', 'description' => 'View branches', 'module' => 'branches', 'submodule' => 'management', 'type' => 'read'],
+            ['name' => 'create_branch', 'description' => 'Create branches', 'module' => 'branches', 'submodule' => 'management', 'type' => 'write'],
+            ['name' => 'edit_branch', 'description' => 'Edit branches', 'module' => 'branches', 'submodule' => 'management', 'type' => 'write'],
+            ['name' => 'delete_branch', 'description' => 'Delete branches', 'module' => 'branches', 'submodule' => 'management', 'type' => 'delete'],
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create(array_merge($permission, [
-                'is_active' => true,
-                'is_deleted' => false,
-            ]));
+            Permission::updateOrCreate(
+                ['name' => $permission['name']],
+                array_merge($permission, [
+                    'is_active' => true,
+                    'is_deleted' => false,
+                ])
+            );
         }
     }
 }

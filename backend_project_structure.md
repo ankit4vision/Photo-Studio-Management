@@ -221,6 +221,7 @@ The heart of your Laravel application containing all business logic.
   - `cors.php` - CORS settings for API
   - `database.php` - Database connections
   - `sanctum.php` - Sanctum token auth config
+  - **2025-11 Update:** the default connection is MySQL-only. SQLite scaffolding was removed, `composer.json` now requires `ext-pdo_mysql`, and `phpunit.xml` targets a MySQL testing database (`photo_studio_test`).
 - **Note:** Settings can be overridden by database (via Setting model)
 
 ### `/database`
@@ -271,6 +272,7 @@ The heart of your Laravel application containing all business logic.
   - `app/` - Application files
   - `framework/` - Framework cache, sessions, views
   - `logs/` - Application logs
+  - **CORS Configuration:** `config/cors.php` includes dev origins `http://localhost:5173`, `http://localhost:5174`, and their `127.0.0.1` equivalents so Vite-based frontends can call the API without manual tweaks.
 - **Note:** Must be writable by web server
 
 ### `/tests`

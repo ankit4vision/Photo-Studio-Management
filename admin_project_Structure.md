@@ -234,6 +234,13 @@ admin/
 └── vite.config.js                     # Vite build configuration
 ```
 
+### 🔌 API Integration Updates (2025-11)
+
+- `src/config.js` now normalizes `VITE_API_BASE_URL`, ensuring the value (default `http://localhost:8000`) always resolves to the `/api` namespace even if the trailing segment is omitted.
+- `src/config/apiClient.js` sources the Axios client base URL from that normalized config so every service call automatically targets the Laravel backend.
+- Local development expects the backend to run on port `8000`. Override `VITE_API_BASE_URL` in `.env.local` (or environment-specific files) when pointing to remote servers.
+- Update CORS on the backend (`config/cors.php`) if you serve the admin from a different origin/port.
+
 ## 🎯 Development Rules & Guidelines
 
 ### 📋 Component Organization Rules

@@ -18,16 +18,18 @@ class UserSeeder extends Seeder
     {
         $adminRole = Role::where('name', 'admin')->first();
 
-        $admin = User::create([
-            'first_name' => 'Admin',
-            'last_name' => 'User',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-            'status' => 'active',
-        ]);
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'first_name' => 'Admin',
+                'last_name' => 'User',
+                'password' => Hash::make('password'),
+                'status' => 'active',
+            ]
+        );
 
         if ($adminRole) {
-            $admin->roles()->attach($adminRole->id);
+            $admin->roles()->syncWithoutDetaching([$adminRole->id]);
         }
     }
 }
