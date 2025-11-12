@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -169,6 +170,153 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(['message' => 'User deleted successfully']);
+    }
+
+    /**
+     * Get current authenticated user profile.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function profile(Request $request)
+    {
+        $user = $request->user()->load('roles');
+        
+        // Convert to array and add avatar_url
+        $userData = $user->toArray();
+        
+        // Add avatar_url attribute
+        if ($user->avatar) {
+            if (!filter_var($user->avatar, FILTER_VALIDATE_URL)) {
+                // Use asset() helper for public storage URLs
+                $userData['avatar_url'] = asset('storage/' . $user->avatar);
+            } else {
+                $userData['avatar_url'] = $user->avatar;
+            }
+        } else {
+            $userData['avatar_url'] = null;
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => $userData,
+        ]);
+    }
+
+    /**
+     * Update current authenticated user profile.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'first_name' => 'sometimes|required|string|max:255',
+            'last_name' => 'sometimes|required|string|max:255',
+            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string',
+            'city' => 'nullable|string',
+            'state' => 'nullable|string|max:100',
+            'zip_code' => 'nullable|string|max:20',
+            'country' => 'nullable|string',
+            'bio' => 'nullable|string',
+            'avatar' => 'nullable|string', // Base64 encoded image or URL
+            'date_of_birth' => 'nullable|date',
+            'gender' => 'nullable|string|in:male,female,other,prefer-not-to-say',
+        ]);
+
+        // Handle avatar upload (base64 to local file)
+        if ($request->has('avatar') && $request->avatar) {
+            $avatarData = $request->avatar;
+            
+            // If empty string, delete avatar
+            if ($avatarData === '') {
+                // Delete old avatar if exists
+                if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                    Storage::disk('public')->delete($user->avatar);
+                }
+                $validated['avatar'] = null;
+            } 
+            // If base64 image, save to local storage
+            elseif (preg_match('/^data:image\/(\w+);base64,/', $avatarData, $matches)) {
+                // Delete old avatar if exists
+                if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                    Storage::disk('public')->delete($user->avatar);
+                }
+
+                // Extract image data
+                $imageData = substr($avatarData, strpos($avatarData, ',') + 1);
+                $imageData = base64_decode($imageData);
+                $imageType = $matches[1]; // jpeg, png, gif, webp
+                
+                // Validate image type
+                $allowedTypes = ['jpeg', 'jpg', 'png', 'gif', 'webp'];
+                if (!in_array(strtolower($imageType), $allowedTypes)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid image type. Allowed types: JPEG, PNG, GIF, WebP',
+                    ], 422);
+                }
+
+                // Generate unique filename
+                $filename = 'avatars/user_' . $user->id . '_' . time() . '.' . $imageType;
+                
+                // Save to public storage
+                Storage::disk('public')->put($filename, $imageData);
+                
+                // Store relative path in database
+                $validated['avatar'] = $filename;
+            }
+            // If it's already a URL or path, keep it as is
+            else {
+                $validated['avatar'] = $avatarData;
+            }
+        }
+
+        // Only update fields that are present in the request
+        // Convert empty strings to null for nullable fields
+        $updateData = [];
+        $nullableFields = ['date_of_birth', 'gender', 'bio', 'address', 'city', 'state', 'zip_code', 'country', 'phone'];
+        
+        foreach ($validated as $key => $value) {
+            // Convert empty strings to null for nullable fields
+            if (in_array($key, $nullableFields) && $value === '') {
+                $updateData[$key] = null;
+            } else {
+                $updateData[$key] = $value;
+            }
+        }
+        
+        $user->update($updateData);
+
+        // Reload user to get fresh data
+        $user->refresh();
+        $user->load('roles');
+        
+        // Convert avatar path to full URL if it's a local file
+        $avatarUrl = null;
+        if ($user->avatar) {
+            if (!filter_var($user->avatar, FILTER_VALIDATE_URL)) {
+                // Use asset() helper for public storage URLs
+                $avatarUrl = asset('storage/' . $user->avatar);
+            } else {
+                $avatarUrl = $user->avatar;
+            }
+        }
+        
+        // Add avatar_url to user array for response
+        $userData = $user->toArray();
+        $userData['avatar_url'] = $avatarUrl;
+
+        return response()->json([
+            'success' => true,
+            'data' => $userData,
+            'message' => 'Profile updated successfully',
+        ]);
     }
 
     /**

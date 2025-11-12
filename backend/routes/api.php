@@ -22,16 +22,24 @@ use App\Http\Controllers\API\BranchController;
 // Public routes
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Authentication
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/user', [AuthController::class, 'user']);
+    Route::put('/auth/change-password', [AuthController::class, 'changePassword']);
 
     // User Management
     Route::get('/users', [UserController::class, 'index'])->middleware('permission:view_user');
     Route::post('/users', [UserController::class, 'store'])->middleware('permission:create_user');
+    
+    // User Profile (current user) - Must come before /users/{user} route
+    Route::get('/users/profile', [UserController::class, 'profile']);
+    Route::put('/users/profile', [UserController::class, 'updateProfile']);
+    
+    // User Management (by ID) - Must come after /users/profile
     Route::get('/users/{user}', [UserController::class, 'show'])->middleware('permission:view_user');
     Route::put('/users/{user}', [UserController::class, 'update'])->middleware('permission:edit_user');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->middleware('permission:delete_user');
@@ -57,9 +65,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Settings
     Route::get('/settings', [SettingController::class, 'index'])->middleware('permission:view_setting');
-    Route::post('/settings/{group}', [SettingController::class, 'updateGroup'])->middleware('permission:edit_setting');
+    // Specific routes must come before parameterized routes
     Route::post('/settings/test-s3', [SettingController::class, 'testS3'])->middleware('permission:edit_setting');
     Route::post('/settings/test-email', [SettingController::class, 'testEmail'])->middleware('permission:edit_setting');
+    Route::post('/settings/{group}', [SettingController::class, 'updateGroup'])->middleware('permission:edit_setting');
 
     Route::prefix('global-settings')->group(function () {
         Route::middleware('permission:view_setting')->group(function () {

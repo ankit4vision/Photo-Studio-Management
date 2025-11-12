@@ -38,6 +38,25 @@ const Profile = () => {
       const response = await profileService.getProfile()
       if (response.success) {
         setProfileData(response.data)
+        
+        // Also update auth context with latest profile data
+        if (updateUser && response.data) {
+          // Ensure avatar is properly set
+          const profileDataToUpdate = {
+            ...response.data,
+            avatar: response.data.avatar || null // Use the normalized avatar URL
+          }
+          
+          if (import.meta.env.DEV) {
+            console.log('[Profile] Updating auth context:', {
+              profileData: response.data,
+              avatar: response.data.avatar,
+              updatingWith: profileDataToUpdate
+            })
+          }
+          
+          updateUser(profileDataToUpdate)
+        }
       } else {
         error(response.message || 'Failed to fetch profile')
       }
@@ -60,8 +79,28 @@ const Profile = () => {
         success('Profile picture updated successfully')
         
         // Update auth context with new user data
-        if (updateUser) {
-          updateUser(response.data)
+        if (updateUser && response.data) {
+          // Use the avatar URL directly from response (already includes full URL)
+          const updatedData = {
+            ...response.data,
+            avatar: response.data.avatar, // This should already be the full URL from backend
+          }
+          
+          // Update localStorage and context
+          updateUser(updatedData)
+          
+          // Force a refresh of the current user from API to ensure consistency
+          setTimeout(async () => {
+            try {
+              const { default: authService } = await import('../../services/authService')
+              const userResponse = await authService.fetchCurrentUser()
+              if (userResponse.success && userResponse.data) {
+                updateUser(userResponse.data)
+              }
+            } catch (err) {
+              console.warn('Failed to refresh user data:', err)
+            }
+          }, 500)
         }
       } else {
         error(response.message || 'Failed to update profile picture')
@@ -85,8 +124,22 @@ const Profile = () => {
         success('Profile picture deleted successfully')
         
         // Update auth context with new user data
-        if (updateUser) {
-          updateUser(response.data)
+        if (updateUser && response.data) {
+          const updatedData = { ...response.data, avatar: null }
+          updateUser(updatedData)
+          
+          // Force a refresh of the current user from API
+          setTimeout(async () => {
+            try {
+              const { default: authService } = await import('../../services/authService')
+              const userResponse = await authService.fetchCurrentUser()
+              if (userResponse.success && userResponse.data) {
+                updateUser(userResponse.data)
+              }
+            } catch (err) {
+              console.warn('Failed to refresh user data:', err)
+            }
+          }, 500)
         }
       } else {
         error(response.message || 'Failed to delete profile picture')
@@ -179,11 +232,12 @@ const Profile = () => {
       setSaving(true)
       const response = await profileService.changePassword({
         currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword
+        newPassword: passwordData.newPassword,
+        confirmPassword: passwordData.confirmPassword
       })
       
       if (response.success) {
-        success('Password changed successfully')
+        success(response.message || 'Password changed successfully')
         setShowChangePasswordModal(false)
         setPasswordData({
           currentPassword: '',
@@ -192,7 +246,13 @@ const Profile = () => {
         })
         setPasswordErrors({})
       } else {
-        error(response.message || 'Failed to change password')
+        // Handle validation errors from backend
+        if (response.errors) {
+          setPasswordErrors(response.errors)
+          error(response.message || 'Please fix the errors and try again')
+        } else {
+          error(response.message || 'Failed to change password')
+        }
       }
     } catch (err) {
       console.error('Error changing password:', err)

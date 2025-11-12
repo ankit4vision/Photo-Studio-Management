@@ -2,9 +2,6 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import authService from '../services/authService'
 
-// Auth Context
-const AuthContext = createContext()
-
 // Auth Actions
 const AUTH_ACTIONS = {
   LOGIN_START: 'LOGIN_START',
@@ -63,7 +60,12 @@ const authReducer = (state, action) => {
     case AUTH_ACTIONS.UPDATE_USER:
       return {
         ...state,
-        user: { ...state.user, ...action.payload },
+        user: { 
+          ...state.user, 
+          ...action.payload,
+          // Ensure avatar is properly updated
+          avatar: action.payload.avatar !== undefined ? action.payload.avatar : state.user?.avatar
+        },
       }
     case AUTH_ACTIONS.SET_LOADING:
       return {
@@ -84,6 +86,27 @@ const initialState = {
   error: null,
 }
 
+// Default context value (used when context is accessed outside provider)
+const defaultContextValue = {
+  ...initialState,
+  login: async () => {
+    throw new Error('login function called outside AuthProvider')
+  },
+  logout: async () => {
+    throw new Error('logout function called outside AuthProvider')
+  },
+  updateUser: () => {
+    throw new Error('updateUser function called outside AuthProvider')
+  },
+  hasPermission: () => false,
+  hasRole: () => false,
+  hasAnyRole: () => false,
+  hasAllPermissions: () => false,
+}
+
+// Auth Context with default value
+const AuthContext = createContext(defaultContextValue)
+
 // Auth Provider Component
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
@@ -94,6 +117,7 @@ export const AuthProvider = ({ children }) => {
       const token = authService.getToken()
       const storedUser = authService.getStoredUser()
 
+      // Load stored user immediately for faster initial render
       if (token && storedUser) {
         dispatch({
           type: AUTH_ACTIONS.LOAD_USER,
@@ -108,8 +132,17 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true })
 
       try {
+        // Always fetch fresh user data from API to ensure avatar is up to date
         const response = await authService.fetchCurrentUser()
         if (response.success && response.data) {
+          // Debug log
+          if (import.meta.env.DEV) {
+            console.log('[AuthContext] Fresh user data loaded:', {
+              user: response.data,
+              avatar: response.data.avatar
+            })
+          }
+          
           dispatch({
             type: AUTH_ACTIONS.LOAD_USER,
             payload: { user: response.data, token: authService.getToken() },
@@ -117,6 +150,9 @@ export const AuthProvider = ({ children }) => {
         } else if (response.status === 401) {
           dispatch({ type: AUTH_ACTIONS.LOGOUT })
         }
+      } catch (error) {
+        console.error('[AuthContext] Error fetching user:', error)
+        // Don't logout on error, keep using stored user
       } finally {
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false })
       }
@@ -168,7 +204,23 @@ export const AuthProvider = ({ children }) => {
 
   // Update user function
   const updateUser = (userData) => {
-    const updatedUser = { ...state.user, ...userData }
+    const updatedUser = { 
+      ...state.user, 
+      ...userData,
+      // Explicitly set avatar if provided
+      avatar: userData.avatar !== undefined ? userData.avatar : (state.user?.avatar || null)
+    }
+    
+    // Debug log
+    if (import.meta.env.DEV) {
+      console.log('[AuthContext] updateUser called:', {
+        userData,
+        currentUser: state.user,
+        updatedUser,
+        avatar: updatedUser.avatar
+      })
+    }
+    
     localStorage.setItem('user', JSON.stringify(updatedUser))
     dispatch({
       type: AUTH_ACTIONS.UPDATE_USER,
@@ -225,9 +277,14 @@ AuthProvider.propTypes = {
 // Custom hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext)
+  
+  // With default value provided to createContext, context should never be null/undefined
+  // If context is somehow null/undefined, that indicates a serious issue
   if (!context) {
+    console.error('[useAuth] Context is null/undefined. This should not happen with default value.')
     throw new Error('useAuth must be used within an AuthProvider')
   }
+  
   return context
 }
 

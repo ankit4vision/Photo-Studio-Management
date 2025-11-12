@@ -76,21 +76,63 @@ class SettingController extends Controller
      */
     public function testEmail(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-        ]);
+        try {
+            $validated = $request->validate([
+                'email' => 'required|email|max:255',
+            ]);
 
-        $result = $this->emailService->sendEmailImmediately(
-            $request->email,
-            'test',
-            ['message' => 'This is a test email']
-        );
+            $result = $this->emailService->sendEmailImmediately(
+                $validated['email'],
+                'test',
+                [
+                    'message' => 'This is a test email from ' . config('app.name'),
+                    'timestamp' => now()->toDateTimeString(),
+                ]
+            );
 
-        if ($result) {
-            return response()->json(['success' => true, 'message' => 'Test email sent successfully']);
+            if ($result) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Test email sent successfully to ' . $validated['email']
+                ]);
+            }
+
+            // If result is false, check the logs for the actual error
+            // The error should already be logged in EmailService
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send test email. Please check your email configuration and ensure SMTP Host is a valid hostname (not an email address). Check Laravel logs for details.'
+            ], 500);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Test email error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            
+            // Return user-friendly error message
+            $errorMessage = $e->getMessage();
+            
+            // Provide helpful message for common SMTP host issues
+            if (strpos($errorMessage, 'SMTP Host cannot be an email address') !== false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage
+                ], 422);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => $errorMessage ?: 'Failed to send test email. Please check your email configuration.'
+            ], 500);
         }
-
-        return response()->json(['success' => false, 'message' => 'Failed to send test email'], 500);
     }
 
     /**

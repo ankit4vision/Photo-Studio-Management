@@ -45,6 +45,51 @@ class SettingsService {
     }
   }
 
+  // Send test email
+  async sendTestEmail(email) {
+    try {
+      // Validate email format before sending
+      if (!email || !email.trim()) {
+        return {
+          success: false,
+          message: 'Email address is required'
+        }
+      }
+
+      const emailRegex = /\S+@\S+\.\S+/
+      if (!emailRegex.test(email.trim())) {
+        return {
+          success: false,
+          message: 'Please enter a valid email address'
+        }
+      }
+
+      const response = await apiClient.post('/settings/test-email', { 
+        email: email.trim() 
+      })
+      
+      return {
+        success: true,
+        data: response.data,
+        message: response.data?.message || 'Test email sent successfully'
+      }
+    } catch (error) {
+      const errorResponse = handleApiError(error)
+      
+      // Map validation errors to user-friendly messages
+      if (errorResponse.status === 422 && errorResponse.errors) {
+        const errorMessages = Object.values(errorResponse.errors).flat()
+        return {
+          success: false,
+          message: errorMessages.join(', ') || 'Invalid email address',
+          errors: errorResponse.errors
+        }
+      }
+      
+      return errorResponse
+    }
+  }
+
   // Get setting by ID
   async getSettingById(id) {
     try {
@@ -60,7 +105,7 @@ class SettingsService {
   }
 
   // Get setting by key
-  async getSettingByKey(key, section) {
+  async getSettingByKey(key, section, suppressNotFoundError = false) {
     try {
       const params = {}
       if (section) {
@@ -77,6 +122,30 @@ class SettingsService {
         message: 'Setting fetched successfully',
       }
     } catch (error) {
+      // For 404 errors, if suppressNotFoundError is true, return a clean not found response
+      // This is expected when checking if a setting exists before creating it
+      if (suppressNotFoundError) {
+        // Handle 404 from response
+        if (error.response?.status === 404) {
+          return {
+            success: false,
+            data: null,
+            status: 404,
+            error: 'not_found',
+            message: 'Setting not found'
+          }
+        }
+        // Handle network errors or errors without response (also treat as not found for settings lookup)
+        if (!error.response) {
+          return {
+            success: false,
+            data: null,
+            status: 404,
+            error: 'not_found',
+            message: 'Setting not found'
+          }
+        }
+      }
       return handleApiError(error)
     }
   }
@@ -141,7 +210,8 @@ class SettingsService {
     const normalizedSection = section || 'general'
     const normalizedValue = value === undefined || value === null ? '' : String(value)
 
-    const lookup = await this.getSettingByKey(key, normalizedSection)
+    // Suppress 404 error logging when checking if setting exists (expected behavior)
+    const lookup = await this.getSettingByKey(key, normalizedSection, true)
 
     if (lookup.success && lookup.data) {
       return this.updateSettingByKey(key, { value: normalizedValue }, normalizedSection)
@@ -206,9 +276,14 @@ class SettingsService {
         // Invoice Settings
         { key: 'invoice_prefix', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_prefix'], type: 'string' },
         // Email Settings
-        { key: 'supportEmail', section: 'Email Settings', formPath: ['emailSettings', 'supportEmail'], type: 'string' },
-        { key: 'adminEmail', section: 'Email Settings', formPath: ['emailSettings', 'adminEmail'], type: 'string' },
-        { key: 'enableOrderNotifications', section: 'Email Settings', formPath: ['emailSettings', 'enableOrderNotifications'], type: 'boolean' },
+        { key: 'mailer', section: 'Email Settings', formPath: ['emailSettings', 'mailer'], type: 'string' },
+        { key: 'host', section: 'Email Settings', formPath: ['emailSettings', 'host'], type: 'string' },
+        { key: 'port', section: 'Email Settings', formPath: ['emailSettings', 'port'], type: 'string' },
+        { key: 'username', section: 'Email Settings', formPath: ['emailSettings', 'username'], type: 'string' },
+        { key: 'password', section: 'Email Settings', formPath: ['emailSettings', 'password'], type: 'string' },
+        { key: 'encryption', section: 'Email Settings', formPath: ['emailSettings', 'encryption'], type: 'string' },
+        { key: 'from_address', section: 'Email Settings', formPath: ['emailSettings', 'from_address'], type: 'string' },
+        { key: 'from_name', section: 'Email Settings', formPath: ['emailSettings', 'from_name'], type: 'string' },
         // Currency & Regional
         { key: 'currency', section: 'Currency & Regional', formPath: ['currencyRegional', 'currency'], type: 'string' },
         { key: 'dateFormat', section: 'Currency & Regional', formPath: ['currencyRegional', 'dateFormat'], type: 'string' },
@@ -367,9 +442,14 @@ class SettingsService {
         invoice_prefix: 'INV',
       },
       emailSettings: {
-        supportEmail: '',
-        adminEmail: '',
-        enableOrderNotifications: false,
+        mailer: 'smtp',
+        host: '',
+        port: '',
+        username: '',
+        password: '',
+        encryption: 'tls',
+        from_address: '',
+        from_name: '',
       },
       currencyRegional: {
         currency: 'INR',
@@ -382,6 +462,9 @@ class SettingsService {
         accessKey: '',
         secretKey: '',
         useSSL: true,
+      },
+      appSettings: {
+        web_url: '',
       }
     }
 
@@ -393,9 +476,14 @@ class SettingsService {
       'gstNumber': { section: 'Business Information', field: 'businessInfo', prop: 'gstNumber', type: 'string', useDefaultIfEmpty: false },
       'businessAddress': { section: 'Business Information', field: 'businessInfo', prop: 'businessAddress', type: 'string', useDefaultIfEmpty: false },
       'invoice_prefix': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_prefix', type: 'string', useDefaultIfEmpty: true },
-      'supportEmail': { section: 'Email Settings', field: 'emailSettings', prop: 'supportEmail', type: 'string', useDefaultIfEmpty: false },
-      'adminEmail': { section: 'Email Settings', field: 'emailSettings', prop: 'adminEmail', type: 'string', useDefaultIfEmpty: false },
-      'enableOrderNotifications': { section: 'Email Settings', field: 'emailSettings', prop: 'enableOrderNotifications', type: 'boolean', useDefaultIfEmpty: true },
+      'mailer': { section: 'Email Settings', field: 'emailSettings', prop: 'mailer', type: 'string', useDefaultIfEmpty: true },
+      'host': { section: 'Email Settings', field: 'emailSettings', prop: 'host', type: 'string', useDefaultIfEmpty: false },
+      'port': { section: 'Email Settings', field: 'emailSettings', prop: 'port', type: 'string', useDefaultIfEmpty: false },
+      'username': { section: 'Email Settings', field: 'emailSettings', prop: 'username', type: 'string', useDefaultIfEmpty: false },
+      'password': { section: 'Email Settings', field: 'emailSettings', prop: 'password', type: 'string', useDefaultIfEmpty: false },
+      'encryption': { section: 'Email Settings', field: 'emailSettings', prop: 'encryption', type: 'string', useDefaultIfEmpty: true },
+      'from_address': { section: 'Email Settings', field: 'emailSettings', prop: 'from_address', type: 'string', useDefaultIfEmpty: false },
+      'from_name': { section: 'Email Settings', field: 'emailSettings', prop: 'from_name', type: 'string', useDefaultIfEmpty: false },
       'currency': { section: 'Currency & Regional', field: 'currencyRegional', prop: 'currency', type: 'string', useDefaultIfEmpty: true },
       'dateFormat': { section: 'Currency & Regional', field: 'currencyRegional', prop: 'dateFormat', type: 'string', useDefaultIfEmpty: true },
       'timeZone': { section: 'Currency & Regional', field: 'currencyRegional', prop: 'timeZone', type: 'string', useDefaultIfEmpty: true },
@@ -404,6 +492,7 @@ class SettingsService {
       's3_access_key': { section: 'S3 Settings', field: 's3Settings', prop: 'accessKey', type: 'string', useDefaultIfEmpty: false },
       's3_secret_key': { section: 'S3 Settings', field: 's3Settings', prop: 'secretKey', type: 'string', useDefaultIfEmpty: false },
       's3_use_ssl': { section: 'S3 Settings', field: 's3Settings', prop: 'useSSL', type: 'boolean', useDefaultIfEmpty: true },
+      'web_url': { section: 'App Settings', field: 'appSettings', prop: 'web_url', type: 'string', useDefaultIfEmpty: false },
     }
 
     // If API response is null, undefined, or empty array, return defaults
@@ -445,6 +534,12 @@ class SettingsService {
         // Handle empty string for fields that should use defaults
         if (mapping.useDefaultIfEmpty && value === '') {
           return // Keep default value
+        }
+
+        // Special handling for port field - always use empty string if value is '587' (old default)
+        if (mapping.prop === 'port' && value === '587') {
+          formData[mapping.field][mapping.prop] = ''
+          return
         }
 
         // Convert value based on type

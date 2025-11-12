@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Container, Row, Col, Form, FormControl, Button as RBButton } from 'react-bootstrap'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faLock, faCheckCircle, faArrowLeft } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from '../../components'
@@ -9,15 +9,34 @@ import { ThemeToggle } from '../../components'
 import '../../styles/auth.css'
 
 const ResetPassword = () => {
+  const [searchParams] = useSearchParams()
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: ''
   })
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
+  const [token, setToken] = useState('')
+  const [email, setEmail] = useState('')
 
-  const { success, error } = useToast()
+  const { success, error: showError } = useToast()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const tokenParam = searchParams.get('token')
+    const emailParam = searchParams.get('email')
+    
+    if (!tokenParam || !emailParam) {
+      showError('Invalid reset link. Please request a new password reset.')
+      setTimeout(() => {
+        navigate('/forgot-password')
+      }, 2000)
+      return
+    }
+    
+    setToken(tokenParam)
+    setEmail(emailParam)
+  }, [searchParams, navigate, showError])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -41,8 +60,8 @@ const ResetPassword = () => {
     // Password validation - consistent with project standards
     if (!formData.password?.trim()) {
       newErrors.password = 'Password is required'
-    } else if (formData.password.trim().length < 6) {
-      newErrors.password = 'Password must be at least 6 characters'
+    } else if (formData.password.trim().length < 8) {
+      newErrors.password = 'Password must be at least 8 characters'
     }
 
     // Confirm password validation - consistent with project standards
@@ -63,23 +82,47 @@ const ResetPassword = () => {
       return
     }
 
+    if (!token || !email) {
+      showError('Invalid reset link. Please request a new password reset.')
+      return
+    }
+
     setLoading(true)
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      const { default: authService } = await import('../../services/authService')
+      const result = await authService.resetPassword({
+        token,
+        email,
+        password: formData.password.trim(),
+        password_confirmation: formData.confirmPassword.trim(),
+      })
 
-      // In a real app, this would update the password via API
-      console.log('Password reset completed for new password:', formData.password.trim())
-
-      success('Password reset successful! Please sign in with your new password.')
-      
-      // Redirect to login
-      setTimeout(() => {
-        navigate('/login')
-      }, 1000)
+      if (result.success) {
+        success(result.message || 'Password reset successful! Please sign in with your new password.')
+        
+        // Clear form
+        setFormData({
+          password: '',
+          confirmPassword: ''
+        })
+        
+        // Redirect to login
+        setTimeout(() => {
+          navigate('/login')
+        }, 2000)
+      } else {
+        // Handle validation errors
+        if (result.errors) {
+          setErrors(result.errors)
+          showError(result.message || 'Please fix the errors and try again.')
+        } else {
+          showError(result.message || 'Password reset failed. Please try again.')
+        }
+      }
     } catch (err) {
-      error('Password reset failed. Please try again.')
+      console.error('Reset password error:', err)
+      showError('Password reset failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -152,7 +195,7 @@ const ResetPassword = () => {
                     <FontAwesomeIcon icon={faCheckCircle} className="me-2" />
                     Password requirements:
                     <ul className="mb-0 mt-2 small">
-                      <li>At least 6 characters long</li>
+                      <li>At least 8 characters long</li>
                       <li>Must match confirmation</li>
                     </ul>
                   </small>

@@ -25,8 +25,13 @@ class User extends Authenticatable
         'status',
         'address',
         'city',
+        'state',
+        'zip_code',
         'country',
         'bio',
+        'avatar',
+        'date_of_birth',
+        'gender',
     ];
 
     /**
@@ -47,6 +52,26 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    /**
+     * Get the avatar URL attribute.
+     *
+     * @return string|null
+     */
+    public function getAvatarUrlAttribute()
+    {
+        if (!$this->avatar) {
+            return null;
+        }
+
+        // If it's already a full URL, return as is
+        if (filter_var($this->avatar, FILTER_VALIDATE_URL)) {
+            return $this->avatar;
+        }
+
+        // Otherwise, return public storage URL
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->avatar);
+    }
 
     /**
      * Get the roles that belong to the user.

@@ -45,17 +45,29 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
     
-    // Log error in development
+    // Log error in development (skip 404 for settings lookup as it's expected)
     if (import.meta.env.DEV) {
-      console.error('[API Error]', {
-        url: error.config?.url,
-        method: error.config?.method,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.response?.data?.detail || error.response?.data?.message || error.message,
-        fullError: error.response || error,
-      })
+      const isSettingsLookup = error.config?.url?.includes('/global-settings/key/') && 
+                               (error.response?.status === 404 || !error.response)
+      const isSettingsSave = error.config?.url?.includes('/global-settings/') && 
+                            (error.config?.method === 'post' || error.config?.method === 'put') &&
+                            (error.response?.status === 404 || !error.response)
+      
+      // Don't log 404 errors or network errors for settings lookup (expected behavior)
+      if (!isSettingsLookup && !isSettingsSave) {
+        // Only log if we have a response or it's a real error
+        if (error.response || (!error.response && !error.config?.url?.includes('/global-settings/key/'))) {
+          console.error('[API Error]', {
+            url: error.config?.url,
+            method: error.config?.method,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.response?.data?.detail || error.response?.data?.message || error.message,
+            fullError: error.response || error,
+          })
+        }
+      }
       
       // Special handling for 401 errors
       if (error.response?.status === 401) {

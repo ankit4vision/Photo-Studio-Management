@@ -1,256 +1,436 @@
-# NZ Grocery Admin - Project Structure & Development Guidelines
+# Photo Studio Management - Admin Frontend Project Structure & Development Guidelines
 
-## 📁 Project Folder Structure
+## 📋 Table of Contents
+1. [Project Overview](#project-overview)
+2. [Complete Project Structure](#complete-project-structure)
+3. [Technology Stack](#technology-stack)
+4. [Module Overview](#module-overview)
+5. [Development Guidelines](#development-guidelines)
+6. [Component Architecture](#component-architecture)
+7. [State Management](#state-management)
+8. [API Integration](#api-integration)
+9. [Styling & Theming](#styling--theming)
+10. [Routing & Navigation](#routing--navigation)
+11. [Authentication & Authorization](#authentication--authorization)
+12. [Best Practices](#best-practices)
+
+---
+
+## 📱 Project Overview
+
+**Photo Studio Management Admin** is a modern React-based admin dashboard for managing a photo studio business. It provides comprehensive features for managing branches, packages, customers, orders, payments, transactions, reports, users, roles, and system settings.
+
+### Key Features
+- 🎨 Modern UI with React Bootstrap and CoreUI
+- 🌓 Dark/Light theme support
+- 🔐 Role-based access control (RBAC)
+- 📊 Dashboard with analytics and charts
+- 📄 PDF export functionality
+- 🔄 Real-time data updates
+- 📱 Responsive design
+- 🎯 Permission-based navigation
+
+---
+
+## 📁 Complete Project Structure
 
 ```
 admin/
-├── 📁 backup/                          # Backup files
-│   ├── Charts.jsx                      # Backup chart component
-│   ├── Colors.jsx                      # Backup color component
-│   ├── Page404.jsx                    # Backup 404 page
-│   ├── Page500.jsx                    # Backup 500 page
-│   ├── README.md                       # Backup documentation
-│   └── Typography.jsx                 # Backup typography component
-│
-├── 📁 dist/                            # Build output directory
-│   ├── 📁 assets/                      # Compiled assets
-│   ├── favicon.ico                     # Site favicon
-│   ├── index.html                      # Built HTML
-│   ├── manifest.json                   # PWA manifest
-│   └── vite.svg                        # Vite logo
+├── 📁 backup/                          # Backup files (legacy components)
+│   ├── Charts.jsx
+│   ├── Colors.jsx
+│   ├── Page404.jsx
+│   ├── Page500.jsx
+│   ├── README.md
+│   └── Typography.jsx
 │
 ├── 📁 public/                          # Static assets
-│   ├── favicon.ico                     # Site favicon
-│   ├── manifest.json                   # PWA manifest
-│   └── vite.svg                        # Vite logo
+│   ├── favicon.ico
+│   ├── manifest.json
+│   └── vite.svg
 │
-├── 📁 src/                             # Source code
-│   ├── 📁 assets/                      # Static assets
+├── 📁 src/                            # Source code
+│   ├── 📁 assets/                     # Static assets
 │   │   ├── 📁 brand/                  # Brand assets
 │   │   │   ├── logo.jsx               # Logo component
 │   │   │   └── sygnet.jsx             # Sygnet component
 │   │   ├── 📁 images/                 # Image assets
 │   │   │   ├── 📁 avatars/            # User avatars (1-9.jpg)
-│   │   │   ├── angular.jpg            # Framework images
-│   │   │   ├── components.webp        # Components image
-│   │   │   ├── icons.webp             # Icons image
-│   │   │   ├── react.jpg              # Framework images
-│   │   │   └── vue.jpg                # Framework images
+│   │   │   ├── angular.jpg
+│   │   │   ├── components.webp
+│   │   │   ├── icons.webp
+│   │   │   ├── react.jpg
+│   │   │   └── vue.jpg
 │   │   ├── 📁 logo/                   # Logo assets
-│   │   │   └── logo-transprant.png    # Main logo (transparent)
+│   │   │   └── logo-transprant.png   # Main logo (transparent)
 │   │   ├── login-background.png       # Auth background
 │   │   └── react.svg                  # React logo
 │   │
 │   ├── 📁 components/                 # Reusable components
 │   │   ├── 📁 common/                 # Common/shared components
-│   │   │   ├── Button.jsx             # Reusable button component
+│   │   │   ├── Button.jsx            # Reusable button component
 │   │   │   ├── Card.jsx               # Reusable card component
 │   │   │   ├── FormFields.jsx         # Form input components
-│   │   │   ├── FormModal.jsx          # Modal for forms
-│   │   │   ├── GlobalSpinner.jsx      # Global loading spinner
-│   │   │   ├── ImageUpload.jsx        # Drag-and-drop image upload component
+│   │   │   ├── FormModal.jsx          # Modal wrapper for forms
+│   │   │   ├── GlobalSpinner.jsx     # Global loading spinner
+│   │   │   ├── ImageUpload.jsx        # Drag-and-drop image upload
 │   │   │   ├── Modal.jsx              # Reusable modal component
-│   │   │   ├── ScrollToTop.jsx        # Scroll to top component
-│   │   │   ├── StepIndicator.jsx      # Multi-step form progress indicator
-│   │   │   ├── Table.jsx              # Advanced data table with sorting/pagination
-│   │   │   ├── ThemeToggle.jsx        # Theme switching component (light/dark)
+│   │   │   ├── ScrollToTop.jsx       # Scroll to top component
+│   │   │   ├── StepIndicator.jsx     # Multi-step form progress
+│   │   │   ├── Table.jsx              # Advanced data table (sorting/pagination)
+│   │   │   ├── ThemeToggle.jsx        # Theme switching (light/dark)
 │   │   │   └── ToastProvider.jsx      # Toast notifications
 │   │   │
 │   │   ├── 📁 docs/                   # Documentation components
-│   │   │   ├── DocsComponents.jsx     # Component documentation
-│   │   │   ├── DocsExample.jsx        # Example documentation
-│   │   │   ├── DocsIcons.jsx          # Icon documentation
-│   │   │   └── DocsLink.jsx           # Link documentation
+│   │   │   ├── DocsComponents.jsx
+│   │   │   ├── DocsExample.jsx
+│   │   │   ├── DocsIcons.jsx
+│   │   │   └── DocsLink.jsx
 │   │   │
 │   │   ├── 📁 layout/                 # Layout components
-│   │   │   ├── AppBreadcrumb.jsx      # Breadcrumb navigation
-│   │   │   ├── AppContent.jsx         # Main content wrapper
-│   │   │   ├── AppFooter.jsx          # Application footer
-│   │   │   ├── AppHeader.jsx          # Application header
-│   │   │   ├── AppSidebar.jsx         # Application sidebar (CoreUI)
-│   │   │   ├── AppSidebarNav.jsx      # Sidebar navigation
-│   │   │   ├── PermissionRoute.jsx    # Route permission wrapper
-│   │   │   └── 📁 header/             # Header sub-components
+│   │   │   ├── AppBreadcrumb.jsx     # Breadcrumb navigation
+│   │   │   ├── AppContent.jsx        # Main content wrapper + routes
+│   │   │   ├── AppFooter.jsx         # Application footer
+│   │   │   ├── AppHeader.jsx         # Application header
+│   │   │   ├── AppSidebar.jsx        # Sidebar (CoreUI)
+│   │   │   ├── AppSidebarNav.jsx     # Sidebar navigation
+│   │   │   ├── PermissionRoute.jsx   # Route permission wrapper
+│   │   │   └── 📁 header/            # Header sub-components
 │   │   │       ├── AppHeaderDropdown.jsx
 │   │   │       └── index.jsx
 │   │   │
-│   │   ├── 📁 pages/                  # Page-specific components
-│   │   │   ├── 📁 branches/           # Branch management
-│   │   │   │   └── BranchForm.jsx     # Branch form component
-│   │   │   ├── 📁 customers/          # Customer management
-│   │   │   │   ├── CustomerDetailsModal.jsx # Customer details modal component
-│   │   │   │   ├── CustomerForm.jsx   # Customer form component
-│   │   │   │   ├── README.md          # Customer components documentation
-│   │   │   │   └── SuspendCustomerModal.jsx # Customer suspension modal
-│   │   │   ├── 📁 orders/             # Order management
-│   │   │   │   ├── OrderDetailsModal.jsx # Order details modal component
-│   │   │   │   ├── OrderForm.jsx      # Order form component
-│   │   │   │   └── README.md          # Order components documentation
-│   │   │   ├── 📁 packages/           # Package management
-│   │   │   │   └── PackageForm.jsx    # Package form component
-│   │   │   ├── 📁 payments/            # Payment management
-│   │   │   │   └── PaymentForm.jsx    # Payment form component
-│   │   │   ├── 📁 roles/              # Role management
-│   │   │   │   └── RoleForm.jsx       # Role form component
-│   │   │   ├── 📁 transactions/       # Transaction management
-│   │   │   │   ├── TransactionDetailsModal.jsx # Transaction details modal
-│   │   │   │   └── TransactionForm.jsx # Transaction form component
-│   │   │   └── 📁 users/              # User management
-│   │   │       ├── 📁 __tests__/      # User component tests
+│   │   ├── 📁 pages/                 # Page-specific components
+│   │   │   ├── 📁 branches/          # Branch management
+│   │   │   │   └── BranchForm.jsx    # Branch form component
+│   │   │   ├── 📁 customers/         # Customer management
+│   │   │   │   ├── CustomerDetailsModal.jsx
+│   │   │   │   ├── CustomerForm.jsx
+│   │   │   │   ├── README.md
+│   │   │   │   └── SuspendCustomerModal.jsx
+│   │   │   ├── 📁 orders/            # Order management
+│   │   │   │   ├── OrderDetailsModal.jsx
+│   │   │   │   ├── OrderForm.jsx
+│   │   │   │   └── README.md
+│   │   │   ├── 📁 packages/          # Package management
+│   │   │   │   └── PackageForm.jsx
+│   │   │   ├── 📁 payments/          # Payment management
+│   │   │   │   ├── PaymentDetailsModal.jsx
+│   │   │   │   └── PaymentForm.jsx
+│   │   │   ├── 📁 roles/            # Role management
+│   │   │   │   └── RoleForm.jsx
+│   │   │   ├── 📁 transactions/      # Transaction management
+│   │   │   │   ├── TransactionDetailsModal.jsx
+│   │   │   │   └── TransactionForm.jsx
+│   │   │   └── 📁 users/            # User management
+│   │   │       ├── 📁 __tests__/     # User component tests
 │   │   │       │   └── ProfileForm.test.js
-│   │   │       ├── AddressSection.jsx # Address form section
-│   │   │       ├── PersonalInfoSection.jsx # Personal info section
-│   │   │       ├── ProfileForm.jsx    # Complete profile form
-│   │   │       ├── ProfilePictureSection.jsx # Profile picture section
-│   │   │       └── UserForm.jsx       # User form component
+│   │   │       ├── AddressSection.jsx      # Address information section (with state, zipCode)
+│   │   │       ├── PersonalInfoSection.jsx # Personal info section (with dateOfBirth, gender)
+│   │   │       ├── ProfileForm.jsx
+│   │   │       ├── ProfilePictureSection.jsx # Avatar upload/delete section
+│   │   │       └── UserForm.jsx
 │   │   │
-│   │   ├── index.jsx                  # Component exports
-│   │   └── README.md                  # Components documentation
+│   │   ├── index.jsx                 # Component exports
+│   │   └── README.md                 # Components documentation
 │   │
-│   ├── 📁 config/                      # Configuration files
-│   │   └── apiClient.js                # API client configuration
+│   ├── 📁 config/                    # Configuration files
+│   │   ├── apiClient.js              # Axios API client configuration
+│   │   └── config.js                  # App configuration (env vars)
 │   │
-│   ├── 📁 constants/                   # Application constants
-│   │   ├── api.js                      # API endpoint constants
-│   │   ├── permissions.js              # Permission constants
-│   │   └── README.md                   # Constants documentation
+│   ├── 📁 constants/                 # Application constants
+│   │   ├── api.js                    # API endpoint constants
+│   │   ├── permissions.js            # Permission constants & helpers
+│   │   └── README.md
 │   │
-│   ├── 📁 context/                    # React Context providers
-│   │   ├── AuthContext.jsx            # Authentication context
-│   │   └── README.md                  # Context documentation
+│   ├── 📁 context/                   # React Context providers
+│   │   ├── AuthContext.jsx           # Authentication context
+│   │   └── README.md
 │   │
-│   ├── 📁 hooks/                       # Custom React hooks
-│   │   ├── index.jsx                   # Hook exports
-│   │   └── README.md                   # Hooks documentation
+│   ├── 📁 hooks/                     # Custom React hooks
+│   │   ├── index.jsx                 # Hook exports
+│   │   └── README.md
 │   │
-│   ├── 📁 layout/                      # Layout components
-│   │   ├── DefaultLayout.jsx          # Default page layout
-│   │   └── PrivateRoute.jsx           # Protected route wrapper
+│   ├── 📁 layout/                     # Layout components
+│   │   ├── DefaultLayout.jsx         # Default page layout wrapper
+│   │   └── PrivateRoute.jsx         # Protected route wrapper
 │   │
 │   ├── 📁 mock/                       # Mock data for development
-│   │   ├── branches.json              # Mock branch data
-│   │   ├── customers.json             # Mock customer data
-│   │   ├── orders.json                # Mock order data
-│   │   ├── packages.json              # Mock package data
-│   │   ├── photographers.json         # Mock photographer data
-│   │   ├── profile.json               # Mock profile data
-│   │   ├── roles.json                 # Mock role data
-│   │   ├── settings.json              # Mock settings data
-│   │   ├── transactions.json          # Mock transaction data
-│   │   └── users.json                 # Mock user data
+│   │   ├── branches.json
+│   │   ├── customers.json
+│   │   ├── orders.json
+│   │   ├── packages.json
+│   │   ├── photographers.json
+│   │   ├── profile.json
+│   │   ├── roles.json
+│   │   ├── settings.json
+│   │   ├── transactions.json
+│   │   └── users.json
 │   │
-│   ├── 📁 pages/                      # Page components
-│   │   └── 📁 Auth/                   # Authentication pages
-│   │       ├── ForgotPassword.jsx     # Forgot password page
-│   │       ├── Login.jsx              # Login page
-│   │       └── ResetPassword.jsx      # Reset password page
+│   ├── 📁 pages/                     # Page components
+│   │   └── 📁 Auth/                  # Authentication pages
+│   │       ├── ForgotPassword.jsx    # Forgot password (email-based)
+│   │       ├── Login.jsx             # Login page
+│   │       └── ResetPassword.jsx     # Reset password (with token)
 │   │
-│   ├── 📁 scss/                       # SCSS stylesheets
-│   │   ├── examples.scss              # Example styles
-│   │   ├── style.scss                 # Main stylesheet
+│   ├── 📁 scss/                      # SCSS stylesheets
+│   │   ├── examples.scss
+│   │   ├── style.scss                # Main stylesheet
 │   │   └── 📁 vendors/                # Third-party styles
-│   │       └── simplebar.scss         # SimpleBar styles
+│   │       └── simplebar.scss
 │   │
-│   ├── 📁 services/                   # API service layer
-│   │   ├── authService.js             # Authentication API service
-│   │   ├── branchService.js           # Branch API service
-│   │   ├── customerService.js         # Customer API service
-│   │   ├── orderService.js            # Order API service
-│   │   ├── packageService.js          # Package API service
-│   │   ├── paymentService.js          # Payment API service
-│   │   ├── profileService.js          # Profile API service
-│   │   ├── README.md                  # Services documentation
-│   │   ├── reportService.js           # Report API service
-│   │   ├── roleService.js             # Role API service
-│   │   ├── settingsService.js         # Settings API service
-│   │   ├── transactionService.js      # Transaction API service
-│   │   └── userService.js             # User API service
+│   ├── 📁 services/                  # API service layer
+│   │   ├── authService.js            # Authentication API (login, logout, forgot/reset password)
+│   │   ├── branchService.js          # Branch API
+│   │   ├── customerService.js        # Customer API
+│   │   ├── orderService.js           # Order API
+│   │   ├── packageService.js         # Package API
+│   │   ├── paymentService.js        # Payment API
+│   │   ├── permissionService.js      # Permission API
+│   │   ├── profileService.js         # Profile API (get/update profile, change password, avatar)
+│   │   ├── README.md
+│   │   ├── reportService.js          # Report API
+│   │   ├── roleService.js            # Role API
+│   │   ├── settingsService.js        # Settings API (email settings, test email)
+│   │   ├── transactionService.js     # Transaction API
+│   │   └── userService.js            # User API
 │   │
-│   ├── 📁 styles/                     # Additional styles
-│   │   └── auth.css                   # Authentication styles
+│   ├── 📁 styles/                    # Additional styles
+│   │   └── auth.css                  # Authentication styles
 │   │
 │   ├── 📁 utils/                      # Utility functions
-│   │   ├── errorHandler.js            # Error handling utilities
+│   │   ├── errorHandler.js           # Error handling utilities
 │   │   ├── pdfExport.js               # PDF export utilities
-│   │   └── responseHandler.js         # Response handling utilities
+│   │   └── responseHandler.js        # Response handling utilities
 │   │
-│   ├── 📁 views/                      # Main view components
-│   │   ├── 📁 branches/               # Branch management views
-│   │   │   ├── BranchesList.jsx       # Branches list view
-│   │   │   └── BranchFormView.jsx     # Branch form view
-│   │   ├── 📁 customers/              # Customer management views
-│   │   │   ├── CustomersList.jsx      # Customers list view
-│   │   │   ├── CustomerFormView.jsx   # Customer form view
-│   │   │   ├── CustomerLedgerView.jsx # Customer ledger view
-│   │   │   └── CustomerWalletView.jsx # Customer wallet view
-│   │   ├── 📁 dashboard/              # Dashboard views
-│   │   │   ├── Dashboard.jsx         # Main dashboard
-│   │   │   └── MainChart.jsx          # Dashboard chart component
-│   │   ├── 📁 orders/                 # Order management views
-│   │   │   ├── OrdersList.jsx         # Orders list view
-│   │   │   └── OrderFormView.jsx      # Order form view
-│   │   ├── 📁 packages/               # Package management views
-│   │   │   ├── PackagesList.jsx       # Packages list view
-│   │   │   └── PackageFormView.jsx    # Package form view
-│   │   ├── 📁 payments/               # Payment management views
-│   │   │   ├── PaymentsList.jsx       # Payments list view
-│   │   │   └── PaymentFormView.jsx    # Payment form view
-│   │   ├── 📁 reports/                # Report views
-│   │   │   ├── BranchReport.jsx       # Branch report view
-│   │   │   ├── LedgerReport.jsx       # Ledger report view
-│   │   │   ├── SalesReport.jsx        # Sales report view
-│   │   │   └── StaffReport.jsx        # Staff report view
-│   │   ├── 📁 roles/                  # Role management views
-│   │   │   └── RolesList.jsx          # Roles list view
-│   │   ├── 📁 settings/               # Settings views
-│   │   │   └── Settings.jsx           # Settings page
-│   │   ├── 📁 transactions/           # Transaction management views
-│   │   │   ├── TransactionsList.jsx   # Transactions list view
-│   │   │   └── TransactionFormView.jsx # Transaction form view
-│   │   └── 📁 users/                  # User management views
-│   │       ├── Profile.jsx            # User profile view
-│   │       └── UsersList.jsx          # Users list view
+│   ├── 📁 views/                     # Main view components
+│   │   ├── 📁 branches/              # Branch management views
+│   │   │   └── BranchesList.jsx
+│   │   ├── 📁 customers/             # Customer management views
+│   │   │   └── CustomersList.jsx
+│   │   ├── 📁 dashboard/             # Dashboard views
+│   │   │   ├── Dashboard.jsx        # Main dashboard
+│   │   │   └── MainChart.jsx         # Dashboard chart component
+│   │   ├── 📁 orders/                # Order management views
+│   │   │   └── OrdersList.jsx
+│   │   ├── 📁 packages/              # Package management views
+│   │   │   └── PackagesList.jsx
+│   │   ├── 📁 payments/              # Payment management views
+│   │   │   ├── PaymentFormView.jsx
+│   │   │   └── PaymentsList.jsx
+│   │   ├── 📁 reports/               # Report views
+│   │   │   ├── BranchReport.jsx
+│   │   │   ├── LedgerReport.jsx
+│   │   │   ├── SalesReport.jsx
+│   │   │   └── StaffReport.jsx
+│   │   ├── 📁 roles/                 # Role management views
+│   │   │   └── RolesList.jsx
+│   │   ├── 📁 settings/              # Settings views
+│   │   │   └── Settings.jsx
+│   │   ├── 📁 transactions/          # Transaction management views
+│   │   │   ├── TransactionFormView.jsx
+│   │   │   └── TransactionsList.jsx
+│   │   └── 📁 users/                 # User management views
+│   │       ├── Profile.jsx
+│   │       └── UsersList.jsx
 │   │
-│   ├── _nav.jsx                       # Navigation configuration
-│   ├── api.js                         # Mock API service setup
-│   ├── App.css                        # Main app styles
-│   ├── App.jsx                        # Main app component
-│   ├── config.js                      # App configuration
-│   ├── main.jsx                       # App entry point
+│   ├── _nav.jsx                      # Navigation configuration
+│   ├── api.js                        # Mock API service setup
+│   ├── App.css                       # Main app styles
+│   ├── App.jsx                       # Main app component
+│   ├── config.js                     # App configuration
+│   ├── main.jsx                      # App entry point
 │   ├── routes.jsx                    # Route definitions (lazy loading)
-│   ├── routesConfig.jsx               # Route configuration
-│   ├── store.jsx                      # Redux store configuration
-│   └── utils.js                       # Utility functions
+│   ├── routesConfig.jsx              # Route configuration (breadcrumbs)
+│   ├── store.jsx                     # Redux store configuration
+│   └── utils.js                      # Utility functions
 │
-├── 📁 styles/                         # Global styles
-│   └── theme.css                      # Theme styles (CoreUI overrides)
+├── 📁 styles/                        # Global styles
+│   └── theme.css                     # Theme styles (CoreUI overrides)
 │
-├── env.example                        # Environment variables example
-├── eslint.config.js                   # ESLint configuration
-├── index.html                         # HTML template
-├── package.json                       # Dependencies and scripts
-├── package-lock.json                  # Dependency lock file
-├── README.md                          # Project documentation
-└── vite.config.js                     # Vite build configuration
+├── env.example                       # Environment variables example
+├── eslint.config.js                  # ESLint configuration
+├── index.html                        # HTML template
+├── package.json                      # Dependencies and scripts
+├── package-lock.json                 # Dependency lock file
+├── README.md                         # Project documentation
+└── vite.config.js                    # Vite build configuration
 ```
 
-### 🔐 Permission-Aware Frontend (2025-11 update)
+---
 
-- Sidebar navigation (`src/_nav.jsx` + `AppSidebar`) now tags each entry with a required permission (leveraging `PERMISSIONS` constants) and filters items for the current user via `usePermissions()`.
-- Routing (`AppContent.jsx`) wraps protected views (users, roles, branches, settings, etc.) with `PermissionRoute`, returning a friendly access-restricted panel when permission checks fail.
-- Feature UIs (e.g. `UsersList.jsx`, `RolesList.jsx`, `BranchesList.jsx`, `Settings.jsx`) guard action buttons, modals, and handlers so create/edit/delete flows only appear and execute when a user has the matching permission alias (e.g. `user:write`, `branch:delete`, `settings:write`).
-- `authService` maps backend permission slugs (`view_branch`, `edit_role`, etc.) into frontend aliases so role assignments in Laravel seeders drive the entire admin experience.
+## 🛠️ Technology Stack
 
-## 🎯 Development Rules & Guidelines
+### Core Technologies
+- **React 19.1.1** - UI library
+- **React DOM 19.1.1** - React rendering
+- **Vite 7.1.12 (Rolldown)** - Build tool with Rolldown optimization
+- **React Router DOM 7.7.1** - Client-side routing
 
-### 📋 Component Organization Rules
+### UI Frameworks
+- **React Bootstrap 2.10.10** - Primary UI component library (main content)
+- **CoreUI React 5.7.1** - UI library (sidebar and navigation only)
+- **Bootstrap 5.3.8** - CSS framework
+- **CoreUI Icons React 2.3.0** - Icon library (sidebar only)
+- **FontAwesome 7.1.0** - Icon library (main content)
+
+### State Management
+- **Redux 5.0.1** - State management
+- **React Redux 9.2.0** - React bindings for Redux
+- **React Context** - Authentication and theme context
+
+### HTTP & API
+- **Axios 1.12.2** - HTTP client
+
+### Charts & Visualization
+- **Chart.js 4.5.0** - Chart library
+- **@coreui/react-chartjs 3.0.0** - CoreUI Chart.js integration
+- **@coreui/chartjs 4.1.0** - CoreUI Chart.js
+
+### Utilities
+- **SimpleBar React 3.3.2** - Custom scrollbars
+- **Classnames 2.5.1** - Conditional class names
+- **Prop Types 15.8.1** - Runtime type checking
+
+### Development Tools
+- **ESLint 9.36.0** - Code linting
+- **Prettier 3.6.2** - Code formatting
+- **Sass 1.90.0** - CSS preprocessor
+- **PostCSS 8.5.6** - CSS processing
+- **Autoprefixer 10.4.21** - CSS vendor prefixes
+
+---
+
+## 📦 Module Overview
+
+### 1. **Authentication Module**
+- **Location**: `src/pages/Auth/`, `src/services/authService.js`
+- **Features**:
+  - Login with JWT token
+  - Forgot password flow (email-based, uses database email settings)
+  - Reset password (with token validation)
+  - Change password (for authenticated users)
+  - Token refresh
+  - Logout
+- **Status**: ✅ Fully implemented with API integration
+
+### 2. **Dashboard Module**
+- **Location**: `src/views/dashboard/`
+- **Features**:
+  - Statistics cards
+  - Charts and visualizations
+  - Recent activities
+  - Quick actions
+- **Status**: ✅ Implemented with mock data
+
+### 3. **Branch Management**
+- **Location**: `src/views/branches/`, `src/services/branchService.js`
+- **Features**:
+  - Branch list with statistics
+  - Create/Edit branch
+  - Delete branch
+  - Branch details
+- **Status**: 🟡 UI complete, API integration pending
+
+### 4. **Package Management**
+- **Location**: `src/views/packages/`, `src/services/packageService.js`
+- **Features**:
+  - Package list
+  - Create/Edit package
+  - Delete package
+  - Package details
+- **Status**: 🟡 UI complete, API integration pending
+
+### 5. **Customer Management**
+- **Location**: `src/views/customers/`, `src/services/customerService.js`
+- **Features**:
+  - Customer/Photographer list
+  - Customer details modal
+  - Create/Edit customer
+  - Suspend customer
+  - PDF export
+- **Status**: ✅ Fully implemented with mock data
+
+### 6. **Order Management**
+- **Location**: `src/views/orders/`, `src/services/orderService.js`
+- **Features**:
+  - Order list
+  - Create/Edit order (multi-package)
+  - Order details modal
+  - PDF invoice export
+  - Order status tracking
+- **Status**: 🟡 UI complete, API integration pending
+
+### 7. **Payment Management**
+- **Location**: `src/views/payments/`, `src/services/paymentService.js`
+- **Features**:
+  - Payment list
+  - Create payment
+  - Payment details
+- **Status**: 🔴 Placeholder, needs implementation
+
+### 8. **Transaction Management**
+- **Location**: `src/views/transactions/`, `src/services/transactionService.js`
+- **Features**:
+  - Transaction list
+  - Create transaction
+  - Transaction details modal
+- **Status**: 🔴 Placeholder, needs implementation
+
+### 9. **Report Management**
+- **Location**: `src/views/reports/`, `src/services/reportService.js`
+- **Features**:
+  - Sales report
+  - Ledger report
+  - Branch report
+  - Staff report
+- **Status**: 🔴 Placeholder, needs implementation
+
+### 10. **User Management**
+- **Location**: `src/views/users/`, `src/services/userService.js`, `src/services/profileService.js`
+- **Features**:
+  - User list
+  - Create/Edit user
+  - User profile (with avatar upload, personal info, address)
+  - Delete user
+  - User status management
+  - Change password
+- **Status**: ✅ Fully implemented with API integration
+
+### 11. **Role & Permission Management**
+- **Location**: `src/views/roles/`, `src/services/roleService.js`
+- **Features**:
+  - Role list
+  - Create/Edit role
+  - Assign permissions to roles
+  - Permission management
+- **Status**: ✅ Fully implemented with API integration
+
+### 12. **Settings Management**
+- **Location**: `src/views/settings/`, `src/services/settingsService.js`
+- **Features**:
+  - System settings
+  - Business Information settings
+  - Invoice Settings
+  - Email configuration (SMTP: host, port, user, password, from email/name)
+  - Test email functionality
+  - App Settings (Web URL)
+  - Currency & Regional Settings
+  - S3 storage configuration
+  - Global settings management
+- **Status**: ✅ Fully implemented with API integration
+
+---
+
+## 🎯 Development Guidelines
+
+### Component Organization Rules
 
 #### 1. **Component Location Rules**
-- **Common Components**: Place in `src/components/common/`
-- **Page-Specific Components**: Place in `src/components/pages/[feature]/`
-- **Layout Components**: Place in `src/components/layout/`
-- **View Components**: Place in `src/views/[feature]/`
-- **Page Components**: Place in `src/pages/[feature]/`
+- **Common Components**: `src/components/common/`
+- **Page-Specific Components**: `src/components/pages/[feature]/`
+- **Layout Components**: `src/components/layout/`
+- **View Components**: `src/views/[feature]/`
+- **Page Components**: `src/pages/[feature]/`
 
 #### 2. **Component Naming Rules**
 - Use **PascalCase** for component names
@@ -269,19 +449,19 @@ admin/
 - **Named exports** for sub-components or utilities
 - **Index files** for clean imports
 
-### 🎨 UI/UX Rules
+### UI/UX Rules
 
 #### 1. **UI Framework Rules**
 - **Primary Framework**: React Bootstrap (for main content)
 - **Sidebar Framework**: CoreUI React (for sidebar and navigation only)
 - **Icon Library**: FontAwesome (free solid icons) + CoreUI Icons (sidebar only)
 - **Styling**: Bootstrap classes + custom CSS + CoreUI overrides
-- **Theme**: Custom white sidebar with green accents
+- **Theme**: Custom white sidebar with purple/violet accents (#8b5cf6)
 - **Responsive Design**: Mobile-first approach
 
-#### 2. **Component Structure Rules**
+#### 2. **Component Structure Pattern**
 ```jsx
-// Standard Page Structure with React Bootstrap (Clean Layout - No Nested Cards)
+// Standard Page Structure with React Bootstrap
 <Container fluid>
   <Row>
     <Col xs={12}>
@@ -300,9 +480,9 @@ admin/
       <div className="bg-white rounded-3 shadow-sm p-4">
         {/* Section with Clean Header */}
         <div className="mb-5">
-          <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-success border-2">
-            <FontAwesomeIcon icon={faIcon} className="me-3 text-success fs-4" />
-            <h4 className="mb-0 text-success">Section Title</h4>
+          <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-primary border-2">
+            <FontAwesomeIcon icon={faIcon} className="me-3 text-primary fs-4" />
+            <h4 className="mb-0 text-primary">Section Title</h4>
           </div>
           
           {/* Content */}
@@ -310,7 +490,7 @@ admin/
             <Col md={6}>
               <Form.Group className="mb-3">
                 <Form.Label className="fw-semibold">Field Label</Form.Label>
-                <FormControl className="border-2" />
+                <Form.Control className="border-2" />
               </Form.Group>
             </Col>
           </Row>
@@ -321,9 +501,9 @@ admin/
 </Container>
 ```
 
-#### 3. **Form Structure Rules**
+#### 3. **Form Structure Pattern**
 ```jsx
-// Standard Form Structure with React Bootstrap (Enhanced Styling)
+// Standard Form Structure with React Bootstrap
 <Form>
   <Row>
     <Col xs={12} md={6}>
@@ -341,17 +521,17 @@ admin/
         <Form.Control.Feedback type="invalid">
           {errors.field}
         </Form.Control.Feedback>
-        <FormText className="text-muted">Helper text for the field.</FormText>
+        <Form.Text className="text-muted">Helper text</Form.Text>
       </Form.Group>
     </Col>
   </Row>
 </Form>
 ```
 
-#### 4. **Modal Structure Rules**
+#### 4. **Modal Structure Pattern**
 ```jsx
-// Standard Modal Structure with React Bootstrap
-<Modal show={visible} onHide={onClose}>
+// Standard Modal Structure
+<Modal show={visible} onHide={onClose} size="lg">
   <Modal.Header closeButton>
     <Modal.Title>Modal Title</Modal.Title>
   </Modal.Header>
@@ -365,76 +545,55 @@ admin/
 </Modal>
 ```
 
-#### 5. **Sidebar & Navigation Rules (CoreUI Only)**
+#### 5. **Table Component Usage**
 ```jsx
-// Navigation Configuration (_nav.jsx) - CoreUI Components
-const _nav = [
-  {
-    component: CNavTitle,
-    name: 'Main',
-  },
-  {
-    component: CNavGroup,
-    name: 'Dashboard',
-    icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
-    items: [
-      {
-        component: CNavItem,
-        name: 'Admin Dashboard',
-        to: '/dashboard',
-        badge: {
-          color: 'success',
-          text: '●',
-        },
-      },
-    ],
-  },
-]
+// Always use the custom Table component
+import { Table } from '../components'
 
-// Sidebar Structure (AppSidebar.jsx) - CoreUI Components Only
-<CSidebar className="sidebar-custom" colorScheme="dark">
-  <CSidebarHeader className="border-bottom">
-    <CSidebarBrand to="/" className="sidebar-brand-custom">
-      <img src={logoImg} alt="NZ Grocery Admin" className="sidebar-brand-logo-full" />
-    </CSidebarBrand>
-    <CCloseButton className="d-lg-none" dark />
-  </CSidebarHeader>
-  <AppSidebarNav items={navigation} />
-</CSidebar>
+<Table
+  columns={columns}
+  data={data}
+  loading={loading}
+  sortableColumns={['name', 'email', 'created_at']}
+  onSortChange={handleSortChange}
+  pagination={{
+    currentPage: page,
+    pageSize: limit,
+    totalItems: total,
+    onPageChange: handlePageChange
+  }}
+  serverSide={true} // For server-side pagination
+/>
 ```
 
-#### 6. **Theme & Styling Rules**
-- **Main Content**: React Bootstrap components with standard Bootstrap styling
-- **Sidebar**: CoreUI components with custom white background and subtle shadows
-- **Navigation**: CoreUI navigation with dark text and proper contrast on white background
-- **Icons**: FontAwesome for main content, CoreUI icons for sidebar only
-- **Colors**: Purple/Violet primary color (#8b5cf6) - creative & artistic theme for Photo Studio
-- **Typography**: Clean, readable fonts with proper hierarchy
-- **Spacing**: Consistent padding and margins throughout
+### Theme System
 
-#### 6.1. **Dark Theme System**
-- **Theme Toggle**: `ThemeToggle` component with light/dark modes
+#### 1. **Dark/Light Theme**
+- **Theme Toggle**: `ThemeToggle` component
 - **State Management**: Redux store with localStorage persistence
-- **CoreUI Integration**: Uses `useColorModes` hook for theme switching
+- **CoreUI Integration**: Uses `useColorModes` hook
 - **CSS Architecture**: Theme-responsive selectors using `html[data-coreui-theme="dark"]`
-- **Component Coverage**: All components support both light and dark themes
-- **Authentication Pages**: Complete dark theme support for login/forgot/reset pages
-- **Sidebar Adaptation**: Sidebar changes color scheme based on theme
-- **Form Elements**: All inputs, buttons, and modals adapt to theme
-- **Chart Components**: Dashboard charts and visualizations are theme-aware
 
-#### 6.2. **Theme Implementation Guidelines**
+#### 2. **Theme Color Palette**
+```css
+/* Light Theme Colors */
+--light-bg-primary: #ffffff;
+--light-bg-secondary: #f8fafc;
+--light-text-primary: #1f2937;
+--light-text-secondary: #6b7280;
+--light-border: #e5e7eb;
+--light-accent: #8b5cf6; /* Purple/Violet */
 
-##### **Theme Toggle Component Usage**
-```jsx
-// Import ThemeToggle component
-import { ThemeToggle } from '../components'
-
-// Use in header or any component
-<ThemeToggle />
+/* Dark Theme Colors */
+--dark-bg-primary: #1f2937;
+--dark-bg-secondary: #374151;
+--dark-text-primary: #f9fafb;
+--dark-text-secondary: #d1d5db;
+--dark-border: #4b5563;
+--dark-accent: #a78bfa; /* Brighter violet */
 ```
 
-##### **Theme-Aware CSS Patterns**
+#### 3. **Theme-Aware CSS Pattern**
 ```css
 /* Light Theme (Default) */
 .component {
@@ -451,149 +610,12 @@ html[data-coreui-theme="dark"] .component {
 }
 ```
 
-##### **Theme Color Palette**
-```css
-/* Light Theme Colors */
---light-bg-primary: #ffffff;
---light-bg-secondary: #f8fafc;
---light-text-primary: #1f2937;
---light-text-secondary: #6b7280;
---light-border: #e5e7eb;
---light-accent: #8b5cf6; /* Purple/Violet for Photo Studio */
-
-/* Dark Theme Colors */
---dark-bg-primary: #1f2937;
---dark-bg-secondary: #374151;
---dark-text-primary: #f9fafb;
---dark-text-secondary: #d1d5db;
---dark-border: #4b5563;
---dark-accent: #a78bfa; /* Brighter violet for dark mode */
-```
-
-##### **Theme File Organization**
-```
-styles/
-├── theme.css              # Main theme styles (CoreUI overrides)
-├── auth.css               # Authentication page styles
-└── components/            # Component-specific theme styles
-    ├── buttons/
-    ├── forms/
-    ├── modals/
-    └── tables/
-```
-
-##### **Theme State Management**
-```jsx
-// Redux Store Configuration
-const initialState = {
-  sidebarShow: true,
-  theme: getInitialTheme(), // 'light' or 'dark'
-}
-
-// Theme Toggle Handler
-const handleThemeChange = (themeKey) => {
-  dispatch({ type: 'set', theme: themeKey })
-  setColorMode(themeKey)
-  localStorage.setItem('theme', themeKey)
-}
-```
-
-##### **Theme Best Practices**
-- **Always use `!important`** for dark theme overrides to ensure they take precedence
-- **Test both themes** during development to ensure proper contrast and readability
-- **Use semantic color names** instead of hardcoded hex values
-- **Maintain consistent spacing** across both themes
-- **Consider accessibility** - ensure WCAG contrast ratios are met
-- **Test with real content** to verify theme works with actual data
-- **Use CSS custom properties** for theme-specific values when possible
-- **Document theme-specific styles** with clear comments
-- **Test theme switching** during user interactions (modals, dropdowns, etc.)
-- **Validate responsive behavior** in both themes across all breakpoints
-
-#### 7. **Gradient System & CSS Variables**
-```css
-/* Theme-based Gradient Variables - Light & Subtle (Purple/Violet Theme) */
---gradient-primary: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%) !important;
---gradient-success: linear-gradient(135deg, #6ee7b7 0%, #34d399 100%) !important;
---gradient-info: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%) !important;
---gradient-warning: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
---gradient-danger: linear-gradient(135deg, #fca5a5 0%, #f87171 100%) !important;
-
-/* Card Gradient Backgrounds - Light & Subtle */
---card-gradient-primary: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%) !important;
---card-gradient-success: linear-gradient(135deg, #6ee7b7 0%, #34d399 100%) !important;
---card-gradient-info: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%) !important;
---card-gradient-warning: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
-
-/* Logo-Inspired Purple-Blue Gradient */
---card-gradient-logo: linear-gradient(135deg, #c4b5fd 0%, #b8d7fd 100%) !important;
---card-gradient-logo-alt: linear-gradient(135deg, #a78bfa 0%, #fbffbb 100%) !important;
-```
-
-#### 8. **Gradient Utility Classes**
-```css
-/* Gradient Utility Classes */
-.bg-gradient-primary { background: var(--card-gradient-primary) !important; }
-.bg-gradient-success { background: var(--card-gradient-success) !important; }
-.bg-gradient-info { background: var(--card-gradient-info) !important; }
-.bg-gradient-warning { background: var(--card-gradient-warning) !important; }
-.bg-gradient-logo { background: var(--card-gradient-logo) !important; }
-.bg-gradient-logo-alt { background: var(--card-gradient-logo-alt) !important; }
-.bg-gradient-light { background: var(--bg-gradient-light) !important; }
-.bg-gradient-primary-subtle { background: var(--bg-gradient-primary-subtle) !important; }
-```
-
-#### 9. **Section Header Design Pattern**
-```jsx
-// Standard Section Header with Purple/Violet Theme
-<div className="d-flex align-items-center mb-4 pb-3 border-bottom border-primary border-2">
-  <FontAwesomeIcon icon={faIcon} className="me-3 text-primary fs-4" />
-  <h4 className="mb-0 text-primary">Section Title</h4>
-</div>
-```
-
-#### 10. **Multi-Step Form Guidelines**
-- **Step Indicator**: Use `StepIndicator` component for visual progress
-- **Step Navigation**: Allow navigation to completed steps and next step only
-- **Form Validation**: Validate each step before allowing progression
-- **Data Persistence**: Maintain form data across step navigation
-- **Step Components**: Create individual step components in `steps/` folder
-- **Wizard Container**: Use main wizard component to manage step state
-- **Navigation Buttons**: Consistent Previous/Next/Save Draft/Create buttons
-
-#### 11. **Clean Layout Guidelines**
-- **Avoid Nested Cards**: Use single container with subtle shadow instead of card-in-card
-- **Section Separation**: Use border-bottom dividers with purple/violet theme
-- **Visual Hierarchy**: Clear typography hierarchy with proper font weights
-- **Consistent Spacing**: Use `mb-5` for section spacing, `mb-4` for internal spacing
-- **Enhanced Inputs**: Use `border-2` class for better input visibility
-- **Theme Consistency**: Apply purple/violet color (`text-primary`, `border-primary`) consistently
-- **Primary Buttons**: Always use `text-white` class for better contrast
-
-#### 12. **Component Reusability Guidelines**
-- **Dual-Mode Components**: Create components that support both create and edit modes
-- **Mode Detection**: Use URL parameters or props to determine component mode
-- **Dynamic UI Updates**: Update titles, buttons, and descriptions based on mode
-- **Data Pre-population**: Load existing data for edit mode with proper loading states
-- **Single Source of Truth**: Reuse complex components instead of creating duplicates
-- **Consistent UX**: Maintain same user experience across create and edit flows
-
-#### 13. **Custom Table Component Guidelines**
-- **Always Use Custom Table**: Use the project's custom Table component instead of basic Bootstrap tables
-- **Column Definitions**: Define columns with proper key, header, and render functions
-- **Sortable Columns**: Specify which columns should be sortable in sortableColumns array
-- **Pagination Integration**: Use built-in pagination with currentPage, pageSize, and totalItems
-- **Loading States**: Leverage built-in loading states and empty message handling
-- **Consistent Styling**: Inherit responsive design and proper table styling automatically
-- **Server-side Mode**: Set `serverSide` to true with meta from API responses and use `onSortChange` + `onPageChange` to request new data.
-
-
-### 🔧 State Management Rules
+### State Management Rules
 
 #### 1. **State Management Strategy**
 - **Local State**: Use `useState` for component-specific state
-- **Global State**: Use Redux for application-wide state
-- **Context**: Use React Context for theme, auth, etc.
+- **Global State**: Use Redux for application-wide state (sidebar, theme)
+- **Context**: Use React Context for auth and theme
 - **Server State**: Use custom hooks for API calls
 
 #### 2. **State Naming Rules**
@@ -607,19 +629,13 @@ const handleThemeChange = (themeKey) => {
 - **Functional updates** for state that depends on previous state
 - **Batch updates** when possible
 
-#### 4. **Management Hooks (2025-11 update)**
-- **Encapsulate CRUD** flows with feature hooks (`useUserManagement`, `useRoleManagement`) that expose `data`, `meta`, `loading`, and action callbacks.
-- **Delegate service calls** to hooks so views stay declarative and use optimistic state updates when responses succeed.
-- **Centralize errors** inside hooks and surface human-readable `message` strings back to the caller.
-- **Share request state** with `useApi` when you need a lightweight loading/error wrapper for ad-hoc service calls.
-
-### 🌐 API Service Rules
+### API Service Rules
 
 #### 1. **Service Organization**
 - **One service per feature** (e.g., `userService.js`)
 - **Consistent naming** for service methods
 - **Error handling** in all service methods
-- **TypeScript interfaces** for request/response types
+- **Mock fallback** when API fails
 
 #### 2. **Service Method Naming**
 ```javascript
@@ -637,17 +653,56 @@ const userService = {
 - **Consistent error format** across all services
 - **User-friendly error messages**
 - **Logging** for debugging purposes
-- **Fallback values** for failed requests
+- **Fallback to mock data** for failed requests
 
-#### 4. **Paginated Response Helpers (2025-11 update)**
-- **List endpoints** must respond with `{ success, data, meta }` where `meta` tracks pagination and sorting.
-- **Meta shape** standardizes `{ total, page, limit, totalPages, hasNext, hasPrev, sortBy, sortDirection }`.
-- **Service adapters** (`transformListResponse`, `transformItemResponse`) normalize responses and provide graceful fallbacks to mock data.
-- **Query params** follow snake_case (`page`, `limit`, `sort_by`, `sort_direction`) and only include filters that are truthy.
+#### 4. **Response Format**
+```javascript
+// Standard Response Format
+{
+  success: true,
+  data: [...],
+  meta: {
+    total: 100,
+    page: 1,
+    limit: 20,
+    totalPages: 5,
+    hasNext: true,
+    hasPrev: false,
+    sortBy: 'name',
+    sortDirection: 'asc'
+  }
+}
+```
 
-### 🎯 Code Quality Rules
+### Routing & Navigation
 
-#### 1. **Code Style Rules**
+#### 1. **Route Configuration**
+- **Lazy loading** for all routes
+- **Protected routes** using `PrivateRoute`
+- **Permission-based routes** using `PermissionRoute`
+- **Route config** in `routesConfig.jsx` for breadcrumbs
+
+#### 2. **Navigation Structure**
+- **Sidebar navigation** in `_nav.jsx`
+- **Permission-based visibility** using `PERMISSIONS` constants
+- **Breadcrumb navigation** using `AppBreadcrumb`
+
+### Authentication & Authorization
+
+#### 1. **Authentication Flow**
+- **JWT tokens** stored in `localStorage`
+- **Token refresh** mechanism
+- **Protected routes** for sensitive pages
+- **Role-based access control**
+
+#### 2. **Permission System**
+- **Permission constants** in `constants/permissions.js`
+- **Permission checks** in components and routes
+- **Backend permission mapping** via `authService`
+
+### Code Quality Rules
+
+#### 1. **Code Style**
 - **ESLint configuration** must be followed
 - **Prettier formatting** for consistent code style
 - **Meaningful variable names**
@@ -668,199 +723,70 @@ const userService = {
 - **Debouncing** for search inputs
 - **Virtualization** for large lists
 
-### 🔐 Security Rules
+---
 
-#### 1. **Authentication Rules**
-- **JWT tokens** for authentication
-- **Token refresh** mechanism
-- **Protected routes** for sensitive pages
-- **Role-based access control**
+## 🚀 Current Implementation Status
 
-#### 2. **Data Validation Rules**
-- **Client-side validation** for UX
-- **Server-side validation** for security
-- **Input sanitization** for all user inputs
-- **XSS protection** for all outputs
+### ✅ Fully Implemented
+- Authentication (Login, Forgot Password, Reset Password, Change Password)
+- User Management (CRUD operations)
+- User Profile (Avatar upload, Personal Info, Address, Change Password)
+- Role & Permission Management
+- Settings Management (Business Info, Invoice, Email Settings with test, App Settings with Web URL, Currency & Regional, S3 Settings)
+- Dashboard (with charts)
+- Customer Management (with PDF export)
+- Theme System (Dark/Light mode)
 
-#### 3. **API Security Rules**
-- **HTTPS only** in production
-- **CORS configuration** for API access
-- **Rate limiting** for API endpoints
-- **Input validation** on all endpoints
+### 🟡 Partially Implemented (UI Complete, API Pending)
+- Branch Management
+- Package Management
+- Order Management
 
-### 📱 Responsive Design Rules
-
-#### 1. **Breakpoint Rules**
-- **Mobile First**: Design for mobile, enhance for desktop
-- **Bootstrap Breakpoints**: xs, sm, md, lg, xl, xxl
-- **Consistent spacing** across all screen sizes
-- **Touch-friendly** interface elements
-
-#### 2. **Layout Rules**
-- **Grid system** for consistent layouts
-- **Flexbox** for component alignment
-- **Responsive images** with proper sizing
-- **Accessible navigation** on all devices
-
-### 🧪 Testing Rules
-
-#### 1. **Testing Strategy**
-- **Unit tests** for utility functions
-- **Component tests** for UI components
-- **Integration tests** for user flows
-- **E2E tests** for critical paths
-
-#### 2. **Test Organization**
-- **Test files** alongside source files
-- **Descriptive test names**
-- **Arrange-Act-Assert** pattern
-- **Mock external dependencies**
-
-### 📚 Documentation Rules
-
-#### 1. **Code Documentation**
-- **JSDoc comments** for functions and components
-- **README files** for each major feature
-- **Inline comments** for complex logic
-- **API documentation** for all endpoints
-
-#### 2. **Component Documentation**
-- **PropTypes** with descriptions
-- **Usage examples** in comments
-- **Default values** documented
-- **Dependencies** listed
-
-### 🚀 Deployment Rules
-
-#### 1. **Environment Configuration**
-- **Environment-specific** configurations
-- **Secure secrets** management
-- **Build optimization** for production
-- **Error tracking** in production
-
-#### 2. **Build Rules**
-- **Code splitting** for optimal loading
-- **Asset optimization** for performance
-- **Source maps** for debugging
-- **Version management** for releases
-
-### 🔄 Version Control Rules
-
-#### 1. **Git Workflow**
-- **Feature branches** for new features
-- **Descriptive commit messages**
-- **Pull request reviews** before merging
-- **Semantic versioning** for releases
-
-#### 2. **Code Review Rules**
-- **Peer review** for all changes
-- **Automated testing** before merge
-- **Code quality checks** in CI/CD
-- **Documentation updates** with code changes
+### 🔴 Needs Implementation
+- Payment Management
+- Transaction Management
+- Report Management (Sales, Ledger, Branch, Staff)
 
 ---
 
-## 📝 Additional Guidelines
+## 📚 Additional Resources
 
-### 🎨 Design System
-- Follow **Bootstrap design principles**
-- Use **consistent color palette**
-- Maintain **typography hierarchy**
-- Ensure **accessibility compliance**
-
-### 🔧 Development Tools
-- **Vite** for build tooling with Rolldown optimization
-- **ESLint** for code linting
-- **Prettier** for code formatting
-- **React DevTools** for debugging
-- **React Router DOM** for routing with lazy loading
-- **Redux** for state management
-- **React Context** for authentication and theme
-
-### 📦 Key Dependencies
+### Key Dependencies
 - **React 19** - Latest React version
-- **React Bootstrap** - Primary UI component library for main content
-- **CoreUI React** - UI component library for sidebar and navigation only
+- **React Bootstrap** - Primary UI component library
+- **CoreUI React** - Sidebar and navigation
 - **React Router DOM** - Client-side routing
 - **Redux** - State management
-- **FontAwesome** - Icon library for main content
-- **CoreUI Icons** - Icon library for sidebar only
-- **SimpleBar** - Custom scrollbars
-- **Axios** - HTTP client for API calls
+- **FontAwesome** - Icon library
+- **Axios** - HTTP client
 
-### 🧩 Component Library
-- **StepIndicator** - Multi-step form progress indicator
-- **ImageUpload** - Drag-and-drop image upload component
-- **FormModal** - Modal wrapper for forms
+### Component Library
 - **Table** - Data table with sorting and pagination
-- **ThemeToggle** - Theme switching component (light/dark modes)
+- **FormModal** - Modal wrapper for forms
+- **ThemeToggle** - Theme switching component
 - **ToastProvider** - Global notification system
-- **Button** - Reusable button component
-- **Card** - Reusable card component
-- **FormFields** - Form input components
-- **Modal** - Reusable modal component
-- **GlobalSpinner** - Global loading spinner
-- **ScrollToTop** - Scroll to top component
+- **ImageUpload** - Drag-and-drop image upload
+- **StepIndicator** - Multi-step form progress
 
-### 📊 Performance Monitoring
-- **Bundle size** monitoring
-- **Runtime performance** tracking
-- **User experience** metrics
-- **Error rate** monitoring
+### Development Commands
+```bash
+# Install dependencies
+npm install
 
-### 🛠️ Maintenance
-- **Regular dependency updates**
-- **Security patch** management
-- **Performance optimization**
-- **Code refactoring** as needed
+# Run development server
+npm run dev
 
----
+# Build for production
+npm run build
 
-## 🚀 Current Project Status
+# Preview production build
+npm run preview
 
-### 🎯 Navigation Structure
-- **Main Section**: Dashboard groups with multiple dashboard options
-- **Branch Management**: Branch list, branch form, branch operations
-- **Package Management**: Packages list, package form, package operations
-- **Order Management**: Orders list, order details, order form, order history
-- **Customer Management**: Customers list, customer form, customer ledger, customer wallet
-- **Payment Management**: Payments list, payment form, payment operations
-- **Transaction Management**: Transactions list, transaction form, transaction details
-- **Report Management**: Branch reports, ledger reports, sales reports, staff reports
-- **User Management**: Users and role & permission management
-- **Account Section**: Profile and settings
-
-### 🔧 Technical Implementation
-- **CoreUI Components**: Proper use of CSidebar, CSidebarHeader, CSidebarBrand
-- **Custom Styling**: theme.css with CoreUI overrides
-- **State Management**: Redux for sidebar state (unfoldable, visible) and theme management
-- **Routing**: React Router with lazy loading for performance
-- **Authentication**: JWT-based auth with role-based access control
-- **Theme System**: Complete dark/light theme support with ThemeToggle component
-- **Theme Persistence**: localStorage integration for theme preference
-- **Clean Layout Pattern**: Single container with shadow, no nested cards
-- **Purple/Violet Theme System**: Consistent use of purple/violet primary color (#8b5cf6) for Photo Studio creative theme
-- **Enhanced Forms**: Better input styling with border-2 and fw-semibold labels
-- **Gradient System**: CSS variables and utility classes for theme-based gradients
-- **Logo-Inspired Gradients**: Purple-blue gradient variants matching brand colors
-- **Branch Management**: Complete CRUD operations for branch management
-- **Package Management**: Complete CRUD operations for package management
-- **Order Management**: Complete order tracking with status management, customer details, and timeline
-- **Customer Management**: Complete customer management with ledger and wallet views
-- **Payment Management**: Complete payment tracking and management
-- **Transaction Management**: Complete transaction tracking with details modal
-- **Report Management**: Comprehensive reporting system with branch, ledger, sales, and staff reports
-- **Custom Table Component**: Reusable table with sorting, pagination, and loading states
-- **Multi-Step Forms**: StepIndicator component with wizard pattern for complex forms
-- **Image Management**: Drag-and-drop upload with primary image selection
-- **Form Validation**: Step-by-step validation with error handling
-- **Mock Data System**: JSON-based mock data for development and testing
-- **Image Handling**: Fallback system with icon display for missing product images
-- **Order Details Modal**: Comprehensive order view with timeline, customer info, and quick actions
-- **Authentication Pages**: Complete dark theme support for login, forgot password, and reset password
-- **Sidebar Theme Adaptation**: Sidebar changes color scheme based on selected theme
-- **Server-side Tables (2025-11)**: Feature lists consume normalized `{ success, data, meta }` responses and run the custom Table component in `serverSide` mode with sort + pagination callbacks.
+# Lint code
+npm run lint
+```
 
 ---
 
-*This document should be updated as the project evolves and new patterns emerge.*
+**Last Updated**: January 2025
+**Version**: 1.0.0

@@ -6,8 +6,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
+use App\Models\Setting;
+use App\Services\EmailService;
 
 class AuthController extends Controller
 {
@@ -37,9 +40,21 @@ class AuthController extends Controller
         $permissions = $user->getAllPermissions();
         $permissionsByModule = $user->getPermissionsByModule();
 
+        // Add avatar_url to user data
+        $userData = $user->load('roles')->toArray();
+        if ($user->avatar) {
+            if (!filter_var($user->avatar, FILTER_VALIDATE_URL)) {
+                $userData['avatar_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($user->avatar);
+            } else {
+                $userData['avatar_url'] = $user->avatar;
+            }
+        } else {
+            $userData['avatar_url'] = null;
+        }
+
         return response()->json([
             'token' => $token,
-            'user' => $user->load('roles'),
+            'user' => $userData,
             'permissions' => $permissions,
             'permissionsByModule' => $permissionsByModule,
         ]);
@@ -66,12 +81,24 @@ class AuthController extends Controller
      */
     public function user(Request $request)
     {
-        $user = $request->user();
+        $user = $request->user()->load('roles');
         $permissions = $user->getAllPermissions();
         $permissionsByModule = $user->getPermissionsByModule();
 
+        // Add avatar_url to user data
+        $userData = $user->toArray();
+        if ($user->avatar) {
+            if (!filter_var($user->avatar, FILTER_VALIDATE_URL)) {
+                $userData['avatar_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($user->avatar);
+            } else {
+                $userData['avatar_url'] = $user->avatar;
+            }
+        } else {
+            $userData['avatar_url'] = null;
+        }
+
         return response()->json([
-            'user' => $user->load('roles'),
+            'user' => $userData,
             'permissions' => $permissions,
             'permissionsByModule' => $permissionsByModule,
         ]);
@@ -81,23 +108,183 @@ class AuthController extends Controller
      * Send password reset link.
      *
      * @param Request $request
+     * @param EmailService $emailService
      * @return \Illuminate\Http\JsonResponse
      */
-    public function forgotPassword(Request $request)
+    public function forgotPassword(Request $request, EmailService $emailService)
     {
         $request->validate(['email' => 'required|email']);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            // Don't reveal if user exists or not for security
+            \Log::info('Password reset requested for non-existent email', [
+                'email' => $request->email
+            ]);
+            return response()->json([
+                'success' => true, // Return success for security (don't reveal if user exists)
+                'message' => 'If that email address exists in our system, we will send a password reset link.'
+            ], 200);
+        }
+
+        // Generate password reset token
+        $token = Password::createToken($user);
+
+        // Build reset URL
+        // Note: Frontend uses HashRouter, so we need to use # in the URL
+        // Get web_url from App Settings, fallback to config, then to default
+        $webUrl = Setting::get('web_url', 'App Settings');
+        if (empty($webUrl)) {
+            $webUrl = config('app.frontend_url', 'http://localhost:5173');
+        }
+        // Ensure web_url doesn't have trailing slash
+        $webUrl = rtrim($webUrl, '/');
+        $resetUrl = "{$webUrl}/#/reset-password?token={$token}&email=" . urlencode($user->email);
+
+        // Send email using EmailService (uses database email settings)
+        try {
+            \Log::info('Attempting to send password reset email', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'reset_url' => $resetUrl
+            ]);
+
+            // sendEmailImmediately now throws exceptions on failure, returns true on success
+            $emailSent = $emailService->sendEmailImmediately(
+                $user->email,
+                'password_reset',
+                [
+                    'user' => $user,
+                    'url' => $resetUrl,
+                    'token' => $token,
+                ],
+                $user->id,
+                'user'
+            );
+
+            // If we reach here, email was sent successfully
+            \Log::info('Password reset email sent successfully', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'reset_url' => $resetUrl
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Password reset link has been sent to your email address.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            $errorMessage = $e->getMessage();
+            
+            \Log::error('Password reset email exception', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $errorMessage,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Provide user-friendly error message
+            $userMessage = 'Failed to send password reset email. ';
+            
+            // Check for specific error types
+            if (strpos($errorMessage, 'SMTP Host cannot be an email address') !== false) {
+                $userMessage .= 'Email configuration error: SMTP Host is set incorrectly. Please configure Email Settings in the admin panel.';
+            } elseif (strpos($errorMessage, 'Email configuration is incomplete') !== false) {
+                $userMessage .= 'Email configuration is incomplete. Please configure Email Settings in the admin panel.';
+            } elseif (strpos($errorMessage, 'Cannot connect to SMTP server') !== false || strpos($errorMessage, 'Connection could not be established') !== false) {
+                $userMessage .= 'Cannot connect to email server. Please verify Email Settings configuration (SMTP Host, Port, Username, Password).';
+            } else {
+                $userMessage .= 'Please check your email configuration in Settings or contact administrator. Error: ' . $errorMessage;
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => $userMessage
+            ], 500);
+        }
+    }
+
+    /**
+     * Reset password using token.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string',
+            'email' => 'required|email',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                $user->password = Hash::make($password);
+                $user->save();
+            }
         );
 
-        if ($status === Password::RESET_LINK_SENT) {
-            return response()->json(['message' => 'Password reset link sent']);
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Password has been reset successfully.'
+            ], 200);
+        }
+
+        // Handle different error statuses
+        $errorMessage = 'Failed to reset password.';
+        switch ($status) {
+            case Password::INVALID_TOKEN:
+                $errorMessage = 'Invalid or expired reset token. Please request a new password reset.';
+                break;
+            case Password::INVALID_USER:
+                $errorMessage = 'Invalid user. Please check your email address.';
+                break;
+            case Password::THROTTLED:
+                $errorMessage = 'Too many reset attempts. Please try again later.';
+                break;
+            default:
+                $errorMessage = __($status) ?: 'Failed to reset password. Please try again.';
         }
 
         throw ValidationException::withMessages([
-            'email' => [__($status)],
+            'email' => [$errorMessage],
         ]);
+    }
+
+    /**
+     * Change password for authenticated user.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = $request->user();
+
+        // Verify current password
+        if (!Hash::check($request->current_password, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['Current password is incorrect.'],
+            ]);
+        }
+
+        // Update password
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json([
+            'message' => 'Password changed successfully.'
+        ], 200);
     }
 }
 

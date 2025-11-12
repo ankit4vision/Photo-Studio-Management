@@ -55,15 +55,17 @@ const ForgotPassword = () => {
     setLoading(true)
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      // In a real app, this would send a reset email
-      console.log('Password reset requested for:', email.trim())
-
-      setEmailSent(true)
-      success('Password reset instructions sent to your email!')
+      const { default: authService } = await import('../../services/authService')
+      const result = await authService.forgotPassword(email.trim())
+      
+      if (result.success) {
+        setEmailSent(true)
+        success(result.message || 'Password reset instructions sent to your email!')
+      } else {
+        showError(result.message || 'Failed to send reset email. Please try again.')
+      }
     } catch (err) {
+      console.error('Forgot password error:', err)
       showError('Failed to send reset email. Please try again.')
     } finally {
       setLoading(false)

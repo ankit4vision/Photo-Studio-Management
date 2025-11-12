@@ -79,6 +79,9 @@ const normalizeUser = (apiUser, permissions = [], permissionsByModule = {}) => {
 
   const permissionNamesWithAliases = applyPermissionAliases(canonicalPermissionNames)
 
+  // Get avatar URL - prefer avatar_url, fallback to avatar
+  const avatarUrl = apiUser.avatar_url || apiUser.avatar || null
+
   return {
     id: apiUser.id,
     firstName: apiUser.first_name || '',
@@ -89,8 +92,13 @@ const normalizeUser = (apiUser, permissions = [], permissionsByModule = {}) => {
     isActive: (apiUser.status || 'active') === 'active',
     address: apiUser.address || '',
     city: apiUser.city || '',
+    state: apiUser.state || '',
+    zipCode: apiUser.zip_code || apiUser.zipCode || '',
     country: apiUser.country || '',
     bio: apiUser.bio || '',
+    dateOfBirth: apiUser.date_of_birth || apiUser.dateOfBirth || '',
+    gender: apiUser.gender || '',
+    avatar: avatarUrl, // Use avatar_url if available, otherwise avatar
     role: primaryRole?.name || null,
     roleId: primaryRole?.id || null,
     roles,
@@ -192,13 +200,90 @@ const authService = {
   async forgotPassword(email) {
     try {
       const response = await apiClient.post('/auth/forgot-password', { email })
+      
+      // Backend returns success message even if user doesn't exist (for security)
+      // So we always return success: true if we get a 200 response
+      if (response.status === 200 || response.data?.message) {
+        return {
+          success: true,
+          data: response.data,
+          message: response.data?.message || 'If that email exists, password reset instructions have been sent.',
+        }
+      }
+      
+      return {
+        success: false,
+        data: null,
+        message: 'Failed to send password reset email. Please try again.',
+      }
+    } catch (error) {
+      const errorResponse = handleApiError(error)
+      // Even on error, don't reveal if user exists
+      if (errorResponse.status === 500) {
+        return {
+          success: false,
+          data: null,
+          message: 'Failed to send password reset email. Please check your email configuration or try again later.',
+        }
+      }
+      return errorResponse
+    }
+  },
+
+  /**
+   * Reset password with token
+   * @param {Object} data - { token, email, password, password_confirmation }
+   * @returns {Promise}
+   */
+  async resetPassword(data) {
+    try {
+      const response = await apiClient.post('/auth/reset-password', {
+        token: data.token,
+        email: data.email,
+        password: data.password,
+        password_confirmation: data.password_confirmation || data.password,
+      })
+      
+      // Check if response has success field
+      if (response.data?.success) {
+        return {
+          success: true,
+          data: response.data,
+          message: response.data?.message || 'Password reset successfully',
+        }
+      }
+      
+      // Fallback for older response format
       return {
         success: true,
         data: response.data,
-        message: response.data?.message || 'Password reset email sent',
+        message: response.data?.message || 'Password reset successfully',
       }
     } catch (error) {
-      return handleApiError(error)
+      const errorResponse = handleApiError(error)
+      
+      // Map backend validation errors to frontend format
+      if (errorResponse.errors && typeof errorResponse.errors === 'object') {
+        const mappedErrors = {}
+        Object.keys(errorResponse.errors).forEach(key => {
+          if (key === 'email') {
+            mappedErrors.email = Array.isArray(errorResponse.errors[key]) 
+              ? errorResponse.errors[key][0] 
+              : errorResponse.errors[key]
+          } else if (key === 'password') {
+            mappedErrors.password = Array.isArray(errorResponse.errors[key]) 
+              ? errorResponse.errors[key][0] 
+              : errorResponse.errors[key]
+          } else {
+            mappedErrors[key] = Array.isArray(errorResponse.errors[key]) 
+              ? errorResponse.errors[key][0] 
+              : errorResponse.errors[key]
+          }
+        })
+        errorResponse.errors = mappedErrors
+      }
+      
+      return errorResponse
     }
   },
 

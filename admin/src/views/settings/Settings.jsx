@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Container, Row, Col, Button, Spinner, Form, FormControl, FormSelect, FormText, Alert } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faBuilding, faEnvelope, faGlobe, faSave, faCheckCircle, faFileInvoice, faCloud } from '@fortawesome/free-solid-svg-icons'
+import { faBuilding, faEnvelope, faGlobe, faSave, faCheckCircle, faFileInvoice, faCloud, faPaperPlane, faCog } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from '../../components'
 import { settingsService } from '../../services/settingsService'
 import { usePermissions } from '../../hooks'
@@ -29,9 +29,14 @@ const Settings = () => {
       invoice_prefix: 'INV'
     },
     emailSettings: {
-      supportEmail: 'support@photostudio.com',
-      adminEmail: 'admin@photostudio.com',
-      enableOrderNotifications: false
+      mailer: 'smtp',
+      host: '',
+      port: '',
+      username: '',
+      password: '',
+      encryption: 'tls',
+      from_address: '',
+      from_name: ''
     },
     currencyRegional: {
       currency: 'INR',
@@ -44,6 +49,9 @@ const Settings = () => {
       accessKey: '',
       secretKey: '',
       useSSL: true
+    },
+    appSettings: {
+      web_url: ''
     }
   })
   const [loading, setLoading] = useState(true)
@@ -51,6 +59,8 @@ const Settings = () => {
   const [errors, setErrors] = useState({})
   const [autoSaving, setAutoSaving] = useState({}) // Track which fields are auto-saving
   const [autoSaved, setAutoSaved] = useState({}) // Track which fields were recently saved
+  const [testEmailAddress, setTestEmailAddress] = useState('')
+  const [sendingTestEmail, setSendingTestEmail] = useState(false)
   
   const isInitialLoadRef = useRef(true) // Track if we're still loading initial data
   
@@ -60,9 +70,14 @@ const Settings = () => {
     'businessInfo.gstNumber': { key: 'gstNumber', section: 'Business Information' },
     'businessInfo.businessAddress': { key: 'businessAddress', section: 'Business Information' },
     'invoiceSettings.invoice_prefix': { key: 'invoice_prefix', section: 'Invoice Settings' },
-    'emailSettings.supportEmail': { key: 'supportEmail', section: 'Email Settings' },
-    'emailSettings.adminEmail': { key: 'adminEmail', section: 'Email Settings' },
-    'emailSettings.enableOrderNotifications': { key: 'enableOrderNotifications', section: 'Email Settings' },
+    'emailSettings.mailer': { key: 'mailer', section: 'Email Settings' },
+    'emailSettings.host': { key: 'host', section: 'Email Settings' },
+    'emailSettings.port': { key: 'port', section: 'Email Settings' },
+    'emailSettings.username': { key: 'username', section: 'Email Settings' },
+    'emailSettings.password': { key: 'password', section: 'Email Settings' },
+    'emailSettings.encryption': { key: 'encryption', section: 'Email Settings' },
+    'emailSettings.from_address': { key: 'from_address', section: 'Email Settings' },
+    'emailSettings.from_name': { key: 'from_name', section: 'Email Settings' },
     'currencyRegional.currency': { key: 'currency', section: 'Currency & Regional' },
     'currencyRegional.dateFormat': { key: 'dateFormat', section: 'Currency & Regional' },
     'currencyRegional.timeZone': { key: 'timeZone', section: 'Currency & Regional' },
@@ -70,7 +85,8 @@ const Settings = () => {
     's3Settings.region': { key: 's3_region', section: 'S3 Settings' },
     's3Settings.accessKey': { key: 's3_access_key', section: 'S3 Settings' },
     's3Settings.secretKey': { key: 's3_secret_key', section: 'S3 Settings' },
-    's3Settings.useSSL': { key: 's3_use_ssl', section: 'S3 Settings' }
+    's3Settings.useSSL': { key: 's3_use_ssl', section: 'S3 Settings' },
+    'appSettings.web_url': { key: 'web_url', section: 'App Settings' }
   }
 
   useEffect(() => {
@@ -196,6 +212,11 @@ const Settings = () => {
     }
     const fieldPath = `${section}.${field}`
     
+    // Don't auto-save email settings on blur - they should be saved together via "Save Email Settings" button
+    if (section === 'emailSettings') {
+      return
+    }
+    
     // Auto-save if field mapping exists and not during initial load
     if (!isInitialLoadRef.current) {
       const mapping = fieldMapping[fieldPath]
@@ -213,13 +234,16 @@ const Settings = () => {
       newErrors['businessInfo.company_name'] = 'Company name is required'
     }
 
-    // Validate Email addresses
+    // Validate Email Settings
     const emailRegex = /\S+@\S+\.\S+/
-    if (settingsData.emailSettings.supportEmail && !emailRegex.test(settingsData.emailSettings.supportEmail)) {
-      newErrors['emailSettings.supportEmail'] = 'Please enter a valid email address'
+    if (settingsData.emailSettings.from_address && !emailRegex.test(settingsData.emailSettings.from_address)) {
+      newErrors['emailSettings.from_address'] = 'Please enter a valid email address'
     }
-    if (settingsData.emailSettings.adminEmail && !emailRegex.test(settingsData.emailSettings.adminEmail)) {
-      newErrors['emailSettings.adminEmail'] = 'Please enter a valid email address'
+    if (settingsData.emailSettings.host && !settingsData.emailSettings.host.trim()) {
+      newErrors['emailSettings.host'] = 'SMTP Host is required'
+    }
+    if (settingsData.emailSettings.port && (!/^\d+$/.test(settingsData.emailSettings.port) || parseInt(settingsData.emailSettings.port) < 1 || parseInt(settingsData.emailSettings.port) > 65535)) {
+      newErrors['emailSettings.port'] = 'Please enter a valid port number (1-65535)'
     }
     
     // Validate S3 settings
@@ -364,6 +388,127 @@ const Settings = () => {
     </div>
   )
 
+  const handleSaveEmailSettings = async () => {
+    if (!canEditSettings) {
+      error('You do not have permission to update settings.')
+      return
+    }
+
+    // Validate email settings
+    const emailRegex = /\S+@\S+\.\S+/
+    const newErrors = {}
+    
+    if (!settingsData.emailSettings.host?.trim()) {
+      newErrors['emailSettings.host'] = 'SMTP Host is required'
+    }
+    if (!settingsData.emailSettings.port?.trim()) {
+      newErrors['emailSettings.port'] = 'SMTP Port is required'
+    }
+    if (!/^\d+$/.test(settingsData.emailSettings.port) || parseInt(settingsData.emailSettings.port) < 1 || parseInt(settingsData.emailSettings.port) > 65535) {
+      newErrors['emailSettings.port'] = 'Please enter a valid port number (1-65535)'
+    }
+    if (!settingsData.emailSettings.username?.trim()) {
+      newErrors['emailSettings.username'] = 'SMTP User is required'
+    }
+    if (!settingsData.emailSettings.password?.trim()) {
+      newErrors['emailSettings.password'] = 'SMTP Password is required'
+    }
+    if (!settingsData.emailSettings.from_address?.trim()) {
+      newErrors['emailSettings.from_address'] = 'From Email is required'
+    } else if (!emailRegex.test(settingsData.emailSettings.from_address)) {
+      newErrors['emailSettings.from_address'] = 'Please enter a valid email address'
+    }
+    if (!settingsData.emailSettings.from_name?.trim()) {
+      newErrors['emailSettings.from_name'] = 'From Name is required'
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      error('Please fix the validation errors before saving')
+      return
+    }
+
+    setSaving(true)
+    try {
+      // Save all email settings
+      const emailSettingsToSave = {
+        mailer: settingsData.emailSettings.mailer,
+        host: settingsData.emailSettings.host,
+        port: settingsData.emailSettings.port,
+        username: settingsData.emailSettings.username,
+        password: settingsData.emailSettings.password,
+        encryption: settingsData.emailSettings.encryption,
+        from_address: settingsData.emailSettings.from_address,
+        from_name: settingsData.emailSettings.from_name,
+      }
+
+      // Save each setting (suppress 404 errors as they're expected for new settings)
+      const savePromises = Object.entries(emailSettingsToSave).map(async ([key, value]) => {
+        try {
+          return await settingsService.saveSetting(key, 'Email Settings', value)
+        } catch (err) {
+          // Ignore 404 errors as they're expected when creating new settings
+          if (err.response?.status === 404) {
+            return { success: true, message: `${key} saved` }
+          }
+          throw err
+        }
+      })
+
+      const results = await Promise.all(savePromises)
+      const allSuccess = results.every(r => r && r.success)
+
+      if (allSuccess) {
+        success('Email settings saved successfully!')
+      } else {
+        const failedSettings = results
+          .map((r, index) => (!r || !r.success) ? Object.keys(emailSettingsToSave)[index] : null)
+          .filter(Boolean)
+        error(`Failed to save: ${failedSettings.join(', ')}. Please try again.`)
+      }
+    } catch (err) {
+      error('Failed to save email settings. Please try again.')
+      console.error('Save email settings error:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSendTestEmail = async () => {
+    if (!testEmailAddress?.trim()) {
+      error('Please enter a test email address')
+      return
+    }
+
+    const emailRegex = /\S+@\S+\.\S+/
+    if (!emailRegex.test(testEmailAddress.trim())) {
+      error('Please enter a valid email address')
+      return
+    }
+
+    setSendingTestEmail(true)
+    try {
+      const response = await settingsService.sendTestEmail(testEmailAddress.trim())
+      if (response.success) {
+        success(response.message || 'Test email sent successfully! Please check your inbox.')
+        setTestEmailAddress('')
+      } else {
+        // Show validation errors if available
+        if (response.errors && typeof response.errors === 'object') {
+          const errorMessages = Object.values(response.errors).flat()
+          error(errorMessages.join(', ') || response.message || 'Failed to send test email. Please check your email configuration.')
+        } else {
+          error(response.message || 'Failed to send test email. Please check your email configuration.')
+        }
+      }
+    } catch (err) {
+      error('Failed to send test email. Please try again.')
+      console.error('Send test email error:', err)
+    } finally {
+      setSendingTestEmail(false)
+    }
+  }
+
   const renderEmailSettings = () => (
     <div className="mb-5">
       {/* Section Header */}
@@ -375,75 +520,213 @@ const Settings = () => {
       <Row>
         <Col md={6}>
           <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">
-              Support Email
-              {autoSaving['emailSettings.supportEmail'] && (
-                <Spinner size="sm" className="ms-2" variant="primary" />
-              )}
-              {autoSaved['emailSettings.supportEmail'] && (
-                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
-              )}
-            </Form.Label>
+            <Form.Label className="fw-semibold">SMTP Host</Form.Label>
             <FormControl
-              type="email"
-              value={settingsData.emailSettings.supportEmail}
-              onChange={(e) => handleChange('emailSettings', 'supportEmail', e.target.value)}
-              onBlur={(e) => handleBlur('emailSettings', 'supportEmail', e.target.value)}
-              isInvalid={!!errors['emailSettings.supportEmail']}
+              placeholder="e.g., smtp.gmail.com"
+              value={settingsData.emailSettings.host}
+              onChange={(e) => handleChange('emailSettings', 'host', e.target.value)}
+              onBlur={(e) => handleBlur('emailSettings', 'host', e.target.value)}
+              isInvalid={!!errors['emailSettings.host']}
               className="border-2"
             />
-            {errors['emailSettings.supportEmail'] && (
-              <FormText className="text-danger">{errors['emailSettings.supportEmail']}</FormText>
+            {errors['emailSettings.host'] && (
+              <FormText className="text-danger">{errors['emailSettings.host']}</FormText>
             )}
           </Form.Group>
         </Col>
         <Col md={6}>
           <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">
-              Admin Email
-              {autoSaving['emailSettings.adminEmail'] && (
-                <Spinner size="sm" className="ms-2" variant="primary" />
-              )}
-              {autoSaved['emailSettings.adminEmail'] && (
-                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
-              )}
-            </Form.Label>
+            <Form.Label className="fw-semibold">SMTP Port</Form.Label>
             <FormControl
-              type="email"
-              value={settingsData.emailSettings.adminEmail}
-              onChange={(e) => handleChange('emailSettings', 'adminEmail', e.target.value)}
-              onBlur={(e) => handleBlur('emailSettings', 'adminEmail', e.target.value)}
-              isInvalid={!!errors['emailSettings.adminEmail']}
+              placeholder="e.g., 587"
+              value={settingsData.emailSettings.port}
+              onChange={(e) => handleChange('emailSettings', 'port', e.target.value)}
+              onBlur={(e) => handleBlur('emailSettings', 'port', e.target.value)}
+              isInvalid={!!errors['emailSettings.port']}
               className="border-2"
             />
-            {errors['emailSettings.adminEmail'] && (
-              <FormText className="text-danger">{errors['emailSettings.adminEmail']}</FormText>
+            {errors['emailSettings.port'] && (
+              <FormText className="text-danger">{errors['emailSettings.port']}</FormText>
             )}
           </Form.Group>
         </Col>
       </Row>
+
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">SMTP User</Form.Label>
+            <FormControl
+              type="email"
+              placeholder="e.g., your-email@gmail.com"
+              value={settingsData.emailSettings.username}
+              onChange={(e) => handleChange('emailSettings', 'username', e.target.value)}
+              onBlur={(e) => handleBlur('emailSettings', 'username', e.target.value)}
+              isInvalid={!!errors['emailSettings.username']}
+              className="border-2"
+            />
+            {errors['emailSettings.username'] && (
+              <FormText className="text-danger">{errors['emailSettings.username']}</FormText>
+            )}
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">SMTP Password</Form.Label>
+            <FormControl
+              type="password"
+              placeholder="Enter SMTP password"
+              value={settingsData.emailSettings.password}
+              onChange={(e) => handleChange('emailSettings', 'password', e.target.value)}
+              onBlur={(e) => handleBlur('emailSettings', 'password', e.target.value)}
+              isInvalid={!!errors['emailSettings.password']}
+              className="border-2"
+            />
+            {errors['emailSettings.password'] && (
+              <FormText className="text-danger">{errors['emailSettings.password']}</FormText>
+            )}
+            <FormText className="text-muted">We store this encrypted. Leave blank to keep the current password.</FormText>
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">From Email</Form.Label>
+            <FormControl
+              type="email"
+              placeholder="e.g., noreply@photostudio.com"
+              value={settingsData.emailSettings.from_address}
+              onChange={(e) => handleChange('emailSettings', 'from_address', e.target.value)}
+              onBlur={(e) => handleBlur('emailSettings', 'from_address', e.target.value)}
+              isInvalid={!!errors['emailSettings.from_address']}
+              className="border-2"
+            />
+            {errors['emailSettings.from_address'] && (
+              <FormText className="text-danger">{errors['emailSettings.from_address']}</FormText>
+            )}
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">From Name</Form.Label>
+            <FormControl
+              placeholder="e.g., Photo Studio Management"
+              value={settingsData.emailSettings.from_name}
+              onChange={(e) => handleChange('emailSettings', 'from_name', e.target.value)}
+              onBlur={(e) => handleBlur('emailSettings', 'from_name', e.target.value)}
+              isInvalid={!!errors['emailSettings.from_name']}
+              className="border-2"
+            />
+            {errors['emailSettings.from_name'] && (
+              <FormText className="text-danger">{errors['emailSettings.from_name']}</FormText>
+            )}
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col md={12}>
+          <div className="d-flex justify-content-end mb-4">
+            <Button
+              variant="primary"
+              onClick={handleSaveEmailSettings}
+              disabled={saving || isReadOnly}
+              className="px-4"
+            >
+              {saving ? (
+                <>
+                  <Spinner size="sm" className="me-2" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faSave} className="me-2" />
+                  Save Email Settings
+                </>
+              )}
+            </Button>
+          </div>
+        </Col>
+      </Row>
+
+      {/* Test Email Configuration Section */}
+      <div className="mt-5 pt-4 border-top">
+        <h5 className="mb-3">Test Email Configuration</h5>
+        <p className="text-muted mb-4">Test your email settings by sending a test email.</p>
+        
+        <Row>
+          <Col md={8}>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold">Test Email Address</Form.Label>
+              <FormControl
+                type="email"
+                placeholder="Enter email address to test"
+                value={testEmailAddress}
+                onChange={(e) => setTestEmailAddress(e.target.value)}
+                className="border-2"
+              />
+            </Form.Group>
+          </Col>
+          <Col md={4} className="d-flex align-items-end">
+            <Button
+              variant="primary"
+              onClick={handleSendTestEmail}
+              disabled={sendingTestEmail || isReadOnly}
+              className="w-100"
+            >
+              {sendingTestEmail ? (
+                <>
+                  <Spinner size="sm" className="me-2" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faPaperPlane} className="me-2" />
+                  Send Test Email
+                </>
+              )}
+            </Button>
+          </Col>
+        </Row>
+      </div>
+    </div>
+  )
+
+  const renderAppSettings = () => (
+    <div className="mb-5">
+      {/* Section Header */}
+      <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-primary border-2">
+        <FontAwesomeIcon icon={faCog} className="me-3 text-primary fs-4" />
+        <h4 className="mb-0 text-primary">App Settings</h4>
+      </div>
+
       <Row>
         <Col md={12}>
           <Form.Group className="mb-3">
-            <Form.Check
-              type="checkbox"
-              id="email-enable-order-notifications"
-              label={
-                <span className="fw-semibold">
-                  Enable email notifications for new orders
-                  {autoSaving['emailSettings.enableOrderNotifications'] && (
-                    <Spinner size="sm" className="ms-2" variant="primary" />
-                  )}
-                  {autoSaved['emailSettings.enableOrderNotifications'] && (
-                    <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
-                  )}
-                </span>
-              }
-              checked={settingsData.emailSettings.enableOrderNotifications}
-              onChange={(e) => handleChange('emailSettings', 'enableOrderNotifications', e.target.checked)}
-              onBlur={(e) => handleBlur('emailSettings', 'enableOrderNotifications', e.target.checked)}
-              className="fs-6"
+            <Form.Label className="fw-semibold">
+              Web URL
+              {autoSaving['appSettings.web_url'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['appSettings.web_url'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              type="url"
+              placeholder="e.g., https://www.example.com"
+              value={settingsData.appSettings.web_url}
+              onChange={(e) => handleChange('appSettings', 'web_url', e.target.value)}
+              onBlur={(e) => handleBlur('appSettings', 'web_url', e.target.value)}
+              isInvalid={!!errors['appSettings.web_url']}
+              className="border-2"
             />
+            {errors['appSettings.web_url'] && (
+              <FormText className="text-danger">{errors['appSettings.web_url']}</FormText>
+            )}
+            <FormText className="text-muted">Enter the web URL for your application</FormText>
           </Form.Group>
         </Col>
       </Row>
@@ -699,6 +982,7 @@ const Settings = () => {
               {renderBusinessInfo()}
               {renderInvoiceSettings()}
               {renderEmailSettings()}
+              {renderAppSettings()}
               {renderCurrencyRegional()}
               {renderS3Settings()}
             </fieldset>

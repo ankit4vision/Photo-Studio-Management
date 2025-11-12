@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Card, Button, Image, Spinner, FormControl, FormText, Alert } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUser, faPencil, faTrash, faSave, faX } from '@fortawesome/free-solid-svg-icons'
@@ -15,6 +15,15 @@ const ProfilePictureSection = ({
   const [avatarLoading, setAvatarLoading] = useState(false)
   const [error, setError] = useState('')
   const fileInputRef = useRef()
+
+  // Update avatarPreview when avatar prop changes
+  useEffect(() => {
+    if (avatar) {
+      setAvatarPreview(avatar)
+    } else {
+      setAvatarPreview('')
+    }
+  }, [avatar])
 
   const handleEditClick = () => {
     setIsEditing(true)
@@ -133,6 +142,27 @@ const ProfilePictureSection = ({
                 alt="Profile Avatar"
                 className="rounded-circle"
                 style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+                onError={(e) => {
+                  console.error('[ProfilePictureSection] Image load error:', {
+                    url: avatarPreview,
+                    error: e,
+                    target: e.target
+                  })
+                  // Don't clear avatarPreview on error, just log it
+                  // The image might be loading or there might be a CORS issue
+                  // Try to reload the image with cache busting
+                  if (avatarPreview && !avatarPreview.includes('?')) {
+                    const separator = avatarPreview.includes('?') ? '&' : '?'
+                    const newUrl = `${avatarPreview}${separator}t=${Date.now()}`
+                    setTimeout(() => {
+                      setAvatarPreview(newUrl)
+                    }, 1000)
+                  }
+                  setError('Failed to load image. Please check if the image URL is accessible.')
+                }}
+                onLoad={() => {
+                  if (error) setError('')
+                }}
               />
             ) : (
               <div 
