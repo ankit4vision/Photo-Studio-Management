@@ -251,12 +251,30 @@ class ApiService {
             }
 
             const sanitizedOrderId = rawOrderId.toString().replace(/^#/, '').trim()
+            // Try to find order by various ID formats (string, number, with/without #)
             const orderIndex = this.mockData.orders.findIndex(
-              (o) => o.id === sanitizedOrderId || o.id === `#${sanitizedOrderId}` || o.orderNumber === `#${sanitizedOrderId}`
+              (o) => {
+                const orderId = o.id?.toString() || ''
+                const orderNumber = o.orderNumber?.toString() || o.order_number?.toString() || ''
+                const numericId = parseInt(sanitizedOrderId, 10)
+                const stringId = sanitizedOrderId
+                
+                return (
+                  orderId === stringId ||
+                  orderId === numericId.toString() ||
+                  orderId === `#${stringId}` ||
+                  orderId === `#${numericId}` ||
+                  orderNumber === stringId ||
+                  orderNumber === `#${stringId}` ||
+                  orderNumber === `#${numericId}` ||
+                  (numericId && parseInt(orderId, 10) === numericId)
+                )
+              }
             )
 
             if (orderIndex === -1) {
-              throw new Error('Order not found')
+              console.error('Order not found in mock data. Looking for:', sanitizedOrderId, 'Available orders:', this.mockData.orders.map(o => ({ id: o.id, orderNumber: o.orderNumber || o.order_number })))
+              throw new Error(`Order not found: ${sanitizedOrderId}`)
             }
 
             const currentOrder = this.mockData.orders[orderIndex]

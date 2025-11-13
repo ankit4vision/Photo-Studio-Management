@@ -73,17 +73,43 @@ const OrdersList = () => {
     setLoading(true)
     setError('')
     try {
+      // Build params, filtering out 'all' values and mapping filter keys
       const params = {
         page: pagination.currentPage,
         limit: pagination.pageSize,
-        ...filters
+      }
+      
+      // Add search if provided
+      if (filters.search) {
+        params.search = filters.search
+      }
+      
+      // Add status if not 'all'
+      if (filters.status && filters.status !== 'all') {
+        params.status = filters.status
+      }
+      
+      // Add payment_status if not 'all'
+      if (filters.paymentStatus && filters.paymentStatus !== 'all') {
+        params.paymentStatus = filters.paymentStatus
+      }
+      
+      // Add customer_id if provided
+      if (filters.customer) {
+        params.customerId = filters.customer
+      }
+      
+      // Add date range if not 'all'
+      if (filters.dateRange && filters.dateRange !== 'all') {
+        // You can implement date range logic here
+        // For now, we'll skip it or implement based on your needs
       }
       
       const response = await orderService.getOrders(params)
-      setOrders(response.data.orders || [])
+      setOrders(response.data?.orders || response.data || [])
       setPagination(prev => ({
         ...prev,
-        totalItems: response.data.total || 0
+        totalItems: response.meta?.total || response.data?.total || 0
       }))
     } catch (err) {
       setError('Failed to load orders')
@@ -234,11 +260,24 @@ const OrdersList = () => {
 
     try {
       setPaymentLoading(true)
+      
+      // Get order ID from paymentOrder (preferred) or formData
+      const orderId = getOrderIdentifier(paymentOrder) || formData.order_id || paymentOrder?.id
+      if (!orderId) {
+        showError('Order ID is required')
+        return
+      }
+      
+      // Clean order ID (remove # prefix if present)
+      const cleanOrderId = orderId.toString().replace(/^#/, '').trim()
+      
       const payload = {
         ...formData,
-        order_id: (formData.order_id || getOrderIdentifier(paymentOrder) || '').toString().replace(/^#/, ''),
+        order_id: cleanOrderId,
         payment_method: formData.payment_method || 'cash'
       }
+
+      console.log('Submitting payment with payload:', payload) // Debug log
 
       const response = await paymentService.createPayment(payload)
       if (response.success) {
@@ -251,7 +290,8 @@ const OrdersList = () => {
       }
     } catch (err) {
       console.error('Error recording payment:', err)
-      showError('An error occurred while recording payment')
+      const errorMessage = err?.response?.data?.message || err?.message || 'An error occurred while recording payment'
+      showError(errorMessage)
     } finally {
       setPaymentLoading(false)
     }

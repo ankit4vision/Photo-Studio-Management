@@ -1,29 +1,91 @@
 // Package Service - API calls for package management
-import apiService from '../api'
+import apiClient from '../config/apiClient'
 import { API_ENDPOINTS } from '../constants/api'
 import packagesMockData from '../mock/packages.json'
 
 class PackageService {
+  transformListResponse(payload) {
+    if (!payload) {
+      return {
+        success: false,
+        data: [],
+        meta: null,
+        message: 'No response received from server.',
+      }
+    }
+
+    const data = Array.isArray(payload.data)
+      ? payload.data
+      : Array.isArray(payload.data?.data)
+        ? payload.data.data
+        : payload.data || []
+
+    const meta = payload.meta ?? {}
+
+    return {
+      success: payload.success ?? true,
+      data,
+      meta: {
+        total: meta.total ?? data.length,
+        page: meta.page ?? 1,
+        limit: meta.limit ?? (data.length || 1),
+        totalPages: meta.totalPages ?? 1,
+        hasNext: meta.hasNext ?? false,
+        hasPrev: meta.hasPrev ?? false,
+        sortBy: meta.sortBy ?? null,
+        sortDirection: meta.sortDirection ?? null,
+      },
+      links: payload.links ?? null,
+      message: payload.message ?? '',
+    }
+  }
+
+  transformItemResponse(payload) {
+    if (!payload) {
+      return {
+        success: false,
+        data: null,
+        message: 'No response received from server.',
+      }
+    }
+
+    return {
+      success: payload.success ?? true,
+      data: payload.data ?? payload,
+      message: payload.message ?? '',
+    }
+  }
+
+  buildQueryParams(params = {}) {
+    const query = {}
+
+    if (params.page) query.page = params.page
+    if (params.limit) query.limit = params.limit
+    if (params.per_page) query.limit = params.per_page
+    if (params.search) query.search = params.search
+    if (params.package_type) query.package_type = params.package_type
+    if (params.status) query.status = params.status
+    if (params.min_price) query.min_price = params.min_price
+    if (params.max_price) query.max_price = params.max_price
+    if (params.sortBy) query.sort_by = params.sortBy
+    if (params.sortDirection) query.sort_direction = params.sortDirection
+
+    return query
+  }
+
   // Get all packages
   async getPackages(params = {}) {
     try {
-      const queryParams = new URLSearchParams()
-      
-      if (params.page) queryParams.append('page', params.page)
-      if (params.limit) queryParams.append('limit', params.limit)
-      if (params.search) queryParams.append('search', params.search)
-      if (params.package_type) queryParams.append('package_type', params.package_type)
-      if (params.status) queryParams.append('status', params.status)
+      const response = await apiClient.get(API_ENDPOINTS.PACKAGES.LIST, {
+        params: this.buildQueryParams(params),
+      })
 
-      const endpoint = `${API_ENDPOINTS.PACKAGES.LIST}?${queryParams.toString()}`
-      const response = await apiService.get(endpoint)
-      
-      // If API call succeeds, return the response
-      if (response && response.success) {
-        return response
+      const payload = this.transformListResponse(response?.data)
+
+      if (payload.success) {
+        return payload
       }
-      
-      // Fallback to mock data if API fails
+
       return this.getMockPackages(params)
     } catch (error) {
       console.warn('API call failed, using mock data:', error)
@@ -66,18 +128,25 @@ class PackageService {
     return {
       success: true,
       data: paginatedPackages,
-      total: packages.length,
-      page: page,
-      limit: limit
+      meta: {
+        total: packages.length,
+        page,
+        limit,
+        totalPages: Math.ceil(packages.length / limit) || 1,
+        hasNext: endIndex < packages.length,
+        hasPrev: page > 1,
+      },
     }
   }
 
   // Get package by ID
   async getPackageById(id) {
     try {
-      const response = await apiService.get(API_ENDPOINTS.PACKAGES.GET_BY_ID(id))
-      if (response && response.success) {
-        return response
+      const response = await apiClient.get(API_ENDPOINTS.PACKAGES.GET_BY_ID(id))
+      const payload = this.transformItemResponse(response?.data)
+
+      if (payload.success) {
+        return payload
       }
       // Fallback to mock data
       return this.getMockPackageById(id)
@@ -105,9 +174,10 @@ class PackageService {
   // Create new package
   async createPackage(packageData) {
     try {
-      const response = await apiService.post(API_ENDPOINTS.PACKAGES.CREATE, packageData)
-      if (response && response.success) {
-        return response
+      const response = await apiClient.post(API_ENDPOINTS.PACKAGES.CREATE, packageData)
+      const payload = this.transformItemResponse(response?.data)
+      if (payload.success) {
+        return payload
       }
       // Fallback to mock data (simulate creation)
       return this.createMockPackage(packageData)
@@ -136,9 +206,10 @@ class PackageService {
   // Update package
   async updatePackage(id, packageData) {
     try {
-      const response = await apiService.put(API_ENDPOINTS.PACKAGES.UPDATE(id), packageData)
-      if (response && response.success) {
-        return response
+      const response = await apiClient.put(API_ENDPOINTS.PACKAGES.UPDATE(id), packageData)
+      const payload = this.transformItemResponse(response?.data)
+      if (payload.success) {
+        return payload
       }
       // Fallback to mock data (simulate update)
       return this.updateMockPackage(id, packageData)
@@ -173,9 +244,10 @@ class PackageService {
   // Delete package
   async deletePackage(id) {
     try {
-      const response = await apiService.delete(API_ENDPOINTS.PACKAGES.DELETE(id))
-      if (response && response.success) {
-        return response
+      const response = await apiClient.delete(API_ENDPOINTS.PACKAGES.DELETE(id))
+      const payload = this.transformItemResponse(response?.data ?? { success: true })
+      if (payload.success) {
+        return payload
       }
       // Fallback to mock data (simulate delete)
       return this.deleteMockPackage(id)

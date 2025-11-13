@@ -81,12 +81,36 @@ const PaymentForm = forwardRef(({
   const loadOrders = async () => {
     try {
       setLoadingOrders(true)
-      const response = await orderService.getOrders({ status: 'all' })
+      // Load orders without status filter (to get all orders) with customer data
+      // Use a large limit to get all orders for the dropdown
+      const response = await orderService.getOrders({ 
+        limit: 1000, // Large limit to get all orders
+        // Don't pass status: 'all' as backend doesn't accept it
+      })
       if (response.success) {
-        setOrders(response.data?.orders || response.data || [])
+        // Backend returns orders with customer relationship loaded via OrderResource
+        const ordersList = response.data?.orders || response.data || []
+        
+        // Debug: Log first order to see customer data structure
+        if (ordersList.length > 0) {
+          console.log('Sample order with customer data:', {
+            id: ordersList[0].id,
+            order_number: ordersList[0].order_number || ordersList[0].orderNumber,
+            customer: ordersList[0].customer,
+            hasCustomer: !!ordersList[0].customer
+          })
+        }
+        
+        setOrders(ordersList)
+        console.log('Loaded orders for payment:', ordersList.length, 'orders with customer data')
+      } else {
+        console.warn('Failed to load orders, response:', response)
+        setOrders([])
       }
     } catch (error) {
       console.error('Error loading orders:', error)
+      console.error('Error details:', error.response?.data || error.message)
+      setOrders([])
     } finally {
       setLoadingOrders(false)
     }
@@ -278,10 +302,44 @@ const PaymentForm = forwardRef(({
           onChange={(e) => handleChange('order_id', e.target.value)}
           options={[
             { value: '', label: 'Select Order' },
-            ...orders.map(order => ({
-              value: order.id.toString(),
-              label: `#${order.id} • ${(order.customer_name || order.customer?.name || `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim() || 'Customer')} • Total ${formatCurrency(order.total_amount)}`
-            }))
+            ...orders
+              .sort((a, b) => {
+                // Sort by ID (ascending)
+                const idA = parseInt(a.id) || 0
+                const idB = parseInt(b.id) || 0
+                return idA - idB
+              })
+              .map(order => {
+                // Get customer name from various possible formats (ONLY name, no mobile/phone)
+                let customerName = 'Customer'
+                if (order.customer) {
+                  // Use name accessor if available
+                  if (order.customer.name) {
+                    customerName = order.customer.name.trim()
+                  } 
+                  // Or build from firstName and lastName
+                  else if (order.customer.firstName || order.customer.lastName) {
+                    customerName = `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim()
+                  }
+                } else if (order.customer_name) {
+                  // Remove any mobile/phone numbers if present in customer_name
+                  customerName = order.customer_name.toString().replace(/\d{10,}/g, '').trim()
+                }
+                
+                // Get customer_code in #CUST format (like in customer list)
+                const customerCode = order.customer?.customer_code || 
+                                    order.customer?.customerId || 
+                                    order.customer?.photographerId ||
+                                    (order.customer?.id ? `#CUST${String(order.customer.id).padStart(3, '0')}` : '') ||
+                                    (order.customer_id ? `#CUST${String(order.customer_id).padStart(3, '0')}` : '')
+                
+                // Format: Customer Name (#CUST006)
+                // Example: "Rajesh Patel (#CUST001)"
+                return {
+                  value: order.id.toString(), // Order ID as value
+                  label: customerCode ? `${customerName} (${customerCode})` : customerName
+                }
+              })
           ]}
           required
           col={6}

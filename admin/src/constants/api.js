@@ -125,6 +125,8 @@ export const API_ENDPOINTS = {
     GET_BY_ID: (id) => `/customers/${id}`,
     UPDATE: (id) => `/customers/${id}`,
     DELETE: (id) => `/customers/${id}`,
+    UPDATE_STATUS: (id) => `/customers/${id}/status`,
+    RECALCULATE_STATS: (id) => `/customers/${id}/recalculate-stats`,
     WALLET: (id) => `/customers/${id}/wallet`,
     LEDGER: (id) => `/customers/${id}/ledger`,
   },

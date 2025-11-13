@@ -7,6 +7,10 @@ use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\API\PermissionController;
 use App\Http\Controllers\API\SettingController;
 use App\Http\Controllers\API\BranchController;
+use App\Http\Controllers\API\PackageController;
+use App\Http\Controllers\API\CustomerController;
+use App\Http\Controllers\API\OrderController;
+use App\Http\Controllers\API\PaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -62,6 +66,40 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/branches/{branch}', [BranchController::class, 'show'])->middleware('permission:view_branch');
     Route::put('/branches/{branch}', [BranchController::class, 'update'])->middleware('permission:edit_branch');
     Route::delete('/branches/{branch}', [BranchController::class, 'destroy'])->middleware('permission:delete_branch');
+
+    // Package Management
+    Route::get('/packages', [PackageController::class, 'index'])->middleware('permission:view_package');
+    Route::post('/packages', [PackageController::class, 'store'])->middleware('permission:create_package');
+    Route::get('/packages/{package}', [PackageController::class, 'show'])->middleware('permission:view_package');
+    Route::put('/packages/{package}', [PackageController::class, 'update'])->middleware('permission:edit_package');
+    Route::delete('/packages/{package}', [PackageController::class, 'destroy'])->middleware('permission:delete_package');
+
+    // Customer Management
+    Route::get('/customers', [CustomerController::class, 'index'])->middleware('permission:view_customer');
+    Route::post('/customers', [CustomerController::class, 'store'])->middleware('permission:create_customer');
+    Route::get('/customers/{customer}', [CustomerController::class, 'show'])->middleware('permission:view_customer');
+    Route::put('/customers/{customer}', [CustomerController::class, 'update'])->middleware('permission:edit_customer');
+    Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])->middleware('permission:delete_customer');
+    Route::put('/customers/{customer}/status', [CustomerController::class, 'updateStatus'])->middleware('permission:edit_customer');
+    Route::post('/customers/{customer}/recalculate-stats', [CustomerController::class, 'recalculateStats'])->middleware('permission:edit_customer');
+
+    // Order Management
+    Route::get('/orders', [OrderController::class, 'index'])->middleware('permission:view_order');
+    Route::post('/orders', [OrderController::class, 'store'])->middleware('permission:create_order');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->middleware('permission:view_order');
+    Route::put('/orders/{order}', [OrderController::class, 'update'])->middleware('permission:edit_order');
+    Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->middleware('permission:delete_order');
+    Route::put('/orders/{order}/status', [OrderController::class, 'updateStatus'])->middleware('permission:edit_order');
+    Route::put('/orders/{order}/payment-status', [OrderController::class, 'updatePaymentStatus'])->middleware('permission:edit_order');
+    Route::get('/orders/customer/{customerId}', [OrderController::class, 'getByCustomer'])->middleware('permission:view_order');
+
+    // Payment Management
+    Route::get('/payments', [PaymentController::class, 'index'])->middleware('permission:view_payment');
+    Route::post('/payments', [PaymentController::class, 'store'])->middleware('permission:create_payment');
+    Route::get('/payments/{payment}', [PaymentController::class, 'show'])->middleware('permission:view_payment');
+    Route::put('/payments/{payment}', [PaymentController::class, 'update'])->middleware('permission:edit_payment');
+    Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->middleware('permission:delete_payment');
+    Route::get('/payments/order/{orderId}', [PaymentController::class, 'getByOrder'])->middleware('permission:view_payment');
 
     // Settings
     Route::get('/settings', [SettingController::class, 'index'])->middleware('permission:view_setting');

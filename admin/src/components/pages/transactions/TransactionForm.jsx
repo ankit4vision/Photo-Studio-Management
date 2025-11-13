@@ -115,12 +115,14 @@ const TransactionForm = forwardRef(({
 
   const loadCustomers = async () => {
     try {
-      const response = await customerService.getCustomers()
+      // Load customers from database via customerService
+      const response = await customerService.getCustomers({ limit: 1000 })
       if (response.success) {
         setCustomers(response.data || [])
       }
     } catch (error) {
       console.error('Error loading customers:', error)
+      setCustomers([])
     }
   }
 
@@ -288,10 +290,24 @@ const TransactionForm = forwardRef(({
 
   const customerOptions = [
     { value: '', label: 'Select Customer' },
-    ...customers.map(customer => ({
-      value: customer.id.toString(),
-      label: `${customer.name || customer.firstName} ${customer.lastName || ''} - ${customer.mobile || customer.phone || ''}`
-    }))
+    ...customers.map(customer => {
+      // Get customer name (ONLY name, no mobile/phone)
+      let customerName = 'Customer'
+      if (customer.name) {
+        customerName = customer.name.trim()
+      } else if (customer.firstName || customer.lastName) {
+        customerName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+      }
+      
+      // Get customer_code in #CUST format (like in customer list)
+      const customerCode = customer.customer_code || customer.customerId || customer.photographerId || (customer.id ? `#CUST${String(customer.id).padStart(3, '0')}` : '')
+      
+      // Format: Customer Name (#CUST006)
+      return {
+        value: customer.id.toString(),
+        label: customerCode ? `${customerName} (${customerCode})` : customerName
+      }
+    })
   ]
 
   const branchOptions = [

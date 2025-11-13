@@ -1,39 +1,108 @@
 // Order Management Service
-import apiService from '../api'
+import apiClient from '../config/apiClient'
 import { API_ENDPOINTS } from '../constants/api'
 import ordersMockData from '../mock/orders.json'
 import { customerService } from './customerService'
+import { handleApiError } from '../utils/errorHandler'
 
 class OrderService {
+  transformListResponse(payload) {
+    if (!payload) {
+      return {
+        success: false,
+        data: { orders: [], total: 0 },
+        meta: null,
+        message: 'No response received from server.',
+      }
+    }
+
+    const data = Array.isArray(payload.data)
+      ? payload.data
+      : Array.isArray(payload.data?.data)
+        ? payload.data.data
+        : payload.data || []
+
+    const meta = payload.meta ?? {}
+
+    return {
+      success: payload.success ?? true,
+      data: {
+        orders: data,
+        total: meta.total ?? data.length,
+      },
+      meta: {
+        total: meta.total ?? data.length,
+        page: meta.page ?? 1,
+        limit: meta.limit ?? (data.length || 1),
+        totalPages: meta.totalPages ?? 1,
+        hasNext: meta.hasNext ?? false,
+        hasPrev: meta.hasPrev ?? false,
+        sortBy: meta.sortBy ?? null,
+        sortDirection: meta.sortDirection ?? null,
+      },
+      message: payload.message ?? '',
+    }
+  }
+
+  transformItemResponse(payload) {
+    if (!payload) {
+      return {
+        success: false,
+        data: null,
+        message: 'No response received from server.',
+      }
+    }
+
+    return {
+      success: payload.success ?? true,
+      data: payload.data ?? payload,
+      message: payload.message ?? '',
+    }
+  }
+
+  buildQueryParams(params = {}) {
+    const query = {}
+
+    if (params.page) query.page = params.page
+    if (params.limit) query.limit = params.limit
+    if (params.search) query.search = params.search
+    if (params.status) query.status = params.status
+    if (params.paymentStatus || params.payment_status) query.payment_status = params.paymentStatus || params.payment_status
+    if (params.paymentMethod || params.payment_method) query.payment_method = params.paymentMethod || params.payment_method
+    if (params.customerId || params.customer_id) query.customer_id = params.customerId || params.customer_id
+    if (params.branchId || params.branch_id) query.branch_id = params.branchId || params.branch_id
+    if (params.startDate || params.start_date) query.start_date = params.startDate || params.start_date
+    if (params.endDate || params.end_date) query.end_date = params.endDate || params.end_date
+    if (params.dueDateFrom || params.due_date_from) query.due_date_from = params.dueDateFrom || params.due_date_from
+    if (params.dueDateTo || params.due_date_to) query.due_date_to = params.dueDateTo || params.due_date_to
+    if (params.minTotalAmount || params.min_total_amount) query.min_total_amount = params.minTotalAmount || params.min_total_amount
+    if (params.maxTotalAmount || params.max_total_amount) query.max_total_amount = params.maxTotalAmount || params.max_total_amount
+    if (params.minPaidAmount || params.min_paid_amount) query.min_paid_amount = params.minPaidAmount || params.min_paid_amount
+    if (params.maxPaidAmount || params.max_paid_amount) query.max_paid_amount = params.maxPaidAmount || params.max_paid_amount
+    if (params.minBalanceAmount || params.min_balance_amount) query.min_balance_amount = params.minBalanceAmount || params.min_balance_amount
+    if (params.maxBalanceAmount || params.max_balance_amount) query.max_balance_amount = params.maxBalanceAmount || params.max_balance_amount
+    if (params.sortBy || params.sort_by) query.sort_by = params.sortBy || params.sort_by
+    if (params.sortDirection || params.sort_direction) query.sort_direction = params.sortDirection || params.sort_direction
+
+    return query
+  }
+
   // Get all orders with pagination and filters
   async getOrders(params = {}) {
     try {
-      const queryParams = new URLSearchParams()
-      
-      if (params.page) queryParams.append('page', params.page)
-      if (params.limit) queryParams.append('limit', params.limit)
-      if (params.search) queryParams.append('search', params.search)
-      if (params.status) queryParams.append('status', params.status)
-      if (params.paymentStatus) queryParams.append('paymentStatus', params.paymentStatus)
-      if (params.customerId) queryParams.append('customerId', params.customerId)
-      if (params.startDate) queryParams.append('startDate', params.startDate)
-      if (params.endDate) queryParams.append('endDate', params.endDate)
-      if (params.sortBy) queryParams.append('sortBy', params.sortBy)
-      if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder)
+      const response = await apiClient.get(API_ENDPOINTS.ORDERS.LIST, {
+        params: this.buildQueryParams(params),
+      })
 
-      const endpoint = `${API_ENDPOINTS.ORDERS.LIST}?${queryParams.toString()}`
-      const response = await apiService.get(endpoint)
-      
-      // If API call succeeds, return the response
-      if (response && response.success) {
-        return response
+      const payload = this.transformListResponse(response?.data)
+
+      if (payload.success) {
+        return payload
       }
-      
-      // Fallback to mock data if API fails
+
       return this.getMockOrders(params)
     } catch (error) {
       console.warn('API call failed, using mock data:', error)
-      // Return mock data if API call fails
       return this.getMockOrders(params)
     }
   }
@@ -93,12 +162,8 @@ class OrderService {
   // Get order by ID
   async getOrderById(orderId) {
     try {
-      const response = await apiService.get(API_ENDPOINTS.ORDERS.GET_BY_ID(orderId))
-      if (response && response.success) {
-        return response
-      }
-      // Fallback to mock data
-      return this.getMockOrderById(orderId)
+      const response = await apiClient.get(API_ENDPOINTS.ORDERS.GET_BY_ID(orderId))
+      return this.transformItemResponse(response?.data)
     } catch (error) {
       console.warn('API call failed, using mock data:', error)
       return this.getMockOrderById(orderId)
@@ -124,12 +189,27 @@ class OrderService {
   // Create new order
   async createOrder(orderData) {
     try {
-      const response = await apiService.post(API_ENDPOINTS.ORDERS.CREATE, orderData)
-      if (response && response.success) {
-        return response
+      // Transform frontend format to backend format
+      const backendData = {
+        customer_id: orderData.customer_id || orderData.customerId,
+        branch_id: orderData.branch_id || orderData.branchId,
+        order_date: orderData.order_date || orderData.orderDate || new Date().toISOString().split('T')[0],
+        due_date: orderData.due_date || orderData.dueDate,
+        discount: orderData.discount || orderData.flat_discount || 0,
+        paid_amount: orderData.paid_amount || orderData.paidAmount || 0,
+        status: orderData.status || 'pending',
+        payment_status: orderData.payment_status || orderData.paymentStatus || 'pending',
+        payment_method: orderData.payment_method || orderData.paymentMethod,
+        notes: orderData.notes,
+        items: (orderData.items || []).map(item => ({
+          package_id: item.package_id || item.packageId,
+          quantity: item.quantity || item.qty || 1,
+          unit_price: item.unit_price || item.unitPrice || item.price || 0,
+        })),
       }
-      // Fallback to mock data (simulate creation)
-      return this.createMockOrder(orderData)
+
+      const response = await apiClient.post(API_ENDPOINTS.ORDERS.CREATE, backendData)
+      return this.transformItemResponse(response?.data)
     } catch (error) {
       console.warn('API call failed, using mock data:', error)
       return this.createMockOrder(orderData)
@@ -289,136 +369,139 @@ class OrderService {
 
   // Update order
   async updateOrder(orderId, orderData) {
-    return apiService.put(API_ENDPOINTS.ORDERS.UPDATE(orderId), orderData)
+    try {
+      // Transform frontend format to backend format
+      const backendData = {
+        customer_id: orderData.customer_id || orderData.customerId,
+        branch_id: orderData.branch_id || orderData.branchId,
+        order_date: orderData.order_date || orderData.orderDate,
+        due_date: orderData.due_date || orderData.dueDate,
+        discount: orderData.discount || orderData.flat_discount,
+        paid_amount: orderData.paid_amount || orderData.paidAmount,
+        status: orderData.status,
+        payment_status: orderData.payment_status || orderData.paymentStatus,
+        payment_method: orderData.payment_method || orderData.paymentMethod,
+        notes: orderData.notes,
+        items: orderData.items ? (orderData.items || []).map(item => ({
+          package_id: item.package_id || item.packageId,
+          quantity: item.quantity || item.qty || 1,
+          unit_price: item.unit_price || item.unitPrice || item.price || 0,
+        })) : undefined,
+      }
+
+      const response = await apiClient.put(API_ENDPOINTS.ORDERS.UPDATE(orderId), backendData)
+      return this.transformItemResponse(response?.data)
+    } catch (error) {
+      console.warn('API call failed:', error)
+      return handleApiError(error)
+    }
   }
 
   // Delete order
   async deleteOrder(orderId) {
-    return apiService.delete(API_ENDPOINTS.ORDERS.DELETE(orderId))
+    try {
+      const response = await apiClient.delete(API_ENDPOINTS.ORDERS.DELETE(orderId))
+      return this.transformItemResponse(response?.data)
+    } catch (error) {
+      console.warn('API call failed:', error)
+      return handleApiError(error)
+    }
   }
 
   // Update order status
   async updateOrderStatus(orderId, status, notes = '') {
-    return apiService.patch(API_ENDPOINTS.ORDERS.UPDATE_STATUS(orderId), { 
-      status, 
-      notes 
-    })
+    try {
+      const response = await apiClient.put(API_ENDPOINTS.ORDERS.UPDATE_STATUS(orderId), { 
+        status, 
+        notes 
+      })
+      return this.transformItemResponse(response?.data)
+    } catch (error) {
+      console.warn('API call failed:', error)
+      return handleApiError(error)
+    }
   }
 
   // Update payment status
-  async updatePaymentStatus(orderId, paymentStatus, paymentMethod = '') {
-    return apiService.patch(API_ENDPOINTS.ORDERS.UPDATE_PAYMENT_STATUS(orderId), { 
-      paymentStatus, 
-      paymentMethod 
-    })
-  }
+  async updatePaymentStatus(orderId, paymentStatus, paymentMethod = '', paidAmount = null) {
+    try {
+      const data = { payment_status: paymentStatus }
+      if (paymentMethod) data.payment_method = paymentMethod
+      if (paidAmount !== null) data.paid_amount = paidAmount
 
-  // Update shipping information
-  async updateShippingInfo(orderId, shippingData) {
-    return apiService.patch(API_ENDPOINTS.ORDERS.UPDATE_SHIPPING(orderId), shippingData)
-  }
-
-  // Cancel order
-  async cancelOrder(orderId, reason = '') {
-    return apiService.patch(API_ENDPOINTS.ORDERS.CANCEL(orderId), { reason })
-  }
-
-  // Refund order
-  async refundOrder(orderId, amount, reason = '') {
-    return apiService.post(API_ENDPOINTS.ORDERS.REFUND(orderId), { 
-      amount, 
-      reason 
-    })
-  }
-
-  // Bulk update orders
-  async bulkUpdateOrders(orderIds, updateData) {
-    return apiService.patch(API_ENDPOINTS.ORDERS.BULK_UPDATE, { 
-      orderIds, 
-      ...updateData 
-    })
-  }
-
-  // Bulk delete orders
-  async bulkDeleteOrders(orderIds) {
-    return apiService.post(API_ENDPOINTS.ORDERS.BULK_DELETE, { orderIds })
-  }
-
-  // Search orders
-  async searchOrders(query, filters = {}) {
-    const searchParams = { query, ...filters }
-    return apiService.post(API_ENDPOINTS.ORDERS.SEARCH, searchParams)
-  }
-
-  // Export orders
-  async exportOrders(format = 'csv', filters = {}) {
-    const queryParams = new URLSearchParams()
-    queryParams.append('format', format)
-    
-    Object.keys(filters).forEach(key => {
-      if (filters[key]) queryParams.append(key, filters[key])
-    })
-
-    const endpoint = `${API_ENDPOINTS.ORDERS.EXPORT}?${queryParams.toString()}`
-    return apiService.get(endpoint, { responseType: 'blob' })
+      const response = await apiClient.put(API_ENDPOINTS.ORDERS.UPDATE_PAYMENT_STATUS(orderId), data)
+      return this.transformItemResponse(response?.data)
+    } catch (error) {
+      console.warn('API call failed:', error)
+      return handleApiError(error)
+    }
   }
 
   // Get order statistics
   async getOrderStats(params = {}) {
-    const queryParams = new URLSearchParams()
-    
-    if (params.startDate) queryParams.append('startDate', params.startDate)
-    if (params.endDate) queryParams.append('endDate', params.endDate)
-    if (params.groupBy) queryParams.append('groupBy', params.groupBy)
+    try {
+      // Calculate stats from orders list
+      const response = await this.getOrders({ ...params, limit: 10000 })
+      if (response.success && response.data) {
+        const orders = response.data.orders || []
+        const totalOrders = orders.length
+        const pendingOrders = orders.filter(o => o.status === 'pending').length
+        const processingOrders = orders.filter(o => o.status === 'processing').length
+        const completedOrders = orders.filter(o => o.status === 'completed').length
+        const totalRevenue = orders.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0)
+        const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
 
-    const endpoint = `${API_ENDPOINTS.ORDERS.STATS}?${queryParams.toString()}`
-    return apiService.get(endpoint)
+        return {
+          success: true,
+          data: {
+            totalOrders,
+            pendingOrders,
+            processingOrders,
+            completedOrders,
+            totalRevenue,
+            averageOrderValue,
+          },
+          message: 'Order statistics fetched successfully'
+        }
+      }
+      return this.getMockOrderStats()
+    } catch (error) {
+      console.warn('API call failed, using mock data:', error)
+      return this.getMockOrderStats()
+    }
   }
 
-  // Get order timeline/history
-  async getOrderHistory(orderId) {
-    return apiService.get(API_ENDPOINTS.ORDERS.GET_HISTORY(orderId))
-  }
+  // Get mock order statistics (fallback)
+  getMockOrderStats() {
+    const orders = ordersMockData.orders || []
+    const totalOrders = orders.length
+    const pendingOrders = orders.filter(o => o.status === 'pending').length
+    const processingOrders = orders.filter(o => o.status === 'processing').length
+    const completedOrders = orders.filter(o => o.status === 'completed').length
+    const totalRevenue = orders.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0)
+    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
 
-  // Add note to order
-  async addOrderNote(orderId, note, isInternal = false) {
-    return apiService.post(API_ENDPOINTS.ORDERS.ADD_NOTE(orderId), { 
-      note, 
-      isInternal 
-    })
-  }
-
-  // Get order notes
-  async getOrderNotes(orderId) {
-    return apiService.get(API_ENDPOINTS.ORDERS.GET_NOTES(orderId))
-  }
-
-  // Send order confirmation email
-  async sendOrderConfirmation(orderId) {
-    return apiService.post(API_ENDPOINTS.ORDERS.SEND_CONFIRMATION(orderId))
-  }
-
-  // Send order update email
-  async sendOrderUpdate(orderId, updateType) {
-    return apiService.post(API_ENDPOINTS.ORDERS.SEND_UPDATE(orderId), { updateType })
+    return {
+      success: true,
+      data: {
+        totalOrders,
+        pendingOrders,
+        processingOrders,
+        completedOrders,
+        totalRevenue,
+        averageOrderValue,
+      },
+      message: 'Order statistics fetched successfully (mock)'
+    }
   }
 
   // Get orders by customer
   async getOrdersByCustomer(customerId, params = {}) {
-    const queryParams = new URLSearchParams()
-    
-    if (params.page) queryParams.append('page', params.page)
-    if (params.limit) queryParams.append('limit', params.limit)
-    if (params.status) queryParams.append('status', params.status)
-
-    const endpoint = `${API_ENDPOINTS.ORDERS.GET_BY_CUSTOMER(customerId)}?${queryParams.toString()}`
-
     try {
-      const response = await apiService.get(endpoint)
-      if (response && response.success) {
-        return response
-      }
-      return this.getMockOrdersByCustomer(customerId, params)
+      const response = await apiClient.get(API_ENDPOINTS.ORDERS.GET_BY_CUSTOMER(customerId), {
+        params: this.buildQueryParams(params),
+      })
+      return this.transformListResponse(response?.data)
     } catch (error) {
       console.warn('API call failed, using mock data:', error)
       return this.getMockOrdersByCustomer(customerId, params)
@@ -433,52 +516,6 @@ class OrderService {
     return this.getMockOrders(mockParams)
   }
 
-  // Get order items
-  async getOrderItems(orderId) {
-    return apiService.get(API_ENDPOINTS.ORDERS.GET_ITEMS(orderId))
-  }
-
-  // Update order item
-  async updateOrderItem(orderId, itemId, itemData) {
-    return apiService.put(API_ENDPOINTS.ORDERS.UPDATE_ITEM(orderId, itemId), itemData)
-  }
-
-  // Remove order item
-  async removeOrderItem(orderId, itemId) {
-    return apiService.delete(API_ENDPOINTS.ORDERS.REMOVE_ITEM(orderId, itemId))
-  }
-
-  // Add item to order
-  async addOrderItem(orderId, itemData) {
-    return apiService.post(API_ENDPOINTS.ORDERS.ADD_ITEM(orderId), itemData)
-  }
-
-  // Print order invoice
-  async printOrderInvoice(orderId) {
-    return apiService.get(API_ENDPOINTS.ORDERS.PRINT_INVOICE(orderId), { 
-      responseType: 'blob' 
-    })
-  }
-
-  // Print order receipt
-  async printOrderReceipt(orderId) {
-    return apiService.get(API_ENDPOINTS.ORDERS.PRINT_RECEIPT(orderId), { 
-      responseType: 'blob' 
-    })
-  }
-
-  // Get order analytics
-  async getOrderAnalytics(params = {}) {
-    const queryParams = new URLSearchParams()
-    
-    if (params.startDate) queryParams.append('startDate', params.startDate)
-    if (params.endDate) queryParams.append('endDate', params.endDate)
-    if (params.metrics) queryParams.append('metrics', params.metrics.join(','))
-    if (params.groupBy) queryParams.append('groupBy', params.groupBy)
-
-    const endpoint = `${API_ENDPOINTS.ORDERS.ANALYTICS}?${queryParams.toString()}`
-    return apiService.get(endpoint)
-  }
 
   // Validate order data
   validateOrderData(orderData, isUpdate = false) {

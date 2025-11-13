@@ -1173,6 +1173,1053 @@ const loadBranches = async () => {
 
 ---
 
+## 📦 Package Management APIs
+
+### 1. **GET /api/packages**
+**Description**: Packages की list fetch करने के लिए (paginated, sortable)
+
+**Backend Controller**: `PackageController@index`
+
+**Query Parameters**:
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 20, max: 100)
+- `search` - Search term (package_name, description, package_type में search)
+- `package_type` - Filter by package type (Album, PhotoShoot, Editing, Video)
+- `status` - Filter by status (active/inactive)
+- `sort_by` - Sort column (package_name, package_type, default_price, status, created_at)
+- `sort_direction` - Sort direction (asc/desc)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "package_name": "Wedding Photography Basic",
+      "package_type": "PhotoShoot",
+      "default_price": 25000.00,
+      "description": "Basic wedding photography package with 4 hours coverage, 200 edited photos",
+      "status": "active",
+      "created_at": "2024-01-01T00:00:00.000000Z",
+      "updated_at": "2024-01-01T00:00:00.000000Z"
+    }
+  ],
+  "meta": {
+    "total": 10,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1,
+    "hasNext": false,
+    "hasPrev": false,
+    "sortBy": "created_at",
+    "sortDirection": "desc"
+  }
+}
+```
+
+**Permission Required**: `view_package`
+
+**Frontend Integration**:
+- **Service**: `src/services/packageService.js`
+- **Method**: `packageService.getPackages(params)`
+- **Used In**:
+  - `src/views/packages/PackagesList.jsx` - Packages list page में
+
+**Usage Example**:
+```javascript
+import packageService from '../services/packageService'
+
+const loadPackages = async () => {
+  const result = await packageService.getPackages({
+    page: 1,
+    limit: 20,
+    search: searchTerm,
+    package_type: typeFilter,
+    status: statusFilter
+  })
+  
+  if (result.success) {
+    setPackages(result.data)
+    setMeta(result.meta)
+  }
+}
+```
+
+---
+
+### 2. **GET /api/packages/{package}**
+**Description**: Specific package की details fetch करने के लिए
+
+**Backend Controller**: `PackageController@show`
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "package_name": "Wedding Photography Basic",
+    "package_type": "PhotoShoot",
+    "default_price": 25000.00,
+    "description": "Basic wedding photography package with 4 hours coverage, 200 edited photos",
+    "status": "active",
+    "created_at": "2024-01-01T00:00:00.000000Z",
+    "updated_at": "2024-01-01T00:00:00.000000Z"
+  },
+  "message": "Package retrieved successfully."
+}
+```
+
+**Permission Required**: `view_package`
+
+**Frontend Integration**:
+- **Service**: `src/services/packageService.js`
+- **Method**: `packageService.getPackageById(id)`
+- **Used In**:
+  - `src/components/pages/packages/PackageForm.jsx` - Edit package form में data load करने के लिए
+
+---
+
+### 3. **POST /api/packages**
+**Description**: New package create करने के लिए
+
+**Backend Controller**: `PackageController@store`
+
+**Request Body**:
+```json
+{
+  "package_name": "Wedding Photography Basic",
+  "package_type": "PhotoShoot",
+  "default_price": 25000,
+  "description": "Basic wedding photography package with 4 hours coverage, 200 edited photos",
+  "status": "active"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "package_name": "Wedding Photography Basic",
+    "package_type": "PhotoShoot",
+    "default_price": 25000.00,
+    "description": "Basic wedding photography package with 4 hours coverage, 200 edited photos",
+    "status": "active",
+    "created_at": "2024-01-01T00:00:00.000000Z",
+    "updated_at": "2024-01-01T00:00:00.000000Z"
+  },
+  "message": "Package created successfully."
+}
+```
+
+**Permission Required**: `create_package`
+
+**Frontend Integration**:
+- **Service**: `src/services/packageService.js`
+- **Method**: `packageService.createPackage(packageData)`
+- **Used In**:
+  - `src/components/pages/packages/PackageForm.jsx` - Create package form में
+  - `src/views/packages/PackagesList.jsx` - Add package button click पर
+
+**Usage Example**:
+```javascript
+import packageService from '../services/packageService'
+
+const handleCreatePackage = async (formData) => {
+  const result = await packageService.createPackage({
+    package_name: formData.package_name,
+    package_type: formData.package_type,
+    default_price: formData.default_price,
+    description: formData.description,
+    status: formData.status
+  })
+  
+  if (result.success) {
+    toast.success('Package created successfully')
+    // Refresh packages list
+  }
+}
+```
+
+---
+
+### 4. **PUT /api/packages/{package}**
+**Description**: Existing package update करने के लिए
+
+**Backend Controller**: `PackageController@update`
+
+**Request Body**:
+```json
+{
+  "package_name": "Wedding Photography Premium",
+  "package_type": "PhotoShoot",
+  "default_price": 50000,
+  "description": "Premium wedding photography package with full day coverage",
+  "status": "active"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "package_name": "Wedding Photography Premium",
+    "package_type": "PhotoShoot",
+    "default_price": 50000.00,
+    "description": "Premium wedding photography package with full day coverage",
+    "status": "active",
+    "updated_at": "2024-01-01T00:00:00.000000Z"
+  },
+  "message": "Package updated successfully."
+}
+```
+
+**Permission Required**: `edit_package`
+
+**Frontend Integration**:
+- **Service**: `src/services/packageService.js`
+- **Method**: `packageService.updatePackage(packageId, packageData)`
+- **Used In**:
+  - `src/components/pages/packages/PackageForm.jsx` - Edit package form में
+  - `src/views/packages/PackagesList.jsx` - Edit package button click पर
+
+**Usage Example**:
+```javascript
+import packageService from '../services/packageService'
+
+const handleUpdatePackage = async (packageId, formData) => {
+  const result = await packageService.updatePackage(packageId, {
+    package_name: formData.package_name,
+    package_type: formData.package_type,
+    default_price: formData.default_price,
+    description: formData.description,
+    status: formData.status
+  })
+  
+  if (result.success) {
+    toast.success('Package updated successfully')
+    // Refresh packages list
+  }
+}
+```
+
+---
+
+### 5. **DELETE /api/packages/{package}**
+**Description**: Package delete करने के लिए (soft delete)
+
+**Backend Controller**: `PackageController@destroy`
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Package deleted successfully."
+}
+```
+
+**Permission Required**: `delete_package`
+
+**Frontend Integration**:
+- **Service**: `src/services/packageService.js`
+- **Method**: `packageService.deletePackage(packageId)`
+- **Used In**:
+  - `src/views/packages/PackagesList.jsx` - Delete package button click पर
+
+**Usage Example**:
+```javascript
+import packageService from '../services/packageService'
+
+const handleDeletePackage = async (packageId) => {
+  if (window.confirm('Are you sure you want to delete this package?')) {
+    const result = await packageService.deletePackage(packageId)
+    if (result.success) {
+      toast.success('Package deleted successfully')
+      // Refresh packages list
+    }
+  }
+}
+```
+
+---
+
+## 👥 Customer Management APIs
+
+### 1. **GET /api/customers**
+**Description**: Customers की list fetch करने के लिए (paginated, sortable)
+
+**Backend Controller**: `CustomerController@index`
+
+**Query Parameters**:
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 20, max: 100)
+- `search` - Search term (first_name, last_name, email, phone में search)
+- `status` - Filter by status (active, suspended, pending, inactive)
+- `branch_id` - Filter by branch
+- `city` - Filter by city
+- `sort_by` - Sort column (first_name, email, city, status, created_at)
+- `sort_direction` - Sort direction (asc/desc)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "customerId": "#CUST001",
+      "customer_code": "#CUST001",
+      "name": "Rajesh Patel",
+      "firstName": "Rajesh",
+      "lastName": "Patel",
+      "email": "rajesh.patel@email.com",
+      "mobile": "+91 98765 43210",
+      "phone": "+91 98765 43210",
+      "address": {
+        "street": "123 MG Road",
+        "city": "Ahmedabad",
+        "state": "Gujarat",
+        "postalCode": "380001",
+        "country": "India"
+      },
+      "status": "active",
+      "branch_id": 1,
+      "branch_name": "Lunawada Main",
+      "branch_code": "MB001",
+      "totalOrders": 5,
+      "total_orders": 5,
+      "totalSpent": 125000,
+      "total_amount": 125000,
+      "paid_amount": 100000,
+      "remaining_amount": 25000,
+      "wallet_balance": 5000,
+      "dob": "1990-05-15",
+      "anniversary_date": "2018-06-20",
+      "created_at": "2024-01-15T10:30:00.000000Z"
+    }
+  ],
+  "meta": {
+    "total": 10,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1,
+    "hasNext": false,
+    "hasPrev": false,
+    "sortBy": "created_at",
+    "sortDirection": "desc"
+  }
+}
+```
+
+**Permission Required**: `view_customer`
+
+**Frontend Integration**:
+- **Service**: `src/services/customerService.js`
+- **Method**: `customerService.getCustomers(params)`
+- **Used In**:
+  - `src/views/customers/CustomersList.jsx` - Customers list page में
+
+**Note**: Customer stats (totalOrders, total_amount, paid_amount, etc.) automatically calculate होते हैं orders से
+
+---
+
+### 2. **GET /api/customers/{customer}**
+**Description**: Specific customer की details fetch करने के लिए
+
+**Backend Controller**: `CustomerController@show`
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "customerId": "#CUST001",
+    "name": "Rajesh Patel",
+    "firstName": "Rajesh",
+    "lastName": "Patel",
+    "email": "rajesh.patel@email.com",
+    "phone": "+91 98765 43210",
+    "address": {...},
+    "status": "active",
+    "totalOrders": 5,
+    "total_amount": 125000,
+    "paid_amount": 100000,
+    "remaining_amount": 25000
+  },
+  "message": "Customer retrieved successfully."
+}
+```
+
+**Permission Required**: `view_customer`
+
+**Frontend Integration**:
+- **Service**: `src/services/customerService.js`
+- **Method**: `customerService.getCustomerById(id)`
+- **Used In**:
+  - `src/components/pages/customers/CustomerForm.jsx` - Edit customer form में
+  - `src/components/pages/customers/CustomerDetailsModal.jsx` - Customer details modal में
+
+---
+
+### 3. **POST /api/customers**
+**Description**: New customer create करने के लिए
+
+**Backend Controller**: `CustomerController@store`
+
+**Request Body**:
+```json
+{
+  "first_name": "Rajesh",
+  "last_name": "Patel",
+  "email": "rajesh.patel@email.com",
+  "phone": "+91 98765 43210",
+  "mobile": "+91 98765 43210",
+  "address": "123 MG Road",
+  "city": "Ahmedabad",
+  "state": "Gujarat",
+  "postal_code": "380001",
+  "country": "India",
+  "branch_id": 1,
+  "status": "active",
+  "dob": "1990-05-15",
+  "anniversary_date": "2018-06-20"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "customer_code": "#CUST001",
+    "first_name": "Rajesh",
+    "last_name": "Patel",
+    "email": "rajesh.patel@email.com",
+    "status": "active",
+    "total_orders": 0,
+    "total_amount": 0,
+    "created_at": "2024-01-15T10:30:00.000000Z"
+  },
+  "message": "Customer created successfully."
+}
+```
+
+**Permission Required**: `create_customer`
+
+**Frontend Integration**:
+- **Service**: `src/services/customerService.js`
+- **Method**: `customerService.createCustomer(customerData)`
+- **Used In**:
+  - `src/components/pages/customers/CustomerForm.jsx` - Create customer form में
+
+---
+
+### 4. **PUT /api/customers/{customer}**
+**Description**: Existing customer update करने के लिए
+
+**Backend Controller**: `CustomerController@update`
+
+**Request Body**:
+```json
+{
+  "first_name": "Rajesh",
+  "last_name": "Patel",
+  "email": "rajesh.patel@email.com",
+  "phone": "+91 98765 43210",
+  "status": "active"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Customer updated successfully."
+}
+```
+
+**Permission Required**: `edit_customer`
+
+**Frontend Integration**:
+- **Service**: `src/services/customerService.js`
+- **Method**: `customerService.updateCustomer(id, customerData)`
+- **Used In**:
+  - `src/components/pages/customers/CustomerForm.jsx` - Edit customer form में
+
+---
+
+### 5. **DELETE /api/customers/{customer}**
+**Description**: Customer delete करने के लिए (soft delete)
+
+**Backend Controller**: `CustomerController@destroy`
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Customer deleted successfully."
+}
+```
+
+**Permission Required**: `delete_customer`
+
+**Frontend Integration**:
+- **Service**: `src/services/customerService.js`
+- **Method**: `customerService.deleteCustomer(id)`
+- **Used In**:
+  - `src/views/customers/CustomersList.jsx` - Delete customer button click पर
+
+---
+
+### 6. **PUT /api/customers/{customer}/status**
+**Description**: Customer status update करने के लिए
+
+**Backend Controller**: `CustomerController@updateStatus`
+
+**Request Body**:
+```json
+{
+  "status": "suspended"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Customer status updated successfully."
+}
+```
+
+**Permission Required**: `edit_customer`
+
+**Frontend Integration**:
+- **Service**: `src/services/customerService.js`
+- **Method**: `customerService.updateCustomerStatus(id, status)`
+- **Used In**:
+  - `src/components/pages/customers/SuspendCustomerModal.jsx` - Suspend customer में
+
+---
+
+### 7. **POST /api/customers/{customer}/recalculate-stats**
+**Description**: Customer statistics manually recalculate करने के लिए (orders से)
+
+**Backend Controller**: `CustomerController@recalculateStats`
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Customer statistics recalculated successfully."
+}
+```
+
+**Permission Required**: `edit_customer`
+
+**Note**: Customer stats automatically update होते हैं जब orders create/update/delete होते हैं
+
+---
+
+## 📦 Order Management APIs
+
+### 1. **GET /api/orders**
+**Description**: Orders की list fetch करने के लिए (paginated, sortable)
+
+**Backend Controller**: `OrderController@index`
+
+**Query Parameters**:
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 20, max: 100)
+- `search` - Search term (order_number, customer name/email में search)
+- `status` - Filter by status (pending, processing, completed, cancelled)
+- `payment_status` - Filter by payment status (pending, paid, partial, refunded)
+- `customer_id` - Filter by customer
+- `branch_id` - Filter by branch
+- `start_date` - Filter orders from date
+- `end_date` - Filter orders to date
+- `sort_by` - Sort column (order_number, order_date, total_amount, status, payment_status, created_at)
+- `sort_direction` - Sort direction (asc/desc)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "order_number": "#ORD001",
+      "orderNumber": "#ORD001",
+      "customerId": 1,
+      "customer_id": 1,
+      "customer": {
+        "id": 1,
+        "firstName": "Rajesh",
+        "lastName": "Patel",
+        "name": "Rajesh Patel",
+        "email": "rajesh.patel@email.com",
+        "phone": "+91 98765 43210"
+      },
+      "branch_id": 1,
+      "order_date": "2024-01-20",
+      "orderDate": "2024-01-20T00:00:00.000Z",
+      "subtotal": 50000,
+      "discount": 0,
+      "total_amount": 50000,
+      "totalAmount": 50000,
+      "paid_amount": 50000,
+      "balance_amount": 0,
+      "status": "completed",
+      "payment_status": "paid",
+      "paymentStatus": "paid",
+      "payment_method": "upi",
+      "paymentMethod": "upi",
+      "items": [
+        {
+          "id": 1,
+          "package_id": 2,
+          "package_name": "Wedding Photography Premium",
+          "quantity": 1,
+          "unit_price": 50000,
+          "total_price": 50000
+        }
+      ],
+      "created_at": "2024-01-20T10:30:00.000000Z"
+    }
+  ],
+  "meta": {
+    "total": 10,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1,
+    "hasNext": false,
+    "hasPrev": false,
+    "sortBy": "created_at",
+    "sortDirection": "desc"
+  }
+}
+```
+
+**Permission Required**: `view_order`
+
+**Frontend Integration**:
+- **Service**: `src/services/orderService.js`
+- **Method**: `orderService.getOrders(params)`
+- **Used In**:
+  - `src/views/orders/OrdersList.jsx` - Orders list page में
+
+**Note**: Order create/update/delete होने पर customer stats automatically update होते हैं
+
+---
+
+### 2. **GET /api/orders/{order}**
+**Description**: Specific order की details fetch करने के लिए
+
+**Backend Controller**: `OrderController@show`
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "order_number": "#ORD001",
+    "customer": {...},
+    "items": [...],
+    "total_amount": 50000,
+    "status": "completed",
+    "payment_status": "paid"
+  },
+  "message": "Order retrieved successfully."
+}
+```
+
+**Permission Required**: `view_order`
+
+**Frontend Integration**:
+- **Service**: `src/services/orderService.js`
+- **Method**: `orderService.getOrderById(id)`
+- **Used In**:
+  - `src/components/pages/orders/OrderForm.jsx` - Edit order form में
+  - `src/components/pages/orders/OrderDetailsModal.jsx` - Order details modal में
+
+---
+
+### 3. **POST /api/orders**
+**Description**: New order create करने के लिए (multiple packages support)
+
+**Backend Controller**: `OrderController@store`
+
+**Request Body**:
+```json
+{
+  "customer_id": 1,
+  "branch_id": 1,
+  "order_date": "2024-01-20",
+  "due_date": "2024-02-20",
+  "discount": 0,
+  "paid_amount": 0,
+  "status": "pending",
+  "payment_status": "pending",
+  "payment_method": "cash",
+  "notes": "Order notes",
+  "items": [
+    {
+      "package_id": 2,
+      "quantity": 1,
+      "unit_price": 50000
+    },
+    {
+      "package_id": 3,
+      "quantity": 2,
+      "unit_price": 8000
+    }
+  ]
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "order_number": "#ORD001",
+    "customer_id": 1,
+    "total_amount": 66000,
+    "items": [...],
+    "created_at": "2024-01-20T10:30:00.000000Z"
+  },
+  "message": "Order created successfully."
+}
+```
+
+**Permission Required**: `create_order`
+
+**Frontend Integration**:
+- **Service**: `src/services/orderService.js`
+- **Method**: `orderService.createOrder(orderData)`
+- **Used In**:
+  - `src/components/pages/orders/OrderForm.jsx` - Create order form में
+
+**Note**: Order create होने पर customer stats automatically update होते हैं
+
+---
+
+### 4. **PUT /api/orders/{order}**
+**Description**: Existing order update करने के लिए
+
+**Backend Controller**: `OrderController@update`
+
+**Request Body**:
+```json
+{
+  "customer_id": 1,
+  "order_date": "2024-01-20",
+  "status": "processing",
+  "payment_status": "partial",
+  "paid_amount": 30000,
+  "items": [
+    {
+      "package_id": 2,
+      "quantity": 1,
+      "unit_price": 50000
+    }
+  ]
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Order updated successfully."
+}
+```
+
+**Permission Required**: `edit_order`
+
+**Frontend Integration**:
+- **Service**: `src/services/orderService.js`
+- **Method**: `orderService.updateOrder(orderId, orderData)`
+- **Used In**:
+  - `src/components/pages/orders/OrderForm.jsx` - Edit order form में
+
+**Note**: Order update होने पर customer stats automatically update होते हैं
+
+---
+
+### 5. **DELETE /api/orders/{order}**
+**Description**: Order delete करने के लिए (soft delete)
+
+**Backend Controller**: `OrderController@destroy`
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Order deleted successfully."
+}
+```
+
+**Permission Required**: `delete_order`
+
+**Frontend Integration**:
+- **Service**: `src/services/orderService.js`
+- **Method**: `orderService.deleteOrder(orderId)`
+- **Used In**:
+  - `src/views/orders/OrdersList.jsx` - Delete order button click पर
+
+**Note**: Order delete होने पर customer stats automatically update होते हैं
+
+---
+
+### 6. **PUT /api/orders/{order}/status**
+**Description**: Order status update करने के लिए
+
+**Backend Controller**: `OrderController@updateStatus`
+
+**Request Body**:
+```json
+{
+  "status": "completed"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Order status updated successfully."
+}
+```
+
+**Permission Required**: `edit_order`
+
+**Frontend Integration**:
+- **Service**: `src/services/orderService.js`
+- **Method**: `orderService.updateOrderStatus(orderId, status)`
+- **Used In**:
+  - Order status change करने के लिए
+
+---
+
+### 7. **PUT /api/orders/{order}/payment-status**
+**Description**: Order payment status update करने के लिए
+
+**Backend Controller**: `OrderController@updatePaymentStatus`
+
+**Request Body**:
+```json
+{
+  "payment_status": "paid",
+  "paid_amount": 50000,
+  "payment_method": "upi"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Payment status updated successfully."
+}
+```
+
+**Permission Required**: `edit_order`
+
+**Frontend Integration**:
+- **Service**: `src/services/orderService.js`
+- **Method**: `orderService.updatePaymentStatus(orderId, paymentStatus, paymentMethod, paidAmount)`
+- **Used In**:
+  - Payment status change करने के लिए
+
+**Note**: Payment status update होने पर customer stats automatically update होते हैं
+
+---
+
+### 8. **GET /api/orders/customer/{customerId}**
+**Description**: Specific customer के orders fetch करने के लिए
+
+**Backend Controller**: `OrderController@getByCustomer`
+
+**Query Parameters**:
+- `page` - Page number
+- `limit` - Items per page
+- `status` - Filter by status
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [...],
+  "meta": {...}
+}
+```
+
+**Permission Required**: `view_order`
+
+**Frontend Integration**:
+- **Service**: `src/services/orderService.js`
+- **Method**: `orderService.getOrdersByCustomer(customerId, params)`
+- **Used In**:
+  - Customer details में orders list show करने के लिए
+
+---
+
+## 💳 Payment Management APIs
+
+### 1. **GET /api/payments**
+**Description**: Payments की list fetch करने के लिए (paginated, sortable)
+
+**Backend Controller**: `PaymentController@index`
+
+**Query Parameters**:
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 20, max: 100)
+- `order_id` - Filter by order
+- `customer_id` - Filter by customer
+- `branch_id` - Filter by branch
+- `payment_type` - Filter by type (credit/debit)
+- `payment_method` - Filter by method (cash/upi/card/bank_transfer)
+- `start_date` - Filter from date
+- `end_date` - Filter to date
+- `search` - Search term (payment_number, order_number, customer name/email)
+- `sort_by` - Sort column
+- `sort_direction` - Sort direction
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "payment_number": "#PAY001",
+      "order_id": 1,
+      "customer_id": 1,
+      "payment_date": "2024-01-20",
+      "payment_type": "credit",
+      "amount": 50000,
+      "payment_method": "upi",
+      "remarks": "Payment received",
+      "order": {...},
+      "customer": {...}
+    }
+  ],
+  "meta": {
+    "total": 10,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1
+  }
+}
+```
+
+**Permission Required**: `view_payment`
+
+**Frontend Integration**:
+- **Service**: `src/services/paymentService.js`
+- **Method**: `paymentService.getPayments(params)`
+- **Used In**:
+  - `src/views/transactions/TransactionsList.jsx` - Transactions list में payments show करने के लिए
+
+---
+
+### 2. **POST /api/payments**
+**Description**: New payment record करने के लिए
+
+**Backend Controller**: `PaymentController@store`
+
+**Request Body**:
+```json
+{
+  "order_id": 1,
+  "payment_date": "2024-01-20",
+  "payment_type": "credit",
+  "amount": 50000,
+  "payment_method": "upi",
+  "remarks": "Payment received"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Payment recorded successfully."
+}
+```
+
+**Permission Required**: `create_payment`
+
+**Frontend Integration**:
+- **Service**: `src/services/paymentService.js`
+- **Method**: `paymentService.createPayment(paymentData)`
+- **Used In**:
+  - `src/components/pages/payments/PaymentForm.jsx` - Payment form में
+  - `src/views/orders/OrdersList.jsx` - Order actions से payment record करने के लिए
+
+**Note**: 
+- Payment record होने पर order payment status automatically update होता है
+- Customer stats automatically update होते हैं
+- Payment number (#PAY001) automatically generate होता है
+
+---
+
+### 3. **GET /api/payments/{payment}**
+**Description**: Specific payment की details fetch करने के लिए
+
+**Backend Controller**: `PaymentController@show`
+
+**Permission Required**: `view_payment`
+
+---
+
+### 4. **PUT /api/payments/{payment}**
+**Description**: Payment update करने के लिए
+
+**Backend Controller**: `PaymentController@update`
+
+**Permission Required**: `edit_payment`
+
+**Note**: Payment update होने पर order payment status automatically recalculate होता है
+
+---
+
+### 5. **DELETE /api/payments/{payment}**
+**Description**: Payment delete करने के लिए
+
+**Backend Controller**: `PaymentController@destroy`
+
+**Permission Required**: `delete_payment`
+
+**Note**: Payment delete होने पर order payment status automatically recalculate होता है
+
+---
+
+### 6. **GET /api/payments/order/{orderId}**
+**Description**: Specific order के payments fetch करने के लिए
+
+**Backend Controller**: `PaymentController@getByOrder`
+
+**Permission Required**: `view_payment`
+
+---
+
 ## ⚙️ Settings Management APIs
 
 ### 1. **GET /api/global-settings/**
@@ -1849,6 +2896,10 @@ const Settings = () => {
 ✅ Role Management (CRUD + Permissions)
 ✅ Permission Management (List, Get)
 ✅ Branch Management (CRUD operations)
+✅ Package Management (CRUD operations + Server-side pagination/filtering/searching)
+✅ Customer Management (CRUD operations + Status Update + Stats Recalculation + Server-side pagination/filtering/searching)
+✅ Order Management (CRUD operations + Multi-package support + Status/Payment Update + Server-side pagination/filtering/searching)
+✅ Payment Management (CRUD operations + Auto order status update + Customer stats update)
 ✅ Settings Management (Full CRUD + Email Test + S3 Test + App Settings with Web URL)
 
 ### Frontend Integration Status
@@ -1858,15 +2909,33 @@ const Settings = () => {
 - ✅ **RoleService** - Fully integrated in RolesList, RoleForm
 - ✅ **PermissionService** - Fully integrated in RoleForm
 - ✅ **BranchService** - Integrated in BranchesList (with mock fallback)
+- ✅ **PackageService** - Fully integrated in PackagesList, PackageForm (with server-side pagination/filtering)
+- ✅ **CustomerService** - Fully integrated in CustomersList, CustomerForm, CustomerDetailsModal, SuspendCustomerModal (with server-side pagination/filtering)
+- ✅ **OrderService** - Fully integrated in OrdersList, OrderForm, OrderDetailsModal (with server-side pagination/filtering)
+- ✅ **PaymentService** - Fully integrated in PaymentForm, TransactionsList (real database integration)
 - ✅ **SettingsService** - Fully integrated in Settings page (Business Info, Invoice, Email Settings with test, App Settings with Web URL, Currency & Regional, S3 Settings)
 
-### Mock Data Fallback
-- Branch Service में mock data fallback implemented है
-- API fail होने पर automatically mock data use होता है
-- Development के लिए useful है जब backend unavailable हो
+### Server-Side Features
+- **Package Management**: Server-side pagination, filtering (type, status, price range), searching (name, description, type)
+- **Customer Management**: Server-side pagination, filtering (status, branch, city, state, country, date ranges, amount ranges), searching (name, email, phone, customer_code)
+- **Order Management**: Server-side pagination, filtering (status, payment_status, customer, branch, date ranges, payment_method, amount ranges), searching (order_number, customer name/email)
+- **Payment Management**: Real database integration, auto-updates order payment status and customer stats
+
+### Customer Stats Auto-Update
+- Customer statistics (totalOrders, total_amount, paid_amount, remaining_amount, etc.) automatically calculate होते हैं orders से
+- जब order create/update/delete होता है, customer stats automatically update होते हैं (via model events)
+- Manual recalculation के लिए `/api/customers/{customer}/recalculate-stats` endpoint available है
 
 ---
 
 **Last Updated**: January 2025
-**Version**: 1.0.0
+**Version**: 1.1.0
+
+## 🔄 Recent Updates
+- ✅ Payment Management APIs fully implemented
+- ✅ Server-side pagination, filtering, and searching for Packages, Customers, and Orders
+- ✅ Payment recording from Orders module (Actions → Record Payment)
+- ✅ Transactions module shows payments from orders
+- ✅ Customer code (#CUST format) display in payment forms
+- ✅ Real database integration for payments (no mock fallback)
 

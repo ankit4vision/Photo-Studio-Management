@@ -47,6 +47,10 @@ backend/
 │   │   ├── 📁 Controllers/         # Request handlers
 │   │   │   ├── 📁 API/             # API controllers
 │   │   │   │   ├── BranchController.php
+│   │   │   │   ├── CustomerController.php
+│   │   │   │   ├── OrderController.php
+│   │   │   │   ├── PackageController.php
+│   │   │   │   ├── PaymentController.php
 │   │   │   │   ├── PermissionController.php
 │   │   │   │   ├── RoleController.php
 │   │   │   │   ├── SettingController.php
@@ -70,13 +74,22 @@ backend/
 │   │   ├── 📁 Requests/            # Form request validation
 │   │   │   └── [Request classes]
 │   │   └── 📁 Resources/            # API resources
-│   │       └── [Resource classes]
+│   │       ├── CustomerResource.php
+│   │       ├── OrderResource.php
+│   │       ├── OrderItemResource.php
+│   │       ├── PaymentResource.php
+│   │       └── [Other Resource classes]
 │   │
 │   ├── 📁 Mail/                     # Email classes
 │   │   └── GenericEmail.php        # Generic mailable class
 │   │
 │   ├── 📁 Models/                   # Eloquent models
 │   │   ├── Branch.php               # Branch model
+│   │   ├── Customer.php             # Customer model (with stats auto-calculation)
+│   │   ├── Order.php                # Order model (with payment recalculation)
+│   │   ├── OrderItem.php            # OrderItem model
+│   │   ├── Package.php              # Package model
+│   │   ├── Payment.php              # Payment model (with auto order status update)
 │   │   ├── Permission.php           # Permission model
 │   │   ├── Role.php                  # Role model (with soft delete)
 │   │   ├── Setting.php               # Setting model
@@ -127,7 +140,12 @@ backend/
 │   │   ├── 2024_01_01_000004_create_role_permission_table.php
 │   │   ├── 2024_01_01_000005_create_settings_table.php
 │   │   ├── 2024_01_01_000006_create_emails_table.php
-│   │   └── 2025_11_11_000000_create_branches_table.php
+│   │   ├── 2025_11_11_000000_create_branches_table.php
+│   │   ├── 2025_11_13_063625_create_packages_table.php
+│   │   ├── 2025_11_13_071304_create_customers_table.php
+│   │   ├── 2025_11_13_071741_create_orders_table.php
+│   │   ├── 2025_11_13_071758_create_order_items_table.php
+│   │   └── 2025_11_13_090017_create_payments_table.php
 │   └── 📁 seeders/                  # Database seeders
 │       ├── BranchSeeder.php
 │       ├── DatabaseSeeder.php
@@ -274,7 +292,67 @@ backend/
 - **Permissions**: `view_branch`, `create_branch`, `edit_branch`, `delete_branch`
 - **Status**: ✅ Fully implemented
 
-### 6. **Settings Management Module**
+### 6. **Package Management Module**
+- **Location**: `app/Http/Controllers/API/PackageController.php`
+- **Routes**: `/api/packages/*`
+- **Features**:
+  - List packages (paginated, sortable with server-side filtering)
+  - Get package by ID
+  - Create package
+  - Update package
+  - Delete package (soft delete)
+- **Permissions**: `view_package`, `create_package`, `edit_package`, `delete_package`
+- **Status**: ✅ Fully implemented
+
+### 7. **Customer Management Module**
+- **Location**: `app/Http/Controllers/API/CustomerController.php`
+- **Routes**: `/api/customers/*`
+- **Features**:
+  - List customers (paginated, sortable, searchable with server-side filtering)
+  - Get customer by ID
+  - Create customer
+  - Update customer
+  - Delete customer (soft delete)
+  - Update customer status
+  - Recalculate customer statistics from orders
+- **Permissions**: `view_customer`, `create_customer`, `edit_customer`, `delete_customer`
+- **Status**: ✅ Fully implemented
+- **Note**: Customer statistics (totalOrders, total_amount, paid_amount, etc.) automatically calculated from orders via model events
+
+### 8. **Order Management Module**
+- **Location**: `app/Http/Controllers/API/OrderController.php`
+- **Routes**: `/api/orders/*`
+- **Features**:
+  - List orders (paginated, sortable, searchable with server-side filtering)
+  - Get order by ID
+  - Create order (with multiple packages/items)
+  - Update order (with items update)
+  - Delete order (soft delete)
+  - Update order status
+  - Update payment status
+  - Get orders by customer
+- **Permissions**: `view_order`, `create_order`, `edit_order`, `delete_order`
+- **Status**: ✅ Fully implemented
+- **Note**: Order create/update/delete होने पर customer stats automatically update होते हैं
+
+### 9. **Payment Management Module**
+- **Location**: `app/Http/Controllers/API/PaymentController.php`
+- **Routes**: `/api/payments/*`
+- **Features**:
+  - List payments (paginated, sortable, searchable)
+  - Get payment by ID
+  - Create payment (from orders)
+  - Update payment
+  - Delete payment (soft delete)
+  - Get payments by order
+  - Auto-generates payment_number (#PAY001)
+  - Auto-updates order payment status on create/update/delete
+  - Auto-updates customer stats
+- **Permissions**: `view_payment`, `create_payment`, `edit_payment`, `delete_payment`
+- **Status**: ✅ Fully implemented
+- **Note**: Payment record होने पर order payment status और customer stats automatically update होते हैं
+
+### 10. **Settings Management Module**
 - **Location**: `app/Http/Controllers/API/SettingController.php`
 - **Routes**: `/api/settings/*`, `/api/global-settings/*`
 - **Features**:
@@ -291,7 +369,7 @@ backend/
 - **Permissions**: `view_setting`, `edit_setting`
 - **Status**: ✅ Fully implemented
 
-### 7. **Email Service**
+### 8. **Email Service**
 - **Location**: `app/Services/EmailService.php`
 - **Features**:
   - Send generic emails
@@ -303,14 +381,14 @@ backend/
   - Email template rendering (Blade templates)
 - **Status**: ✅ Fully implemented
 
-### 8. **PDF Export Service**
+### 11. **PDF Export Service**
 - **Location**: `app/Services/PdfExportService.php`
 - **Features**:
   - Generate PDF documents
   - Export reports to PDF
 - **Status**: ✅ Fully implemented
 
-### 9. **S3 Storage Service**
+### 12. **S3 Storage Service**
 - **Location**: `app/Services/S3Service.php`
 - **Features**:
   - Upload files to S3
@@ -773,6 +851,11 @@ public function test_user_can_login()
 - **user_role** - User-role pivot table
 - **role_permission** - Role-permission pivot table
 - **branches** - Branch locations
+- **packages** - Package definitions (package_name, package_type, default_price, description, status)
+- **customers** - Customer accounts (with stats: total_orders, total_amount, paid_amount, remaining_amount, customer_code)
+- **orders** - Order records (with customer_id, branch_id, status, payment_status, amounts)
+- **order_items** - Order items (many packages per order: order_id, package_id, quantity, unit_price, total_price)
+- **payments** - Payment records (payment_number, order_id, customer_id, payment_type, amount, payment_method)
 - **settings** - System settings (including email settings: host, port, username, password, from_address, from_name; App Settings: web_url)
 - **emails** - Email logs
 - **personal_access_tokens** - Sanctum tokens
@@ -784,6 +867,18 @@ public function test_user_can_login()
 - **Role** has many **Permissions** (many-to-many)
 - **User** has many **Permissions** (through roles)
 - **Branch** belongs to many **Users** (future)
+- **Customer** belongs to **Branch**
+- **Customer** has many **Orders**
+- **Customer** has many **Payments**
+- **Order** belongs to **Customer**
+- **Order** belongs to **Branch**
+- **Order** has many **OrderItems**
+- **Order** has many **Payments**
+- **OrderItem** belongs to **Order**
+- **OrderItem** belongs to **Package**
+- **Payment** belongs to **Order**
+- **Payment** belongs to **Customer**
+- **Payment** belongs to **Branch**
 
 ---
 
@@ -902,4 +997,12 @@ php artisan serve
 ---
 
 **Last Updated**: January 2025
-**Version**: 1.0.0
+**Version**: 1.1.0
+
+## 🔄 Recent Updates
+- ✅ Payment Management module fully implemented
+- ✅ Payments table migration created and run
+- ✅ Payment permissions added and seeded
+- ✅ Server-side pagination, filtering, and searching for Packages, Customers, and Orders
+- ✅ Payment model with auto order status update
+- ✅ PaymentController with full CRUD operations

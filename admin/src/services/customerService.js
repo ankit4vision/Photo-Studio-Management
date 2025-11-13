@@ -1,29 +1,169 @@
 // Customer Service - API calls for customer management
+import apiClient from '../config/apiClient'
+import { API_ENDPOINTS } from '../constants/api'
 import customersData from '../mock/customers.json'
 
-// Simulate API delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+class CustomerService {
+  transformListResponse(payload) {
+    if (!payload) {
+      return {
+        success: false,
+        data: [],
+        meta: null,
+        message: 'No response received from server.',
+      }
+    }
 
-const customerService = {
+    const data = Array.isArray(payload.data)
+      ? payload.data
+      : Array.isArray(payload.data?.data)
+        ? payload.data.data
+        : payload.data || []
+
+    const meta = payload.meta ?? {}
+
+    return {
+      success: payload.success ?? true,
+      data,
+      meta: {
+        total: meta.total ?? data.length,
+        page: meta.page ?? 1,
+        limit: meta.limit ?? (data.length || 1),
+        totalPages: meta.totalPages ?? 1,
+        hasNext: meta.hasNext ?? false,
+        hasPrev: meta.hasPrev ?? false,
+        sortBy: meta.sortBy ?? null,
+        sortDirection: meta.sortDirection ?? null,
+      },
+      message: payload.message ?? '',
+    }
+  }
+
+  transformItemResponse(payload) {
+    if (!payload) {
+      return {
+        success: false,
+        data: null,
+        message: 'No response received from server.',
+      }
+    }
+
+    return {
+      success: payload.success ?? true,
+      data: payload.data ?? payload,
+      message: payload.message ?? '',
+    }
+  }
+
+  buildQueryParams(params = {}) {
+    const query = {}
+
+    if (params.page) query.page = params.page
+    if (params.limit) query.limit = params.limit
+    if (params.per_page) query.limit = params.per_page
+    if (params.search) query.search = params.search
+    if (params.status) query.status = params.status
+    if (params.branch_id) query.branch_id = params.branch_id
+    if (params.city) query.city = params.city
+    if (params.state) query.state = params.state
+    if (params.country) query.country = params.country
+    if (params.created_from || params.createdFrom) query.created_from = params.created_from || params.createdFrom
+    if (params.created_to || params.createdTo) query.created_to = params.created_to || params.createdTo
+    if (params.last_order_from || params.lastOrderFrom) query.last_order_from = params.last_order_from || params.lastOrderFrom
+    if (params.last_order_to || params.lastOrderTo) query.last_order_to = params.last_order_to || params.lastOrderTo
+    if (params.min_total_amount || params.minTotalAmount) query.min_total_amount = params.min_total_amount || params.minTotalAmount
+    if (params.max_total_amount || params.maxTotalAmount) query.max_total_amount = params.max_total_amount || params.maxTotalAmount
+    if (params.min_paid_amount || params.minPaidAmount) query.min_paid_amount = params.min_paid_amount || params.minPaidAmount
+    if (params.max_paid_amount || params.maxPaidAmount) query.max_paid_amount = params.max_paid_amount || params.maxPaidAmount
+    if (params.min_remaining_amount || params.minRemainingAmount) query.min_remaining_amount = params.min_remaining_amount || params.minRemainingAmount
+    if (params.max_remaining_amount || params.maxRemainingAmount) query.max_remaining_amount = params.max_remaining_amount || params.maxRemainingAmount
+    if (params.sortBy) query.sort_by = params.sortBy
+    if (params.sortDirection) query.sort_direction = params.sortDirection
+
+    return query
+  }
+
   // Get all customers
-  getCustomers: async (params = {}) => {
-    await delay(500)
+  async getCustomers(params = {}) {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.CUSTOMERS.LIST, {
+        params: this.buildQueryParams(params),
+      })
+
+      const payload = this.transformListResponse(response?.data)
+
+      if (payload.success) {
+        return payload
+      }
+
+      return this.getMockCustomers(params)
+    } catch (error) {
+      console.warn('API call failed, using mock data:', error)
+      return this.getMockCustomers(params)
+    }
+  }
+
+  // Get mock customers data (fallback)
+  getMockCustomers(params = {}) {
+    let customers = [...customersData]
+    
+    // Apply search filter
+    if (params.search) {
+      const searchTerm = params.search.toLowerCase()
+      customers = customers.filter(c => 
+        `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchTerm) ||
+        c.email?.toLowerCase().includes(searchTerm) ||
+        c.phone?.toLowerCase().includes(searchTerm) ||
+        c.mobile?.toLowerCase().includes(searchTerm)
+      )
+    }
+    
+    // Apply status filter
+    if (params.status) {
+      customers = customers.filter(c => c.status === params.status)
+    }
+    
+    // Apply pagination
+    const page = params.page || 1
+    const limit = params.limit || 10
+    const startIndex = (page - 1) * limit
+    const endIndex = startIndex + limit
+    const paginatedCustomers = customers.slice(startIndex, endIndex)
+    
     return {
       success: true,
-      data: customersData,
-      message: 'Customers fetched successfully'
+      data: paginatedCustomers,
+      meta: {
+        total: customers.length,
+        page: page,
+        limit: limit,
+        totalPages: Math.ceil(customers.length / limit),
+        hasNext: endIndex < customers.length,
+        hasPrev: page > 1,
+      },
+      message: 'Customers fetched successfully (mock)'
     }
-  },
+  }
 
   // Get customer by ID
-  getCustomerById: async (id) => {
-    await delay(300)
+  async getCustomerById(id) {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.CUSTOMERS.GET_BY_ID(id))
+      return this.transformItemResponse(response?.data)
+    } catch (error) {
+      console.warn('API call failed, using mock data:', error)
+      return this.getMockCustomerById(id)
+    }
+  }
+
+  // Get mock customer by ID (fallback)
+  getMockCustomerById(id) {
     const customer = customersData.find(c => c.id === parseInt(id))
     if (customer) {
       return {
         success: true,
         data: customer,
-        message: 'Customer fetched successfully'
+        message: 'Customer fetched successfully (mock)'
       }
     } else {
       return {
@@ -32,11 +172,45 @@ const customerService = {
         message: 'Customer not found'
       }
     }
-  },
+  }
 
   // Create new customer
-  createCustomer: async (customerData) => {
-    await delay(800)
+  async createCustomer(customerData) {
+    try {
+      // Transform frontend format to backend format
+      const backendData = {
+        first_name: customerData.firstName || customerData.first_name,
+        last_name: customerData.lastName || customerData.last_name,
+        email: customerData.email,
+        phone: customerData.phone || customerData.mobile,
+        mobile: customerData.mobile || customerData.phone,
+        address: typeof customerData.address === 'string' 
+          ? customerData.address 
+          : customerData.address?.street || customerData.address,
+        city: customerData.city || customerData.address?.city,
+        state: customerData.state || customerData.address?.state,
+        postal_code: customerData.postalCode || customerData.postal_code || customerData.address?.postalCode,
+        country: customerData.country || customerData.address?.country,
+        branch_id: customerData.branch_id || customerData.branchId,
+        status: customerData.status || 'active',
+        dob: customerData.dob,
+        anniversary_date: customerData.anniversary_date,
+        notes: customerData.notes,
+        preferences: customerData.preferences,
+        avatar: customerData.avatar,
+      }
+
+      const response = await apiClient.post(API_ENDPOINTS.CUSTOMERS.CREATE, backendData)
+      return this.transformItemResponse(response?.data)
+    } catch (error) {
+      console.warn('API call failed, using mock data:', error)
+      return this.createMockCustomer(customerData)
+    }
+  }
+
+  // Create mock customer (fallback)
+  async createMockCustomer(customerData) {
+    await new Promise(resolve => setTimeout(resolve, 300))
     
     // Generate new ID
     const existingIds = customersData.map(c => parseInt(c.id)).filter(id => !isNaN(id))
@@ -88,11 +262,45 @@ const customerService = {
       data: newCustomer,
       message: 'Customer created successfully'
     }
-  },
+  }
 
   // Update customer
-  updateCustomer: async (id, customerData) => {
-    await delay(800)
+  async updateCustomer(id, customerData) {
+    try {
+      // Transform frontend format to backend format
+      const backendData = {
+        first_name: customerData.firstName || customerData.first_name,
+        last_name: customerData.lastName || customerData.last_name,
+        email: customerData.email,
+        phone: customerData.phone || customerData.mobile,
+        mobile: customerData.mobile || customerData.phone,
+        address: typeof customerData.address === 'string' 
+          ? customerData.address 
+          : customerData.address?.street || customerData.address,
+        city: customerData.city || customerData.address?.city,
+        state: customerData.state || customerData.address?.state,
+        postal_code: customerData.postalCode || customerData.postal_code || customerData.address?.postalCode,
+        country: customerData.country || customerData.address?.country,
+        branch_id: customerData.branch_id || customerData.branchId,
+        status: customerData.status,
+        dob: customerData.dob,
+        anniversary_date: customerData.anniversary_date,
+        notes: customerData.notes,
+        preferences: customerData.preferences,
+        avatar: customerData.avatar,
+      }
+
+      const response = await apiClient.put(API_ENDPOINTS.CUSTOMERS.UPDATE(id), backendData)
+      return this.transformItemResponse(response?.data)
+    } catch (error) {
+      console.warn('API call failed, using mock data:', error)
+      return this.updateMockCustomer(id, customerData)
+    }
+  }
+
+  // Update mock customer (fallback)
+  async updateMockCustomer(id, customerData) {
+    await new Promise(resolve => setTimeout(resolve, 300))
     
     const customerIndex = customersData.findIndex(c => c.id === parseInt(id))
     if (customerIndex !== -1) {
@@ -150,11 +358,22 @@ const customerService = {
         message: 'Customer not found'
       }
     }
-  },
+  }
 
   // Delete customer
-  deleteCustomer: async (id) => {
-    await delay(600)
+  async deleteCustomer(id) {
+    try {
+      const response = await apiClient.delete(API_ENDPOINTS.CUSTOMERS.DELETE(id))
+      return this.transformItemResponse(response?.data)
+    } catch (error) {
+      console.warn('API call failed, using mock data:', error)
+      return this.deleteMockCustomer(id)
+    }
+  }
+
+  // Delete mock customer (fallback)
+  async deleteMockCustomer(id) {
+    await new Promise(resolve => setTimeout(resolve, 300))
     
     const customerIndex = customersData.findIndex(c => c.id === parseInt(id))
     if (customerIndex !== -1) {
@@ -172,11 +391,22 @@ const customerService = {
         message: 'Customer not found'
       }
     }
-  },
+  }
 
   // Update customer status
-  updateCustomerStatus: async (id, status) => {
-    await delay(300)
+  async updateCustomerStatus(id, status) {
+    try {
+      const response = await apiClient.put(API_ENDPOINTS.CUSTOMERS.UPDATE_STATUS(id), { status })
+      return this.transformItemResponse(response?.data)
+    } catch (error) {
+      console.warn('API call failed, using mock data:', error)
+      return this.updateMockCustomerStatus(id, status)
+    }
+  }
+
+  // Update mock customer status (fallback)
+  async updateMockCustomerStatus(id, status) {
+    await new Promise(resolve => setTimeout(resolve, 300))
     
     const customerIndex = customersData.findIndex(c => c.id === parseInt(id))
     if (customerIndex !== -1) {
@@ -195,11 +425,17 @@ const customerService = {
         message: 'Customer not found'
       }
     }
-  },
+  }
 
   // Suspend customer with detailed information
-  suspendCustomer: async (id, suspensionData) => {
-    await delay(800)
+  async suspendCustomer(id, suspensionData) {
+    // Use updateCustomerStatus for suspension
+    return this.updateCustomerStatus(id, 'suspended')
+  }
+
+  // Suspend mock customer (fallback)
+  async suspendMockCustomer(id, suspensionData) {
+    await new Promise(resolve => setTimeout(resolve, 300))
     
     const customerIndex = customersData.findIndex(c => c.id === parseInt(id))
     if (customerIndex !== -1) {
@@ -257,11 +493,16 @@ const customerService = {
         message: 'Customer not found'
       }
     }
-  },
+  }
 
   // Activate suspended customer
-  activateCustomer: async (id) => {
-    await delay(500)
+  async activateCustomer(id) {
+    return this.updateCustomerStatus(id, 'active')
+  }
+
+  // Activate mock customer (fallback)
+  async activateMockCustomer(id) {
+    await new Promise(resolve => setTimeout(resolve, 300))
     
     const customerIndex = customersData.findIndex(c => c.id === parseInt(id))
     if (customerIndex !== -1) {
@@ -289,11 +530,44 @@ const customerService = {
         message: 'Customer not found'
       }
     }
-  },
+  }
 
   // Get customer statistics
-  getCustomerStats: async () => {
-    await delay(300)
+  async getCustomerStats() {
+    try {
+      // Calculate stats from customers list
+      const response = await this.getCustomers({ limit: 1000 })
+      if (response.success && response.data) {
+        const customers = response.data
+        const totalCustomers = customers.length
+        const activeCustomers = customers.filter(c => c.status === 'active').length
+        const suspendedCustomers = customers.filter(c => c.status === 'suspended').length
+        const now = new Date()
+        const newThisMonth = customers.filter(c => {
+          const joinedDate = new Date(c.joinedDate || c.created_at)
+          return joinedDate.getMonth() === now.getMonth() && joinedDate.getFullYear() === now.getFullYear()
+        }).length
+
+        return {
+          success: true,
+          data: {
+            totalCustomers,
+            activeCustomers,
+            suspendedCustomers,
+            newThisMonth
+          },
+          message: 'Customer statistics fetched successfully'
+        }
+      }
+      return this.getMockCustomerStats()
+    } catch (error) {
+      console.warn('API call failed, using mock data:', error)
+      return this.getMockCustomerStats()
+    }
+  }
+
+  // Get mock customer statistics (fallback)
+  getMockCustomerStats() {
     
     const totalCustomers = customersData.length
     const activeCustomers = customersData.filter(c => c.status === 'active').length
@@ -314,11 +588,15 @@ const customerService = {
       },
       message: 'Customer statistics fetched successfully'
     }
-  },
+  }
 
   // Search customers
-  searchCustomers: async (searchTerm, filters = {}) => {
-    await delay(300)
+  async searchCustomers(searchTerm, filters = {}) {
+    return this.getCustomers({ search: searchTerm, ...filters })
+  }
+
+  // Search mock customers (fallback)
+  getMockSearchCustomers(searchTerm, filters = {}) {
     
     let filteredCustomers = customersData
     
@@ -370,21 +648,38 @@ const customerService = {
       data: filteredCustomers,
       message: 'Customers searched successfully'
     }
-  },
+  }
 
   // Export customers
-  exportCustomers: async (format = 'csv', filters = {}) => {
-    await delay(1000)
-    
-    // Simulate export functionality
-    const filteredCustomers = customersData // In real app, apply filters here
-    
+  async exportCustomers(format = 'csv', filters = {}) {
+    try {
+      const response = await this.getCustomers({ ...filters, limit: 10000 })
+      if (response.success) {
+        return {
+          success: true,
+          data: response.data,
+          message: 'Customers exported successfully'
+        }
+      }
+      return this.exportMockCustomers(format, filters)
+    } catch (error) {
+      console.warn('API call failed, using mock data:', error)
+      return this.exportMockCustomers(format, filters)
+    }
+  }
+
+  // Export mock customers (fallback)
+  exportMockCustomers(format = 'csv', filters = {}) {
+    const filteredCustomers = customersData
     return {
       success: true,
       data: filteredCustomers,
-      message: 'Customers exported successfully'
+      message: 'Customers exported successfully (mock)'
     }
   }
 }
 
+// Create and export singleton instance
+const customerService = new CustomerService()
 export { customerService }
+export default customerService

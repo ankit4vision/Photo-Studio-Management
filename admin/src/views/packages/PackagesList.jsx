@@ -27,6 +27,12 @@ const PackagesList = () => {
   const [statusFilter, setStatusFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [paginationMeta, setPaginationMeta] = useState({
+    total: 0,
+    totalPages: 1,
+    hasNext: false,
+    hasPrev: false
+  })
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [packageToDelete, setPackageToDelete] = useState(null)
   
@@ -41,31 +47,71 @@ const PackagesList = () => {
   const addFormRef = useRef()
   const editFormRef = useRef()
 
+  // Load packages when filters, search, or pagination changes
   useEffect(() => {
     loadPackages()
-  }, [])
+  }, [currentPage, pageSize, searchTerm, typeFilter, statusFilter])
 
   const loadPackages = async () => {
     try {
       setLoading(true)
-      const response = await packageService.getPackages()
+      const params = {
+        page: currentPage,
+        limit: pageSize,
+        search: searchTerm || undefined,
+        package_type: typeFilter || undefined,
+        status: statusFilter || undefined,
+      }
+      
+      const response = await packageService.getPackages(params)
       if (response && response.success) {
         setPackages(response.data || [])
+        if (response.meta) {
+          setPaginationMeta({
+            total: response.meta.total || 0,
+            totalPages: response.meta.totalPages || 1,
+            hasNext: response.meta.hasNext || false,
+            hasPrev: response.meta.hasPrev || false,
+          })
+        }
       } else {
         // If response is not successful, try to use mock data directly
         console.warn('Failed to load packages from API, using mock data')
-        const mockResponse = packageService.getMockPackages()
+        const mockResponse = packageService.getMockPackages(params)
         if (mockResponse && mockResponse.success) {
           setPackages(mockResponse.data || [])
+          if (mockResponse.meta) {
+            setPaginationMeta({
+              total: mockResponse.meta.total || 0,
+              totalPages: mockResponse.meta.totalPages || 1,
+              hasNext: mockResponse.meta.hasNext || false,
+              hasPrev: mockResponse.meta.hasPrev || false,
+            })
+          }
         }
       }
     } catch (error) {
       console.error('Error loading packages:', error)
       // Fallback to mock data on error
       try {
-        const mockResponse = packageService.getMockPackages()
+        const params = {
+          page: currentPage,
+          limit: pageSize,
+          search: searchTerm || undefined,
+          package_type: typeFilter || undefined,
+          status: statusFilter || undefined,
+        }
+        const mockResponse = packageService.getMockPackages(params)
         if (mockResponse && mockResponse.success) {
           setPackages(mockResponse.data || [])
+          if (mockResponse.meta) {
+            setPaginationMeta({
+              total: mockResponse.meta.total || 0,
+              totalPages: mockResponse.meta.totalPages || 1,
+              hasNext: mockResponse.meta.hasNext || false,
+              hasPrev: mockResponse.meta.hasPrev || false,
+            })
+          }
         }
       } catch (mockError) {
         console.error('Error loading mock packages:', mockError)
@@ -74,13 +120,6 @@ const PackagesList = () => {
       setLoading(false)
     }
   }
-
-  const filteredPackages = packages.filter(pkg => {
-    const matchesSearch = pkg.package_name?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesType = !typeFilter || pkg.package_type === typeFilter
-    const matchesStatus = !statusFilter || pkg.status === statusFilter
-    return matchesSearch && matchesType && matchesStatus
-  })
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -185,13 +224,40 @@ const PackagesList = () => {
 
   const sortableColumns = ['package', 'price']
 
-  // Calculate statistics
-  const totalStats = filteredPackages.reduce((acc, pkg) => {
+  // Calculate statistics from current page data (or fetch separately if needed)
+  const totalStats = packages.reduce((acc, pkg) => {
     acc.totalPackages += 1
     acc.totalValue += pkg.default_price || 0
     if (pkg.status === 'active') acc.activePackages += 1
     return acc
   }, { totalPackages: 0, totalValue: 0, activePackages: 0 })
+
+  // Handle filter changes - reset to page 1
+  const handleFilterChange = (filterType, value) => {
+    if (filterType === 'type') {
+      setTypeFilter(value)
+    } else if (filterType === 'status') {
+      setStatusFilter(value)
+    }
+    setCurrentPage(1) // Reset to first page when filter changes
+  }
+
+  // Handle search - reset to page 1
+  const handleSearchChange = (value) => {
+    setSearchTerm(value)
+    setCurrentPage(1) // Reset to first page when search changes
+  }
+
+  // Handle page change
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+  }
+
+  // Handle page size change
+  const handlePageSizeChange = (size) => {
+    setPageSize(size)
+    setCurrentPage(1) // Reset to first page when page size changes
+  }
 
   const columns = [
     {
@@ -323,8 +389,8 @@ const PackagesList = () => {
                 <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
                     <div className="flex-grow-1">
-                      <h4 className="mb-0">{filteredPackages.length}</h4>
-                      <p className="mb-0 opacity-75">Filtered Results</p>
+                      <h4 className="mb-0">{paginationMeta.total}</h4>
+                      <p className="mb-0 opacity-75">Total Packages</p>
                     </div>
                     <FontAwesomeIcon icon={faFilter} className="fs-1 opacity-50" />
                   </div>
@@ -348,7 +414,7 @@ const PackagesList = () => {
                     <FormControl
                       placeholder="Search by package name or description..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={(e) => handleSearchChange(e.target.value)}
                       className="border-2 ps-5"
                     />
                   </div>
@@ -362,7 +428,7 @@ const PackagesList = () => {
                     />
                     <FormSelect
                       value={typeFilter}
-                      onChange={(e) => setTypeFilter(e.target.value)}
+                      onChange={(e) => handleFilterChange('type', e.target.value)}
                       className="border-2 ps-5"
                     >
                       <option value="">All Types</option>
@@ -381,7 +447,7 @@ const PackagesList = () => {
                     />
                     <FormSelect
                       value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
+                      onChange={(e) => handleFilterChange('status', e.target.value)}
                       className="border-2 ps-5"
                     >
                       <option value="">All Status</option>
@@ -397,6 +463,7 @@ const PackagesList = () => {
                       setSearchTerm('')
                       setTypeFilter('')
                       setStatusFilter('')
+                      setCurrentPage(1)
                     }}
                     className="w-100"
                   >
@@ -414,7 +481,7 @@ const PackagesList = () => {
                 <h4 className="mb-0 text-primary">Packages List</h4>
               </div>
               <div className="text-muted">
-                Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, filteredPackages.length)} of {filteredPackages.length} packages
+                Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, paginationMeta.total)} of {paginationMeta.total} packages
               </div>
             </div>
 
@@ -428,17 +495,18 @@ const PackagesList = () => {
               }}
             >
               <Table
-                data={filteredPackages}
+                data={packages}
                 columns={columns}
                 sortableColumns={sortableColumns}
                 currentPage={currentPage}
                 pageSize={pageSize}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={setPageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
                 loading={loading}
                 pagination={true}
+                serverSide={true}
                 sortable={true}
-                totalItems={filteredPackages.length}
+                totalItems={paginationMeta.total}
                 emptyMessage="No packages found"
               />
             </div>

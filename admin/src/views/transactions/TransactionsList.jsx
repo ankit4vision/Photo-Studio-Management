@@ -54,14 +54,28 @@ const TransactionsList = () => {
     try {
       setLoading(true)
       const [paymentsResponse, ordersResponse] = await Promise.all([
-        paymentService.getPayments(),
+        paymentService.getPayments({ limit: 1000 }), // Get all payments
         orderService.getOrders({ limit: 1000 })
       ])
 
-      const rawPaymentsSource = paymentsResponse?.success ? paymentsResponse.data : paymentsResponse
-      const rawPayments = Array.isArray(rawPaymentsSource)
-        ? rawPaymentsSource
-        : rawPaymentsSource?.payments || rawPaymentsSource?.data || rawPaymentsSource || []
+      // Handle payments response structure
+      let rawPayments = []
+      if (paymentsResponse?.success) {
+        // Response structure: { success: true, data: [...], meta: {...} }
+        rawPayments = Array.isArray(paymentsResponse.data) 
+          ? paymentsResponse.data 
+          : []
+      } else if (Array.isArray(paymentsResponse?.data)) {
+        rawPayments = paymentsResponse.data
+      } else if (Array.isArray(paymentsResponse)) {
+        rawPayments = paymentsResponse
+      }
+
+      // Ensure rawPayments is always an array
+      if (!Array.isArray(rawPayments)) {
+        console.warn('Payments data is not an array:', rawPayments)
+        rawPayments = []
+      }
 
       const ordersList = ordersResponse?.data?.orders || ordersResponse?.data || []
       const orderMap = {}
@@ -118,6 +132,14 @@ const TransactionsList = () => {
       setPayments(normalizedPayments)
     } catch (error) {
       console.error('Error loading payments:', error)
+      console.error('Error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status
+      })
+      // Set empty array on error to prevent map errors
+      setPayments([])
+      // Optionally show error toast/notification here
     } finally {
       setLoading(false)
     }

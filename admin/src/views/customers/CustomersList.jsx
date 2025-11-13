@@ -77,12 +77,28 @@ const CustomersList = () => {
   })
   
 
+  // Pagination meta state
+  const [paginationMeta, setPaginationMeta] = useState({
+    total: 0,
+    totalPages: 1,
+    hasNext: false,
+    hasPrev: false
+  })
+
   // Load customers and branches
   useEffect(() => {
-    loadCustomers()
-    loadStats()
     loadBranches()
-  }, [location.pathname]) // Reload when navigating back
+  }, [])
+
+  // Load customers when filters, search, or pagination changes
+  useEffect(() => {
+    loadCustomers()
+  }, [currentPage, pageSize, searchTerm, statusFilter, locationFilter, registrationDateFilter])
+
+  // Load stats separately (can be optimized later)
+  useEffect(() => {
+    loadStats()
+  }, [customers])
 
   const loadBranches = async () => {
     try {
@@ -98,13 +114,18 @@ const CustomersList = () => {
   const loadCustomers = async () => {
     try {
       setLoading(true)
-      // Load from service (includes newly created customers)
-      const response = await customerService.getCustomers()
+      // Build params for server-side pagination and filtering
+      const params = {
+        page: currentPage,
+        limit: pageSize,
+        search: searchTerm || undefined,
+        status: statusFilter || undefined,
+        city: locationFilter || undefined,
+      }
       
-      // Always combine customers from service with photographers data
-      let allCustomers = []
+      // Load from service with server-side pagination
+      const response = await customerService.getCustomers(params)
       
-      // Add customers from service
       if (response && response.success && response.data && Array.isArray(response.data)) {
         const convertedCustomers = response.data.map(customer => ({
           ...customer,
@@ -114,7 +135,7 @@ const CustomersList = () => {
           joinedDate: customer.joinedDate || customer.createdAt || customer.created_at,
           created_at: customer.created_at || customer.createdAt || customer.joinedDate,
           // Map customer fields to photographer fields for table compatibility
-          photographerId: customer.photographerId || customer.customerId || `#${customer.id}`,
+          photographerId: customer.photographerId || customer.customerId || customer.customer_code || `#${customer.id}`,
           total_earnings: customer.total_earnings || customer.total_amount || customer.totalSpent || 0,
           total_amount: customer.total_amount || customer.total_earnings || customer.totalSpent || 0,
           paid_amount: customer.paid_amount || 0,
@@ -126,25 +147,41 @@ const CustomersList = () => {
           branch_id: customer.branch_id || null,
           branch_name: customer.branch_name || null
         }))
-        allCustomers = [...convertedCustomers]
+        
+        setCustomers(convertedCustomers)
+        
+        // Update pagination meta
+        if (response.meta) {
+          setPaginationMeta({
+            total: response.meta.total || 0,
+            totalPages: response.meta.totalPages || 1,
+            hasNext: response.meta.hasNext || false,
+            hasPrev: response.meta.hasPrev || false,
+          })
+        }
+        
+        console.log('Loaded customers:', convertedCustomers.length, 'items (server-side)')
+      } else {
+        // Fallback to photographers mock data if API fails
+        console.warn('API response not successful, using mock data')
+        setCustomers(photographersData)
+        setPaginationMeta({
+          total: photographersData.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        })
       }
-      
-      // Add photographers data (excluding duplicates)
-      const existingIds = new Set(allCustomers.map(c => c.id))
-      const uniquePhotographers = photographersData.filter(p => !existingIds.has(p.id))
-      allCustomers = [...allCustomers, ...uniquePhotographers]
-      
-      // If no data at all, use photographers as fallback
-      if (allCustomers.length === 0) {
-        allCustomers = photographersData
-      }
-      
-      setCustomers(allCustomers)
-      console.log('Loaded customers:', allCustomers.length, 'items')
     } catch (err) {
       console.error('Error loading customers:', err)
       // Fallback to photographers mock data on error
       setCustomers(photographersData)
+      setPaginationMeta({
+        total: photographersData.length,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      })
     } finally {
       setLoading(false)
     }
@@ -183,50 +220,34 @@ const CustomersList = () => {
     }
   }, [customers])
 
-  // Filter customers/photographers
-  const filteredCustomers = customers.filter(customer => {
-    const customerName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
-    const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.mobile?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.specialization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.photographerId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.customerId?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = !statusFilter || customer.status === statusFilter
-    const matchesLocation = !locationFilter || 
-                           (typeof customer.address === 'string' && customer.address.toLowerCase().includes(locationFilter.toLowerCase())) ||
-                           (customer.address && typeof customer.address === 'object' && customer.address.city?.toLowerCase().includes(locationFilter.toLowerCase())) ||
-                           customer.location?.city?.toLowerCase().includes(locationFilter.toLowerCase())
-    
-    let matchesRegistrationDate = true
-    if (registrationDateFilter) {
-      const now = new Date()
-      const filterDate = new Date()
-      
-      switch (registrationDateFilter) {
-        case 'today':
-          filterDate.setDate(now.getDate() - 1)
-          break
-        case 'week':
-          filterDate.setDate(now.getDate() - 7)
-          break
-        case 'month':
-          filterDate.setMonth(now.getMonth() - 1)
-          break
-        case 'year':
-          filterDate.setFullYear(now.getFullYear() - 1)
-          break
-        default:
-          break
-      }
-      
-      const joinDate = customer.created_at || customer.createdAt || customer.joinedDate
-      matchesRegistrationDate = joinDate ? new Date(joinDate) >= filterDate : true
+  // Handle filter changes - reset to page 1
+  const handleFilterChange = (filterType, value) => {
+    if (filterType === 'status') {
+      setStatusFilter(value)
+    } else if (filterType === 'location') {
+      setLocationFilter(value)
+    } else if (filterType === 'registrationDate') {
+      setRegistrationDateFilter(value)
     }
-    
-    return matchesSearch && matchesStatus && matchesLocation && matchesRegistrationDate
-  })
+    setCurrentPage(1) // Reset to first page when filter changes
+  }
+
+  // Handle search - reset to page 1
+  const handleSearchChange = (value) => {
+    setSearchTerm(value)
+    setCurrentPage(1) // Reset to first page when search changes
+  }
+
+  // Handle page change
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+  }
+
+  // Handle page size change
+  const handlePageSizeChange = (size) => {
+    setPageSize(size)
+    setCurrentPage(1) // Reset to first page when page size changes
+  }
 
   // Get unique locations for filter
   const locations = [...new Set(customers.map(p => p.location?.city).filter(Boolean))]
@@ -470,8 +491,7 @@ const CustomersList = () => {
 
   // Event handlers
   const handleSearch = (e) => {
-    setSearchTerm(e.target.value)
-    setCurrentPage(1)
+    handleSearchChange(e.target.value)
   }
 
 
@@ -502,9 +522,19 @@ const CustomersList = () => {
     setShowActivateModal(true)
   }
 
-  const handleExport = () => {
+  const handleExport = async () => {
     try {
-      const result = exportPhotographersToPDF(filteredCustomers, {
+      // For export, fetch all customers matching current filters (without pagination)
+      const exportParams = {
+        limit: 10000, // Large limit to get all matching records
+        search: searchTerm || undefined,
+        status: statusFilter || undefined,
+        city: locationFilter || undefined,
+      }
+      const exportResponse = await customerService.getCustomers(exportParams)
+      const customersToExport = exportResponse?.data || customers
+      
+      const result = exportPhotographersToPDF(customersToExport, {
         status: statusFilter,
         search: searchTerm
       })
@@ -762,7 +792,7 @@ const CustomersList = () => {
                     />
                     <FormSelect
                       value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
+                      onChange={(e) => handleFilterChange('status', e.target.value)}
                       className="border-2 ps-5"
                     >
                       <option value="">All Status</option>
@@ -781,7 +811,7 @@ const CustomersList = () => {
                     />
                     <FormSelect
                       value={locationFilter}
-                      onChange={(e) => setLocationFilter(e.target.value)}
+                      onChange={(e) => handleFilterChange('location', e.target.value)}
                       className="border-2 ps-5"
                     >
                       <option value="">All Locations</option>
@@ -800,7 +830,7 @@ const CustomersList = () => {
                     />
                     <FormSelect
                       value={registrationDateFilter}
-                      onChange={(e) => setRegistrationDateFilter(e.target.value)}
+                      onChange={(e) => handleFilterChange('registrationDate', e.target.value)}
                       className="border-2 ps-5"
                     >
                       <option value="">All Time</option>
@@ -831,7 +861,7 @@ const CustomersList = () => {
                 <h4 className="mb-0 text-primary">Customers List</h4>
               </div>
               <div className="text-muted">
-                Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, filteredCustomers.length)} of {filteredCustomers.length} customers
+                Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, paginationMeta.total)} of {paginationMeta.total} customers
               </div>
             </div>
 
@@ -845,18 +875,19 @@ const CustomersList = () => {
               }}
             >
               <Table
-                data={filteredCustomers}
+                data={customers}
                 columns={columns}
                 sortableColumns={sortableColumns}
                 currentPage={currentPage}
                 pageSize={pageSize}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={setPageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
                 loading={loading}
                 hover
                 pagination={true}
+                serverSide={true}
                 sortable={true}
-                totalItems={filteredCustomers.length}
+                totalItems={paginationMeta.total}
                 emptyMessage="No customers found"
               />
             </div>
