@@ -26,7 +26,6 @@ import SuspendCustomerModal from '../../components/pages/customers/SuspendCustom
 import { customerService } from '../../services/customerService'
 import branchService from '../../services/branchService'
 import photographersData from '../../mock/photographers.json'
-import { exportPhotographersToPDF, exportSinglePhotographerToPDF } from '../../utils/pdfExport'
 import { useLocation } from 'react-router-dom'
 
 const CustomersList = () => {
@@ -475,7 +474,7 @@ const CustomersList = () => {
               e.stopPropagation()
               handleExportSingle(photographer)
             }}
-            title="Export PDF"
+            title="Export Customer PDF"
             className="text-danger"
             style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
           >
@@ -549,7 +548,45 @@ const CustomersList = () => {
     }
   }
 
-  const handleExportSingle = (photographer) => {
+  const handleExportSingle = async (customer) => {
+    try {
+      const customerId = customer.id || customer.customer_id
+      if (!customerId) {
+        error('Customer ID not found for export')
+        return
+      }
+      const result = await customerService.exportCustomerPdf(customerId)
+      if (result.success) {
+        success('Customer PDF exported successfully')
+      } else {
+        error(result.message || 'Failed to export PDF')
+      }
+    } catch (err) {
+      console.error('Error exporting customer PDF:', err)
+      error('An error occurred while exporting PDF')
+    }
+  }
+
+  const handleExportAll = async () => {
+    try {
+      const params = {}
+      if (searchTerm) params.search = searchTerm
+      if (statusFilter) params.status = statusFilter
+      if (locationFilter) params.city = locationFilter
+      
+      const result = await customerService.exportAllCustomersPdf(params)
+      if (result.success) {
+        success('Customers PDF exported successfully')
+      } else {
+        error(result.message || 'Failed to export PDF')
+      }
+    } catch (err) {
+      console.error('Error exporting customers PDF:', err)
+      error('An error occurred while exporting PDF')
+    }
+  }
+
+  const handleExportOld = (photographer) => {
     try {
       const result = exportSinglePhotographerToPDF(photographer)
       if (result.success) {
@@ -860,8 +897,19 @@ const CustomersList = () => {
                 <FontAwesomeIcon icon={faUsers} className="me-3 text-primary fs-4" />
                 <h4 className="mb-0 text-primary">Customers List</h4>
               </div>
-              <div className="text-muted">
-                Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, paginationMeta.total)} of {paginationMeta.total} customers
+              <div className="d-flex align-items-center gap-2">
+                <Button 
+                  variant="outline-primary" 
+                  size="sm"
+                  onClick={handleExportAll}
+                  title="Export All Customers to PDF"
+                >
+                  <FontAwesomeIcon icon={faFilePdf} className="me-2" />
+                  Export PDF
+                </Button>
+                <div className="text-muted">
+                  Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, paginationMeta.total)} of {paginationMeta.total} customers
+                </div>
               </div>
             </div>
 

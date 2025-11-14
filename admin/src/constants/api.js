@@ -128,6 +128,8 @@ export const API_ENDPOINTS = {
     UPDATE_STATUS: (id) => `/customers/${id}/status`,
     RECALCULATE_STATS: (id) => `/customers/${id}/recalculate-stats`,
     WALLET: (id) => `/customers/${id}/wallet`,
+    EXPORT_PDF: (id) => `/customers/${id}/export-pdf`,
+    EXPORT_ALL_PDF: '/customers/export-pdf',
     LEDGER: (id) => `/customers/${id}/ledger`,
   },
 
@@ -163,6 +165,8 @@ export const API_ENDPOINTS = {
     BULK_DELETE: '/orders/bulk-delete',
     SEARCH: '/orders/search',
     EXPORT: '/orders/export',
+    EXPORT_PDF: (id) => `/orders/${id}/export-pdf`,
+    EXPORT_ALL_PDF: '/orders/export-pdf',
     STATS: '/orders/stats',
     ANALYTICS: '/orders/analytics',
     UPDATE_STATUS: (id) => `/orders/${id}/status`,
@@ -193,6 +197,8 @@ export const API_ENDPOINTS = {
     CREATE: '/payments',
     GET_BY_ORDER: (orderId) => `/payments/order/${orderId}`,
     GET_BY_ID: (id) => `/payments/${id}`,
+    EXPORT_PDF: (id) => `/payments/${id}/export-pdf`,
+    EXPORT_ALL_PDF: '/payments/export-pdf',
   },
 
   // Reports

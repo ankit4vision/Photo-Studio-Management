@@ -14,7 +14,8 @@ import {
   faSave,
   faFilter,
   faRupeeSign,
-  faCreditCard
+  faCreditCard,
+  faFilePdf
 } from '@fortawesome/free-solid-svg-icons'
 import orderService from '../../services/orderService'
 import paymentService from '../../services/paymentService'
@@ -378,6 +379,41 @@ const OrdersList = () => {
     }
   }
 
+  // Export Order Handlers
+  const handleExportOrder = async (order) => {
+    try {
+      const orderId = order.id || order.orderId || getOrderIdentifier(order)
+      const result = await orderService.exportOrderPdf(orderId)
+      if (result.success) {
+        success('Order PDF exported successfully')
+      } else {
+        showError(result.message || 'Failed to export PDF')
+      }
+    } catch (err) {
+      console.error('Error exporting order PDF:', err)
+      showError('An error occurred while exporting PDF')
+    }
+  }
+
+  const handleExportAll = async () => {
+    try {
+      const params = {}
+      if (searchTerm) params.search = searchTerm
+      if (statusFilter) params.status = statusFilter
+      if (paymentStatusFilter) params.payment_status = paymentStatusFilter
+      
+      const result = await orderService.exportAllOrdersPdf(params)
+      if (result.success) {
+        success('Orders PDF exported successfully')
+      } else {
+        showError(result.message || 'Failed to export PDF')
+      }
+    } catch (err) {
+      console.error('Error exporting orders PDF:', err)
+      showError('An error occurred while exporting PDF')
+    }
+  }
+
   // Edit Order Handlers
   const handleEditOrder = (order) => {
     const normalized = normalizeOrderData(order)
@@ -599,6 +635,14 @@ const OrdersList = () => {
             >
               <FontAwesomeIcon icon={faEdit} />
             </Button>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              onClick={() => handleExportOrder(order)}
+              title="Export Order PDF"
+            >
+              <FontAwesomeIcon icon={faFilePdf} />
+            </Button>
           </div>
         )
       }
@@ -796,8 +840,19 @@ const OrdersList = () => {
                 <FontAwesomeIcon icon={faShoppingCart} className="me-3 text-primary fs-4" />
                 <h4 className="mb-0 text-primary">Orders List</h4>
                 </div>
-                <div className="text-muted">
-                  Showing {((pagination.currentPage - 1) * pagination.pageSize) + 1}-{Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems)} of {pagination.totalItems} orders
+                <div className="d-flex align-items-center gap-2">
+                  <Button 
+                    variant="outline-primary" 
+                    size="sm"
+                    onClick={handleExportAll}
+                    title="Export All Orders to PDF"
+                  >
+                    <FontAwesomeIcon icon={faFilePdf} className="me-2" />
+                    Export PDF
+                  </Button>
+                  <div className="text-muted">
+                    Showing {((pagination.currentPage - 1) * pagination.pageSize) + 1}-{Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems)} of {pagination.totalItems} orders
+                  </div>
                 </div>
               </div>
 

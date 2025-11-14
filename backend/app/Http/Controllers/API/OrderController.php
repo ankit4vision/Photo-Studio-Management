@@ -10,6 +10,7 @@ use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Package;
+use App\Services\PdfExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -370,5 +371,107 @@ class OrderController extends Controller
             'data' => $orders,
             'meta' => $this->paginationMeta($paginator, $pagination['sortBy'], $pagination['sortDirection']),
         ]);
+    }
+
+    /**
+     * Export order data to PDF.
+     */
+    public function exportPdf(Order $order, PdfExportService $pdfService)
+    {
+        $order->load([
+            'customer',
+            'branch',
+            'items.package',
+            'payments' => function ($query) {
+                $query->orderBy('payment_date', 'desc');
+            }
+        ]);
+
+        // Get settings for company info
+        $settings = \App\Models\Setting::whereIn('key', [
+            'business_name',
+            'business_address',
+            'business_phone',
+            'business_email',
+            'business_logo',
+            'invoice_prefix',
+            'tax_number'
+        ])->pluck('value', 'key')->toArray();
+
+        $data = [
+            'order' => $order,
+            'settings' => $settings,
+            'exportDate' => now()->format('Y-m-d H:i:s'),
+        ];
+
+        $filename = 'order_' . $order->order_number . '_' . date('Y-m-d') . '.pdf';
+
+        return $pdfService->download('pdfs.order', $data, $filename);
+    }
+
+    /**
+     * Export all orders to PDF with filters.
+     */
+    public function exportAllPdf(Request $request, PdfExportService $pdfService)
+    {
+        $query = Order::with(['customer', 'branch', 'items.package']);
+
+        // Apply same filters as index method
+        if ($search = $request->input('search')) {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('order_number', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($q) use ($search) {
+                        $q->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($paymentStatus = $request->input('payment_status') ?? $request->input('paymentStatus')) {
+            $query->where('payment_status', $paymentStatus);
+        }
+
+        if ($customerId = $request->input('customer_id') ?? $request->input('customerId')) {
+            $query->where('customer_id', $customerId);
+        }
+
+        if ($branchId = $request->input('branch_id')) {
+            $query->where('branch_id', $branchId);
+        }
+
+        if ($startDate = $request->input('start_date') ?? $request->input('startDate')) {
+            $query->where('order_date', '>=', $startDate);
+        }
+
+        if ($endDate = $request->input('end_date') ?? $request->input('endDate')) {
+            $query->where('order_date', '<=', $endDate);
+        }
+
+        $orders = $query->orderBy('order_date', 'desc')->get();
+
+        // Get settings for company info
+        $settings = \App\Models\Setting::whereIn('key', [
+            'business_name',
+            'business_address',
+            'business_phone',
+            'business_email',
+            'business_logo'
+        ])->pluck('value', 'key')->toArray();
+
+        $data = [
+            'orders' => $orders,
+            'settings' => $settings,
+            'exportDate' => now()->format('Y-m-d H:i:s'),
+            'filters' => $request->only(['search', 'status', 'payment_status', 'customer_id', 'branch_id', 'start_date', 'end_date']),
+        ];
+
+        $filename = 'orders_export_' . date('Y-m-d') . '.pdf';
+
+        return $pdfService->download('pdfs.orders', $data, $filename);
     }
 }

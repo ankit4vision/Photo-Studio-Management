@@ -8,6 +8,7 @@ use App\Http\Requests\CustomerStoreRequest;
 use App\Http\Requests\CustomerUpdateRequest;
 use App\Http\Resources\CustomerResource;
 use App\Models\Customer;
+use App\Services\PdfExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -225,5 +226,99 @@ class CustomerController extends Controller
                 'success' => true,
                 'message' => 'Customer statistics recalculated successfully.',
             ]);
+    }
+
+    /**
+     * Export customer data to PDF.
+     */
+    public function exportPdf(Customer $customer, PdfExportService $pdfService)
+    {
+        $customer->load([
+            'branch',
+            'orders' => function ($query) {
+                $query->with(['items.package', 'payments'])->orderBy('order_date', 'desc');
+            }
+        ]);
+
+        // Get all payments for this customer
+        $payments = \App\Models\Payment::where('customer_id', $customer->id)
+            ->with(['order', 'branch'])
+            ->orderBy('payment_date', 'desc')
+            ->get();
+
+        // Get settings for company info
+        $settings = \App\Models\Setting::whereIn('key', [
+            'business_name',
+            'business_address',
+            'business_phone',
+            'business_email',
+            'business_logo'
+        ])->pluck('value', 'key')->toArray();
+
+        $data = [
+            'customer' => $customer,
+            'orders' => $customer->orders,
+            'payments' => $payments,
+            'settings' => $settings,
+            'exportDate' => now()->format('Y-m-d H:i:s'),
+        ];
+
+        $filename = 'customer_' . $customer->customer_code . '_' . date('Y-m-d') . '.pdf';
+
+        return $pdfService->download('pdfs.customer', $data, $filename);
+    }
+
+    /**
+     * Export all customers to PDF with filters.
+     */
+    public function exportAllPdf(Request $request, PdfExportService $pdfService)
+    {
+        $query = Customer::with('branch');
+
+        // Apply same filters as index method
+        if ($search = $request->input('search')) {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('mobile', 'like', "%{$search}%")
+                    ->orWhere('customer_code', 'like', "%{$search}%");
+            });
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($branchId = $request->input('branch_id')) {
+            $query->where('branch_id', $branchId);
+        }
+
+        if ($city = $request->input('city')) {
+            $query->where('city', 'like', "%{$city}%");
+        }
+
+        $customers = $query->orderBy('created_at', 'desc')->get();
+
+        // Get settings for company info
+        $settings = \App\Models\Setting::whereIn('key', [
+            'business_name',
+            'business_address',
+            'business_phone',
+            'business_email',
+            'business_logo'
+        ])->pluck('value', 'key')->toArray();
+
+        $data = [
+            'customers' => $customers,
+            'settings' => $settings,
+            'exportDate' => now()->format('Y-m-d H:i:s'),
+            'filters' => $request->only(['search', 'status', 'branch_id', 'city']),
+        ];
+
+        $filename = 'customers_export_' . date('Y-m-d') . '.pdf';
+
+        return $pdfService->download('pdfs.customers', $data, $filename);
     }
 }

@@ -7,7 +7,8 @@ import {
   faPlus,
   faEye,
   faEdit,
-  faSave
+  faSave,
+  faFilePdf
 } from '@fortawesome/free-solid-svg-icons'
 import { Table, FormModal, useToast } from '../../components'
 import paymentService from '../../services/paymentService'
@@ -177,6 +178,38 @@ const TransactionsList = () => {
     setShowViewModal(true)
   }
 
+  const handleExportTransaction = async (payment) => {
+    try {
+      const paymentId = payment.id || payment.paymentId
+      const result = await paymentService.exportTransactionPdf(paymentId)
+      if (result.success) {
+        success('Transaction PDF exported successfully')
+      } else {
+        showError(result.message || 'Failed to export PDF')
+      }
+    } catch (err) {
+      console.error('Error exporting transaction PDF:', err)
+      showError('An error occurred while exporting PDF')
+    }
+  }
+
+  const handleExportAll = async () => {
+    try {
+      const params = {}
+      if (searchTerm) params.search = searchTerm
+      
+      const result = await paymentService.exportAllTransactionsPdf(params)
+      if (result.success) {
+        success('Transactions PDF exported successfully')
+      } else {
+        showError(result.message || 'Failed to export PDF')
+      }
+    } catch (err) {
+      console.error('Error exporting transactions PDF:', err)
+      showError('An error occurred while exporting PDF')
+    }
+  }
+
   const handleEditSubmit = async (formData) => {
     if (!selectedPayment) return
     try {
@@ -288,6 +321,17 @@ const TransactionsList = () => {
           >
             <FontAwesomeIcon icon={faEdit} />
           </Button>
+          <Button
+            variant="outline-danger"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleExportTransaction(payment)
+            }}
+            title="Export Transaction PDF"
+          >
+            <FontAwesomeIcon icon={faFilePdf} />
+          </Button>
         </div>
       )
     }
@@ -304,7 +348,15 @@ const TransactionsList = () => {
               <FontAwesomeIcon icon={faWallet} className="me-3 text-dark fs-4" />
               <h2 className="mb-0 text-dark">Transactions</h2>
             </div>
-            <div className="ms-auto">
+            <div className="ms-auto d-flex gap-2">
+              <Button 
+                variant="outline-primary" 
+                onClick={handleExportAll}
+                title="Export All Transactions to PDF"
+              >
+                <FontAwesomeIcon icon={faFilePdf} className="me-2" />
+                Export PDF
+              </Button>
               <Button variant="primary" onClick={() => navigate('/transactions/create')}>
                 <FontAwesomeIcon icon={faPlus} className="me-2" />
                 Add Payment

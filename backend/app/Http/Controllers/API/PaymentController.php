@@ -7,6 +7,7 @@ use App\Http\Controllers\Concerns\PaginatesResults;
 use App\Http\Resources\PaymentResource;
 use App\Models\Payment;
 use App\Models\Order;
+use App\Services\PdfExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -278,5 +279,111 @@ class PaymentController extends Controller
             'data' => PaymentResource::collection($paginator->items()),
             'meta' => $this->paginationMeta($paginator, $sortBy ?? 'created_at', $sortDirection ?? 'desc'),
         ]);
+    }
+
+    /**
+     * Export transaction/payment data to PDF.
+     */
+    public function exportPdf(Payment $payment, PdfExportService $pdfService)
+    {
+        $payment->load([
+            'order' => function ($query) {
+                $query->with(['customer', 'branch', 'items.package']);
+            },
+            'customer',
+            'branch'
+        ]);
+
+        // Get settings for company info
+        $settings = \App\Models\Setting::whereIn('key', [
+            'business_name',
+            'business_address',
+            'business_phone',
+            'business_email',
+            'business_logo'
+        ])->pluck('value', 'key')->toArray();
+
+        $data = [
+            'payment' => $payment,
+            'settings' => $settings,
+            'exportDate' => now()->format('Y-m-d H:i:s'),
+        ];
+
+        $filename = 'transaction_' . $payment->payment_number . '_' . date('Y-m-d') . '.pdf';
+
+        return $pdfService->download('pdfs.transaction', $data, $filename);
+    }
+
+    /**
+     * Export all transactions/payments to PDF with filters.
+     */
+    public function exportAllPdf(Request $request, PdfExportService $pdfService)
+    {
+        $query = Payment::with(['order.customer', 'order.branch', 'customer', 'branch']);
+
+        // Apply same filters as index method
+        if ($orderId = $request->input('order_id') ?? $request->input('orderId')) {
+            $query->where('order_id', $orderId);
+        }
+
+        if ($customerId = $request->input('customer_id') ?? $request->input('customerId')) {
+            $query->where('customer_id', $customerId);
+        }
+
+        if ($branchId = $request->input('branch_id')) {
+            $query->where('branch_id', $branchId);
+        }
+
+        if ($paymentType = $request->input('payment_type') ?? $request->input('paymentType')) {
+            $query->where('payment_type', $paymentType);
+        }
+
+        if ($paymentMethod = $request->input('payment_method') ?? $request->input('paymentMethod')) {
+            $query->where('payment_method', $paymentMethod);
+        }
+
+        if ($startDate = $request->input('start_date') ?? $request->input('startDate')) {
+            $query->whereDate('payment_date', '>=', $startDate);
+        }
+
+        if ($endDate = $request->input('end_date') ?? $request->input('endDate')) {
+            $query->whereDate('payment_date', '<=', $endDate);
+        }
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('payment_number', 'like', "%{$search}%")
+                    ->orWhereHas('order', function ($q) use ($search) {
+                        $q->where('order_number', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('customer', function ($q) use ($search) {
+                        $q->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $payments = $query->orderBy('payment_date', 'desc')->get();
+
+        // Get settings for company info
+        $settings = \App\Models\Setting::whereIn('key', [
+            'business_name',
+            'business_address',
+            'business_phone',
+            'business_email',
+            'business_logo'
+        ])->pluck('value', 'key')->toArray();
+
+        $data = [
+            'payments' => $payments,
+            'settings' => $settings,
+            'exportDate' => now()->format('Y-m-d H:i:s'),
+            'filters' => $request->only(['order_id', 'customer_id', 'branch_id', 'payment_type', 'payment_method', 'start_date', 'end_date', 'search']),
+        ];
+
+        $filename = 'transactions_export_' . date('Y-m-d') . '.pdf';
+
+        return $pdfService->download('pdfs.transactions', $data, $filename);
     }
 }

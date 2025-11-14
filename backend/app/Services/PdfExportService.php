@@ -22,6 +22,19 @@ class PdfExportService
     }
 
     /**
+     * Alias for export to maintain semantic clarity.
+     *
+     * @param string $view
+     * @param array $data
+     * @param string $filename
+     * @return Response
+     */
+    public function download($view, $data = [], $filename = 'document.pdf')
+    {
+        return $this->export($view, $data, $filename);
+    }
+
+    /**
      * Generate PDF and return stream response.
      *
      * @param string $view
