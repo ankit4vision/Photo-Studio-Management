@@ -1,15 +1,25 @@
 import React, { useState, useEffect } from 'react'
-import { Container, Row, Col, Card, Button, Badge, Form } from 'react-bootstrap'
+import { Container, Row, Col, Card, Button, Form, Spinner } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faDollarSign, faCartShopping, faUsers, faArrowTrendUp, faArrowTrendDown, faClock, faRefresh, faCalendarAlt } from '@fortawesome/free-solid-svg-icons'
 import MainChart from './MainChart'
+import dashboardService from '../../services/dashboardService'
+import { formatCurrency } from '../../utils'
+import { useToast } from '../../components'
 
 const Dashboard = () => {
-  const [dashboardStats, setDashboardStats] = useState({
-    totalRevenue: 0,
-    totalOrders: 0,
-    totalCustomers: 0
-  })
+  const { error: showError } = useToast()
+
+  const [summary, setSummary] = useState(null)
+  const [summaryLoading, setSummaryLoading] = useState(true)
+
+  const [trendRange, setTrendRange] = useState(30)
+  const [trendData, setTrendData] = useState([])
+  const [trendLoading, setTrendLoading] = useState(true)
+
+  const [activities, setActivities] = useState([])
+  const [activitiesLoading, setActivitiesLoading] = useState(true)
+
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [dateRange, setDateRange] = useState({
     startDate: '',
@@ -28,32 +38,66 @@ const Dashboard = () => {
     })
   }, [])
 
-  // Fetch dashboard data
-  const fetchDashboardData = async () => {
-    setIsRefreshing(true)
+  const fetchSummary = async () => {
+    if (!dateRange.startDate || !dateRange.endDate) return
+    setSummaryLoading(true)
     try {
-      // Simulate API call with date range
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setDashboardStats({
-        totalRevenue: 45678,
-        totalOrders: 892,
-        totalCustomers: 1247
+      const response = await dashboardService.getSummary({
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
       })
+      if (response.success) {
+        setSummary(response.data)
+      } else {
+        showError(response.message || 'Failed to load dashboard summary')
+      }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error)
+      console.error('Error fetching dashboard summary:', error)
+      showError('Failed to load dashboard summary')
     } finally {
-      setIsRefreshing(false)
+      setSummaryLoading(false)
+    }
+  }
+
+  const fetchTrend = async (options = {}) => {
+    setTrendLoading(true)
+    try {
+      const response = await dashboardService.getRevenueTrend({
+        range: options.range || trendRange,
+        endDate: dateRange.endDate,
+      })
+      if (response.success) {
+        setTrendData(response.data?.points || [])
+      } else {
+        showError(response.message || 'Failed to load revenue trend')
+      }
+    } catch (error) {
+      console.error('Error fetching revenue trend:', error)
+      showError('Failed to load revenue trend')
+    } finally {
+      setTrendLoading(false)
     }
   }
 
   // Initial data fetch
   useEffect(() => {
-    fetchDashboardData()
+    if (dateRange.startDate && dateRange.endDate) {
+      fetchSummary()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange])
+
+  useEffect(() => {
+    if (dateRange.endDate) {
+      fetchTrend({ range: trendRange })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trendRange, dateRange.endDate])
 
   // Handle refresh button click
   const handleRefresh = () => {
-    fetchDashboardData()
+    setIsRefreshing(true)
+    Promise.all([fetchSummary(), fetchTrend({ range: trendRange })]).finally(() => setIsRefreshing(false))
   }
 
   // Handle date range change
@@ -64,74 +108,56 @@ const Dashboard = () => {
     }))
   }
 
-  // Stats cards data
+  const totals = summary?.overallTotals || summary?.totals || { revenue: 0, orders: 0, customers: 0 }
+  const changes = summary?.changes || {
+    revenue: { direction: 'up', value: 0 },
+    orders: { direction: 'up', value: 0 },
+    customers: { direction: 'up', value: 0 },
+  }
+
   const statsData = [
     {
       title: 'Total Revenue',
-      value: `$${dashboardStats.totalRevenue.toLocaleString()}`,
-      change: '+8.2%',
-      changeType: 'positive',
+      value: formatCurrency(totals.revenue || 0),
+      change: `${changes.revenue.value}%`,
+      changeType: changes.revenue.direction === 'up' ? 'positive' : 'negative',
       icon: faDollarSign,
       color: 'success',
       gradient: 'bg-gradient-success'
     },
     {
       title: 'Total Orders',
-      value: dashboardStats.totalOrders.toLocaleString(),
-      change: '+15.3%',
-      changeType: 'positive',
+      value: (totals.orders || 0).toLocaleString(),
+      change: `${changes.orders.value}%`,
+      changeType: changes.orders.direction === 'up' ? 'positive' : 'negative',
       icon: faCartShopping,
       color: 'info',
       gradient: 'bg-gradient-info'
     },
     {
       title: 'Total Customers',
-      value: dashboardStats.totalCustomers.toLocaleString(),
-      change: '+12.1%',
-      changeType: 'positive',
+      value: (totals.customers || 0).toLocaleString(),
+      change: `${changes.customers.value}%`,
+      changeType: changes.customers.direction === 'up' ? 'positive' : 'negative',
       icon: faUsers,
       color: 'primary',
       gradient: 'bg-gradient-primary'
     }
   ]
 
-  // Recent activities data
-  const recentActivities = [
-    { id: 1, user: 'John Smith', action: 'Placed order #1234', time: '2 minutes ago', type: 'order' },
-    { id: 2, user: 'Sarah Johnson', action: 'New customer registered', time: '5 minutes ago', type: 'user' },
-    { id: 3, user: 'Mike Wilson', action: 'Completed order #1233', time: '8 minutes ago', type: 'order' },
-    { id: 4, user: 'Emma Davis', action: 'Payment received for order #1231', time: '12 minutes ago', type: 'payment' },
-    { id: 5, user: 'David Brown', action: 'Placed order #1232', time: '15 minutes ago', type: 'order' },
-    { id: 6, user: 'Lisa Anderson', action: 'New customer registered', time: '18 minutes ago', type: 'user' }
-  ]
-
-  const getActivityIcon = (type) => {
-    switch (type) {
-      case 'order': return faCartShopping
-      case 'user': return faUsers
-      case 'payment': return faDollarSign
-      default: return faClock
-    }
-  }
-
-  const getActivityColor = (type) => {
-    switch (type) {
-      case 'order': return 'success'
-      case 'user': return 'primary'
-      case 'payment': return 'success'
-      default: return 'secondary'
-    }
-  }
-
   return (
+    <div className="dashboard-page">
     <Container fluid>
       {/* Page Header */}
-      <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
-        <h2 className="mb-0 text-dark">Dashboard</h2>
+      <div className="dashboard-header d-flex align-items-center mb-4 pb-3 border-bottom">
+        <div>
+          <p className="mb-1 text-muted text-uppercase small fw-semibold">Overview</p>
+          <h2 className="mb-0 text-dark fw-bold">Dashboard</h2>
+        </div>
         <div className="ms-auto d-flex align-items-center gap-3">
           {/* Date Range Picker */}
-          <div className="d-flex align-items-center gap-2">
-            <FontAwesomeIcon icon={faCalendarAlt} className="text-success" />
+          <div className="d-flex align-items-center gap-2 dashboard-date-picker">
+            <FontAwesomeIcon icon={faCalendarAlt} className="text-theme" />
             <Form.Control
               type="date"
               size="sm"
@@ -168,27 +194,38 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <Row className="mb-5">
+      <Row className="mb-5 g-4">
         {statsData.map((item, index) => (
           <Col md={4} key={`stat-card-${index}`}>
-            <Card className="h-100 border-0 shadow-sm">
+            <Card className="dashboard-stat-card h-100 border-0 shadow-sm">
               <Card.Body className="p-4">
-                <div className="d-flex align-items-center">
-                  <div className="flex-shrink-0">
-                    <div className={`p-3 rounded-3 ${item.gradient} text-white`}>
+                <div className="d-flex flex-column gap-3">
+                  <div className="d-flex align-items-center justify-content-between">
+                    <div>
+                      <div className="text-muted small fw-semibold text-uppercase tracking-tight">{item.title}</div>
+                      <div className="h3 mb-0 fw-bold text-dark">
+                        {summaryLoading ? <Spinner animation="border" size="sm" /> : item.value}
+                      </div>
+                    </div>
+                    <div className={`stat-icon ${item.gradient}`}>
                       <FontAwesomeIcon icon={item.icon} size="lg" />
                     </div>
                   </div>
-                  <div className="flex-grow-1 ms-4">
-                    <div className="text-muted small fw-semibold mb-1">{item.title}</div>
-                    <div className="h3 mb-2 fw-bold text-dark">{item.value}</div>
-                    <div className={`small fw-semibold ${item.changeType === 'positive' ? 'text-success' : 'text-danger'}`}>
+                  <div className="d-flex align-items-center justify-content-between">
+                    <span className="text-muted small">Vs previous period</span>
+                    <div className={`change-badge ${item.changeType}`}>
                       <FontAwesomeIcon 
                         icon={item.changeType === 'positive' ? faArrowTrendUp : faArrowTrendDown} 
                         className="me-1" 
                       />
-                      {item.change} from last month
+                      {summaryLoading ? '--' : item.change}
                     </div>
+                  </div>
+                  <div className="stat-progress bg-light rounded-pill">
+                    <div
+                      className={`stat-progress-fill ${item.color}`}
+                      style={{ width: summaryLoading ? '0%' : `${Math.min(100, Math.abs(parseFloat(item.change)))}%` }}
+                    />
                   </div>
                 </div>
               </Card.Body>
@@ -200,61 +237,54 @@ const Dashboard = () => {
       <Row>
         {/* Revenue Trends Chart */}
         <Col md={8}>
-          <div className="bg-white rounded-3 shadow-sm p-4">
-            <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-success border-2">
-              <FontAwesomeIcon icon={faDollarSign} className="me-3 text-success fs-4" />
-              <h4 className="mb-0 text-success">Revenue Trends</h4>
+          <div className="dashboard-card bg-white rounded-3 shadow-sm p-4">
+            <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
+              <div>
+                <p className="text-muted text-uppercase small mb-1 fw-semibold">Performance</p>
+                <h4 className="mb-0 text-theme">Revenue Trends</h4>
+              </div>
             </div>
             <div className="mb-3">
-                <div className="d-flex gap-2">
-                <Button variant="outline-success" size="sm">7 Days</Button>
-                <Button variant="success" size="sm">30 Days</Button>
-                <Button variant="outline-success" size="sm">90 Days</Button>
+                <div className="d-flex gap-2 flex-wrap">
+                {[7, 30, 90].map((range) => (
+                  <Button
+                    key={range}
+                    variant={trendRange === range ? 'success' : 'outline-success'}
+                    size="sm"
+                    onClick={() => setTrendRange(range)}
+                  >
+                    {range === 7 ? '7 Days' : range === 30 ? '30 Days' : '90 Days'}
+                  </Button>
+                ))}
               </div>
                     </div>
-            <MainChart dateRange={dateRange} />
+            {trendLoading ? (
+              <div className="text-center py-5">
+                <Spinner animation="border" variant="success" />
+              </div>
+            ) : (
+              <MainChart points={trendData} />
+            )}
               </div>
         </Col>
 
-        {/* Recent Activities */}
+        {/* Placeholder column for future enhancements */}
         <Col md={4}>
-          <div className="bg-white rounded-3 shadow-sm p-4">
-            <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-success border-2">
-              <FontAwesomeIcon icon={faClock} className="me-3 text-success fs-4" />
-              <h4 className="mb-0 text-success">Recent Activities</h4>
-                </div>
-            <div className="d-grid gap-3">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="d-flex align-items-center p-3 bg-light rounded-3">
-                  <div className="flex-shrink-0">
-                    <div className={`p-2 rounded-circle bg-${getActivityColor(activity.type)} bg-opacity-10`}>
-                      <FontAwesomeIcon 
-                        icon={getActivityIcon(activity.type)} 
-                        className={`text-${getActivityColor(activity.type)}`} 
-                        size="sm" 
-                      />
-              </div>
-                </div>
-                  <div className="flex-grow-1 ms-3">
-                    <div className="fw-semibold text-dark mb-1">{activity.user}</div>
-                    <div className="small text-muted">{activity.action}</div>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <div className="small text-muted">{activity.time}</div>
-                  </div>
-                </div>
-              ))}
-              </div>
-            <div className="mt-4 text-center">
-              <Button variant="outline-success" size="sm">
-                View All Activities
-              </Button>
-                </div>
-              </div>
+          <div className="dashboard-card bg-white rounded-3 shadow-sm p-4 h-100 d-flex flex-column justify-content-center align-items-center text-center">
+            <div className="mb-3">
+              <FontAwesomeIcon icon={faClock} className="text-theme fs-1" />
+            </div>
+            <h4 className="text-dark fw-bold mb-2">Live Updates</h4>
+            <p className="text-muted mb-0">
+              Real-time widgets coming soon. This area will display dynamic insights pulled directly from backend events.
+            </p>
+          </div>
         </Col>
       </Row>
     </Container>
+    </div>
   )
 }
 
 export default Dashboard
+

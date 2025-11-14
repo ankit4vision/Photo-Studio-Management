@@ -181,6 +181,7 @@ admin/
 │   ├── 📁 services/                  # API service layer
 │   │   ├── authService.js            # Authentication API (login, logout, forgot/reset password)
 │   │   ├── branchService.js          # Branch API
+│   │   ├── dashboardService.js       # Dashboard analytics (summary, trend, activities)
 │   │   ├── customerService.js        # Customer API
 │   │   ├── orderService.js           # Order API
 │   │   ├── packageService.js         # Package API
@@ -316,11 +317,11 @@ admin/
 ### 2. **Dashboard Module**
 - **Location**: `src/views/dashboard/`
 - **Features**:
-  - Statistics cards
-  - Charts and visualizations
-  - Recent activities
-  - Quick actions
-- **Status**: ✅ Implemented with mock data
+  - KPI statistics cards powered by `/dashboard/summary`
+  - Revenue trend chart (7/30/90 day quick filters) from `/dashboard/revenue-trend`
+  - Live updates placeholder section for real-time widgets
+  - Date-range filtering + manual refresh
+- **Status**: ✅ Fully implemented with API integration
 
 ### 3. **Branch Management**
 - **Location**: `src/views/branches/`, `src/services/branchService.js`
@@ -741,7 +742,7 @@ const userService = {
 - User Profile (Avatar upload, Personal Info, Address, Change Password)
 - Role & Permission Management
 - Settings Management (Business Info, Invoice, Email Settings with test, App Settings with Web URL, Currency & Regional, S3 Settings)
-- Dashboard (with charts)
+- Dashboard (live KPI cards, revenue trends with backend analytics endpoints)
 - Customer Management (with PDF export, auto-calculated stats from orders, server-side pagination/filtering)
 - Order Management (multi-package support, customer stats auto-update, server-side pagination/filtering, payment recording)
 - Package Management (server-side pagination/filtering)
@@ -805,3 +806,5 @@ npm run lint
 - ✅ Server-side pagination, filtering, and searching for Packages, Customers, and Orders
 - ✅ Payment form shows customer name with #CUST code format
 - ✅ Order actions include "Record Payment" functionality
+- ✅ Dashboard cards + revenue chart now powered by `/dashboard/*` APIs with themed UI refresh
+- ✅ Customer/Order/Transaction PDFs export directly from backend storage

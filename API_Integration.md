@@ -265,6 +265,101 @@ const handleForgotPassword = async (email) => {
 
 ---
 
+## 📊 Dashboard APIs
+
+### 1. **GET /api/dashboard/summary**
+**Description**: चुने हुए date range के लिए KPI totals (revenue, orders, customers) + पिछली period comparison और lifetime totals देता है।
+
+**Backend Controller**: `DashboardController@summary`
+
+**Permissions Required**: `view_dashboard`
+
+**Query Parameters**:
+- `start_date` - ISO date (optional, default: end_date से 90 दिन पहले)
+- `end_date` - ISO date (optional, default: आज)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "dateRange": { "start": "2025-01-01", "end": "2025-03-31" },
+    "totals": { "revenue": 125000, "orders": 215, "customers": 48 },
+    "overallTotals": { "revenue": 978500, "orders": 1860, "customers": 642 },
+    "changes": {
+      "revenue": { "direction": "up", "value": 12.5 },
+      "orders": { "direction": "down", "value": 4.1 },
+      "customers": { "direction": "up", "value": 6.8 }
+    }
+  }
+}
+```
+
+**Frontend Integration**:
+- **Service**: `src/services/dashboardService.js`
+- **Method**: `dashboardService.getSummary({ startDate, endDate })`
+- **Used In**: `src/views/dashboard/Dashboard.jsx` (KPI cards, refresh/date filter)
+
+---
+
+### 2. **GET /api/dashboard/revenue-trend**
+**Description**: Payments से net revenue (credit - debit) aggregate करके trend points रिटर्न करता है।
+
+**Backend Controller**: `DashboardController@revenueTrend`
+
+**Permissions Required**: `view_dashboard`
+
+**Query Parameters**:
+- `range` - Supported values: 7, 30, 90 (default: 30)
+- `end_date` - ISO date (optional, default: आज)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "range": 30,
+    "start": "2025-03-01",
+    "end": "2025-03-30",
+    "points": [
+      { "date": "2025-03-01", "amount": 5400 },
+      { "date": "2025-03-02", "amount": 3200 }
+    ]
+  }
+}
+```
+
+**Frontend Integration**:
+- **Service**: `dashboardService.getRevenueTrend({ range })`
+- **Used In**: `Dashboard.jsx` (Revenue Trends chart) + `MainChart.jsx`
+
+---
+
+### 3. **GET /api/dashboard/recent-activities**
+**Description**: Latest orders, payments और customers events merge करके activity feed देता है (top 4 entries)।
+
+**Backend Controller**: `DashboardController@recentActivities`
+
+**Permissions Required**: `view_dashboard`
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    { "type": "order", "reference": "#ORD1042", "customer_id": 18, "occurred_at": "2025-03-30T10:32:00Z" },
+    { "type": "payment", "reference": "#PAY203", "customer_id": 12, "occurred_at": "2025-03-30T09:12:00Z" },
+    { "type": "customer", "reference": "#CUST512", "customer_id": 512, "occurred_at": "2025-03-30T08:45:00Z" }
+  ]
+}
+```
+
+**Frontend Integration**:
+- **Service**: `dashboardService.getRecentActivities()`
+- **Used In**: `Dashboard.jsx` (future live updates panel placeholder)
+
+---
+
 ## 👥 User Management APIs
 
 ### 1. **GET /api/users**

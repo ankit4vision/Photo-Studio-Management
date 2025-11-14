@@ -72,6 +72,7 @@ const _nav = [
     name: 'Payments',
     to: '/payments',
     icon: <CIcon icon={cilCreditCard} customClassName="nav-icon" />,
+    disabled: true,
   },
   {
     component: CNavTitle,
@@ -82,24 +83,28 @@ const _nav = [
     name: 'Sales Report',
     to: '/reports/sales',
     icon: <CIcon icon={cilBarChart} customClassName="nav-icon" />,
+    disabled: true,
   },
   {
     component: CNavItem,
     name: 'Ledger Report',
     to: '/reports/ledger',
     icon: <CIcon icon={cilBarChart} customClassName="nav-icon" />,
+    disabled: true,
   },
   {
     component: CNavItem,
     name: 'Branch Report',
     to: '/reports/branch',
     icon: <CIcon icon={cilBarChart} customClassName="nav-icon" />,
+    disabled: true,
   },
   {
     component: CNavItem,
     name: 'Staff Report',
     to: '/reports/staff',
     icon: <CIcon icon={cilBarChart} customClassName="nav-icon" />,
+    disabled: true,
   },
   {
     component: CNavTitle,

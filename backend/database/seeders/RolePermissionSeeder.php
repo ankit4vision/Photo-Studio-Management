@@ -27,6 +27,7 @@ class RolePermissionSeeder extends Seeder
             'view_permission',
             'view_setting',
             'edit_setting',
+            'view_dashboard',
             'view_branch',
             'create_branch',
             'edit_branch',
@@ -34,6 +35,7 @@ class RolePermissionSeeder extends Seeder
         ];
 
         $staffPermissionNames = [
+            'view_dashboard',
             'view_branch',
         ];
 

@@ -68,7 +68,7 @@ const OrdersList = () => {
   useEffect(() => {
     fetchOrders()
     fetchStats()
-  }, [pagination.currentPage, filters])
+  }, [pagination.currentPage, pagination.pageSize, filters])
 
   const fetchOrders = async () => {
     setLoading(true)
@@ -162,6 +162,14 @@ const OrdersList = () => {
     setPagination(prev => ({
       ...prev,
       currentPage: page
+    }))
+  }
+
+  const handlePageSizeChange = (size) => {
+    setPagination(prev => ({
+      ...prev,
+      pageSize: size,
+      currentPage: 1,
     }))
   }
 
@@ -861,10 +869,14 @@ const OrdersList = () => {
                 data={orders || []}
                 loading={loading}
                 sortableColumns={sortableColumns}
+                pagination
+                serverSide
                 currentPage={pagination.currentPage}
                 pageSize={pagination.pageSize}
                 totalItems={pagination.totalItems}
                 onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                pageSizeOptions={[10, 25, 50, 100]}
                 emptyMessage="No orders found"
               />
             </div>

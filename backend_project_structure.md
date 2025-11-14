@@ -48,6 +48,7 @@ backend/
 │   │   │   ├── 📁 API/             # API controllers
 │   │   │   │   ├── BranchController.php
 │   │   │   │   ├── CustomerController.php
+│   │   │   │   ├── DashboardController.php
 │   │   │   │   ├── OrderController.php
 │   │   │   │   ├── PackageController.php
 │   │   │   │   ├── PaymentController.php
@@ -352,7 +353,18 @@ backend/
 - **Status**: ✅ Fully implemented
 - **Note**: Payment record होने पर order payment status और customer stats automatically update होते हैं
 
-### 10. **Settings Management Module**
+### 10. **Dashboard & Analytics Module**
+- **Location**: `app/Http/Controllers/API/DashboardController.php`
+- **Routes**: `/api/dashboard/summary`, `/api/dashboard/revenue-trend`, `/api/dashboard/recent-activities`
+- **Features**:
+  - Aggregated KPI summary (revenue, orders, customers) with previous-period deltas
+  - Revenue trend grouping (7/30/90 day ranges) using payments data
+  - Recent activities feed combining latest orders, payments, and customer events
+- **Permissions**: `view_dashboard`
+- **Status**: ✅ Fully implemented
+- **Consumers**: Admin Dashboard KPI cards, revenue chart, and live updates panel
+
+### 11. **Settings Management Module**
 - **Location**: `app/Http/Controllers/API/SettingController.php`
 - **Routes**: `/api/settings/*`, `/api/global-settings/*`
 - **Features**:
@@ -369,7 +381,7 @@ backend/
 - **Permissions**: `view_setting`, `edit_setting`
 - **Status**: ✅ Fully implemented
 
-### 8. **Email Service**
+### 12. **Email Service**
 - **Location**: `app/Services/EmailService.php`
 - **Features**:
   - Send generic emails
@@ -381,14 +393,14 @@ backend/
   - Email template rendering (Blade templates)
 - **Status**: ✅ Fully implemented
 
-### 11. **PDF Export Service**
+### 13. **PDF Export Service**
 - **Location**: `app/Services/PdfExportService.php`
 - **Features**:
   - Generate PDF documents
   - Export reports to PDF
 - **Status**: ✅ Fully implemented
 
-### 12. **S3 Storage Service**
+### 14. **S3 Storage Service**
 - **Location**: `app/Services/S3Service.php`
 - **Features**:
   - Upload files to S3

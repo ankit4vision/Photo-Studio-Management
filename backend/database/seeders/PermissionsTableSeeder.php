@@ -63,6 +63,9 @@ class PermissionsTableSeeder extends Seeder
             ['name' => 'create_payment', 'description' => 'Create payments', 'module' => 'payments', 'submodule' => 'management', 'type' => 'write'],
             ['name' => 'edit_payment', 'description' => 'Edit payments', 'module' => 'payments', 'submodule' => 'management', 'type' => 'write'],
             ['name' => 'delete_payment', 'description' => 'Delete payments', 'module' => 'payments', 'submodule' => 'management', 'type' => 'delete'],
+
+            // Dashboard
+            ['name' => 'view_dashboard', 'description' => 'View dashboard analytics', 'module' => 'dashboard', 'submodule' => 'overview', 'type' => 'read'],
         ];
 
         foreach ($permissions as $permission) {

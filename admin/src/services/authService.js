@@ -7,6 +7,7 @@ const PERMISSION_ALIAS_MAP = {
   create_user: ['user:write', 'user:manage'],
   edit_user: ['user:write', 'user:manage'],
   delete_user: ['user:delete', 'user:manage'],
+  view_dashboard: ['dashboard:read'],
   view_role: ['role:read'],
   create_role: ['role:write', 'role:manage'],
   edit_role: ['role:write', 'role:manage'],
