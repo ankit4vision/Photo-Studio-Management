@@ -8,21 +8,15 @@ import {
   faRefresh, 
   faUsers, 
   faUser,
-  faDownload,
-  faBan,
-  faCheckCircle,
   faPlus,
   faEdit,
   faFilePdf,
-  faCamera,
-  faFileExport,
   faSave,
   faFilter,
 } from '@fortawesome/free-solid-svg-icons'
 import { Table, Modal, FormModal, useToast } from '../../components'
 import CustomerForm from '../../components/pages/customers/CustomerForm'
 import CustomerDetailsModal from '../../components/pages/customers/CustomerDetailsModal'
-import SuspendCustomerModal from '../../components/pages/customers/SuspendCustomerModal'
 import { customerService } from '../../services/customerService'
 import branchService from '../../services/branchService'
 import photographersData from '../../mock/photographers.json'
@@ -45,9 +39,6 @@ const CustomersList = () => {
   // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
-  const [showSuspendModal, setShowSuspendModal] = useState(false)
-  const [showSuspendDetailsModal, setShowSuspendDetailsModal] = useState(false)
-  const [showActivateModal, setShowActivateModal] = useState(false)
   
   // Add/Edit Modal States
   const [showAddModal, setShowAddModal] = useState(false)
@@ -64,14 +55,11 @@ const CustomersList = () => {
   // Data states
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [customerToDelete, setCustomerToDelete] = useState(null)
-  const [customerToSuspend, setCustomerToSuspend] = useState(null)
-  const [customerToActivate, setCustomerToActivate] = useState(null)
   
   // Stats state
   const [stats, setStats] = useState({
     totalCustomers: 0,
     activeCustomers: 0,
-    suspendedCustomers: 0,
     newThisMonth: 0
   })
   
@@ -124,59 +112,61 @@ const CustomersList = () => {
       
       // Load from service with server-side pagination
       const response = await customerService.getCustomers(params)
-      
-      if (response && response.success && response.data && Array.isArray(response.data)) {
-        const convertedCustomers = response.data.map(customer => ({
+
+      if (!response?.success || !Array.isArray(response?.data)) {
+        error(response?.message || 'Failed to load customers')
+        setCustomers([])
+        setPaginationMeta({
+          total: 0,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        })
+        return
+      }
+
+      const convertedCustomers = response.data.map((customer) => {
+        const financials = getCustomerFinancials(customer)
+
+        return {
           ...customer,
           name: customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim(),
           mobile: customer.mobile || customer.phone,
           phone: customer.phone || customer.mobile,
           joinedDate: customer.joinedDate || customer.createdAt || customer.created_at,
           created_at: customer.created_at || customer.createdAt || customer.joinedDate,
-          // Map customer fields to photographer fields for table compatibility
           photographerId: customer.photographerId || customer.customerId || customer.customer_code || `#${customer.id}`,
-          total_earnings: customer.total_earnings || customer.total_amount || customer.totalSpent || 0,
-          total_amount: customer.total_amount || customer.total_earnings || customer.totalSpent || 0,
-          paid_amount: customer.paid_amount || 0,
-          remaining_amount: customer.remaining_amount || (customer.total_amount || customer.total_earnings || customer.totalSpent || 0),
-          total_orders: customer.total_orders || customer.total_services || customer.totalOrders || 0,
-          total_services: customer.total_services || customer.total_orders || customer.totalOrders || 0,
-          wallet_balance: customer.wallet_balance || 0,
-          // Ensure branch_id and branch_name for branch indicator
+          total_earnings: financials.total,
+          total_amount: financials.total,
+          totalSpent: financials.total,
+          paid_amount: financials.paid,
+          remaining_amount: financials.remaining,
+          total_orders: customer.total_orders ?? customer.total_services ?? customer.totalOrders ?? 0,
+          total_services: customer.total_services ?? customer.total_orders ?? customer.totalOrders ?? 0,
+          wallet_balance: customer.wallet_balance ?? customer.walletBalance ?? financials.paid,
           branch_id: customer.branch_id || null,
-          branch_name: customer.branch_name || null
-        }))
-        
-        setCustomers(convertedCustomers)
-        
-        // Update pagination meta
-        if (response.meta) {
-          setPaginationMeta({
-            total: response.meta.total || 0,
-            totalPages: response.meta.totalPages || 1,
-            hasNext: response.meta.hasNext || false,
-            hasPrev: response.meta.hasPrev || false,
-          })
+          branch_name: customer.branch_name || null,
         }
-        
-        console.log('Loaded customers:', convertedCustomers.length, 'items (server-side)')
-      } else {
-        // Fallback to photographers mock data if API fails
-        console.warn('API response not successful, using mock data')
-        setCustomers(photographersData)
+      })
+
+      setCustomers(convertedCustomers)
+
+      if (response.meta) {
         setPaginationMeta({
-          total: photographersData.length,
-          totalPages: 1,
-          hasNext: false,
-          hasPrev: false,
+          total: response.meta.total || 0,
+          totalPages: response.meta.totalPages || 1,
+          hasNext: response.meta.hasNext || false,
+          hasPrev: response.meta.hasPrev || false,
         })
       }
+
+      console.log('Loaded customers:', convertedCustomers.length, 'items (server-side)')
     } catch (err) {
       console.error('Error loading customers:', err)
-      // Fallback to photographers mock data on error
-      setCustomers(photographersData)
+      error('Failed to load customers. Please try again.')
+      setCustomers([])
       setPaginationMeta({
-        total: photographersData.length,
+        total: 0,
         totalPages: 1,
         hasNext: false,
         hasPrev: false,
@@ -192,7 +182,6 @@ const CustomersList = () => {
       const allCustomers = customers.length > 0 ? customers : photographersData
       const totalCustomers = allCustomers.length
       const activeCustomers = allCustomers.filter(p => p.status === 'active').length
-      const suspendedCustomers = allCustomers.filter(p => p.status === 'suspended').length
       const newThisMonth = allCustomers.filter(p => {
         const joinedDate = p.joinedDate || p.createdAt || p.created_at
         if (!joinedDate) return false
@@ -204,7 +193,6 @@ const CustomersList = () => {
       setStats({
         totalCustomers,
         activeCustomers,
-        suspendedCustomers,
         newThisMonth
       })
     } catch (err) {
@@ -327,6 +315,48 @@ const CustomersList = () => {
   }
 
   // Table columns
+  const normalizeNumber = (value, defaultValue = 0) => {
+    if (value === null || value === undefined || value === '') return defaultValue
+    const num = Number(value)
+    return Number.isNaN(num) ? defaultValue : num
+  }
+
+  const getCustomerFinancials = (customer = {}) => {
+    const total = normalizeNumber(
+      customer.total_amount ??
+      customer.total_earnings ??
+      customer.totalSpent ??
+      customer.totalAmount
+    )
+
+    const paidSource = normalizeNumber(
+      customer.paid_amount ??
+      customer.paidAmount ??
+      customer.wallet_balance ??
+      customer.walletBalance
+    )
+
+    const remainingSource = customer.remaining_amount !== undefined && customer.remaining_amount !== null
+      ? normalizeNumber(customer.remaining_amount)
+      : customer.remainingAmount !== undefined && customer.remainingAmount !== null
+        ? normalizeNumber(customer.remainingAmount)
+        : null
+
+    const remaining = remainingSource !== null
+      ? remainingSource
+      : Math.max(0, total - paidSource)
+
+    const paid = paidSource > 0
+      ? paidSource
+      : Math.max(0, total - remaining)
+
+    return {
+      total,
+      paid,
+      remaining,
+    }
+  }
+
   const columns = [
     {
       key: 'customer',
@@ -373,10 +403,10 @@ const CustomersList = () => {
       key: 'total_amount',
       label: 'Total Amount',
       render: (value, photographer, index) => {
-        const totalAmount = photographer.total_earnings || photographer.total_amount || 0
+        const { total } = getCustomerFinancials(photographer)
         return (
           <div className="fw-semibold text-primary" style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '110px' }}>
-            {formatCurrency(totalAmount)}
+            {formatCurrency(total)}
           </div>
         )
       }
@@ -385,12 +415,10 @@ const CustomersList = () => {
       key: 'paid_amount',
       label: 'Paid Amount',
       render: (value, photographer, index) => {
-        const totalAmount = photographer.total_earnings || photographer.total_amount || photographer.totalSpent || 0
-        const remainingAmount = photographer.remaining_amount || 0
-        const paidAmount = photographer.paid_amount || photographer.wallet_balance || (totalAmount - remainingAmount)
+        const { paid } = getCustomerFinancials(photographer)
         return (
           <div className="fw-semibold text-primary" style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '110px' }}>
-            {formatCurrency(paidAmount >= 0 ? paidAmount : 0)}
+            {formatCurrency(paid)}
           </div>
         )
       }
@@ -408,12 +436,10 @@ const CustomersList = () => {
       key: 'remaining_amount',
       label: 'Remaining',
       render: (value, photographer, index) => {
-        const totalAmount = photographer.total_earnings || photographer.total_amount || photographer.totalSpent || 0
-        const paidAmount = photographer.paid_amount || photographer.wallet_balance || 0
-        const remainingAmount = photographer.remaining_amount || (totalAmount - paidAmount)
+        const { remaining } = getCustomerFinancials(photographer)
         return (
-          <div className={`fw-semibold ${remainingAmount > 0 ? 'text-danger' : 'text-success'}`} style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '110px' }}>
-            {formatCurrency(remainingAmount >= 0 ? remainingAmount : 0)}
+          <div className={`fw-semibold ${remaining > 0 ? 'text-danger' : 'text-success'}`} style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '110px' }}>
+            {formatCurrency(remaining)}
           </div>
         )
       }
@@ -421,13 +447,17 @@ const CustomersList = () => {
     {
       key: 'status',
       label: 'Status',
-      render: (value, customer, index) => (
-        <Badge bg={getStatusColor(customer.status)} className="px-2 py-1" style={{ fontSize: '12px' }}>
-          {customer.status === 'active' ? 'Active' : 
-           customer.status === 'suspended' ? 'Suspended' : 
-           customer.status === 'pending' ? 'Pending' : customer.status}
-        </Badge>
-      )
+      render: (value, customer, index) => {
+        const { remaining } = getCustomerFinancials(customer)
+        const derivedStatus = remaining > 0 ? 'pending' : 'completed'
+        const statusColor = derivedStatus === 'pending' ? 'warning' : 'success'
+
+        return (
+          <Badge bg={statusColor} className="px-2 py-1" style={{ fontSize: '12px' }}>
+            {derivedStatus.charAt(0).toUpperCase() + derivedStatus.slice(1)}
+          </Badge>
+        )
+      }
     },
     {
       key: 'joined',
@@ -468,17 +498,28 @@ const CustomersList = () => {
             <FontAwesomeIcon icon={faEdit} />
           </Button>
           <Button
-            variant="outline-danger"
+            variant="outline-secondary"
             size="sm"
             onClick={(e) => {
               e.stopPropagation()
               handleExportSingle(photographer)
             }}
             title="Export Customer PDF"
-            className="text-danger"
             style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
           >
             <FontAwesomeIcon icon={faFilePdf} />
+          </Button>
+          <Button
+            variant="outline-danger"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleDeleteCustomer(photographer)
+            }}
+            title="Delete Customer"
+            style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
+          >
+            <FontAwesomeIcon icon={faTrash} />
           </Button>
         </div>
       )
@@ -509,16 +550,6 @@ const CustomersList = () => {
   const handleDeleteCustomer = (customer) => {
     setCustomerToDelete(customer)
     setShowDeleteModal(true)
-  }
-
-  const handleSuspendCustomer = (customer) => {
-    setCustomerToSuspend(customer)
-    setShowSuspendDetailsModal(true)
-  }
-
-  const handleActivateCustomer = (customer) => {
-    setCustomerToActivate(customer)
-    setShowActivateModal(true)
   }
 
   const handleExport = async () => {
@@ -692,34 +723,6 @@ const CustomersList = () => {
     }
   }
 
-  const handleSuspendCustomerSubmit = async (customerId, suspensionData) => {
-    try {
-      const response = await customerService.suspendCustomer(customerId, suspensionData)
-      if (response.success) {
-        setShowSuspendDetailsModal(false)
-        setCustomerToSuspend(null)
-        loadCustomers()
-        loadStats()
-      }
-    } catch (error) {
-      console.error('Error suspending customer:', error)
-    }
-  }
-
-  const confirmActivateCustomer = async () => {
-    try {
-      const response = await customerService.activateCustomer(customerToActivate.id)
-      if (response.success) {
-        setShowActivateModal(false)
-        setCustomerToActivate(null)
-        loadCustomers()
-        loadStats()
-      }
-    } catch (error) {
-      console.error('Error activating customer:', error)
-    }
-  }
-
   return (
     <>
     <div style={{ width: '100%', padding: 0, margin: 0 }}>
@@ -773,19 +776,6 @@ const CustomersList = () => {
               </Card>
             </Col>
             <Col md={3}>
-              <Card className="bg-gradient-warning text-white border-0 shadow-sm">
-                <Card.Body className="p-4">
-                  <div className="d-flex align-items-center">
-                    <div className="flex-grow-1">
-                      <h4 className="mb-0">{stats.suspendedCustomers}</h4>
-                      <p className="mb-0 opacity-75">Suspended Accounts</p>
-                    </div>
-                    <FontAwesomeIcon icon={faBan} className="fs-1 opacity-50" />
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={3}>
               <Card className="bg-gradient-info text-white border-0 shadow-sm">
                 <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
@@ -834,7 +824,7 @@ const CustomersList = () => {
                     >
                       <option value="">All Status</option>
                       <option value="active">Active</option>
-                      <option value="suspended">Suspended</option>
+                      <option value="inactive">Inactive</option>
                       <option value="pending">Pending</option>
                     </FormSelect>
                   </div>
@@ -953,8 +943,6 @@ const CustomersList = () => {
           setSelectedCustomer(null)
         }}
         customer={selectedCustomer}
-        onSuspend={handleSuspendCustomer}
-        onActivate={handleActivateCustomer}
       />
 
       {/* Delete Confirmation Modal */}
@@ -972,35 +960,6 @@ const CustomersList = () => {
       >
         <p>Are you sure you want to delete the customer <strong>"{customerToDelete?.name || `${customerToDelete?.firstName || ''} ${customerToDelete?.lastName || ''}`.trim()}"</strong>?</p>
         <p className="text-muted">This action cannot be undone.</p>
-      </Modal>
-
-      {/* Suspend Customer Details Modal */}
-      <SuspendCustomerModal
-        visible={showSuspendDetailsModal}
-        onClose={() => {
-          setShowSuspendDetailsModal(false)
-          setCustomerToSuspend(null)
-        }}
-        customer={customerToSuspend}
-        onSuspend={handleSuspendCustomerSubmit}
-        loading={false}
-      />
-
-      {/* Activate Confirmation Modal */}
-      <Modal
-        visible={showActivateModal}
-        onClose={() => {
-          setShowActivateModal(false)
-          setCustomerToActivate(null)
-        }}
-        title="Activate Customer"
-        onConfirm={confirmActivateCustomer}
-        confirmText="Activate"
-        cancelText="Cancel"
-        type="success"
-      >
-        <p>Are you sure you want to activate the customer <strong>"{customerToActivate?.name || `${customerToActivate?.firstName || ''} ${customerToActivate?.lastName || ''}`.trim()}"</strong>?</p>
-        <p className="text-muted">The customer will be able to place orders again.</p>
       </Modal>
 
       {/* Add Customer Modal */}

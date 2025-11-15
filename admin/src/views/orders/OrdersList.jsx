@@ -15,11 +15,12 @@ import {
   faFilter,
   faRupeeSign,
   faCreditCard,
-  faFilePdf
+  faFilePdf,
+  faTrash
 } from '@fortawesome/free-solid-svg-icons'
 import orderService from '../../services/orderService'
 import paymentService from '../../services/paymentService'
-import { Table, FormModal, useToast } from '../../components'
+import { Table, FormModal, Modal, useToast } from '../../components'
 import OrderForm from '../../components/pages/orders/OrderForm'
 import OrderDetailsModal from '../../components/pages/orders/OrderDetailsModal'
 import PaymentForm from '../../components/pages/payments/PaymentForm'
@@ -43,6 +44,9 @@ const OrdersList = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [paymentOrder, setPaymentOrder] = useState(null)
   const [paymentLoading, setPaymentLoading] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [orderToDelete, setOrderToDelete] = useState(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   
   // Refs for form components
   const addFormRef = useRef()
@@ -74,47 +78,48 @@ const OrdersList = () => {
     setLoading(true)
     setError('')
     try {
-      // Build params, filtering out 'all' values and mapping filter keys
       const params = {
         page: pagination.currentPage,
         limit: pagination.pageSize,
       }
       
-      // Add search if provided
-      if (filters.search) {
-        params.search = filters.search
-      }
-      
-      // Add status if not 'all'
-      if (filters.status && filters.status !== 'all') {
-        params.status = filters.status
-      }
-      
-      // Add payment_status if not 'all'
-      if (filters.paymentStatus && filters.paymentStatus !== 'all') {
-        params.paymentStatus = filters.paymentStatus
-      }
-      
-      // Add customer_id if provided
-      if (filters.customer) {
-        params.customerId = filters.customer
-      }
-      
-      // Add date range if not 'all'
-      if (filters.dateRange && filters.dateRange !== 'all') {
-        // You can implement date range logic here
-        // For now, we'll skip it or implement based on your needs
-      }
+      if (filters.search) params.search = filters.search
+      if (filters.status && filters.status !== 'all') params.status = filters.status
+      if (filters.paymentStatus && filters.paymentStatus !== 'all') params.paymentStatus = filters.paymentStatus
+      if (filters.customer) params.customerId = filters.customer
+      // dateRange reserved for future server support
       
       const response = await orderService.getOrders(params)
-      setOrders(response.data?.orders || response.data || [])
+
+      const ordersPayload = response?.data?.orders ?? response?.data
+      if (!response?.success || !Array.isArray(ordersPayload)) {
+        const message = response?.message || 'Failed to load orders'
+        setError(message)
+        error(message)
+        setOrders([])
+        setPagination(prev => ({
+          ...prev,
+          totalItems: 0
+        }))
+        return
+      }
+
+      const ordersData = response.data?.orders || response.data
+      setOrders(ordersData)
       setPagination(prev => ({
         ...prev,
-        totalItems: response.meta?.total || response.data?.total || 0
+        totalItems: response.meta?.total || response.data?.total || ordersData.length
       }))
     } catch (err) {
-      setError('Failed to load orders')
       console.error('Error fetching orders:', err)
+      const message = err?.message || 'Failed to load orders'
+      setError(message)
+      error(message)
+      setOrders([])
+      setPagination(prev => ({
+        ...prev,
+        totalItems: 0
+      }))
     } finally {
       setLoading(false)
     }
@@ -253,6 +258,44 @@ const OrdersList = () => {
     setShowPaymentModal(false)
     setPaymentOrder(null)
     setPaymentLoading(false)
+  }
+
+  const handleDeleteOrder = (order) => {
+    setOrderToDelete(order)
+    setShowDeleteModal(true)
+  }
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false)
+    setOrderToDelete(null)
+  }
+
+  const confirmDeleteOrder = async () => {
+    if (!orderToDelete) return
+    const orderId = getOrderIdentifier(orderToDelete) || orderToDelete?.id
+    if (!orderId) {
+      showError('Unable to determine order ID for deletion')
+      return
+    }
+
+    try {
+      setDeleteLoading(true)
+      const response = await orderService.deleteOrder(orderId)
+      if (response.success) {
+        success('Order deleted successfully')
+        closeDeleteModal()
+        fetchOrders()
+        fetchStats()
+      } else {
+        showError(response.message || 'Failed to delete order')
+      }
+    } catch (err) {
+      console.error('Error deleting order:', err)
+      const message = err?.response?.data?.message || err?.message || 'An error occurred while deleting order'
+      showError(message)
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   const handlePaymentSubmit = () => {
@@ -538,23 +581,6 @@ const OrdersList = () => {
       }
     },
     {
-      key: 'dates',
-      label: 'Dates',
-      render: (value, order) => {
-        if (!order) return <div>N/A</div>
-        return (
-          <div>
-            <div className="fw-semibold text-dark">Order: {formatDate(order.order_date || order.orderDate)}</div>
-            {order.due_date && (
-              <small className={`${new Date(order.due_date) < new Date() ? 'text-danger' : 'text-muted'}`}>
-                Due: {formatDate(order.due_date)}
-              </small>
-            )}
-          </div>
-        )
-      }
-    },
-    {
       key: 'amounts',
       label: 'Amounts',
       render: (value, order) => {
@@ -575,39 +601,18 @@ const OrdersList = () => {
       }
     },
     {
-      key: 'paymentStatus',
-      label: 'Payment',
-      render: (value, order) => {
-        if (!order) return <div>No payment data</div>
-        return (
-          <Badge bg={getPaymentStatusColor(order.paymentStatus || 'pending')}>
-            {(order.paymentStatus || 'pending').charAt(0).toUpperCase() + (order.paymentStatus || 'pending').slice(1)}
-          </Badge>
-        )
-      }
-    },
-    {
       key: 'status',
       label: 'Status',
       render: (value, order) => {
         if (!order) return <div>No status data</div>
+        const totalAmount = order.total_amount || order.total || 0
+        const paidAmount = order.paid_amount || order.paid || 0
+        const balanceAmount = order.balance_amount || (totalAmount - paidAmount)
+        const derivedStatus = balanceAmount > 0 ? 'pending' : 'completed'
         return (
-          <Badge bg={getStatusColor(order.status || 'pending')}>
-            {(order.status || 'pending').charAt(0).toUpperCase() + (order.status || 'pending').slice(1)}
+          <Badge bg={getStatusColor(derivedStatus)}>
+            {derivedStatus.charAt(0).toUpperCase() + derivedStatus.slice(1)}
           </Badge>
-        )
-      }
-    },
-    {
-      key: 'orderDate',
-      label: 'Order Date',
-      render: (value, order) => {
-        if (!order) return <div>No date data</div>
-        return (
-          <div>
-            <div>{formatDate(order.orderDate || new Date(), 'MMM dd, yyyy')}</div>
-            <small className="text-muted">{formatDate(order.orderDate || new Date(), 'h:mm a')}</small>
-          </div>
         )
       }
     },
@@ -644,12 +649,20 @@ const OrdersList = () => {
               <FontAwesomeIcon icon={faEdit} />
             </Button>
             <Button
-              variant="outline-danger"
+              variant="outline-secondary"
               size="sm"
               onClick={() => handleExportOrder(order)}
               title="Export Order PDF"
             >
               <FontAwesomeIcon icon={faFilePdf} />
+            </Button>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              onClick={() => handleDeleteOrder(order)}
+              title="Delete Order"
+            >
+              <FontAwesomeIcon icon={faTrash} />
             </Button>
           </div>
         )
@@ -964,6 +977,23 @@ const OrdersList = () => {
           onSubmit={handlePaymentFormSubmit}
         />
       </FormModal>
+
+      <Modal
+        visible={showDeleteModal}
+        onClose={closeDeleteModal}
+        title="Delete Order"
+        onConfirm={confirmDeleteOrder}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        loading={deleteLoading}
+      >
+        <p>
+          Are you sure you want to delete order{' '}
+          <strong>#{orderToDelete ? getOrderDisplayNumber(orderToDelete) : ''}</strong>?
+        </p>
+        <p className="text-muted mb-0">This action cannot be undone.</p>
+      </Modal>
     </Container>
   )
 }

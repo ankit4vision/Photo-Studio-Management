@@ -1554,7 +1554,7 @@ const handleDeletePackage = async (packageId) => {
 - `page` - Page number (default: 1)
 - `limit` - Items per page (default: 20, max: 100)
 - `search` - Search term (first_name, last_name, email, phone में search)
-- `status` - Filter by status (active, suspended, pending, inactive)
+- `status` - Filter by status (active, inactive, pending)
 - `branch_id` - Filter by branch
 - `city` - Filter by city
 - `sort_by` - Sort column (first_name, email, city, status, created_at)
@@ -1618,6 +1618,10 @@ const handleDeletePackage = async (packageId) => {
 - **Method**: `customerService.getCustomers(params)`
 - **Used In**:
   - `src/views/customers/CustomersList.jsx` - Customers list page में
+
+**Latest UI Behavior (Nov 2025)**:
+- Customers list अब API payload से total/paid/remaining values normalize करता है ताकि partial responses में भी सही financial summary दिखे
+- Orders module की तरह यह स्क्रीन अब mock fallback पर निर्भर नहीं करती; किसी भी API failure पर toast error दिखता है और तालिका सुरक्षित empty state में reset होती है
 
 **Note**: Customer stats (totalOrders, total_amount, paid_amount, etc.) automatically calculate होते हैं orders से
 
@@ -1782,7 +1786,7 @@ const handleDeletePackage = async (packageId) => {
 **Request Body**:
 ```json
 {
-  "status": "suspended"
+      "status": "inactive"
 }
 ```
 
@@ -1801,7 +1805,6 @@ const handleDeletePackage = async (packageId) => {
 - **Service**: `src/services/customerService.js`
 - **Method**: `customerService.updateCustomerStatus(id, status)`
 - **Used In**:
-  - `src/components/pages/customers/SuspendCustomerModal.jsx` - Suspend customer में
 
 ---
 
@@ -1912,6 +1915,9 @@ const handleDeletePackage = async (packageId) => {
 - **Used In**:
   - `src/views/orders/OrdersList.jsx` - Orders list page में
 
+**Latest UI Behavior (Nov 2025)**:
+- Orders list अब backend response पर पूरी तरह निर्भर करता है; किसी भी API failure पर toast error और खाली state दिखाई जाती है (no mock fallback)
+
 **Note**: Order create/update/delete होने पर customer stats automatically update होते हैं
 
 ---
@@ -1946,6 +1952,9 @@ const handleDeletePackage = async (packageId) => {
 - **Used In**:
   - `src/components/pages/orders/OrderForm.jsx` - Edit order form में
   - `src/components/pages/orders/OrderDetailsModal.jsx` - Order details modal में
+
+**Latest UI Behavior (Nov 2025)**:
+- Order Details modal payments तालिका अब backend से आने वाले `payment_type` (credit/debit) को badges और color-coded amounts के साथ दिखाती है तथा outstanding राशि को “Remaining Amount” लेबल से हाइलाइट करती है
 
 ---
 
@@ -2231,6 +2240,10 @@ const handleDeletePackage = async (packageId) => {
 - **Used In**:
   - `src/views/transactions/TransactionsList.jsx` - Transactions list में payments show करने के लिए
 
+**Latest Behavior (Nov 2025)**:
+- Response objects अब `order` और `customer` के nested स्नैपशॉट के साथ आते हैं (total_amount, paid_amount, balance_amount, paymentStatus, customer totals)
+- Transactions UI इन्हीं snapshots को render करता है, इसलिए किसी भी credit/debit के बाद remaining/paid figures तुरंत sync हो जाते हैं
+
 ---
 
 ### 2. **POST /api/payments**
@@ -2272,6 +2285,7 @@ const handleDeletePackage = async (packageId) => {
 - Payment record होने पर order payment status automatically update होता है
 - Customer stats automatically update होते हैं
 - Payment number (#PAY001) automatically generate होता है
+- Backend हर credit/debit के बाद order & customer totals को re-sync करके updated snapshot response में लौटाता है, जिससे frontend को दोबारा fetch करने की ज़रूरत नहीं होती
 
 ---
 
@@ -2291,7 +2305,7 @@ const handleDeletePackage = async (packageId) => {
 
 **Permission Required**: `edit_payment`
 
-**Note**: Payment update होने पर order payment status automatically recalculate होता है
+**Note**: Payment update होने पर order payment status automatically recalculate होता है और नई response body में fresh order/customer financials शामिल रहते हैं
 
 ---
 
@@ -3005,8 +3019,8 @@ const Settings = () => {
 - ✅ **PermissionService** - Fully integrated in RoleForm
 - ✅ **BranchService** - Integrated in BranchesList (with mock fallback)
 - ✅ **PackageService** - Fully integrated in PackagesList, PackageForm (with server-side pagination/filtering)
-- ✅ **CustomerService** - Fully integrated in CustomersList, CustomerForm, CustomerDetailsModal, SuspendCustomerModal (with server-side pagination/filtering)
-- ✅ **OrderService** - Fully integrated in OrdersList, OrderForm, OrderDetailsModal (with server-side pagination/filtering)
+- ✅ **CustomerService** - Fully integrated in CustomersList, CustomerForm, CustomerDetailsModal (server-side pagination/filtering, normalized totals, no mock fallback)
+- ✅ **OrderService** - Fully integrated in OrdersList, OrderForm, OrderDetailsModal (server-side pagination/filtering, payment type badges, no mock fallback)
 - ✅ **PaymentService** - Fully integrated in PaymentForm, TransactionsList (real database integration)
 - ✅ **SettingsService** - Fully integrated in Settings page (Business Info, Invoice, Email Settings with test, App Settings with Web URL, Currency & Regional, S3 Settings)
 
@@ -3020,11 +3034,12 @@ const Settings = () => {
 - Customer statistics (totalOrders, total_amount, paid_amount, remaining_amount, etc.) automatically calculate होते हैं orders से
 - जब order create/update/delete होता है, customer stats automatically update होते हैं (via model events)
 - Manual recalculation के लिए `/api/customers/{customer}/recalculate-stats` endpoint available है
+- Frontend status chips अब outstanding balances से derive होते हैं ताकि pending/completed indicator हमेशा सुसंगत रहे
 
 ---
 
-**Last Updated**: January 2025
-**Version**: 1.1.0
+**Last Updated**: November 2025
+**Version**: 1.1.1
 
 ## 🔄 Recent Updates
 - ✅ Payment Management APIs fully implemented
@@ -3033,4 +3048,5 @@ const Settings = () => {
 - ✅ Transactions module shows payments from orders
 - ✅ Customer code (#CUST format) display in payment forms
 - ✅ Real database integration for payments (no mock fallback)
+- ✅ Orders & Customers screens now rely solely on live API responses with derived financial summaries, toast-based error handling, and credit/debit payment type indicators
 

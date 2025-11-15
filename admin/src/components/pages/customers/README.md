@@ -28,14 +28,10 @@ A comprehensive modal component that displays detailed information about a custo
   - Color-coded transaction types
   - Order references where applicable
 
-- Action buttons (Suspend/Activate account)
-
-**Props:**
-- `visible` (boolean): Controls modal visibility
-- `onClose` (function): Callback when modal is closed
-- `customer` (object): Customer data to display
-- `onSuspend` (function): Callback for suspend action
-- `onActivate` (function): Callback for activate action
+- **Props:**
+  - `visible` (boolean): Controls modal visibility
+  - `onClose` (function): Callback when modal is closed
+  - `customer` (object): Customer data to display
 
 **Data Loading:**
 - Automatically loads orders when modal opens
@@ -64,26 +60,6 @@ Form component for creating and editing customers.
 - `onCancel` (function): Callback when form is cancelled
 - `loading` (boolean): Loading state
 
-### SuspendCustomerModal.jsx
-A detailed modal component for suspending customer accounts with comprehensive suspension management.
-
-**Features:**
-- Customer profile display with avatar
-- Suspension reason selection
-- Duration configuration (temporary/permanent)
-- Additional notes field
-- Notification options (email, support team, support ticket)
-- Account impact information
-- Form validation
-- Preview functionality
-
-**Props:**
-- `visible` (boolean): Controls modal visibility
-- `onClose` (function): Callback when modal is closed
-- `customer` (object): Customer data to suspend
-- `onSuspend` (function): Callback when suspension is confirmed
-- `loading` (boolean): Loading state
-
 ## Usage
 
 ### CustomerDetailsModal
@@ -94,8 +70,6 @@ import CustomerDetailsModal from './components/pages/customers/CustomerDetailsMo
   visible={showModal}
   onClose={() => setShowModal(false)}
   customer={selectedCustomer}
-  onSuspend={handleSuspendCustomer}
-  onActivate={handleActivateCustomer}
 />
 ```
 
@@ -109,19 +83,6 @@ import CustomerForm from './components/pages/customers/CustomerForm'
   branches={branches}
   onSubmit={handleSubmit}
   onCancel={handleCancel}
-/>
-```
-
-### SuspendCustomerModal
-```jsx
-import SuspendCustomerModal from './components/pages/customers/SuspendCustomerModal'
-
-<SuspendCustomerModal
-  visible={showSuspendModal}
-  onClose={() => setShowSuspendModal(false)}
-  customer={selectedCustomer}
-  onSuspend={handleSuspendCustomer}
-  loading={isLoading}
 />
 ```
 

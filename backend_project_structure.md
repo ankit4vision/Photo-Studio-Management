@@ -349,6 +349,8 @@ backend/
   - Auto-generates payment_number (#PAY001)
   - Auto-updates order payment status on create/update/delete
   - Auto-updates customer stats
+- Returns enriched `PaymentResource` snapshots (order + customer financials) so frontend can display real-time totals per credit/debit
+- Central `syncOrderFinancials()` helper ensures debit refunds also recalculate `orders` and `customers` tables before responses are sent
 - **Permissions**: `view_payment`, `create_payment`, `edit_payment`, `delete_payment`
 - **Status**: ✅ Fully implemented
 - **Note**: Payment record होने पर order payment status और customer stats automatically update होते हैं
@@ -667,6 +669,11 @@ List endpoints return standardized format:
 - `404` - Not Found
 - `422` - Validation Error
 - `500` - Server Error
+
+### Critical Frontend Dependencies (Nov 2025)
+- Orders और Customers modules अब frontend पर mock fallback के बिना सीधे इन APIs पर निर्भर हैं
+- किसी भी downtime से admin UI तुरंत प्रभावित होगा, इसलिए इन endpoints के लिए monitoring/alerting enforce करें
+- Error payloads हमेशा user-friendly `message` के साथ भेजें ताकि toast notifications अर्थपूर्ण रहें
 
 ### Using PaginatesResults Trait
 
@@ -1008,8 +1015,8 @@ php artisan serve
 
 ---
 
-**Last Updated**: January 2025
-**Version**: 1.1.0
+**Last Updated**: November 2025
+**Version**: 1.1.1
 
 ## 🔄 Recent Updates
 - ✅ Payment Management module fully implemented
@@ -1018,3 +1025,4 @@ php artisan serve
 - ✅ Server-side pagination, filtering, and searching for Packages, Customers, and Orders
 - ✅ Payment model with auto order status update
 - ✅ PaymentController with full CRUD operations
+- ✅ Orders & Customers endpoints now treated as critical because frontend removed mock fallbacks—ensure uptime, monitoring, and meaningful error payloads

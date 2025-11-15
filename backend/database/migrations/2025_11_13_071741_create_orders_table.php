@@ -28,7 +28,7 @@ return new class extends Migration
             $table->decimal('discount', 12, 2)->default(0);
             $table->decimal('total_amount', 12, 2);
             $table->decimal('paid_amount', 12, 2)->default(0);
-            $table->decimal('balance_amount', 12, 2)->default(0);
+            $table->decimal('remaining_amount', 12, 2)->default(0);
             
             // Status
             $table->enum('status', ['pending', 'processing', 'completed', 'cancelled'])->default('pending');

@@ -8,11 +8,11 @@ import {
   faEye,
   faEdit,
   faSave,
-  faFilePdf
+  faFilePdf,
+  faTrash
 } from '@fortawesome/free-solid-svg-icons'
-import { Table, FormModal, useToast } from '../../components'
+import { Table, FormModal, Modal, useToast } from '../../components'
 import paymentService from '../../services/paymentService'
-import orderService from '../../services/orderService'
 import { useNavigate } from 'react-router-dom'
 import PaymentDetailsModal from '../../components/pages/payments/PaymentDetailsModal'
 import PaymentForm from '../../components/pages/payments/PaymentForm'
@@ -29,6 +29,9 @@ const TransactionsList = () => {
   const [selectedPayment, setSelectedPayment] = useState(null)
   const [showViewModal, setShowViewModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [paymentToDelete, setPaymentToDelete] = useState(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   useEffect(() => {
     loadTransactions()
@@ -38,91 +41,58 @@ const TransactionsList = () => {
     setCurrentPage(1)
   }, [searchTerm])
 
-  const getOrderIdentifier = (order) => {
-    if (!order) return ''
-    const candidates = [
-      order.id,
-      order.order_id,
-      order.orderId,
-      order.order_number,
-      order.orderNumber
-    ]
-    const rawId = candidates.find(Boolean)
-    return rawId ? rawId.toString().replace(/^#/, '').trim() : ''
-  }
-
   const loadTransactions = async () => {
     try {
       setLoading(true)
-      const [paymentsResponse, ordersResponse] = await Promise.all([
-        paymentService.getPayments({ limit: 1000 }), // Get all payments
-        orderService.getOrders({ limit: 1000 })
-      ])
+      const paymentsResponse = await paymentService.getPayments({ limit: 1000 })
 
-      // Handle payments response structure
       let rawPayments = []
-      if (paymentsResponse?.success) {
-        // Response structure: { success: true, data: [...], meta: {...} }
-        rawPayments = Array.isArray(paymentsResponse.data) 
-          ? paymentsResponse.data 
-          : []
-      } else if (Array.isArray(paymentsResponse?.data)) {
+      if (paymentsResponse?.success && Array.isArray(paymentsResponse.data)) {
         rawPayments = paymentsResponse.data
       } else if (Array.isArray(paymentsResponse)) {
         rawPayments = paymentsResponse
       }
 
-      // Ensure rawPayments is always an array
-      if (!Array.isArray(rawPayments)) {
-        console.warn('Payments data is not an array:', rawPayments)
-        rawPayments = []
-      }
-
-      const ordersList = ordersResponse?.data?.orders || ordersResponse?.data || []
-      const orderMap = {}
-      ordersList.forEach(order => {
-        const key = getOrderIdentifier(order)
-        if (key) {
-          orderMap[key] = order
-        }
-      })
-
       const normalizedPayments = rawPayments.map(payment => {
         const paymentType = payment.payment_type || payment.paymentType || 'credit'
-        const sanitizedOrderId = payment.order_id
-          ? payment.order_id.toString().replace(/^#/, '').trim()
+        const orderInfo = payment.order || {}
+        const rawOrderId = orderInfo.id ||
+          payment.order_id ||
+          payment.orderId ||
+          orderInfo.order_id ||
+          orderInfo.orderId ||
+          orderInfo.order_number ||
+          orderInfo.orderNumber ||
+          ''
+        const sanitizedOrderId = rawOrderId
+          ? rawOrderId.toString().replace(/^#/, '').trim()
           : ''
-        const order = orderMap[sanitizedOrderId]
-        const orderNumber = order
-          ? (order.order_number || order.orderNumber || order.id)
-          : (payment.order_number || payment.orderNumber || payment.order_id || sanitizedOrderId || '-')
 
-        const totalAmount = order ? Number(order.total_amount ?? order.total ?? 0) : null
-        const paidAmount = order ? Number(order.paid_amount ?? order.paid ?? 0) : null
-        const remainingAmount = order
-          ? Math.max(0, Number(order.balance_amount ?? (totalAmount - paidAmount)))
-          : null
+        const totalAmount = Number(orderInfo.total_amount ?? orderInfo.totalAmount ?? 0)
+        const paidAmount = Number(orderInfo.paid_amount ?? orderInfo.paidAmount ?? 0)
+        const balanceAmount = Number(orderInfo.balance_amount ?? orderInfo.balanceAmount ?? Math.max(0, totalAmount - paidAmount))
 
-        const customerId = payment.customer_id || order?.customer_id || order?.customer?.id || null
-
-        const customerName = order
-          ? (order.customer_name ||
-              (order.customer
-                ? (order.customer.name ||
-                  `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim())
-                : ''))
-          : (payment.customer_name || '')
+        const customerInfo = payment.customer || {}
+        const customerName = customerInfo.name ||
+          `${customerInfo.firstName || ''} ${customerInfo.lastName || ''}`.trim() ||
+          payment.customer_name ||
+          ''
 
         return {
           ...payment,
           orderId: sanitizedOrderId,
-          orderNumber,
+          orderNumber: orderInfo.order_number ||
+            orderInfo.orderNumber ||
+            payment.order_number ||
+            payment.orderNumber ||
+            sanitizedOrderId ||
+            '-',
           customerName,
-          customer_id: customerId,
+          customer_id: payment.customer_id || payment.customerId || customerInfo.id || null,
           totalAmount,
           paidAmount,
-          remainingAmount,
-          paymentAmount: Number(payment.amount || 0),
+          remainingAmount: balanceAmount >= 0 ? balanceAmount : 0,
+          paymentAmount: Number(payment.amount ?? payment.paymentAmount ?? 0),
           paymentDate: payment.payment_date || payment.paymentDate,
           paymentMethod: payment.payment_method || payment.paymentMethod || 'cash',
           payment_type: paymentType,
@@ -207,6 +177,42 @@ const TransactionsList = () => {
     } catch (err) {
       console.error('Error exporting transactions PDF:', err)
       showError('An error occurred while exporting PDF')
+    }
+  }
+
+  const handleDeletePayment = (payment) => {
+    setPaymentToDelete(payment)
+    setShowDeleteModal(true)
+  }
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false)
+    setPaymentToDelete(null)
+  }
+
+  const confirmDeletePayment = async () => {
+    if (!paymentToDelete) return
+    const paymentId = paymentToDelete.id || paymentToDelete.paymentId
+    if (!paymentId) {
+      showError('Unable to determine payment ID for deletion')
+      return
+    }
+
+    try {
+      setDeleteLoading(true)
+      const response = await paymentService.deletePayment(paymentId)
+      if (response.success) {
+        success('Payment deleted successfully')
+        closeDeleteModal()
+        await loadTransactions()
+      } else {
+        showError(response.message || 'Failed to delete payment')
+      }
+    } catch (error) {
+      console.error('Error deleting payment:', error)
+      showError('An error occurred while deleting payment')
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -322,7 +328,7 @@ const TransactionsList = () => {
             <FontAwesomeIcon icon={faEdit} />
           </Button>
           <Button
-            variant="outline-danger"
+            variant="outline-secondary"
             size="sm"
             onClick={(e) => {
               e.stopPropagation()
@@ -331,6 +337,17 @@ const TransactionsList = () => {
             title="Export Transaction PDF"
           >
             <FontAwesomeIcon icon={faFilePdf} />
+          </Button>
+          <Button
+            variant="outline-danger"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleDeletePayment(payment)
+            }}
+            title="Delete Transaction"
+          >
+            <FontAwesomeIcon icon={faTrash} />
           </Button>
         </div>
       )
@@ -432,6 +449,23 @@ const TransactionsList = () => {
           onSubmit={handleEditSubmit}
         />
       </FormModal>
+
+      <Modal
+        visible={showDeleteModal}
+        onClose={closeDeleteModal}
+        title="Delete Transaction"
+        onConfirm={confirmDeletePayment}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        loading={deleteLoading}
+      >
+        <p>
+          Are you sure you want to delete transaction{' '}
+          <strong>{paymentToDelete?.payment_number || paymentToDelete?.paymentNumber || ''}</strong>?
+        </p>
+        <p className="text-muted mb-0">This action cannot be undone.</p>
+      </Modal>
     </Container>
   )
 }

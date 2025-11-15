@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Modal, Row, Col, Badge, Button, Tab, Tabs, Spinner, Table } from 'react-bootstrap'
+import { Modal, Row, Col, Badge, Button, Tab, Tabs, Spinner } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
   faUser, 
@@ -9,8 +9,6 @@ import {
   faShoppingCart, 
   faWallet,
   faCalendarAlt,
-  faBan,
-  faCheckCircle,
   faBuilding,
   faGift,
   faCamera,
@@ -23,14 +21,13 @@ import {
   faHistory
 } from '@fortawesome/free-solid-svg-icons'
 import orderService from '../../../services/orderService'
-import transactionService from '../../../services/transactionService'
+import paymentService from '../../../services/paymentService'
+import Table from '../../common/Table'
 
 const CustomerDetailsModal = ({ 
   visible, 
   onClose, 
-  customer, 
-  onSuspend, 
-  onActivate 
+  customer
 }) => {
   const [activeTab, setActiveTab] = useState('info')
   const [orders, setOrders] = useState([])
@@ -50,7 +47,12 @@ const CustomerDetailsModal = ({
     if (!customer?.id) return
     try {
       setLoadingOrders(true)
-      const response = await orderService.getOrdersByCustomer(customer.id, { limit: 50 })
+      const response = await orderService.getOrders({
+        customerId: customer.id,
+        limit: 50,
+        sortBy: 'order_date',
+        sortDirection: 'desc'
+      })
       if (response.success) {
         setOrders(response.data?.orders || response.data || [])
       }
@@ -65,7 +67,11 @@ const CustomerDetailsModal = ({
     if (!customer?.id) return
     try {
       setLoadingTransactions(true)
-      const response = await transactionService.getTransactionsByCustomer(customer.id, { limit: 50 })
+      const response = await paymentService.getPayments({
+        customerId: customer.id,
+        limit: 50,
+        sortDirection: 'desc'
+      })
       if (response.success) {
         setTransactions(response.data || [])
       }
@@ -180,14 +186,24 @@ const CustomerDetailsModal = ({
     {
       key: 'package',
       label: 'Package',
-      render: (value, order) => (
-        <div>
-          <div className="fw-semibold">{order.package_name || order.packageName || 'N/A'}</div>
-          {order.package_type && (
-            <small className="text-muted">{order.package_type}</small>
-          )}
-        </div>
-      )
+      render: (value, order) => {
+        const primaryItem = order.items?.[0]
+        const packageName = primaryItem?.package_name || primaryItem?.packageName
+        const packageType = primaryItem?.package_type || primaryItem?.packageType
+        return (
+          <div>
+            <div className="fw-semibold">{packageName || 'Multiple Packages'}</div>
+            {packageType && (
+              <small className="text-muted">{packageType}</small>
+            )}
+            {order.items?.length > 1 && (
+              <small className="text-muted d-block">
+                +{order.items.length - 1} more
+              </small>
+            )}
+          </div>
+        )
+      }
     },
     {
       key: 'amount',
@@ -223,14 +239,20 @@ const CustomerDetailsModal = ({
     {
       key: 'date',
       label: 'Date',
-      render: (value, transaction) => formatDateTime(transaction.transaction_date || transaction.created_at)
+      render: (value, transaction) =>
+        formatDateTime(
+          transaction.payment_date ||
+          transaction.paymentDate ||
+          transaction.transaction_date ||
+          transaction.created_at
+        )
     },
     {
       key: 'type',
       label: 'Type',
       render: (value, transaction) => (
-        <Badge bg={getStatusColor(transaction.type)}>
-          {getStatusText(transaction.type)}
+        <Badge bg={getStatusColor(transaction.payment_type || transaction.type)}>
+          {getStatusText(transaction.payment_type || transaction.type)}
         </Badge>
       )
     },
@@ -239,10 +261,12 @@ const CustomerDetailsModal = ({
       label: 'Description',
       render: (value, transaction) => (
         <div>
-          <div className="fw-semibold">{transaction.description || transaction.notes || 'N/A'}</div>
-          {transaction.order_id && (
-            <small className="text-muted">Order: #{transaction.order_id}</small>
-          )}
+          <div className="fw-semibold">
+            {transaction.order?.order_number || transaction.orderNumber || `#${transaction.order_id || '-'}`}
+          </div>
+          <small className="text-muted">
+            Method: {transaction.payment_method || transaction.paymentMethod || 'N/A'}
+          </small>
         </div>
       )
     },
@@ -250,7 +274,8 @@ const CustomerDetailsModal = ({
       key: 'amount',
       label: 'Amount',
       render: (value, transaction) => {
-        const isCredit = transaction.type?.toLowerCase() === 'credit'
+        const type = (transaction.payment_type || transaction.type || '').toLowerCase()
+        const isCredit = type === 'credit'
         return (
           <div className={`fw-semibold ${isCredit ? 'text-success' : 'text-danger'}`}>
             {isCredit ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount || 0))}
@@ -263,7 +288,14 @@ const CustomerDetailsModal = ({
       label: 'Balance',
       render: (value, transaction) => (
         <div className="fw-semibold text-primary">
-          {formatCurrency(transaction.balance_after || transaction.balance || 0)}
+          {formatCurrency(
+            transaction.order?.remaining_amount ||
+            transaction.order?.remainingAmount ||
+            transaction.remaining_amount ||
+            transaction.balance_after ||
+            transaction.balance ||
+            0
+          )}
         </div>
       )
     }
@@ -552,17 +584,6 @@ const CustomerDetailsModal = ({
         <Button variant="secondary" onClick={onClose}>
           Close
         </Button>
-        {customer.status === 'active' && onSuspend ? (
-          <Button variant="danger" onClick={() => onSuspend(customer)}>
-            <FontAwesomeIcon icon={faBan} className="me-2" />
-            Suspend Account
-          </Button>
-        ) : customer.status === 'suspended' && onActivate ? (
-          <Button variant="success" onClick={() => onActivate(customer)}>
-            <FontAwesomeIcon icon={faCheckCircle} className="me-2" />
-            Activate Account
-          </Button>
-        ) : null}
       </Modal.Footer>
     </Modal>
   )

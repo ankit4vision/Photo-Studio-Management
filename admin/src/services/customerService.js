@@ -5,6 +5,34 @@ import customersData from '../mock/customers.json'
 import { handleApiError } from '../utils/errorHandler'
 
 class CustomerService {
+  normalizeName(customerData = {}) {
+    const directFirst = customerData.firstName || customerData.first_name
+    const directLast = customerData.lastName || customerData.last_name
+
+    if (directFirst || directLast) {
+      return {
+        firstName: directFirst || '',
+        lastName: directLast || ''
+      }
+    }
+
+    const rawName = customerData.name || ''
+    if (!rawName.trim()) {
+      return {
+        firstName: '',
+        lastName: ''
+      }
+    }
+
+    const parts = rawName.trim().split(/\s+/)
+    const firstName = parts.shift() || ''
+    const lastName = parts.join(' ')
+
+    return {
+      firstName,
+      lastName
+    }
+  }
   transformListResponse(payload) {
     if (!payload) {
       return {
@@ -179,9 +207,10 @@ class CustomerService {
   async createCustomer(customerData) {
     try {
       // Transform frontend format to backend format
+      const nameParts = this.normalizeName(customerData)
       const backendData = {
-        first_name: customerData.firstName || customerData.first_name,
-        last_name: customerData.lastName || customerData.last_name,
+        first_name: nameParts.firstName,
+        last_name: nameParts.lastName,
         email: customerData.email,
         phone: customerData.phone || customerData.mobile,
         mobile: customerData.mobile || customerData.phone,
@@ -269,9 +298,10 @@ class CustomerService {
   async updateCustomer(id, customerData) {
     try {
       // Transform frontend format to backend format
+      const nameParts = this.normalizeName(customerData)
       const backendData = {
-        first_name: customerData.firstName || customerData.first_name,
-        last_name: customerData.lastName || customerData.last_name,
+        first_name: nameParts.firstName,
+        last_name: nameParts.lastName,
         email: customerData.email,
         phone: customerData.phone || customerData.mobile,
         mobile: customerData.mobile || customerData.phone,
@@ -450,145 +480,6 @@ class CustomerService {
     }
   }
 
-  // Update customer status
-  async updateCustomerStatus(id, status) {
-    try {
-      const response = await apiClient.put(API_ENDPOINTS.CUSTOMERS.UPDATE_STATUS(id), { status })
-      return this.transformItemResponse(response?.data)
-    } catch (error) {
-      console.warn('API call failed, using mock data:', error)
-      return this.updateMockCustomerStatus(id, status)
-    }
-  }
-
-  // Update mock customer status (fallback)
-  async updateMockCustomerStatus(id, status) {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    const customerIndex = customersData.findIndex(c => c.id === parseInt(id))
-    if (customerIndex !== -1) {
-      customersData[customerIndex].status = status
-      customersData[customerIndex].updatedAt = new Date().toISOString()
-      
-      return {
-        success: true,
-        data: customersData[customerIndex],
-        message: 'Customer status updated successfully'
-      }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Customer not found'
-      }
-    }
-  }
-
-  // Suspend customer with detailed information
-  async suspendCustomer(id, suspensionData) {
-    // Use updateCustomerStatus for suspension
-    return this.updateCustomerStatus(id, 'suspended')
-  }
-
-  // Suspend mock customer (fallback)
-  async suspendMockCustomer(id, suspensionData) {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    const customerIndex = customersData.findIndex(c => c.id === parseInt(id))
-    if (customerIndex !== -1) {
-      const customer = customersData[customerIndex]
-      
-      // Update customer status
-      customer.status = 'suspended'
-      customer.updatedAt = new Date().toISOString()
-      
-      // Add suspension details
-      customer.suspensionDetails = {
-        reason: suspensionData.reason,
-        durationType: suspensionData.durationType,
-        durationValue: suspensionData.durationValue,
-        durationUnit: suspensionData.durationUnit,
-        notes: suspensionData.notes,
-        suspendedAt: new Date().toISOString(),
-        suspendedBy: 'admin', // In real app, this would be the current user
-        notifications: {
-          emailSent: suspensionData.sendEmailNotification,
-          supportNotified: suspensionData.notifySupportTeam,
-          supportTicketCreated: suspensionData.createSupportTicket
-        }
-      }
-      
-      // Calculate suspension end date if temporary
-      if (suspensionData.durationType === 'temporary') {
-        const endDate = new Date()
-        const duration = parseInt(suspensionData.durationValue)
-        
-        switch (suspensionData.durationUnit) {
-          case 'day':
-            endDate.setDate(endDate.getDate() + duration)
-            break
-          case 'week':
-            endDate.setDate(endDate.getDate() + (duration * 7))
-            break
-          case 'month':
-            endDate.setMonth(endDate.getMonth() + duration)
-            break
-        }
-        
-        customer.suspensionDetails.suspendedUntil = endDate.toISOString()
-      }
-      
-      return {
-        success: true,
-        data: customer,
-        message: 'Customer suspended successfully'
-      }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Customer not found'
-      }
-    }
-  }
-
-  // Activate suspended customer
-  async activateCustomer(id) {
-    return this.updateCustomerStatus(id, 'active')
-  }
-
-  // Activate mock customer (fallback)
-  async activateMockCustomer(id) {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    const customerIndex = customersData.findIndex(c => c.id === parseInt(id))
-    if (customerIndex !== -1) {
-      const customer = customersData[customerIndex]
-      
-      // Update customer status
-      customer.status = 'active'
-      customer.updatedAt = new Date().toISOString()
-      
-      // Add activation details
-      if (customer.suspensionDetails) {
-        customer.suspensionDetails.activatedAt = new Date().toISOString()
-        customer.suspensionDetails.activatedBy = 'admin' // In real app, this would be the current user
-      }
-      
-      return {
-        success: true,
-        data: customer,
-        message: 'Customer activated successfully'
-      }
-    } else {
-      return {
-        success: false,
-        data: null,
-        message: 'Customer not found'
-      }
-    }
-  }
-
   // Get customer statistics
   async getCustomerStats() {
     try {
@@ -598,7 +489,6 @@ class CustomerService {
         const customers = response.data
         const totalCustomers = customers.length
         const activeCustomers = customers.filter(c => c.status === 'active').length
-        const suspendedCustomers = customers.filter(c => c.status === 'suspended').length
         const now = new Date()
         const newThisMonth = customers.filter(c => {
           const joinedDate = new Date(c.joinedDate || c.created_at)
@@ -610,7 +500,6 @@ class CustomerService {
           data: {
             totalCustomers,
             activeCustomers,
-            suspendedCustomers,
             newThisMonth
           },
           message: 'Customer statistics fetched successfully'
@@ -628,7 +517,6 @@ class CustomerService {
     
     const totalCustomers = customersData.length
     const activeCustomers = customersData.filter(c => c.status === 'active').length
-    const suspendedCustomers = customersData.filter(c => c.status === 'suspended').length
     const newThisMonth = customersData.filter(c => {
       const joinedDate = new Date(c.joinedDate)
       const now = new Date()
@@ -640,7 +528,6 @@ class CustomerService {
       data: {
         totalCustomers,
         activeCustomers,
-        suspendedCustomers,
         newThisMonth
       },
       message: 'Customer statistics fetched successfully'

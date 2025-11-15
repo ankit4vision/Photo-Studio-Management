@@ -267,7 +267,7 @@
             </tr>
             <tr class="total-row">
                 <td>Balance Amount:</td>
-                <td class="text-right">₹{{ number_format($order->balance_amount, 2) }}</td>
+                <td class="text-right">₹{{ number_format($order->remaining_amount, 2) }}</td>
             </tr>
         </table>
     </div>

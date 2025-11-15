@@ -24,12 +24,21 @@ class PaymentResource extends JsonResource
                 if (!$this->order) {
                     return null;
                 }
+
                 return [
                     'id' => $this->order->id,
                     'order_number' => $this->order->order_number,
                     'orderNumber' => $this->order->order_number,
                     'total_amount' => (float) $this->order->total_amount,
                     'totalAmount' => (float) $this->order->total_amount,
+                    'paid_amount' => (float) $this->order->paid_amount,
+                    'paidAmount' => (float) $this->order->paid_amount,
+                    'remaining_amount' => (float) $this->order->remaining_amount,
+                    'remainingAmount' => (float) $this->order->remaining_amount,
+                    'balance_amount' => (float) ($this->order->remaining_amount ?? 0),
+                    'balanceAmount' => (float) ($this->order->remaining_amount ?? 0),
+                    'payment_status' => $this->order->payment_status,
+                    'paymentStatus' => $this->order->payment_status,
                 ];
             }),
             'customer_id' => $this->customer_id,
@@ -45,6 +54,11 @@ class PaymentResource extends JsonResource
                     'name' => $this->customer->name,
                     'email' => $this->customer->email,
                     'customer_code' => $this->customer->customer_code,
+                    'financials' => [
+                        'total_amount' => (float) $this->customer->total_amount,
+                        'paid_amount' => (float) $this->customer->paid_amount,
+                        'remaining_amount' => (float) $this->customer->remaining_amount,
+                    ],
                 ];
             }),
             'branch_id' => $this->branch_id,

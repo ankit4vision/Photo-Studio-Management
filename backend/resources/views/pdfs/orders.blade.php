@@ -137,7 +137,7 @@
                 <td class="text-center">{{ $order->items->count() }}</td>
                 <td class="text-right">₹{{ number_format($order->total_amount, 2) }}</td>
                 <td class="text-right">₹{{ number_format($order->paid_amount, 2) }}</td>
-                <td class="text-right">₹{{ number_format($order->balance_amount, 2) }}</td>
+                <td class="text-right">₹{{ number_format($order->remaining_amount, 2) }}</td>
                 <td class="text-center">{{ ucfirst($order->status) }}</td>
                 <td class="text-center">{{ ucfirst($order->payment_status) }}</td>
             </tr>

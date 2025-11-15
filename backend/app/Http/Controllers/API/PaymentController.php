@@ -143,11 +143,11 @@ class PaymentController extends Controller
         // Validate payment amount based on payment type
         if ($validated['payment_type'] === 'credit') {
             // Credit payment cannot exceed order balance
-            $orderBalance = $order->balance_amount ?? ($order->total_amount - $order->paid_amount);
-            if ($validated['amount'] > $orderBalance) {
+            $orderRemaining = $order->remaining_amount ?? ($order->total_amount - $order->paid_amount);
+            if ($validated['amount'] > $orderRemaining) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Payment amount cannot exceed order balance of " . number_format($orderBalance, 2),
+                    'message' => "Payment amount cannot exceed remaining order balance of " . number_format($orderRemaining, 2),
                 ], 422);
             }
         } else {
@@ -164,10 +164,11 @@ class PaymentController extends Controller
         try {
             $payment = Payment::create($validated);
 
-            // Order payment status will be updated automatically via model event
-            $payment->load(['order', 'customer', 'branch']);
+            $this->syncOrderFinancials($order);
 
             DB::commit();
+
+            $payment->load(['order', 'customer', 'branch']);
 
             return (new PaymentResource($payment))
                 ->additional([
@@ -213,9 +214,15 @@ class PaymentController extends Controller
         DB::beginTransaction();
         try {
             $payment->update($validated);
-            $payment->load(['order', 'customer', 'branch']);
+
+            $order = $payment->order()->first();
+            if ($order) {
+                $this->syncOrderFinancials($order);
+            }
 
             DB::commit();
+
+            $payment->load(['order', 'customer', 'branch']);
 
             return (new PaymentResource($payment))
                 ->additional([
@@ -238,7 +245,13 @@ class PaymentController extends Controller
     {
         DB::beginTransaction();
         try {
+            $order = $payment->order()->first();
+
             $payment->delete();
+
+            if ($order) {
+                $this->syncOrderFinancials($order);
+            }
 
             DB::commit();
 
@@ -252,6 +265,19 @@ class PaymentController extends Controller
                 'success' => false,
                 'message' => 'Failed to delete payment: ' . $e->getMessage(),
             ], 500);
+        }
+    }
+
+    /**
+     * Recalculate order/customer totals after payment mutations.
+     */
+    protected function syncOrderFinancials(Order $order): void
+    {
+        $order->recalculatePaymentStatus();
+        $order->refresh();
+
+        if ($order->relationLoaded('customer')) {
+            $order->customer->refresh();
         }
     }
 

@@ -118,17 +118,6 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
     return statusMap[status?.toLowerCase()] || 'secondary'
   }
 
-  const formatDateTime = (dateString) => {
-    if (!dateString) return 'N/A'
-    return new Date(dateString).toLocaleString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
   if (!order && !loading) return null
 
   const totalAmount = order?.total_amount || order?.total || 0
@@ -176,42 +165,6 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
         <div className="fw-semibold text-primary">
           {formatCurrency(item.amount || (item.price * (item.qty || item.quantity || 1)) || 0)}
         </div>
-      )
-    }
-  ]
-
-  // Payment columns
-  const paymentColumns = [
-    {
-      key: 'date',
-      label: 'Date',
-      render: (value, payment) => formatDateTime(payment.payment_date || payment.created_at)
-    },
-    {
-      key: 'amount',
-      label: 'Amount',
-      render: (value, payment) => (
-        <div className="fw-semibold text-success">
-          {formatCurrency(payment.amount || 0)}
-        </div>
-      )
-    },
-    {
-      key: 'method',
-      label: 'Method',
-      render: (value, payment) => (
-        <Badge bg="info">
-          {payment.payment_method || payment.paymentMethod || 'Cash'}
-        </Badge>
-      )
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (value, payment) => (
-        <Badge bg={getPaymentStatusColor(payment.status)}>
-          {payment.status ? payment.status.charAt(0).toUpperCase() + payment.status.slice(1) : 'Paid'}
-        </Badge>
       )
     }
   ]
@@ -397,12 +350,12 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                             <span className="text-success">Paid Amount:</span>
                             <span className="text-success fw-bold">{formatCurrency(paidAmount >= 0 ? paidAmount : 0)}</span>
                           </div>
-                          <div className="d-flex justify-content-between">
-                            <span className={balanceAmount > 0 ? 'text-danger' : 'text-success'}>Balance:</span>
-                            <span className={`fw-bold fs-5 ${balanceAmount > 0 ? 'text-danger' : 'text-success'}`}>
-                              {formatCurrency(balanceAmount >= 0 ? balanceAmount : 0)}
-                            </span>
-                          </div>
+                    <div className="d-flex justify-content-between">
+                      <span className={balanceAmount > 0 ? 'text-danger' : 'text-success'}>Remaining Amount:</span>
+                      <span className={`fw-bold fs-5 ${balanceAmount > 0 ? 'text-danger' : 'text-success'}`}>
+                        {formatCurrency(balanceAmount >= 0 ? balanceAmount : 0)}
+                      </span>
+                    </div>
                         </Card.Body>
                       </Card>
 
@@ -434,36 +387,7 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                         </Card.Body>
                       </Card>
 
-                      {/* Order Status */}
-                      <Card>
-                        <Card.Header>
-                          <h5 className="mb-0">
-                            <FontAwesomeIcon icon={faCheckCircle} className="me-2 text-primary" />
-                            Order Status
-                          </h5>
-                        </Card.Header>
-                        <Card.Body>
-                          <div className="mb-3">
-                            <div className="text-muted small mb-1">Status</div>
-                            <Badge bg={getStatusColor(order?.status)} className="px-3 py-2 fs-6">
-                              {order?.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending'}
-                            </Badge>
-                          </div>
-                          <div>
-                            <div className="text-muted small mb-1">Payment Status</div>
-                            <Badge bg={getPaymentStatusColor(order?.payment_status || order?.paymentStatus)} className="px-3 py-2 fs-6">
-                              {order?.payment_status || order?.paymentStatus ? 
-                                (order.payment_status || order.paymentStatus).charAt(0).toUpperCase() + 
-                                (order.payment_status || order.paymentStatus).slice(1) : 'Pending'}
-                            </Badge>
-                            {balanceAmount === 0 && (
-                              <Badge bg="success" className="ms-2 px-3 py-2 fs-6">
-                                Fully Paid
-                              </Badge>
-                            )}
-                          </div>
-                        </Card.Body>
-                      </Card>
+                      {/* Payment Status box removed */}
                     </Col>
                   </Row>
                 </div>
@@ -482,6 +406,7 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                         <thead className="table-light">
                           <tr>
                             <th>Date</th>
+                            <th>Type</th>
                             <th>Amount</th>
                             <th>Method</th>
                             <th>Status</th>
@@ -490,8 +415,13 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                         <tbody>
                           {payments.map((payment, index) => (
                             <tr key={payment.id || index}>
-                              <td>{formatDateTime(payment.payment_date || payment.created_at)}</td>
-                              <td className="fw-semibold text-success">
+                              <td>{formatDate(payment.payment_date || payment.created_at)}</td>
+                              <td>
+                                <Badge bg={payment.payment_type === 'debit' ? 'danger' : 'success'}>
+                                  {(payment.payment_type || payment.paymentType || 'credit').toUpperCase()}
+                                </Badge>
+                              </td>
+                              <td className={`fw-semibold ${ (payment.payment_type || payment.paymentType) === 'debit' ? 'text-danger' : 'text-success'}`}>
                                 {formatCurrency(payment.amount || 0)}
                               </td>
                               <td>
@@ -532,7 +462,7 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
               <Badge bg="success" className="px-3 py-2">Fully Paid</Badge>
             ) : (
               <Badge bg="warning" className="px-3 py-2">
-                Balance: {formatCurrency(balanceAmount >= 0 ? balanceAmount : 0)}
+                Remaining Amount: {formatCurrency(balanceAmount >= 0 ? balanceAmount : 0)}
               </Badge>
             )}
           </div>

@@ -79,8 +79,20 @@ class OrderService {
     if (params.maxTotalAmount || params.max_total_amount) query.max_total_amount = params.maxTotalAmount || params.max_total_amount
     if (params.minPaidAmount || params.min_paid_amount) query.min_paid_amount = params.minPaidAmount || params.min_paid_amount
     if (params.maxPaidAmount || params.max_paid_amount) query.max_paid_amount = params.maxPaidAmount || params.max_paid_amount
-    if (params.minBalanceAmount || params.min_balance_amount) query.min_balance_amount = params.minBalanceAmount || params.min_balance_amount
-    if (params.maxBalanceAmount || params.max_balance_amount) query.max_balance_amount = params.maxBalanceAmount || params.max_balance_amount
+    if (params.minRemainingAmount || params.min_remaining_amount || params.minBalanceAmount || params.min_balance_amount) {
+      query.min_remaining_amount =
+        params.minRemainingAmount ||
+        params.min_remaining_amount ||
+        params.minBalanceAmount ||
+        params.min_balance_amount
+    }
+    if (params.maxRemainingAmount || params.max_remaining_amount || params.maxBalanceAmount || params.max_balance_amount) {
+      query.max_remaining_amount =
+        params.maxRemainingAmount ||
+        params.max_remaining_amount ||
+        params.maxBalanceAmount ||
+        params.max_balance_amount
+    }
     if (params.sortBy || params.sort_by) query.sort_by = params.sortBy || params.sort_by
     if (params.sortDirection || params.sort_direction) query.sort_direction = params.sortDirection || params.sort_direction
 
@@ -94,16 +106,9 @@ class OrderService {
         params: this.buildQueryParams(params),
       })
 
-      const payload = this.transformListResponse(response?.data)
-
-      if (payload.success) {
-        return payload
-      }
-
-      return this.getMockOrders(params)
+      return this.transformListResponse(response?.data)
     } catch (error) {
-      console.warn('API call failed, using mock data:', error)
-      return this.getMockOrders(params)
+      return handleApiError(error)
     }
   }
 
@@ -165,8 +170,7 @@ class OrderService {
       const response = await apiClient.get(API_ENDPOINTS.ORDERS.GET_BY_ID(orderId))
       return this.transformItemResponse(response?.data)
     } catch (error) {
-      console.warn('API call failed, using mock data:', error)
-      return this.getMockOrderById(orderId)
+      return handleApiError(error)
     }
   }
 

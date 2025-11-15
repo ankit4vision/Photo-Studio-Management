@@ -104,7 +104,6 @@ admin/
 │   │   │   │   └── NotificationFormModal.jsx
 │   │   │   ├── customers/
 │   │   │   │   ├── CustomerDetailsModal.jsx
-│   │   │   │   ├── SuspendCustomerModal.jsx
 │   │   │   │   └── README.md
 │   │   │   ├── inventory/
 │   │   │   │   ├── InventoryHistoryModal.jsx

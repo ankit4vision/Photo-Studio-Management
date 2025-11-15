@@ -21,11 +21,20 @@ class PaymentService {
 
       const url = `${API_ENDPOINTS.PAYMENTS.BASE}${queryParams.toString() ? '?' + queryParams.toString() : ''}`
       const response = await apiClient.get(url)
+
+      let payments = []
+      const responseData = response.data?.data ?? response.data
+
+      if (Array.isArray(responseData)) {
+        payments = responseData
+      } else if (Array.isArray(responseData?.data)) {
+        payments = responseData.data
+      }
       
       return {
         success: true,
-        data: response.data?.data || response.data || [],
-        meta: response.data?.meta || {},
+        data: payments,
+        meta: response.data?.meta || responseData?.meta || {},
         message: response.data?.message || 'Payments retrieved successfully',
       }
     } catch (error) {
@@ -72,6 +81,21 @@ class PaymentService {
         success: response.data?.success ?? true,
         data: response.data?.data || response.data,
         message: response.data?.message || 'Payment updated successfully',
+      }
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
+  // Delete payment
+  async deletePayment(id) {
+    try {
+      const response = await apiClient.delete(API_ENDPOINTS.PAYMENTS.GET_BY_ID(id))
+
+      return {
+        success: response.data?.success ?? true,
+        data: response.data?.data || null,
+        message: response.data?.message || 'Payment deleted successfully',
       }
     } catch (error) {
       return handleApiError(error)

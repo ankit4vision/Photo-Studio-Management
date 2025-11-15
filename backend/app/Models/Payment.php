@@ -88,13 +88,16 @@ class Payment extends Model
     /**
      * Update order payment status based on payments.
      */
-    public function updateOrderPaymentStatus()
+    public function updateOrderPaymentStatus(): void
     {
-        if (!$this->order) {
+        $order = $this->order()->first();
+
+        if (!$order) {
             return;
         }
 
-        $this->order->recalculatePaymentStatus();
+        $order->recalculatePaymentStatus();
+        $order->refresh();
     }
 
     /**

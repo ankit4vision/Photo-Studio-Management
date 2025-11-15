@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes;    
 
     /**
      * The attributes that are mass assignable.
@@ -27,7 +27,7 @@ class Order extends Model
         'discount',
         'total_amount',
         'paid_amount',
-        'balance_amount',
+        'remaining_amount',
         'status',
         'payment_status',
         'payment_method',
@@ -47,7 +47,7 @@ class Order extends Model
         'discount' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
-        'balance_amount' => 'decimal:2',
+        'remaining_amount' => 'decimal:2',
         'timeline' => 'array',
         'deleted_at' => 'datetime',
     ];
@@ -112,14 +112,14 @@ class Order extends Model
     }
 
     /**
-     * Calculate balance amount.
+     * Recalculate remaining amount and payment status\.
      */
-    public function calculateBalance(): void
+    public function recalculateRemainingAmount(): void
     {
-        $this->balance_amount = $this->total_amount - $this->paid_amount;
+        $this->remaining_amount = $this->total_amount - $this->paid_amount;
         
         // Update payment status based on balance
-        if ($this->balance_amount <= 0) {
+        if ($this->remaining_amount <= 0) {
             $this->payment_status = 'paid';
         } elseif ($this->paid_amount > 0) {
             $this->payment_status = 'partial';
@@ -143,7 +143,7 @@ class Order extends Model
             ->sum('amount');
         
         $this->paid_amount = max(0, $totalPaid - $totalRefunded);
-        $this->calculateBalance();
+        $this->recalculateRemainingAmount();
         $this->save();
         
         // Update customer stats
@@ -165,7 +165,7 @@ class Order extends Model
     {
         $this->subtotal = $this->items()->sum('total_price');
         $this->total_amount = $this->subtotal - $this->discount;
-        $this->calculateBalance();
+        $this->recalculateRemainingAmount();
         $this->save();
     }
 

@@ -105,8 +105,7 @@ admin/
 │   │   │   ├── 📁 customers/         # Customer management
 │   │   │   │   ├── CustomerDetailsModal.jsx
 │   │   │   │   ├── CustomerForm.jsx
-│   │   │   │   ├── README.md
-│   │   │   │   └── SuspendCustomerModal.jsx
+│   │   │   │   └── README.md
 │   │   │   ├── 📁 orders/            # Order management
 │   │   │   │   ├── OrderDetailsModal.jsx
 │   │   │   │   ├── OrderForm.jsx
@@ -347,9 +346,9 @@ admin/
   - Customer/Photographer list (server-side pagination, filtering, searching)
   - Customer details modal
   - Create/Edit customer
-  - Suspend customer
   - PDF export
   - Customer statistics (auto-calculated from orders)
+  - Derived financial summary (total/paid/remaining) with balance-aware status chips
 - **Status**: ✅ Fully implemented with API integration + Server-side pagination/filtering
 
 ### 6. **Order Management**
@@ -363,6 +362,7 @@ admin/
   - Payment status management
   - Record payment from order actions
   - Customer stats auto-update on order changes
+  - Order list now surfaces API errors (no mock fallback) and the details modal includes credit/debit payment type badges
 - **Status**: ✅ Fully implemented with API integration + Server-side pagination/filtering
 
 ### 7. **Payment Management**
@@ -373,6 +373,7 @@ admin/
   - Payment recording with validation
   - Auto-updates order payment status
   - Auto-updates customer stats
+  - Credit/Debit flows now receive live order & customer financial snapshots from the API so refunds instantly recalculate totals
 - **Status**: ✅ Fully implemented with API integration (real database)
 
 ### 8. **Transaction Management**
@@ -383,6 +384,7 @@ admin/
   - Create transaction
   - Transaction details modal
   - Edit/Delete transactions
+  - Transactions list consumes enriched payment payload (order/customer totals + payment type) so remaining amounts flip immediately after any debit
 - **Status**: ✅ Fully implemented - Shows payments from orders module
 
 ### 9. **Report Management**
@@ -662,7 +664,7 @@ const userService = {
 - **Consistent error format** across all services
 - **User-friendly error messages**
 - **Logging** for debugging purposes
-- **Fallback to mock data** for failed requests
+- **Fallback to mock data** only for modules marked as mock-ready (e.g., legacy branch UI); Orders, Customers, and Payments now fail fast against live APIs
 
 #### 4. **Response Format**
 ```javascript
@@ -797,8 +799,8 @@ npm run lint
 
 ---
 
-**Last Updated**: January 2025
-**Version**: 1.1.0
+**Last Updated**: November 2025
+**Version**: 1.1.1
 
 ## 🔄 Recent Updates
 - ✅ Payment Management fully implemented with real database integration
@@ -808,3 +810,4 @@ npm run lint
 - ✅ Order actions include "Record Payment" functionality
 - ✅ Dashboard cards + revenue chart now powered by `/dashboard/*` APIs with themed UI refresh
 - ✅ Customer/Order/Transaction PDFs export directly from backend storage
+- ✅ Orders & Customers lists now rely solely on live API responses (no mock fallback), deriving status from outstanding balances and displaying payment type badges inside Order Details

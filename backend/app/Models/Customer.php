@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Payment;
 
 class Customer extends Model
 {
@@ -73,11 +74,43 @@ class Customer extends Model
     }
 
     /**
+     * Booted model hook.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (Customer $customer) {
+            $orders = $customer->isForceDeleting()
+                ? $customer->orders()->withTrashed()->get()
+                : $customer->orders()->get();
+
+            $payments = $customer->isForceDeleting()
+                ? $customer->payments()->withTrashed()->get()
+                : $customer->payments()->get();
+
+            $orders->each(function ($order) use ($customer) {
+                $customer->isForceDeleting() ? $order->forceDelete() : $order->delete();
+            });
+
+            $payments->each(function ($payment) use ($customer) {
+                $customer->isForceDeleting() ? $payment->forceDelete() : $payment->delete();
+            });
+        });
+    }
+
+    /**
      * Get the orders for the customer.
      */
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Get the payments for the customer.
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
     }
 
     /**

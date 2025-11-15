@@ -91,18 +91,26 @@ class OrderController extends Controller
             $query->where('paid_amount', '<=', $maxPaidAmount);
         }
 
-        if ($minBalanceAmount = $request->input('min_balance_amount') ?? $request->input('minBalanceAmount')) {
-            $query->where('balance_amount', '>=', $minBalanceAmount);
+        $minRemainingAmount = $request->input('min_remaining_amount')
+            ?? $request->input('minRemainingAmount')
+            ?? $request->input('min_balance_amount')
+            ?? $request->input('minBalanceAmount');
+        if ($minRemainingAmount !== null) {
+            $query->where('remaining_amount', '>=', $minRemainingAmount);
         }
 
-        if ($maxBalanceAmount = $request->input('max_balance_amount') ?? $request->input('maxBalanceAmount')) {
-            $query->where('balance_amount', '<=', $maxBalanceAmount);
+        $maxRemainingAmount = $request->input('max_remaining_amount')
+            ?? $request->input('maxRemainingAmount')
+            ?? $request->input('max_balance_amount')
+            ?? $request->input('maxBalanceAmount');
+        if ($maxRemainingAmount !== null) {
+            $query->where('remaining_amount', '<=', $maxRemainingAmount);
         }
 
         $pagination = $this->buildPaginator(
             $request,
             $query,
-            ['order_number', 'order_date', 'due_date', 'total_amount', 'paid_amount', 'balance_amount', 'status', 'payment_status', 'payment_method', 'created_at'],
+            ['order_number', 'order_date', 'due_date', 'total_amount', 'paid_amount', 'remaining_amount', 'status', 'payment_status', 'payment_method', 'created_at'],
             ['column' => 'created_at', 'direction' => 'desc']
         );
 
@@ -151,8 +159,8 @@ class OrderController extends Controller
                 $data['total_amount'] = $data['subtotal'] - ($data['discount'] ?? 0);
             }
 
-            // Set balance_amount
-            $data['balance_amount'] = $data['total_amount'] - ($data['paid_amount'] ?? 0);
+            // Set remaining_amount
+            $data['remaining_amount'] = max(0, $data['total_amount'] - ($data['paid_amount'] ?? 0));
 
             // Create order
             $order = Order::create($data);
@@ -222,13 +230,16 @@ class OrderController extends Controller
 
             // Update order
             if (!empty($data)) {
-                // Recalculate balance if amounts changed
+                // Recalculate remaining amount if amounts changed
                 if (isset($data['total_amount']) || isset($data['paid_amount'])) {
-                    $data['balance_amount'] = ($data['total_amount'] ?? $order->total_amount) - ($data['paid_amount'] ?? $order->paid_amount);
+                    $total = $data['total_amount'] ?? $order->total_amount;
+                    $paid = $data['paid_amount'] ?? $order->paid_amount;
+                    $data['remaining_amount'] = max(0, $total - $paid);
                 }
 
                 $order->update($data);
-                $order->calculateBalance();
+                $order->recalculateRemainingAmount();
+                $order->save();
             }
 
             // Update items if provided
@@ -327,7 +338,7 @@ class OrderController extends Controller
             $order->payment_method = $request->payment_method;
         }
 
-        $order->calculateBalance();
+        $order->recalculateRemainingAmount();
         $order->save();
 
         $order->load('customer', 'branch', 'items.package');
