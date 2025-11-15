@@ -5,8 +5,9 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\PaginatesResults;
 use App\Http\Resources\PaymentResource;
-use App\Models\Payment;
 use App\Models\Order;
+use App\Models\Payment;
+use App\Models\Setting;
 use App\Services\PdfExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -320,14 +321,8 @@ class PaymentController extends Controller
             'branch'
         ]);
 
-        // Get settings for company info
-        $settings = \App\Models\Setting::whereIn('key', [
-            'business_name',
-            'business_address',
-            'business_phone',
-            'business_email',
-            'business_logo'
-        ])->pluck('value', 'key')->toArray();
+        // Get business settings
+        $settings = Setting::businessInfo();
 
         $data = [
             'payment' => $payment,
@@ -392,14 +387,8 @@ class PaymentController extends Controller
 
         $payments = $query->orderBy('payment_date', 'desc')->get();
 
-        // Get settings for company info
-        $settings = \App\Models\Setting::whereIn('key', [
-            'business_name',
-            'business_address',
-            'business_phone',
-            'business_email',
-            'business_logo'
-        ])->pluck('value', 'key')->toArray();
+        // Get business settings
+        $settings = Setting::businessInfo();
 
         $data = [
             'payments' => $payments,

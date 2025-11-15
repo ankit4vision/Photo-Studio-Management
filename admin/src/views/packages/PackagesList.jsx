@@ -11,6 +11,8 @@ import {
   faFilter,
   faSave,
   faRupeeSign,
+  faFilePdf,
+  faDownload,
 } from '@fortawesome/free-solid-svg-icons'
 import { Table, Modal, FormModal } from '../../components'
 import PackageForm from '../../components/pages/packages/PackageForm'
@@ -35,6 +37,8 @@ const PackagesList = () => {
   })
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [packageToDelete, setPackageToDelete] = useState(null)
+  const [exportingAll, setExportingAll] = useState(false)
+  const [exportingPackageId, setExportingPackageId] = useState(null)
   
   // Add/Edit Modal States
   const [showAddModal, setShowAddModal] = useState(false)
@@ -139,6 +143,47 @@ const PackagesList = () => {
   const handleDeletePackage = (pkg) => {
     setPackageToDelete(pkg)
     setShowDeleteModal(true)
+  }
+
+  const buildFilterParams = () => ({
+    search: searchTerm || undefined,
+    package_type: typeFilter || undefined,
+    status: statusFilter || undefined,
+  })
+
+  const handleExportAllPackages = async () => {
+    try {
+      setExportingAll(true)
+      const params = buildFilterParams()
+      const result = await packageService.exportAllPackagesPdf(params)
+      if (result.success) {
+        success('Packages PDF exported')
+      } else {
+        error(result.message || 'Failed to export packages PDF')
+      }
+    } catch (err) {
+      console.error('Error exporting packages PDF:', err)
+      error('An error occurred while exporting PDF')
+    } finally {
+      setExportingAll(false)
+    }
+  }
+
+  const handleExportSinglePackage = async (pkg) => {
+    try {
+      setExportingPackageId(pkg.id)
+      const result = await packageService.exportPackagePdf(pkg.id)
+      if (result.success) {
+        success('Package PDF downloaded')
+      } else {
+        error(result.message || 'Failed to export package PDF')
+      }
+    } catch (err) {
+      console.error('Error exporting package PDF:', err)
+      error('An error occurred while exporting PDF')
+    } finally {
+      setExportingPackageId(null)
+    }
   }
 
   const confirmDeletePackage = async () => {
@@ -320,6 +365,16 @@ const PackagesList = () => {
           >
             <FontAwesomeIcon icon={faTrash} />
           </Button>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => handleExportSinglePackage(pkg)}
+            title="Download PDF"
+            style={{ minWidth: '32px', padding: '4px 8px' }}
+            disabled={exportingPackageId === pkg.id}
+          >
+            <FontAwesomeIcon icon={faFilePdf} />
+          </Button>
         </div>
       )
     }
@@ -336,10 +391,20 @@ const PackagesList = () => {
               <h2 className="mb-0 text-dark">Package Management</h2>
             </div>
             <div className="ms-auto">
-              <Button variant="primary" onClick={handleAddPackage} className="text-white">
-                <FontAwesomeIcon icon={faPlus} className="me-2" />
-                Add Package
-              </Button>
+              <div className="d-flex gap-2">
+                <Button
+                  variant="outline-secondary"
+                  onClick={handleExportAllPackages}
+                  disabled={exportingAll}
+                >
+                  <FontAwesomeIcon icon={faDownload} className="me-2" />
+                  Export PDF
+                </Button>
+                <Button variant="primary" onClick={handleAddPackage} className="text-white">
+                  <FontAwesomeIcon icon={faPlus} className="me-2" />
+                  Add Package
+                </Button>
+              </div>
             </div>
           </div>
 

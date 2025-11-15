@@ -8,6 +8,7 @@ use App\Http\Requests\CustomerStoreRequest;
 use App\Http\Requests\CustomerUpdateRequest;
 use App\Http\Resources\CustomerResource;
 use App\Models\Customer;
+use App\Models\Setting;
 use App\Services\PdfExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -246,14 +247,8 @@ class CustomerController extends Controller
             ->orderBy('payment_date', 'desc')
             ->get();
 
-        // Get settings for company info
-        $settings = \App\Models\Setting::whereIn('key', [
-            'business_name',
-            'business_address',
-            'business_phone',
-            'business_email',
-            'business_logo'
-        ])->pluck('value', 'key')->toArray();
+        // Get business settings
+        $settings = Setting::businessInfo();
 
         $data = [
             'customer' => $customer,
@@ -301,14 +296,8 @@ class CustomerController extends Controller
 
         $customers = $query->orderBy('created_at', 'desc')->get();
 
-        // Get settings for company info
-        $settings = \App\Models\Setting::whereIn('key', [
-            'business_name',
-            'business_address',
-            'business_phone',
-            'business_email',
-            'business_logo'
-        ])->pluck('value', 'key')->toArray();
+        // Get business settings
+        $settings = Setting::businessInfo();
 
         $data = [
             'customers' => $customers,

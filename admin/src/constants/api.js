@@ -151,6 +151,8 @@ export const API_ENDPOINTS = {
     GET_BY_ID: (id) => `/packages/${id}`,
     UPDATE: (id) => `/packages/${id}`,
     DELETE: (id) => `/packages/${id}`,
+    EXPORT_PDF: (id) => `/packages/${id}/export-pdf`,
+    EXPORT_ALL_PDF: '/packages/export-pdf',
   },
 
   // Order Management

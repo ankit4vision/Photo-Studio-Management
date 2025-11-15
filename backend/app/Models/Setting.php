@@ -71,6 +71,32 @@ class Setting extends Model
     }
 
     /**
+     * Get standardized business information settings.
+     *
+     * @param array $additionalKeys
+     * @return array<string, mixed>
+     */
+    public static function businessInfo(array $additionalKeys = []): array
+    {
+        $defaultKeys = [
+            'business_name',
+            'business_address',
+            'business_phone',
+            'business_email',
+            'business_website',
+            'business_logo',
+            'gstNumber',
+            'tax_number',
+        ];
+
+        $keys = array_unique(array_merge($defaultKeys, $additionalKeys));
+
+        return static::whereIn('key', $keys)
+            ->pluck('value', 'key')
+            ->toArray();
+    }
+
+    /**
      * Get settings as key-value array.
      *
      * @param string $group

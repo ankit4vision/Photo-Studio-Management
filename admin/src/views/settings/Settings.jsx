@@ -22,6 +22,9 @@ const Settings = () => {
   const [settingsData, setSettingsData] = useState({
     businessInfo: {
       company_name: 'Photo Studio Management',
+      business_email: '',
+      business_phone: '',
+      business_website: '',
       gstNumber: '',
       businessAddress: ''
     },
@@ -67,6 +70,9 @@ const Settings = () => {
   // Mapping from form fields to API keys and sections
   const fieldMapping = {
     'businessInfo.company_name': { key: 'company_name', section: 'Business Information' },
+    'businessInfo.business_email': { key: 'business_email', section: 'Business Information' },
+    'businessInfo.business_phone': { key: 'business_phone', section: 'Business Information' },
+    'businessInfo.business_website': { key: 'business_website', section: 'Business Information' },
     'businessInfo.gstNumber': { key: 'gstNumber', section: 'Business Information' },
     'businessInfo.businessAddress': { key: 'businessAddress', section: 'Business Information' },
     'invoiceSettings.invoice_prefix': { key: 'invoice_prefix', section: 'Invoice Settings' },
@@ -234,8 +240,22 @@ const Settings = () => {
       newErrors['businessInfo.company_name'] = 'Company name is required'
     }
 
-    // Validate Email Settings
     const emailRegex = /\S+@\S+\.\S+/
+    if (settingsData.businessInfo.business_email && !emailRegex.test(settingsData.businessInfo.business_email)) {
+      newErrors['businessInfo.business_email'] = 'Please enter a valid business email address'
+    }
+
+    const phoneRegex = /^[0-9+()\-\s]{6,20}$/
+    if (settingsData.businessInfo.business_phone && !phoneRegex.test(settingsData.businessInfo.business_phone)) {
+      newErrors['businessInfo.business_phone'] = 'Please enter a valid phone number'
+    }
+
+    const urlRegex = /^(https?:\/\/)?([\w-]+\.)+[\w-]{2,}(\/\S*)?$/
+    if (settingsData.businessInfo.business_website && !urlRegex.test(settingsData.businessInfo.business_website.trim())) {
+      newErrors['businessInfo.business_website'] = 'Please enter a valid website URL'
+    }
+
+    // Validate Email Settings
     if (settingsData.emailSettings.from_address && !emailRegex.test(settingsData.emailSettings.from_address)) {
       newErrors['emailSettings.from_address'] = 'Please enter a valid email address'
     }
@@ -333,6 +353,81 @@ const Settings = () => {
               onBlur={(e) => handleBlur('businessInfo', 'gstNumber', e.target.value)}
               className="border-2"
             />
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Business Email
+              {autoSaving['businessInfo.business_email'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['businessInfo.business_email'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              type="email"
+              placeholder="contact@yourcompany.com"
+              value={settingsData.businessInfo.business_email}
+              onChange={(e) => handleChange('businessInfo', 'business_email', e.target.value)}
+              onBlur={(e) => handleBlur('businessInfo', 'business_email', e.target.value)}
+              className="border-2"
+              isInvalid={!!errors['businessInfo.business_email']}
+            />
+            {errors['businessInfo.business_email'] && (
+              <FormText className="text-danger">{errors['businessInfo.business_email']}</FormText>
+            )}
+          </Form.Group>
+        </Col>
+      </Row>
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Business Phone
+              {autoSaving['businessInfo.business_phone'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['businessInfo.business_phone'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              placeholder="+91 98765 43210"
+              value={settingsData.businessInfo.business_phone}
+              onChange={(e) => handleChange('businessInfo', 'business_phone', e.target.value)}
+              onBlur={(e) => handleBlur('businessInfo', 'business_phone', e.target.value)}
+              className="border-2"
+              isInvalid={!!errors['businessInfo.business_phone']}
+            />
+            {errors['businessInfo.business_phone'] && (
+              <FormText className="text-danger">{errors['businessInfo.business_phone']}</FormText>
+            )}
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Business Website
+              {autoSaving['businessInfo.business_website'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['businessInfo.business_website'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              placeholder="https://www.yourcompany.com"
+              value={settingsData.businessInfo.business_website}
+              onChange={(e) => handleChange('businessInfo', 'business_website', e.target.value)}
+              onBlur={(e) => handleBlur('businessInfo', 'business_website', e.target.value)}
+              className="border-2"
+              isInvalid={!!errors['businessInfo.business_website']}
+            />
+            {errors['businessInfo.business_website'] && (
+              <FormText className="text-danger">{errors['businessInfo.business_website']}</FormText>
+            )}
           </Form.Group>
         </Col>
       </Row>

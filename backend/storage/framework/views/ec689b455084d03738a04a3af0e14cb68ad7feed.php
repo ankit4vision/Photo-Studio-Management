@@ -3,330 +3,146 @@
 <head>
     <meta charset="utf-8">
     <title>Customer Report - <?php echo e($customer->customer_code); ?></title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'DejaVu Sans', sans-serif;
-            font-size: 12px;
-            color: #333;
-            line-height: 1.6;
-        }
-        .header {
-            border-bottom: 3px solid #8b5cf6;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .company-info h1 {
-            color: #8b5cf6;
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-        .company-info p {
-            color: #666;
-            font-size: 11px;
-            margin: 2px 0;
-        }
-        .report-info {
-            text-align: right;
-        }
-        .report-info p {
-            margin: 3px 0;
-            font-size: 11px;
-        }
-        .section {
-            margin-bottom: 25px;
-        }
-        .section-title {
-            background: #8b5cf6;
-            color: white;
-            padding: 8px 15px;
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-        .info-grid {
-            display: table;
-            width: 100%;
-            margin-bottom: 15px;
-        }
-        .info-row {
-            display: table-row;
-        }
-        .info-label {
-            display: table-cell;
-            font-weight: bold;
-            width: 30%;
-            padding: 8px;
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-        }
-        .info-value {
-            display: table-cell;
-            padding: 8px;
-            border: 1px solid #dee2e6;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        table th {
-            background: #8b5cf6;
-            color: white;
-            padding: 10px;
-            text-align: left;
-            font-size: 11px;
-            font-weight: bold;
-        }
-        table td {
-            padding: 8px;
-            border: 1px solid #dee2e6;
-            font-size: 11px;
-        }
-        table tr:nth-child(even) {
-            background: #f8f9fa;
-        }
-        .text-right {
-            text-align: right;
-        }
-        .text-center {
-            text-align: center;
-        }
-        .badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: bold;
-        }
-        .badge-active {
-            background: #28a745;
-            color: white;
-        }
-        .badge-suspended {
-            background: #dc3545;
-            color: white;
-        }
-        .badge-pending {
-            background: #ffc107;
-            color: #333;
-        }
-        .summary-box {
-            background: #f8f9fa;
-            border: 2px solid #8b5cf6;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
-        }
-        .summary-box h3 {
-            color: #8b5cf6;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-        .summary-grid {
-            display: table;
-            width: 100%;
-        }
-        .summary-item {
-            display: table-cell;
-            padding: 8px;
-            text-align: center;
-        }
-        .summary-item strong {
-            display: block;
-            font-size: 18px;
-            color: #8b5cf6;
-            margin-bottom: 5px;
-        }
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #dee2e6;
-            text-align: center;
-            font-size: 10px;
-            color: #666;
-        }
-    </style>
+    <?php echo $__env->make('pdfs.partials.styles', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 </head>
 <body>
-    <div class="header">
-        <div class="header-top">
-            <div class="company-info">
-                <h1><?php echo e($settings['business_name'] ?? 'Photo Studio Management'); ?></h1>
-                <p><?php echo e($settings['business_address'] ?? ''); ?></p>
-                <p>Phone: <?php echo e($settings['business_phone'] ?? ''); ?> | Email: <?php echo e($settings['business_email'] ?? ''); ?></p>
-            </div>
-            <div class="report-info">
-                <p><strong>Customer Report</strong></p>
-                <p>Export Date: <?php echo e($exportDate); ?></p>
-            </div>
-        </div>
-    </div>
+    <?php echo $__env->make('pdfs.partials.header', [
+        'settings' => $settings,
+        'title' => 'Customer Report',
+        'meta' => [
+            'Customer #' => $customer->customer_code,
+            'Status' => ucfirst($customer->status),
+            'Exported' => $exportDate,
+        ]
+    ], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 
-    <div class="section">
-        <div class="section-title">Customer Information</div>
-        <div class="info-grid">
-            <div class="info-row">
-                <div class="info-label">Customer Code</div>
-                <div class="info-value"><?php echo e($customer->customer_code); ?></div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Full Name</div>
-                <div class="info-value"><?php echo e($customer->first_name); ?> <?php echo e($customer->last_name); ?></div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Email</div>
-                <div class="info-value"><?php echo e($customer->email ?? 'N/A'); ?></div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Phone</div>
-                <div class="info-value"><?php echo e($customer->phone ?? $customer->mobile ?? 'N/A'); ?></div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Address</div>
-                <div class="info-value"><?php echo e($customer->address ?? 'N/A'); ?></div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">City</div>
-                <div class="info-value"><?php echo e($customer->city ?? 'N/A'); ?></div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">State</div>
-                <div class="info-value"><?php echo e($customer->state ?? 'N/A'); ?></div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Country</div>
-                <div class="info-value"><?php echo e($customer->country ?? 'N/A'); ?></div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Postal Code</div>
-                <div class="info-value"><?php echo e($customer->postal_code ?? 'N/A'); ?></div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Branch</div>
-                <div class="info-value"><?php echo e($customer->branch->branch_name ?? 'N/A'); ?></div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Status</div>
-                <div class="info-value">
-                    <span class="badge badge-<?php echo e($customer->status); ?>"><?php echo e(strtoupper($customer->status)); ?></span>
-                </div>
-            </div>
-            <?php if($customer->dob): ?>
-            <div class="info-row">
-                <div class="info-label">Date of Birth</div>
-                <div class="info-value"><?php echo e($customer->dob->format('Y-m-d')); ?></div>
-            </div>
-            <?php endif; ?>
-            <?php if($customer->anniversary_date): ?>
-            <div class="info-row">
-                <div class="info-label">Anniversary Date</div>
-                <div class="info-value"><?php echo e($customer->anniversary_date->format('Y-m-d')); ?></div>
-            </div>
-            <?php endif; ?>
-        </div>
-    </div>
+    <?php
+        $infoRows = [
+            'Customer Name' => trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? '')),
+            'Customer Code' => $customer->customer_code,
+            'Email' => $customer->email ?? 'N/A',
+            'Phone' => $customer->phone ?? $customer->mobile ?? 'N/A',
+            'Branch' => $customer->branch->branch_name ?? 'N/A',
+            'Address' => trim(($customer->address ?? '') . ', ' . ($customer->city ?? '') . ' ' . ($customer->state ?? '') . ' ' . ($customer->postal_code ?? '')),
+            'Status' => strtoupper($customer->status ?? 'N/A'),
+            'DOB' => optional($customer->dob)->format('Y-m-d') ?? '—',
+            'Anniversary' => optional($customer->anniversary_date)->format('Y-m-d') ?? '—',
+        ];
+    ?>
 
-    <div class="summary-box">
-        <h3>Customer Statistics</h3>
-        <div class="summary-grid">
-            <div class="summary-item">
-                <strong><?php echo e($customer->total_orders ?? 0); ?></strong>
-                <span>Total Orders</span>
-            </div>
-            <div class="summary-item">
-                <strong>₹<?php echo e(number_format($customer->total_amount ?? 0, 2)); ?></strong>
-                <span>Total Amount</span>
-            </div>
-            <div class="summary-item">
-                <strong>₹<?php echo e(number_format($customer->paid_amount ?? 0, 2)); ?></strong>
-                <span>Paid Amount</span>
-            </div>
-            <div class="summary-item">
-                <strong>₹<?php echo e(number_format($customer->remaining_amount ?? 0, 2)); ?></strong>
-                <span>Remaining</span>
-            </div>
+    <div class="pdf-section">
+        <div class="section-heading">
+            <div class="section-title">Customer Information</div>
+            <div class="section-subtitle">Profile + contact overview</div>
         </div>
-    </div>
-
-    <?php if($orders && $orders->count() > 0): ?>
-    <div class="section">
-        <div class="section-title">Orders History (<?php echo e($orders->count()); ?>)</div>
-        <table>
-            <thead>
+        <table class="info-table">
+            <?php $__currentLoopData = $infoRows; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $label => $value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <tr>
-                    <th>Order #</th>
-                    <th>Date</th>
-                    <th>Items</th>
-                    <th>Total Amount</th>
-                    <th>Paid</th>
-                    <th>Balance</th>
-                    <th>Status</th>
-                    <th>Payment Status</th>
+                    <th><?php echo e($label); ?></th>
+                    <td><?php echo e($value ?: '—'); ?></td>
                 </tr>
-            </thead>
-            <tbody>
-                <?php $__currentLoopData = $orders; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $order): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <tr>
-                    <td><?php echo e($order->order_number); ?></td>
-                    <td><?php echo e($order->order_date->format('Y-m-d')); ?></td>
-                    <td><?php echo e($order->items->count()); ?> item(s)</td>
-                    <td class="text-right">₹<?php echo e(number_format($order->total_amount, 2)); ?></td>
-                    <td class="text-right">₹<?php echo e(number_format($order->paid_amount, 2)); ?></td>
-                    <td class="text-right">₹<?php echo e(number_format($order->balance_amount, 2)); ?></td>
-                    <td class="text-center"><?php echo e(ucfirst($order->status)); ?></td>
-                    <td class="text-center"><?php echo e(ucfirst($order->payment_status)); ?></td>
-                </tr>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-            </tbody>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </table>
     </div>
+
+    <div class="pdf-section" style="page-break-inside: avoid;">
+        <div class="section-heading">
+            <div class="section-title">Financial Snapshot</div>
+            <div class="section-subtitle">Live totals pulled from orders & payments</div>
+        </div>
+        <div class="summary-cards">
+            <div class="summary-card">
+                <span class="summary-label">Total Orders</span>
+                <span class="summary-value"><?php echo e($customer->total_orders ?? 0); ?></span>
+                <span class="summary-foot">Confirmed Jobs</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-label">Total Amount</span>
+                <span class="summary-value">₹<?php echo e(number_format($customer->total_amount ?? 0, 2)); ?></span>
+                <span class="summary-foot">Gross Billing</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-label">Paid Amount</span>
+                <span class="summary-value">₹<?php echo e(number_format($customer->paid_amount ?? 0, 2)); ?></span>
+                <span class="summary-foot">Settled</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-label">Remaining</span>
+                <span class="summary-value">₹<?php echo e(number_format($customer->remaining_amount ?? 0, 2)); ?></span>
+                <span class="summary-foot">Outstanding</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <?php if($orders && $orders->count() > 0): ?>
+        <div class="pdf-section">
+            <div class="section-title">Order History (<?php echo e($orders->count()); ?>)</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Order #</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th class="text-right">Total</th>
+                        <th class="text-right">Paid</th>
+                        <th class="text-right">Remaining</th>
+                        <th>Status</th>
+                        <th>Payment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $__currentLoopData = $orders; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $order): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <tr>
+                            <td><?php echo e($order->order_number); ?></td>
+                            <td><?php echo e(optional($order->order_date)->format('Y-m-d')); ?></td>
+                            <td><?php echo e($order->items->count()); ?> item(s)</td>
+                            <td class="text-right">₹<?php echo e(number_format($order->total_amount, 2)); ?></td>
+                            <td class="text-right">₹<?php echo e(number_format($order->paid_amount, 2)); ?></td>
+                            <td class="text-right">₹<?php echo e(number_format($order->remaining_amount, 2)); ?></td>
+                            <td><?php echo e(ucfirst($order->status)); ?></td>
+                            <td><?php echo e(ucfirst($order->payment_status)); ?></td>
+                        </tr>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </tbody>
+            </table>
+        </div>
     <?php endif; ?>
 
     <?php if($payments && $payments->count() > 0): ?>
-    <div class="section">
-        <div class="section-title">Payment History (<?php echo e($payments->count()); ?>)</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Payment #</th>
-                    <th>Date</th>
-                    <th>Order #</th>
-                    <th>Type</th>
-                    <th>Method</th>
-                    <th>Amount</th>
-                    <th>Remarks</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php $__currentLoopData = $payments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $payment): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <tr>
-                    <td><?php echo e($payment->payment_number); ?></td>
-                    <td><?php echo e($payment->payment_date->format('Y-m-d')); ?></td>
-                    <td><?php echo e($payment->order->order_number ?? 'N/A'); ?></td>
-                    <td class="text-center"><?php echo e(ucfirst($payment->payment_type)); ?></td>
-                    <td class="text-center"><?php echo e(ucfirst(str_replace('_', ' ', $payment->payment_method))); ?></td>
-                    <td class="text-right">₹<?php echo e(number_format($payment->amount, 2)); ?></td>
-                    <td><?php echo e($payment->remarks ?? 'N/A'); ?></td>
-                </tr>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-            </tbody>
-        </table>
-    </div>
+        <div class="pdf-section">
+            <div class="section-title">Payment History (<?php echo e($payments->count()); ?>)</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Payment #</th>
+                        <th>Date</th>
+                        <th>Order #</th>
+                        <th>Type</th>
+                        <th>Method</th>
+                        <th class="text-right">Amount</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $__currentLoopData = $payments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $payment): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <tr>
+                            <td><?php echo e($payment->payment_number); ?></td>
+                            <td><?php echo e(optional($payment->payment_date)->format('Y-m-d')); ?></td>
+                            <td><?php echo e($payment->order->order_number ?? 'N/A'); ?></td>
+                            <td><?php echo e(ucfirst($payment->payment_type)); ?></td>
+                            <td><?php echo e(ucfirst(str_replace('_', ' ', $payment->payment_method))); ?></td>
+                            <td class="text-right">₹<?php echo e(number_format($payment->amount, 2)); ?></td>
+                            <td><?php echo e($payment->remarks ?? '—'); ?></td>
+                        </tr>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </tbody>
+            </table>
+        </div>
     <?php endif; ?>
 
-    <div class="footer">
-        <p>Generated on <?php echo e($exportDate); ?> | <?php echo e($settings['business_name'] ?? 'Photo Studio Management'); ?></p>
-    </div>
+    <?php echo $__env->make('pdfs.partials.footer', ['settings' => $settings, 'exportDate' => $exportDate], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 </body>
 </html>
 

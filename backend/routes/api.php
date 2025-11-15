@@ -71,6 +71,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Package Management
     Route::get('/packages', [PackageController::class, 'index'])->middleware('permission:view_package');
     Route::post('/packages', [PackageController::class, 'store'])->middleware('permission:create_package');
+    Route::get('/packages/export-pdf', [PackageController::class, 'exportAllPdf'])->middleware('permission:view_package');
+    Route::get('/packages/{package}/export-pdf', [PackageController::class, 'exportPdf'])->middleware('permission:view_package');
     Route::get('/packages/{package}', [PackageController::class, 'show'])->middleware('permission:view_package');
     Route::put('/packages/{package}', [PackageController::class, 'update'])->middleware('permission:edit_package');
     Route::delete('/packages/{package}', [PackageController::class, 'destroy'])->middleware('permission:delete_package');

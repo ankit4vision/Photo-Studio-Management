@@ -271,6 +271,9 @@ class SettingsService {
       const settingsMapping = [
         // Business Information
         { key: 'company_name', section: 'Business Information', formPath: ['businessInfo', 'company_name'], type: 'string' },
+        { key: 'business_email', section: 'Business Information', formPath: ['businessInfo', 'business_email'], type: 'string' },
+        { key: 'business_phone', section: 'Business Information', formPath: ['businessInfo', 'business_phone'], type: 'string' },
+        { key: 'business_website', section: 'Business Information', formPath: ['businessInfo', 'business_website'], type: 'string' },
         { key: 'gstNumber', section: 'Business Information', formPath: ['businessInfo', 'gstNumber'], type: 'string' },
         { key: 'businessAddress', section: 'Business Information', formPath: ['businessInfo', 'businessAddress'], type: 'string' },
         // Invoice Settings
@@ -406,6 +409,9 @@ class SettingsService {
     const keyMap = {
       'company_name': 'company_name',
       'businessName': 'company_name',
+      'business_email': 'business_email',
+      'business_phone': 'business_phone',
+      'business_website': 'business_website',
       'gstNumber': 'gstNumber',
       'businessAddress': 'businessAddress',
       'invoice_prefix': 'invoice_prefix',
@@ -435,6 +441,8 @@ class SettingsService {
     const formData = {
       businessInfo: {
         company_name: 'Photo Studio Management',
+        business_email: '',
+        business_phone: '',
         gstNumber: '',
         businessAddress: '',
       },
@@ -473,6 +481,9 @@ class SettingsService {
     const keyMapping = {
       'company_name': { section: 'Business Information', field: 'businessInfo', prop: 'company_name', type: 'string', useDefaultIfEmpty: true },
       'businessName': { section: 'Business Information', field: 'businessInfo', prop: 'company_name', type: 'string', useDefaultIfEmpty: true },
+      'business_email': { section: 'Business Information', field: 'businessInfo', prop: 'business_email', type: 'string', useDefaultIfEmpty: false },
+      'business_phone': { section: 'Business Information', field: 'businessInfo', prop: 'business_phone', type: 'string', useDefaultIfEmpty: false },
+      'business_website': { section: 'Business Information', field: 'businessInfo', prop: 'business_website', type: 'string', useDefaultIfEmpty: false },
       'gstNumber': { section: 'Business Information', field: 'businessInfo', prop: 'gstNumber', type: 'string', useDefaultIfEmpty: false },
       'businessAddress': { section: 'Business Information', field: 'businessInfo', prop: 'businessAddress', type: 'string', useDefaultIfEmpty: false },
       'invoice_prefix': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_prefix', type: 'string', useDefaultIfEmpty: true },

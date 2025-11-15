@@ -10,6 +10,7 @@ use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Package;
+use App\Models\Setting;
 use App\Services\PdfExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -398,16 +399,8 @@ class OrderController extends Controller
             }
         ]);
 
-        // Get settings for company info
-        $settings = \App\Models\Setting::whereIn('key', [
-            'business_name',
-            'business_address',
-            'business_phone',
-            'business_email',
-            'business_logo',
-            'invoice_prefix',
-            'tax_number'
-        ])->pluck('value', 'key')->toArray();
+        // Get business settings
+        $settings = Setting::businessInfo();
 
         $data = [
             'order' => $order,
@@ -465,14 +458,8 @@ class OrderController extends Controller
 
         $orders = $query->orderBy('order_date', 'desc')->get();
 
-        // Get settings for company info
-        $settings = \App\Models\Setting::whereIn('key', [
-            'business_name',
-            'business_address',
-            'business_phone',
-            'business_email',
-            'business_logo'
-        ])->pluck('value', 'key')->toArray();
+        // Get business settings
+        $settings = Setting::businessInfo();
 
         $data = [
             'orders' => $orders,
