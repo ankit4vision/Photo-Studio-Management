@@ -26,7 +26,7 @@ class RoleController extends Controller
             $query->where('is_active', $request->boolean('active'));
         }
 
-        $query->where('is_deleted', false);
+        // SoftDeletes automatically excludes deleted records, no need for is_deleted check
 
         if ($search = $request->input('search')) {
             $query->where('name', 'like', "%{$search}%");
@@ -69,9 +69,7 @@ class RoleController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('roles', 'name')->where(function ($query) {
-                    return $query->where('is_deleted', false)->orWhereNull('is_deleted');
-                }),
+                Rule::unique('roles', 'name')->whereNull('deleted_at'),
             ],
             'description' => 'nullable|string',
             'is_active' => 'boolean',
@@ -86,14 +84,16 @@ class RoleController extends Controller
             $validated['is_active'] = true;
         }
 
-        $existingRole = Role::where('name', $validated['name'])->first();
+        // Check if role exists (including soft-deleted ones)
+        $existingRole = Role::withTrashed()->where('name', $validated['name'])->first();
 
         if ($existingRole) {
-            if ($existingRole->is_deleted) {
+            // If role is soft-deleted, restore it and update
+            if ($existingRole->trashed()) {
+                $existingRole->restore();
                 $existingRole->fill([
                     'description' => $validated['description'] ?? $existingRole->description,
                     'is_active' => $validated['is_active'] ?? $existingRole->is_active ?? true,
-                    'is_deleted' => false,
                 ]);
                 $existingRole->save();
 
@@ -149,9 +149,7 @@ class RoleController extends Controller
                 'max:255',
                 Rule::unique('roles', 'name')
                     ->ignore($role->id)
-                    ->where(function ($query) {
-                        return $query->where('is_deleted', false)->orWhereNull('is_deleted');
-                    }),
+                    ->whereNull('deleted_at'),
             ],
             'description' => 'nullable|string',
             'is_active' => 'boolean',
@@ -189,7 +187,7 @@ class RoleController extends Controller
      */
     public function destroy(Role $role)
     {
-        $role->softDelete();
+        $role->delete(); // SoftDeletes trait handles soft deletion
 
         return response()->json([
             'success' => true,

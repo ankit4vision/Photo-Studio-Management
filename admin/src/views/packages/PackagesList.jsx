@@ -18,9 +18,23 @@ import { Table, Modal, FormModal } from '../../components'
 import PackageForm from '../../components/pages/packages/PackageForm'
 import packageService from '../../services/packageService'
 import { useToast } from '../../components/common/ToastProvider'
+import { usePermissions } from '../../hooks'
+import { PERMISSIONS } from '../../constants/permissions'
 
 const PackagesList = () => {
   const { success, error } = useToast()
+  const { hasPermission } = usePermissions()
+  
+  // Permission checks
+  const canCreatePackage = hasPermission
+    ? hasPermission(PERMISSIONS.PACKAGE_WRITE) || hasPermission(PERMISSIONS.PACKAGE_MANAGE)
+    : false
+  const canEditPackage = hasPermission
+    ? hasPermission(PERMISSIONS.PACKAGE_WRITE) || hasPermission(PERMISSIONS.PACKAGE_MANAGE)
+    : false
+  const canDeletePackage = hasPermission
+    ? hasPermission(PERMISSIONS.PACKAGE_DELETE) || hasPermission(PERMISSIONS.PACKAGE_MANAGE)
+    : false
   
   const [packages, setPackages] = useState([])
   const [loading, setLoading] = useState(true)
@@ -347,24 +361,28 @@ const PackagesList = () => {
       label: 'Actions',
       render: (value, pkg) => (
         <div className="d-flex gap-1 align-items-center" style={{ flexWrap: 'nowrap' }}>
-          <Button
-            variant="outline-primary"
-            size="sm"
-            onClick={() => handleEditPackage(pkg)}
-            title="Edit Package"
-            style={{ minWidth: '32px', padding: '4px 8px' }}
-          >
-            <FontAwesomeIcon icon={faEdit} />
-          </Button>
-          <Button
-            variant="outline-danger"
-            size="sm"
-            onClick={() => handleDeletePackage(pkg)}
-            title="Delete Package"
-            style={{ minWidth: '32px', padding: '4px 8px' }}
-          >
-            <FontAwesomeIcon icon={faTrash} />
-          </Button>
+          {canEditPackage && (
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={() => handleEditPackage(pkg)}
+              title="Edit Package"
+              style={{ minWidth: '32px', padding: '4px 8px' }}
+            >
+              <FontAwesomeIcon icon={faEdit} />
+            </Button>
+          )}
+          {canDeletePackage && (
+            <Button
+              variant="outline-danger"
+              size="sm"
+              onClick={() => handleDeletePackage(pkg)}
+              title="Delete Package"
+              style={{ minWidth: '32px', padding: '4px 8px' }}
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </Button>
+          )}
           <Button
             variant="outline-secondary"
             size="sm"
@@ -400,10 +418,12 @@ const PackagesList = () => {
                   <FontAwesomeIcon icon={faDownload} className="me-2" />
                   Export PDF
                 </Button>
-                <Button variant="primary" onClick={handleAddPackage} className="text-white">
-                  <FontAwesomeIcon icon={faPlus} className="me-2" />
-                  Add Package
-                </Button>
+                {canCreatePackage && (
+                  <Button variant="primary" onClick={handleAddPackage} className="text-white">
+                    <FontAwesomeIcon icon={faPlus} className="me-2" />
+                    Add Package
+                  </Button>
+                )}
               </div>
             </div>
           </div>

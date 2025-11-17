@@ -20,6 +20,35 @@ export const PERMISSIONS = {
   BRANCH_DELETE: 'branch:delete',
   BRANCH_MANAGE: 'branch:manage',
 
+  // Package Management
+  PACKAGE_READ: 'package:read',
+  PACKAGE_WRITE: 'package:write',
+  PACKAGE_DELETE: 'package:delete',
+  PACKAGE_MANAGE: 'package:manage',
+
+  // Customer Management
+  CUSTOMER_READ: 'customer:read',
+  CUSTOMER_WRITE: 'customer:write',
+  CUSTOMER_DELETE: 'customer:delete',
+  CUSTOMER_MANAGE: 'customer:manage',
+
+  // Order Management
+  ORDER_READ: 'order:read',
+  ORDER_WRITE: 'order:write',
+  ORDER_DELETE: 'order:delete',
+  ORDER_MANAGE: 'order:manage',
+
+  // Payment Management
+  PAYMENT_READ: 'payment:read',
+  PAYMENT_WRITE: 'payment:write',
+  PAYMENT_DELETE: 'payment:delete',
+  PAYMENT_MANAGE: 'payment:manage',
+
+  // Transaction Management (alias for payment)
+  TRANSACTION_READ: 'transaction:read',
+  TRANSACTION_WRITE: 'transaction:write',
+  TRANSACTION_DELETE: 'transaction:delete',
+
   // Dashboard
   DASHBOARD_READ: 'dashboard:read',
   DASHBOARD_WRITE: 'dashboard:write',

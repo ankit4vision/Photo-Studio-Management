@@ -16,10 +16,24 @@ import paymentService from '../../services/paymentService'
 import { useNavigate } from 'react-router-dom'
 import PaymentDetailsModal from '../../components/pages/payments/PaymentDetailsModal'
 import PaymentForm from '../../components/pages/payments/PaymentForm'
+import { usePermissions } from '../../hooks'
+import { PERMISSIONS } from '../../constants/permissions'
 
 const TransactionsList = () => {
   const navigate = useNavigate()
   const { success, error: showError } = useToast()
+  const { hasPermission } = usePermissions()
+  
+  // Permission checks
+  const canCreateTransaction = hasPermission
+    ? hasPermission(PERMISSIONS.PAYMENT_WRITE) || hasPermission(PERMISSIONS.PAYMENT_MANAGE)
+    : false
+  const canEditTransaction = hasPermission
+    ? hasPermission(PERMISSIONS.PAYMENT_WRITE) || hasPermission(PERMISSIONS.PAYMENT_MANAGE)
+    : false
+  const canDeleteTransaction = hasPermission
+    ? hasPermission(PERMISSIONS.PAYMENT_DELETE) || hasPermission(PERMISSIONS.PAYMENT_MANAGE)
+    : false
   const editFormRef = useRef()
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -329,18 +343,20 @@ const TransactionsList = () => {
           >
             <FontAwesomeIcon icon={faEye} />
           </Button>
-          <Button
-            variant="outline-success"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              setSelectedPayment(payment)
-              setShowEditModal(true)
-            }}
-            title="Edit Payment"
-          >
-            <FontAwesomeIcon icon={faEdit} />
-          </Button>
+          {canEditTransaction && (
+            <Button
+              variant="outline-success"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                setSelectedPayment(payment)
+                setShowEditModal(true)
+              }}
+              title="Edit Payment"
+            >
+              <FontAwesomeIcon icon={faEdit} />
+            </Button>
+          )}
           <Button
             variant="outline-secondary"
             size="sm"
@@ -352,17 +368,19 @@ const TransactionsList = () => {
           >
             <FontAwesomeIcon icon={faFilePdf} />
           </Button>
-          <Button
-            variant="outline-danger"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleDeletePayment(payment)
-            }}
-            title="Delete Transaction"
-          >
-            <FontAwesomeIcon icon={faTrash} />
-          </Button>
+          {canDeleteTransaction && (
+            <Button
+              variant="outline-danger"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDeletePayment(payment)
+              }}
+              title="Delete Transaction"
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </Button>
+          )}
         </div>
       )
     }
@@ -388,10 +406,12 @@ const TransactionsList = () => {
                 <FontAwesomeIcon icon={faFilePdf} className="me-2" />
                 Export PDF
               </Button>
-              <Button variant="primary" onClick={() => navigate('/transactions/create')}>
-                <FontAwesomeIcon icon={faPlus} className="me-2" />
-                Add Payment
-              </Button>
+              {canCreateTransaction && (
+                <Button variant="primary" onClick={() => navigate('/transactions/create')}>
+                  <FontAwesomeIcon icon={faPlus} className="me-2" />
+                  Add Payment
+                </Button>
+              )}
             </div>
           </div>
 

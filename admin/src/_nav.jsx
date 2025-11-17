@@ -27,6 +27,7 @@ const _nav = [
     name: 'Dashboard',
     to: '/dashboard',
     icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
+    permission: PERMISSIONS.DASHBOARD_READ,
   },
   {
     component: CNavTitle,
@@ -44,18 +45,21 @@ const _nav = [
     name: 'Packages',
     to: '/packages',
     icon: <CIcon icon={cilTag} customClassName="nav-icon" />,
+    permission: PERMISSIONS.PACKAGE_READ,
   },
   {
     component: CNavItem,
     name: 'Customers',
     to: '/customers',
     icon: <CIcon icon={cilPeople} customClassName="nav-icon" />,
+    permission: PERMISSIONS.CUSTOMER_READ,
   },
   {
     component: CNavItem,
     name: 'Orders',
     to: '/orders',
     icon: <CIcon icon={cilCart} customClassName="nav-icon" />,
+    permission: PERMISSIONS.ORDER_READ,
   },
   {
     component: CNavTitle,
@@ -66,13 +70,14 @@ const _nav = [
     name: 'Transactions',
     to: '/transactions',
     icon: <CIcon icon={cilWallet} customClassName="nav-icon" />,
+    permission: PERMISSIONS.PAYMENT_READ,
   },
   {
     component: CNavItem,
     name: 'Payments',
     to: '/payments',
     icon: <CIcon icon={cilCreditCard} customClassName="nav-icon" />,
-    disabled: true,
+    permission: PERMISSIONS.PAYMENT_READ,
   },
   {
     component: CNavTitle,

@@ -33,7 +33,7 @@ class PermissionController extends Controller
             $query->where('is_active', $request->boolean('active'));
         }
 
-        $query->where('is_deleted', false);
+        // SoftDeletes automatically excludes deleted records, no need for is_deleted check
 
         if ($search = $request->input('search')) {
             $query->where(function ($builder) use ($search) {

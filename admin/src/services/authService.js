@@ -3,22 +3,55 @@ import apiClient from '../config/apiClient'
 import { handleApiError } from '../utils/errorHandler'
 
 const PERMISSION_ALIAS_MAP = {
+  // User Management
   view_user: ['user:read'],
   create_user: ['user:write', 'user:manage'],
   edit_user: ['user:write', 'user:manage'],
   delete_user: ['user:delete', 'user:manage'],
-  view_dashboard: ['dashboard:read'],
+  
+  // Role Management
   view_role: ['role:read'],
   create_role: ['role:write', 'role:manage'],
   edit_role: ['role:write', 'role:manage'],
   delete_role: ['role:delete', 'role:manage'],
   view_permission: ['role:read'],
+  
+  // Settings Management
   view_setting: ['settings:read'],
   edit_setting: ['settings:write'],
+  
+  // Branch Management
   view_branch: ['branch:read'],
   create_branch: ['branch:write', 'branch:manage'],
   edit_branch: ['branch:write', 'branch:manage'],
   delete_branch: ['branch:delete', 'branch:manage'],
+  
+  // Package Management
+  view_package: ['package:read'],
+  create_package: ['package:write', 'package:manage'],
+  edit_package: ['package:write', 'package:manage'],
+  delete_package: ['package:delete', 'package:manage'],
+  
+  // Customer Management
+  view_customer: ['customer:read'],
+  create_customer: ['customer:write', 'customer:manage'],
+  edit_customer: ['customer:write', 'customer:manage'],
+  delete_customer: ['customer:delete', 'customer:manage'],
+  
+  // Order Management
+  view_order: ['order:read'],
+  create_order: ['order:write', 'order:manage'],
+  edit_order: ['order:write', 'order:manage'],
+  delete_order: ['order:delete', 'order:manage'],
+  
+  // Payment Management
+  view_payment: ['payment:read', 'transaction:read'],
+  create_payment: ['payment:write', 'payment:manage', 'transaction:write'],
+  edit_payment: ['payment:write', 'payment:manage', 'transaction:write'],
+  delete_payment: ['payment:delete', 'payment:manage', 'transaction:delete'],
+  
+  // Dashboard
+  view_dashboard: ['dashboard:read'],
 }
 
 const startCase = (value = '') =>

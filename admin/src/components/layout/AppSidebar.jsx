@@ -37,6 +37,7 @@ const AppSidebar = () => {
           return { ...item, items: filteredChildren }
         }
 
+        // Hide items if user doesn't have permission
         if (item.permission && hasPermission && !hasPermission(item.permission)) {
           return null
         }

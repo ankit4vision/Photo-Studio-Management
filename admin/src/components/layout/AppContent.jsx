@@ -48,7 +48,14 @@ const AppContent = () => {
       <Suspense fallback={<CSpinner color="primary" />}>
         <Routes>
           {/* Dashboard */}
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route
+            path="/dashboard"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.DASHBOARD_READ} showAccessDenied>
+                <Dashboard />
+              </PermissionRoute>
+            }
+          />
           
           {/* User Management Routes */}
           <Route
@@ -92,30 +99,86 @@ const AppContent = () => {
           <Route path="/branches/edit/:id" element={<Navigate to="/branches" replace />} />
           
           {/* Package Management Routes */}
-          <Route path="/packages" element={<PackagesList />} />
+          <Route
+            path="/packages"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.PACKAGE_READ} showAccessDenied>
+                <PackagesList />
+              </PermissionRoute>
+            }
+          />
           <Route path="/packages/create" element={<Navigate to="/packages" replace />} />
           <Route path="/packages/edit/:id" element={<Navigate to="/packages" replace />} />
           
           {/* Order Management Routes */}
-          <Route path="/orders" element={<OrdersList />} />
+          <Route
+            path="/orders"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.ORDER_READ} showAccessDenied>
+                <OrdersList />
+              </PermissionRoute>
+            }
+          />
           <Route path="/orders/create" element={<Navigate to="/orders" replace />} />
           <Route path="/orders/edit/:id" element={<Navigate to="/orders" replace />} />
           
           {/* Customer Management Routes */}
-          <Route path="/customers" element={<CustomersList />} />
+          <Route
+            path="/customers"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.CUSTOMER_READ} showAccessDenied>
+                <CustomersList />
+              </PermissionRoute>
+            }
+          />
           <Route path="/customers/create" element={<Navigate to="/customers" replace />} />
           <Route path="/customers/edit/:id" element={<Navigate to="/customers" replace />} />
           <Route path="/customers/:id/wallet" element={<Navigate to="/customers" replace />} />
           <Route path="/customers/:id/ledger" element={<Navigate to="/customers" replace />} />
           
           {/* Transaction Routes */}
-          <Route path="/transactions" element={<TransactionsList />} />
-          <Route path="/transactions/create" element={<TransactionFormView />} />
-          <Route path="/transactions/edit/:id" element={<TransactionFormView />} />
+          <Route
+            path="/transactions"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.PAYMENT_READ} showAccessDenied>
+                <TransactionsList />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/transactions/create"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.PAYMENT_WRITE} showAccessDenied>
+                <TransactionFormView />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/transactions/edit/:id"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.PAYMENT_WRITE} showAccessDenied>
+                <TransactionFormView />
+              </PermissionRoute>
+            }
+          />
           
           {/* Payment Routes */}
-          <Route path="/payments" element={<PaymentsList />} />
-          <Route path="/payments/create" element={<PaymentFormView />} />
+          <Route
+            path="/payments"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.PAYMENT_READ} showAccessDenied>
+                <PaymentsList />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/payments/create"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.PAYMENT_WRITE} showAccessDenied>
+                <PaymentFormView />
+              </PermissionRoute>
+            }
+          />
           
           {/* Report Routes */}
           <Route path="/reports/sales" element={<SalesReport />} />

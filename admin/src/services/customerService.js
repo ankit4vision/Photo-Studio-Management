@@ -398,8 +398,17 @@ class CustomerService {
       const response = await apiClient.put(API_ENDPOINTS.CUSTOMERS.UPDATE(id), backendData)
       return this.transformItemResponse(response?.data)
     } catch (error) {
-      console.warn('API call failed, using mock data:', error)
-      return this.updateMockCustomer(id, customerData)
+      // Check for 403 or permission errors - don't fallback to mock
+      if (error?.response?.status === 403 || error?.status === 403) {
+        return {
+          success: false,
+          data: null,
+          status: 403,
+          message: error?.response?.data?.message || error?.message || 'Insufficient permissions'
+        }
+      }
+      // For other errors, use error handler
+      return handleApiError(error)
     }
   }
 
@@ -473,8 +482,17 @@ class CustomerService {
       const response = await apiClient.delete(API_ENDPOINTS.CUSTOMERS.DELETE(id))
       return this.transformItemResponse(response?.data)
     } catch (error) {
-      console.warn('API call failed, using mock data:', error)
-      return this.deleteMockCustomer(id)
+      // Check for 403 or permission errors - don't fallback to mock
+      if (error?.response?.status === 403 || error?.status === 403) {
+        return {
+          success: false,
+          data: null,
+          status: 403,
+          message: error?.response?.data?.message || error?.message || 'Insufficient permissions'
+        }
+      }
+      // For other errors, use error handler
+      return handleApiError(error)
     }
   }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { Container, Row, Col, Button, FormControl, FormSelect, Badge, Card } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
@@ -21,10 +21,29 @@ import { customerService } from '../../services/customerService'
 import branchService from '../../services/branchService'
 import photographersData from '../../mock/photographers.json'
 import { useLocation } from 'react-router-dom'
+import { usePermissions } from '../../hooks'
+import { PERMISSIONS } from '../../constants/permissions'
 
 const CustomersList = () => {
   const location = useLocation()
   const { success, error } = useToast()
+  const { hasPermission, user } = usePermissions()
+  
+  // Permission checks - strict boolean checks with useMemo to recalculate on user/permissions change
+  const canCreateCustomer = useMemo(() => {
+    if (!hasPermission || !user || !user.permissions) return false
+    return hasPermission(PERMISSIONS.CUSTOMER_WRITE) || hasPermission(PERMISSIONS.CUSTOMER_MANAGE)
+  }, [hasPermission, user])
+  
+  const canEditCustomer = useMemo(() => {
+    if (!hasPermission || !user || !user.permissions) return false
+    return hasPermission(PERMISSIONS.CUSTOMER_WRITE) || hasPermission(PERMISSIONS.CUSTOMER_MANAGE)
+  }, [hasPermission, user])
+  
+  const canDeleteCustomer = useMemo(() => {
+    if (!hasPermission || !user || !user.permissions) return false
+    return hasPermission(PERMISSIONS.CUSTOMER_DELETE) || hasPermission(PERMISSIONS.CUSTOMER_MANAGE)
+  }, [hasPermission, user])
   
   // State management
   const [customers, setCustomers] = useState([])
@@ -357,7 +376,7 @@ const CustomersList = () => {
     }
   }
 
-  const columns = [
+  const columns = useMemo(() => [
     {
       key: 'customer',
       label: 'Customer',
@@ -485,18 +504,20 @@ const CustomersList = () => {
           >
             <FontAwesomeIcon icon={faEye} />
           </Button>
-          <Button
-            variant="outline-primary"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleEditCustomer(photographer)
-            }}
-            title="Edit Customer"
-            style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
-          >
-            <FontAwesomeIcon icon={faEdit} />
-          </Button>
+          {canEditCustomer && (
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleEditCustomer(photographer)
+              }}
+              title="Edit Customer"
+              style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
+            >
+              <FontAwesomeIcon icon={faEdit} />
+            </Button>
+          )}
           <Button
             variant="outline-secondary"
             size="sm"
@@ -509,22 +530,24 @@ const CustomersList = () => {
           >
             <FontAwesomeIcon icon={faFilePdf} />
           </Button>
-          <Button
-            variant="outline-danger"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleDeleteCustomer(photographer)
-            }}
-            title="Delete Customer"
-            style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
-          >
-            <FontAwesomeIcon icon={faTrash} />
-          </Button>
+          {canDeleteCustomer && (
+            <Button
+              variant="outline-danger"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDeleteCustomer(photographer)
+              }}
+              title="Delete Customer"
+              style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </Button>
+          )}
         </div>
       )
     }
-  ]
+  ], [canEditCustomer, canDeleteCustomer, user])
 
   // Sortable columns
   const sortableColumns = ['firstName', 'email', 'totalOrders', 'totalSpent', 'status', 'joinedDate']
@@ -548,6 +571,10 @@ const CustomersList = () => {
   }
 
   const handleDeleteCustomer = (customer) => {
+    if (!canDeleteCustomer) {
+      error('You do not have permission to delete customers')
+      return
+    }
     setCustomerToDelete(customer)
     setShowDeleteModal(true)
   }
@@ -642,6 +669,12 @@ const CustomersList = () => {
 
 
   const confirmDeleteCustomer = async () => {
+    if (!canDeleteCustomer) {
+      error('You do not have permission to delete customers')
+      setShowDeleteModal(false)
+      setCustomerToDelete(null)
+      return
+    }
     try {
       const response = await customerService.deleteCustomer(customerToDelete.id)
       if (response.success) {
@@ -651,26 +684,52 @@ const CustomersList = () => {
         loadCustomers()
         loadStats()
       } else {
-        error(response.message || 'Failed to delete customer')
+        // Check for 403 or permission errors
+        if (response.status === 403 || response.message?.toLowerCase().includes('permission')) {
+          error('You do not have permission to delete customers')
+        } else {
+          error(response.message || 'Failed to delete customer')
+        }
+        setShowDeleteModal(false)
+        setCustomerToDelete(null)
       }
     } catch (err) {
       console.error('Error deleting customer:', err)
-      error('An error occurred while deleting customer')
+      // Check for 403 errors in the error object
+      if (err?.response?.status === 403 || err?.status === 403 || err?.message?.toLowerCase().includes('permission')) {
+        error('You do not have permission to delete customers')
+      } else {
+        error(err?.message || 'An error occurred while deleting customer')
+      }
+      setShowDeleteModal(false)
+      setCustomerToDelete(null)
     }
   }
 
   // Add Customer Handlers
   const handleAddCustomer = () => {
+    if (!canCreateCustomer) {
+      error('You do not have permission to create customers')
+      return
+    }
     setShowAddModal(true)
   }
 
   const handleAddCustomerSubmit = () => {
+    if (!canCreateCustomer) {
+      error('You do not have permission to create customers')
+      return
+    }
     if (addFormRef.current) {
       addFormRef.current.handleSubmit()
     }
   }
 
   const handleAddCustomerFormSubmit = async (formData) => {
+    if (!canCreateCustomer) {
+      error('You do not have permission to create customers')
+      return
+    }
     try {
       setAddLoading(true)
       const response = await customerService.createCustomer(formData)
@@ -692,17 +751,31 @@ const CustomersList = () => {
 
   // Edit Customer Handlers
   const handleEditCustomer = (customer) => {
+    if (!canEditCustomer) {
+      error('You do not have permission to edit customers')
+      return
+    }
     setCustomerToEdit(customer)
     setShowEditModal(true)
   }
 
   const handleEditCustomerSubmit = () => {
+    if (!canEditCustomer) {
+      error('You do not have permission to edit customers')
+      return
+    }
     if (editFormRef.current) {
       editFormRef.current.handleSubmit()
     }
   }
 
   const handleEditCustomerFormSubmit = async (formData) => {
+    if (!canEditCustomer) {
+      error('You do not have permission to edit customers')
+      setShowEditModal(false)
+      setCustomerToEdit(null)
+      return
+    }
     try {
       setEditLoading(true)
       const response = await customerService.updateCustomer(customerToEdit.id, formData)
@@ -713,11 +786,25 @@ const CustomersList = () => {
         loadCustomers()
         loadStats()
       } else {
-        error(response.message || 'Failed to update customer')
+        // Check for 403 or permission errors
+        if (response.status === 403 || response.message?.toLowerCase().includes('permission')) {
+          error('You do not have permission to edit customers')
+        } else {
+          error(response.message || 'Failed to update customer')
+        }
+        setShowEditModal(false)
+        setCustomerToEdit(null)
       }
     } catch (err) {
       console.error('Error updating customer:', err)
-      error('An error occurred while updating customer')
+      // Check for 403 errors in the error object
+      if (err?.response?.status === 403 || err?.status === 403 || err?.message?.toLowerCase().includes('permission')) {
+        error('You do not have permission to edit customers')
+      } else {
+        error(err?.message || 'An error occurred while updating customer')
+      }
+      setShowEditModal(false)
+      setCustomerToEdit(null)
     } finally {
       setEditLoading(false)
     }
@@ -736,10 +823,12 @@ const CustomersList = () => {
               <h2 className="mb-0 text-dark">Customer Management</h2>
             </div>
             <div className="ms-auto d-flex align-items-center gap-3">
-              <Button variant="primary" onClick={handleAddCustomer} className="text-white">
-                <FontAwesomeIcon icon={faPlus} className="me-2" />
-                Add Customer
-              </Button>
+              {canCreateCustomer && (
+                <Button variant="primary" onClick={handleAddCustomer} className="text-white">
+                  <FontAwesomeIcon icon={faPlus} className="me-2" />
+                  Add Customer
+                </Button>
+              )}
               <Button variant="danger" onClick={handleExport} className="text-white">
                 <FontAwesomeIcon icon={faFilePdf} className="me-2" />
                 Export PDF

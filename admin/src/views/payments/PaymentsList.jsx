@@ -10,9 +10,18 @@ import {
 import { Table } from '../../components'
 import paymentService from '../../services/paymentService'
 import { useNavigate } from 'react-router-dom'
+import { usePermissions } from '../../hooks'
+import { PERMISSIONS } from '../../constants/permissions'
 
 const PaymentsList = () => {
   const navigate = useNavigate()
+  const { hasPermission } = usePermissions()
+  
+  // Permission checks
+  const canCreatePayment = hasPermission
+    ? hasPermission(PERMISSIONS.PAYMENT_WRITE) || hasPermission(PERMISSIONS.PAYMENT_MANAGE)
+    : false
+  
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -96,10 +105,12 @@ const PaymentsList = () => {
               <h2 className="mb-0 text-dark">Payments</h2>
             </div>
             <div className="ms-auto">
-              <Button variant="primary" onClick={() => navigate('/payments/create')}>
-                <FontAwesomeIcon icon={faPlus} className="me-2" />
-                Record Payment
-              </Button>
+              {canCreatePayment && (
+                <Button variant="primary" onClick={() => navigate('/payments/create')}>
+                  <FontAwesomeIcon icon={faPlus} className="me-2" />
+                  Record Payment
+                </Button>
+              )}
             </div>
           </div>
 

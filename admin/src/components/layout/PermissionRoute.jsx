@@ -52,19 +52,22 @@ const PermissionRoute = ({
   }
 
   // Check permission-based access
-  if (requiredPermission && !user.permissions?.includes(requiredPermission)) {
-    if (showAccessDenied) {
-      return (
-        <div className="d-flex justify-content-center align-items-center min-vh-100">
-          <div className="text-center">
-            <h1 className="display-1 text-danger">403</h1>
-            <h4>Access Denied</h4>
-            <p className="text-muted">You don't have permission to access this page.</p>
+  if (requiredPermission) {
+    const hasPermission = user?.permissions?.includes(requiredPermission) || false
+    if (!hasPermission) {
+      if (showAccessDenied) {
+        return (
+          <div className="d-flex justify-content-center align-items-center min-vh-100">
+            <div className="text-center">
+              <h1 className="display-1 text-danger">403</h1>
+              <h4>Access Denied</h4>
+              <p className="text-muted">You don't have permission to access this page.</p>
+            </div>
           </div>
-        </div>
-      )
+        )
+      }
+      return <Navigate to={fallback} replace />
     }
-    return <Navigate to={fallback} replace />
   }
 
   return children

@@ -25,11 +25,28 @@ import OrderForm from '../../components/pages/orders/OrderForm'
 import OrderDetailsModal from '../../components/pages/orders/OrderDetailsModal'
 import PaymentForm from '../../components/pages/payments/PaymentForm'
 import { formatCurrency, formatDate } from '../../utils'
+import { usePermissions } from '../../hooks'
+import { PERMISSIONS } from '../../constants/permissions'
 
 const ORDER_STATUS_OPTIONS = ['pending', 'processing', 'completed', 'cancelled']
 
 const OrdersList = () => {
   const { success, error: showError } = useToast()
+  const { hasPermission } = usePermissions()
+  
+  // Permission checks
+  const canCreateOrder = hasPermission
+    ? hasPermission(PERMISSIONS.ORDER_WRITE) || hasPermission(PERMISSIONS.ORDER_MANAGE)
+    : false
+  const canEditOrder = hasPermission
+    ? hasPermission(PERMISSIONS.ORDER_WRITE) || hasPermission(PERMISSIONS.ORDER_MANAGE)
+    : false
+  const canDeleteOrder = hasPermission
+    ? hasPermission(PERMISSIONS.ORDER_DELETE) || hasPermission(PERMISSIONS.ORDER_MANAGE)
+    : false
+  const canCreatePayment = hasPermission
+    ? hasPermission(PERMISSIONS.PAYMENT_WRITE) || hasPermission(PERMISSIONS.PAYMENT_MANAGE)
+    : false
   const [orders, setOrders] = useState([])
   const [stats, setStats] = useState({})
   const [loading, setLoading] = useState(true)
@@ -750,30 +767,36 @@ const OrdersList = () => {
             >
               <FontAwesomeIcon icon={faEye} />
             </Button>
-            <Button
-              variant="outline-success"
-              size="sm"
-              onClick={() => handleOpenPaymentModal(order)}
-              title="Record Payment"
-            >
-              <FontAwesomeIcon icon={faCreditCard} />
-            </Button>
-            <Button
-              variant="outline-primary"
-              size="sm"
-              onClick={() => handleEditOrder(order)}
-              title="Edit Order"
-            >
-              <FontAwesomeIcon icon={faEdit} />
-            </Button>
-            <Button
-              variant="outline-warning"
-              size="sm"
-              onClick={() => handleOpenStatusModal(order)}
-              title="Update Order Status"
-            >
-              <FontAwesomeIcon icon={faCheck} />
-            </Button>
+            {canCreatePayment && (
+              <Button
+                variant="outline-success"
+                size="sm"
+                onClick={() => handleOpenPaymentModal(order)}
+                title="Record Payment"
+              >
+                <FontAwesomeIcon icon={faCreditCard} />
+              </Button>
+            )}
+            {canEditOrder && (
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={() => handleEditOrder(order)}
+                title="Edit Order"
+              >
+                <FontAwesomeIcon icon={faEdit} />
+              </Button>
+            )}
+            {canEditOrder && (
+              <Button
+                variant="outline-warning"
+                size="sm"
+                onClick={() => handleOpenStatusModal(order)}
+                title="Update Order Status"
+              >
+                <FontAwesomeIcon icon={faCheck} />
+              </Button>
+            )}
             <Button
               variant="outline-secondary"
               size="sm"
@@ -782,14 +805,16 @@ const OrdersList = () => {
             >
               <FontAwesomeIcon icon={faFilePdf} />
             </Button>
-            <Button
-              variant="outline-danger"
-              size="sm"
-              onClick={() => handleDeleteOrder(order)}
-              title="Delete Order"
-            >
-              <FontAwesomeIcon icon={faTrash} />
-            </Button>
+            {canDeleteOrder && (
+              <Button
+                variant="outline-danger"
+                size="sm"
+                onClick={() => handleDeleteOrder(order)}
+                title="Delete Order"
+              >
+                <FontAwesomeIcon icon={faTrash} />
+              </Button>
+            )}
           </div>
         )
       }
@@ -816,10 +841,12 @@ const OrdersList = () => {
             <h2 className="mb-0 text-dark">Order Management</h2>
             </div>
             <div className="ms-auto d-flex align-items-center gap-3">
-              <Button variant="primary" onClick={handleAddOrder} className="text-white">
-                <FontAwesomeIcon icon={faPlus} className="me-2" />
-                Create Order
-              </Button>
+              {canCreateOrder && (
+                <Button variant="primary" onClick={handleAddOrder} className="text-white">
+                  <FontAwesomeIcon icon={faPlus} className="me-2" />
+                  Create Order
+                </Button>
+              )}
             </div>
           </div>
 
