@@ -1840,13 +1840,15 @@ const handleDeletePackage = async (packageId) => {
 - `limit` - Items per page (default: 20, max: 100)
 - `search` - Search term (order_number, customer name/email में search)
 - `status` - Filter by status (pending, processing, completed, cancelled)
-- `payment_status` - Filter by payment status (pending, paid, partial, refunded)
+- `payment_status` - Filter by payment status (pending, completed)
 - `customer_id` - Filter by customer
 - `branch_id` - Filter by branch
 - `start_date` - Filter orders from date
 - `end_date` - Filter orders to date
 - `sort_by` - Sort column (order_number, order_date, total_amount, status, payment_status, created_at)
 - `sort_direction` - Sort direction (asc/desc)
+
+**Note**: Payment status simplified to `pending` or `completed` (calculated from remaining amount)
 
 **Response**:
 ```json
@@ -1855,43 +1857,47 @@ const handleDeletePackage = async (packageId) => {
   "data": [
     {
       "id": 1,
-      "order_number": "#ORD001",
       "orderNumber": "#ORD001",
       "customerId": 1,
-      "customer_id": 1,
       "customer": {
         "id": 1,
         "firstName": "Rajesh",
         "lastName": "Patel",
         "name": "Rajesh Patel",
         "email": "rajesh.patel@email.com",
-        "phone": "+91 98765 43210"
+        "phone": "+91 98765 43210",
+        "mobile": "+91 98765 43210",
+        "customerCode": "#CUST001"
       },
-      "branch_id": 1,
-      "order_date": "2024-01-20",
-      "orderDate": "2024-01-20T00:00:00.000Z",
+      "branchId": 1,
+      "branch": {
+        "id": 1,
+        "branchName": "Main Branch",
+        "branchCode": "MB001"
+      },
+      "orderDate": "2024-01-20",
+      "dueDate": "2024-02-20",
       "subtotal": 50000,
       "discount": 0,
-      "total_amount": 50000,
       "totalAmount": 50000,
-      "paid_amount": 50000,
-      "balance_amount": 0,
-      "status": "completed",
-      "payment_status": "paid",
-      "paymentStatus": "paid",
-      "payment_method": "upi",
+      "paidAmount": 30000,
+      "remainingAmount": 20000,
+      "status": "processing",
+      "paymentStatus": "pending",
       "paymentMethod": "upi",
       "items": [
         {
           "id": 1,
-          "package_id": 2,
-          "package_name": "Wedding Photography Premium",
+          "orderId": 1,
+          "packageId": 2,
+          "packageName": "Wedding Photography Premium",
           "quantity": 1,
-          "unit_price": 50000,
-          "total_price": 50000
+          "unitPrice": 50000,
+          "totalPrice": 50000
         }
       ],
-      "created_at": "2024-01-20T10:30:00.000000Z"
+      "createdAt": "2024-01-20T10:30:00.000Z",
+      "updatedAt": "2024-01-20T10:30:00.000Z"
     }
   ],
   "meta": {
@@ -1923,7 +1929,7 @@ const handleDeletePackage = async (packageId) => {
 ---
 
 ### 2. **GET /api/orders/{order}**
-**Description**: Specific order की details fetch करने के लिए
+**Description**: Specific order की details fetch करने के लिए (includes payment history)
 
 **Backend Controller**: `OrderController@show`
 
@@ -1933,12 +1939,61 @@ const handleDeletePackage = async (packageId) => {
   "success": true,
   "data": {
     "id": 1,
-    "order_number": "#ORD001",
-    "customer": {...},
-    "items": [...],
-    "total_amount": 50000,
-    "status": "completed",
-    "payment_status": "paid"
+    "orderNumber": "#ORD001",
+    "customerId": 1,
+    "customer": {
+      "id": 1,
+      "firstName": "Rajesh",
+      "lastName": "Patel",
+      "name": "Rajesh Patel",
+      "email": "rajesh.patel@email.com",
+      "phone": "+91 98765 43210",
+      "mobile": "+91 98765 43210",
+      "customerCode": "#CUST001"
+    },
+    "branchId": 1,
+    "branch": {
+      "id": 1,
+      "branchName": "Main Branch",
+      "branchCode": "MB001"
+    },
+    "orderDate": "2024-01-20",
+    "dueDate": "2024-02-20",
+    "subtotal": 50000,
+    "discount": 0,
+    "totalAmount": 50000,
+    "paidAmount": 30000,
+    "remainingAmount": 20000,
+    "status": "processing",
+    "paymentStatus": "pending",
+    "paymentMethod": "upi",
+    "items": [
+      {
+        "id": 1,
+        "orderId": 1,
+        "packageId": 2,
+        "packageName": "Wedding Photography Premium",
+        "quantity": 1,
+        "unitPrice": 50000,
+        "totalPrice": 50000
+      }
+    ],
+    "payments": [
+      {
+        "id": 1,
+        "paymentNumber": "#PAY001",
+        "orderId": 1,
+        "customerId": 1,
+        "paymentDate": "2024-01-20",
+        "paymentType": "credit",
+        "amount": 30000,
+        "paymentMethod": "upi",
+        "remarks": "Partial payment received"
+      }
+    ],
+    "notes": "Order notes",
+    "createdAt": "2024-01-20T10:30:00.000Z",
+    "updatedAt": "2024-01-20T10:30:00.000Z"
   },
   "message": "Order retrieved successfully."
 }
@@ -1954,7 +2009,11 @@ const handleDeletePackage = async (packageId) => {
   - `src/components/pages/orders/OrderDetailsModal.jsx` - Order details modal में
 
 **Latest UI Behavior (Nov 2025)**:
-- Order Details modal payments तालिका अब backend से आने वाले `payment_type` (credit/debit) को badges और color-coded amounts के साथ दिखाती है तथा outstanding राशि को “Remaining Amount” लेबल से हाइलाइट करती है
+- Order Details modal payments तालिका अब backend से आने वाले `payment_type` (credit/debit) को badges और color-coded amounts के साथ दिखाती है
+- Payment history included in order response (no separate API call needed)
+- Payment numbers displayed in #PAY003 format
+- API response uses camelCase only (no duplicate snake_case fields)
+- Payment status simplified to `pending` or `completed`
 
 ---
 
@@ -2089,7 +2148,7 @@ const handleDeletePackage = async (packageId) => {
 ---
 
 ### 6. **PUT /api/orders/{order}/status**
-**Description**: Order status update करने के लिए
+**Description**: Order status manually update करने के लिए
 
 **Backend Controller**: `OrderController@updateStatus`
 
@@ -2115,21 +2174,26 @@ const handleDeletePackage = async (packageId) => {
 - **Service**: `src/services/orderService.js`
 - **Method**: `orderService.updateOrderStatus(orderId, status)`
 - **Used In**:
+  - `src/views/orders/OrdersList.jsx` - Manual order status update modal में
   - Order status change करने के लिए
+
+**Note**: This endpoint allows manual override of order status when needed
 
 ---
 
 ### 7. **PUT /api/orders/{order}/payment-status**
-**Description**: Order payment status update करने के लिए
+**Description**: Record a payment or refund for an order (legacy endpoint for compatibility)
 
 **Backend Controller**: `OrderController@updatePaymentStatus`
 
 **Request Body**:
 ```json
 {
-  "payment_status": "paid",
-  "paid_amount": 50000,
-  "payment_method": "upi"
+  "payment_type": "credit",
+  "amount": 50000,
+  "payment_method": "upi",
+  "payment_date": "2024-01-20",
+  "remarks": "Payment received"
 }
 ```
 
@@ -2138,7 +2202,15 @@ const handleDeletePackage = async (packageId) => {
 {
   "success": true,
   "data": {...},
-  "message": "Payment status updated successfully."
+  "message": "Payment recorded successfully.",
+  "payment": {
+    "id": 1,
+    "paymentNumber": "#PAY001",
+    "orderId": 1,
+    "paymentType": "credit",
+    "amount": 50000,
+    "paymentMethod": "upi"
+  }
 }
 ```
 
@@ -2146,15 +2218,59 @@ const handleDeletePackage = async (packageId) => {
 
 **Frontend Integration**:
 - **Service**: `src/services/orderService.js`
-- **Method**: `orderService.updatePaymentStatus(orderId, paymentStatus, paymentMethod, paidAmount)`
+- **Method**: `orderService.updatePaymentStatus(orderId, paymentData)`
 - **Used In**:
-  - Payment status change करने के लिए
+  - Payment recording from order actions
 
-**Note**: Payment status update होने पर customer stats automatically update होते हैं
+**Note**: 
+- This endpoint creates a payment record and automatically updates order payment status
+- Payment status is calculated as `pending` if remaining amount > 0, otherwise `completed`
+- Customer stats automatically update होते हैं
 
 ---
 
-### 8. **GET /api/orders/customer/{customerId}**
+### 8. **GET /api/orders/stats**
+**Description**: Order statistics fetch करने के लिए (with date range filtering)
+
+**Backend Controller**: `OrderController@stats`
+
+**Query Parameters**:
+- `start_date` - Start date for filtering (ISO date format)
+- `end_date` - End date for filtering (ISO date format)
+- `status` - Filter by order status (optional)
+- `payment_status` - Filter by payment status (optional)
+- `customer_id` - Filter by customer (optional)
+- `branch_id` - Filter by branch (optional)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "totalOrders": 150,
+    "pendingOrders": 25,
+    "processingOrders": 40,
+    "completedOrders": 80,
+    "cancelledOrders": 5,
+    "totalRevenue": 1250000.00,
+    "averageOrderValue": 8333.33
+  }
+}
+```
+
+**Permission Required**: `view_order`
+
+**Frontend Integration**:
+- **Service**: `src/services/orderService.js`
+- **Method**: `orderService.getOrderStats(params)`
+- **Used In**:
+  - `src/views/orders/OrdersList.jsx` - Order statistics summary cards में
+
+**Note**: This is a separate endpoint from the orders list to avoid duplicate API calls
+
+---
+
+### 9. **GET /api/orders/customer/{customerId}**
 **Description**: Specific customer के orders fetch करने के लिए
 
 **Backend Controller**: `OrderController@getByCustomer`
@@ -2211,16 +2327,32 @@ const handleDeletePackage = async (packageId) => {
   "data": [
     {
       "id": 1,
-      "payment_number": "#PAY001",
-      "order_id": 1,
-      "customer_id": 1,
-      "payment_date": "2024-01-20",
-      "payment_type": "credit",
+      "paymentNumber": "#PAY001",
+      "orderId": 1,
+      "customerId": 1,
+      "paymentDate": "2024-01-20",
+      "paymentType": "credit",
       "amount": 50000,
-      "payment_method": "upi",
+      "paymentMethod": "upi",
       "remarks": "Payment received",
-      "order": {...},
-      "customer": {...}
+      "order": {
+        "id": 1,
+        "orderNumber": "#ORD001",
+        "totalAmount": 50000,
+        "paidAmount": 30000,
+        "remainingAmount": 20000,
+        "paymentStatus": "pending"
+      },
+      "customer": {
+        "id": 1,
+        "firstName": "Rajesh",
+        "lastName": "Patel",
+        "name": "Rajesh Patel",
+        "email": "rajesh.patel@email.com",
+        "customerCode": "#CUST001"
+      },
+      "createdAt": "2024-01-20T10:30:00.000Z",
+      "updatedAt": "2024-01-20T10:30:00.000Z"
     }
   ],
   "meta": {
@@ -2243,6 +2375,8 @@ const handleDeletePackage = async (packageId) => {
 **Latest Behavior (Nov 2025)**:
 - Response objects अब `order` और `customer` के nested स्नैपशॉट के साथ आते हैं (total_amount, paid_amount, balance_amount, paymentStatus, customer totals)
 - Transactions UI इन्हीं snapshots को render करता है, इसलिए किसी भी credit/debit के बाद remaining/paid figures तुरंत sync हो जाते हैं
+- Payment numbers displayed in #PAY003 format
+- API response uses camelCase only (no duplicate snake_case fields)
 
 ---
 
@@ -2267,7 +2401,17 @@ const handleDeletePackage = async (packageId) => {
 ```json
 {
   "success": true,
-  "data": {...},
+  "data": {
+    "id": 1,
+    "paymentNumber": "#PAY001",
+    "orderId": 1,
+    "customerId": 1,
+    "paymentDate": "2024-01-20",
+    "paymentType": "credit",
+    "amount": 50000,
+    "paymentMethod": "upi",
+    "remarks": "Payment received"
+  },
   "message": "Payment recorded successfully."
 }
 ```
@@ -3049,4 +3193,10 @@ const Settings = () => {
 - ✅ Customer code (#CUST format) display in payment forms
 - ✅ Real database integration for payments (no mock fallback)
 - ✅ Orders & Customers screens now rely solely on live API responses with derived financial summaries, toast-based error handling, and credit/debit payment type indicators
+- ✅ Order Details API (`/api/orders/{id}`) now includes payment history in response (no separate API call needed)
+- ✅ Payment status simplified to `pending` or `completed` (removed partial/refunded from UI)
+- ✅ Order statistics endpoint (`/api/orders/stats`) added with date range filtering
+- ✅ Manual order status update functionality added
+- ✅ Payment numbers displayed in #PAY003 format in payment history and transactions
+- ✅ API responses cleaned up - removed duplicate fields, using camelCase only
 

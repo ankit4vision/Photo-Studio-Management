@@ -325,16 +325,21 @@ backend/
 - **Routes**: `/api/orders/*`
 - **Features**:
   - List orders (paginated, sortable, searchable with server-side filtering)
-  - Get order by ID
+  - Get order by ID (includes payment history in response)
   - Create order (with multiple packages/items)
   - Update order (with items update)
   - Delete order (soft delete)
-  - Update order status
+  - Update order status (manual status change endpoint)
   - Update payment status
   - Get orders by customer
+  - Order statistics endpoint (`/api/orders/stats`) with date range filtering
 - **Permissions**: `view_order`, `create_order`, `edit_order`, `delete_order`
 - **Status**: ✅ Fully implemented
-- **Note**: Order create/update/delete होने पर customer stats automatically update होते हैं
+- **Note**: 
+  - Order create/update/delete होने पर customer stats automatically update होते हैं
+  - Payment status simplified to `pending` or `completed` (calculated from remaining amount)
+  - Order details endpoint includes payment history ordered by date (descending)
+  - API resources use camelCase only (no duplicate snake_case fields)
 
 ### 9. **Payment Management Module**
 - **Location**: `app/Http/Controllers/API/PaymentController.php`
@@ -346,11 +351,12 @@ backend/
   - Update payment
   - Delete payment (soft delete)
   - Get payments by order
-  - Auto-generates payment_number (#PAY001)
+  - Auto-generates payment_number (#PAY001, #PAY002, etc.)
   - Auto-updates order payment status on create/update/delete
   - Auto-updates customer stats
 - Returns enriched `PaymentResource` snapshots (order + customer financials) so frontend can display real-time totals per credit/debit
 - Central `syncOrderFinancials()` helper ensures debit refunds also recalculate `orders` and `customers` tables before responses are sent
+- PaymentResource uses camelCase only (no duplicate fields)
 - **Permissions**: `view_payment`, `create_payment`, `edit_payment`, `delete_payment`
 - **Status**: ✅ Fully implemented
 - **Note**: Payment record होने पर order payment status और customer stats automatically update होते हैं
@@ -1026,3 +1032,8 @@ php artisan serve
 - ✅ Payment model with auto order status update
 - ✅ PaymentController with full CRUD operations
 - ✅ Orders & Customers endpoints now treated as critical because frontend removed mock fallbacks—ensure uptime, monitoring, and meaningful error payloads
+- ✅ Order details endpoint (`/api/orders/{id}`) now includes payment history in response
+- ✅ Payment status simplified to `pending` or `completed` (calculated from remaining amount)
+- ✅ Order statistics endpoint (`/api/orders/stats`) added with date range filtering
+- ✅ API resources cleaned up - removed duplicate fields, using camelCase only
+- ✅ Payment numbers auto-generated in #PAY001 format

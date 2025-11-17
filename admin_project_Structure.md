@@ -356,13 +356,15 @@ admin/
 - **Features**:
   - Order list (server-side pagination, filtering, searching)
   - Create/Edit order (multi-package support)
-  - Order details modal
+  - Order details modal with integrated payment history (no separate API call needed)
   - PDF invoice export
-  - Order status tracking
-  - Payment status management
+  - Order status tracking with manual status update functionality
+  - Payment status management (simplified to Pending/Completed)
   - Record payment from order actions
   - Customer stats auto-update on order changes
-  - Order list now surfaces API errors (no mock fallback) and the details modal includes credit/debit payment type badges
+  - Order list now surfaces API errors (no mock fallback)
+  - Payment history displays payment numbers in #PAY003 format
+  - Clean API responses with camelCase fields only (no duplicate snake_case fields)
 - **Status**: ✅ Fully implemented with API integration + Server-side pagination/filtering
 
 ### 7. **Payment Management**
@@ -381,6 +383,7 @@ admin/
 - **Features**:
   - Transaction list (shows all payments from orders)
   - Payments from orders automatically appear here
+  - Payment numbers displayed in #PAY003 format
   - Create transaction
   - Transaction details modal
   - Edit/Delete transactions
@@ -811,3 +814,8 @@ npm run lint
 - ✅ Dashboard cards + revenue chart now powered by `/dashboard/*` APIs with themed UI refresh
 - ✅ Customer/Order/Transaction PDFs export directly from backend storage
 - ✅ Orders & Customers lists now rely solely on live API responses (no mock fallback), deriving status from outstanding balances and displaying payment type badges inside Order Details
+- ✅ Order Details API now includes payment history (no separate API call needed)
+- ✅ Payment status simplified to Pending/Completed (removed Partial/Refunded from UI)
+- ✅ Manual order status update functionality added
+- ✅ Payment numbers displayed in #PAY003 format in payment history and transactions
+- ✅ API responses cleaned up - removed duplicate fields, using camelCase only
