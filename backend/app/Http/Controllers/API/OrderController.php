@@ -503,21 +503,22 @@ class OrderController extends Controller
         $refunds = $this->refundCountExpression();
 
         switch ($paymentStatus) {
+            case 'completed':
             case 'paid':
                 $query->whereRaw("{$netPaid} >= orders.total_amount")
                     ->where('total_amount', '>', 0);
-                break;
-            case 'partial':
-                $query->whereRaw("{$netPaid} > 0")
-                    ->whereRaw("{$netPaid} < orders.total_amount");
                 break;
             case 'refunded':
                 $query->whereRaw("{$netPaid} <= 0")
                     ->whereRaw("{$refunds} > 0");
                 break;
-            default: // pending
-                $query->whereRaw("{$netPaid} <= 0")
-                    ->whereRaw("{$refunds} = 0");
+            case 'pending':
+            case 'partial':
+            default:
+                $query->where(function ($builder) use ($netPaid) {
+                    $builder->whereRaw("{$netPaid} < orders.total_amount")
+                        ->orWhere('orders.total_amount', '<=', 0);
+                });
         }
     }
 }

@@ -119,12 +119,24 @@ const PaymentForm = forwardRef(({
   const getRemainingAmount = (source) => {
     if (!source) return 0
 
-    const totalAmount = Number(source.total_amount ?? source.total ?? 0)
-    const paidAmount = Number(source.paid_amount ?? source.paid ?? 0)
+    const totalAmount = Number(
+      source.totalAmount ??
+      source.total_amount ??
+      source.total ??
+      0
+    )
+    const paidAmount = Number(
+      source.paidAmount ??
+      source.paid_amount ??
+      source.paid ??
+      0
+    )
     const remaining = Number(
-      source.remaining_amount ??
-        source.remaining ??
+      source.remainingAmount ??
+        source.remaining_amount ??
+        source.balanceAmount ??
         source.balance_amount ??
+        source.remaining ??
         (totalAmount - paidAmount)
     )
 
@@ -138,15 +150,28 @@ const PaymentForm = forwardRef(({
       const response = await orderService.getOrderById(sanitizedId)
       if (response.success) {
         const fetchedOrder = response.data || {}
-        const totalAmount = Number(fetchedOrder.total_amount ?? fetchedOrder.total ?? 0)
-        const paidAmount = Number(fetchedOrder.paid_amount ?? fetchedOrder.paid ?? 0)
+        const totalAmount = Number(
+          fetchedOrder.totalAmount ??
+          fetchedOrder.total_amount ??
+          fetchedOrder.total ??
+          0
+        )
+        const paidAmount = Number(
+          fetchedOrder.paidAmount ??
+          fetchedOrder.paid_amount ??
+          fetchedOrder.paid ??
+          0
+        )
         const remainingAmount = getRemainingAmount(fetchedOrder)
 
         const normalizedOrder = {
           ...fetchedOrder,
           total_amount: totalAmount,
+          totalAmount,
           paid_amount: paidAmount,
+          paidAmount,
           remaining_amount: remainingAmount,
+          remainingAmount,
           balance_amount: remainingAmount
         }
 
@@ -190,8 +215,8 @@ const PaymentForm = forwardRef(({
     setFormData(prev => {
       if (prev.amount) return prev
 
-      const totalAmount = Number(order.total_amount ?? order.total ?? 0)
-      const paidAmount = Number(order.paid_amount ?? order.paid ?? 0)
+      const totalAmount = Number(order.totalAmount ?? order.total_amount ?? order.total ?? 0)
+      const paidAmount = Number(order.paidAmount ?? order.paid_amount ?? order.paid ?? 0)
       const balanceAmount = getRemainingAmount(order)
       const suggestion = prev.payment_type === 'debit' ? paidAmount : balanceAmount
 
@@ -242,7 +267,7 @@ const PaymentForm = forwardRef(({
         newErrors.amount = `Amount cannot exceed order balance of ${formatCurrency(balanceAmount)}`
       }
     } else if (formData.payment_type === 'debit' && order) {
-      const paidAmount = Number(order.paid_amount ?? order.paid ?? 0)
+      const paidAmount = Number(order.paidAmount ?? order.paid_amount ?? order.paid ?? 0)
       if (numericAmount > paidAmount) {
         newErrors.amount = `Debit amount cannot exceed total paid amount of ${formatCurrency(paidAmount)}`
       }
@@ -297,8 +322,8 @@ const PaymentForm = forwardRef(({
     { value: 'credit', label: 'Credit (Payment Received)' },
     { value: 'debit', label: 'Debit (Refund to Customer)' }
   ]
-  const totalAmount = order ? Number(order.total_amount ?? order.total ?? 0) : 0
-  const paidAmount = order ? Number(order.paid_amount ?? order.paid ?? 0) : 0
+  const totalAmount = order ? Number(order.totalAmount ?? order.total_amount ?? order.total ?? 0) : 0
+  const paidAmount = order ? Number(order.paidAmount ?? order.paid_amount ?? order.paid ?? 0) : 0
   const balanceAmount = order ? getRemainingAmount(order) : 0
   const amountHelpText = formData.payment_type === 'debit'
     ? (order ? `Max refund: ${formatCurrency(paidAmount)}` : 'Debit: amount returned to customer')

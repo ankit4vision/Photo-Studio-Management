@@ -575,10 +575,7 @@ class OrderService {
   getPaymentStatusOptions() {
     return [
       { value: 'pending', label: 'Pending', color: 'warning' },
-      { value: 'paid', label: 'Paid', color: 'success' },
-      { value: 'failed', label: 'Failed', color: 'danger' },
-      { value: 'refunded', label: 'Refunded', color: 'secondary' },
-      { value: 'partial', label: 'Partial', color: 'info' },
+      { value: 'completed', label: 'Completed', color: 'success' },
     ]
   }
 

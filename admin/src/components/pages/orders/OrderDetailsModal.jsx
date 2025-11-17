@@ -353,7 +353,8 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                       <table className="table table-hover">
                         <thead className="table-light">
                           <tr>
-                            <th>Date</th>
+                          <th>Payment #</th>
+                          <th>Date</th>
                             <th>Type</th>
                             <th>Amount</th>
                             <th>Method</th>
@@ -363,7 +364,10 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                         <tbody>
                           {payments.map((payment, index) => (
                             <tr key={payment.id || index}>
-                              <td>{formatDate(payment.paymentDate || payment.createdAt)}</td>
+                              <td className="fw-semibold text-primary">
+                                {payment.paymentNumber || payment.payment_number || (payment.id ? `#PAY${String(payment.id).padStart(3, '0')}` : '-')}
+                              </td>
+                              <td>{formatDate(payment.paymentDate || payment.payment_date || payment.createdAt)}</td>
                               <td>
                                 <Badge bg={payment.paymentType === 'debit' ? 'danger' : 'success'}>
                                   {(payment.paymentType || 'credit').toUpperCase()}

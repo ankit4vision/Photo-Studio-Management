@@ -116,19 +116,12 @@ class Order extends Model
 
     public function getPaymentStatusAttribute(): string
     {
-        $netPaid = $this->paid_amount;
-
-        if ($netPaid >= $this->total_amount && $this->total_amount > 0) {
-            return 'paid';
+        $total = (float) $this->total_amount;
+        if ($total <= 0) {
+            return 'pending';
         }
 
-        if ($netPaid > 0 && $netPaid < $this->total_amount) {
-            return 'partial';
-        }
-
-        return $netPaid === 0 && $this->payments()->where('payment_type', 'debit')->exists()
-            ? 'refunded'
-            : 'pending';
+        return $this->remaining_amount <= 0 ? 'completed' : 'pending';
     }
 
     public function getPaymentMethodAttribute(): ?string

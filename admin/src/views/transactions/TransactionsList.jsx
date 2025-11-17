@@ -78,8 +78,13 @@ const TransactionsList = () => {
           payment.customer_name ||
           ''
 
+        const paymentNumber = payment.paymentNumber ||
+          payment.payment_number ||
+          (payment.id ? `#PAY${String(payment.id).padStart(3, '0')}` : '-')
+
         return {
           ...payment,
+          paymentNumber,
           orderId: sanitizedOrderId,
           orderNumber: orderInfo.order_number ||
             orderInfo.orderNumber ||
@@ -238,6 +243,15 @@ const TransactionsList = () => {
   }
 
   const columns = [
+    {
+      key: 'paymentNumber',
+      label: 'Payment #',
+      render: (value, payment) => (
+        <div className="fw-semibold text-primary">
+          {payment.paymentNumber || payment.payment_number || (payment.id ? `#PAY${String(payment.id).padStart(3, '0')}` : '-')}
+        </div>
+      )
+    },
     {
       key: 'paymentDate',
       label: 'Payment Date',

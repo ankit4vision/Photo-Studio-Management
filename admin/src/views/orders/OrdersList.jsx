@@ -26,6 +26,8 @@ import OrderDetailsModal from '../../components/pages/orders/OrderDetailsModal'
 import PaymentForm from '../../components/pages/payments/PaymentForm'
 import { formatCurrency, formatDate } from '../../utils'
 
+const ORDER_STATUS_OPTIONS = ['pending', 'processing', 'completed', 'cancelled']
+
 const OrdersList = () => {
   const { success, error: showError } = useToast()
   const [orders, setOrders] = useState([])
@@ -47,6 +49,10 @@ const OrdersList = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [orderToDelete, setOrderToDelete] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [showStatusModal, setShowStatusModal] = useState(false)
+  const [statusModalOrder, setStatusModalOrder] = useState(null)
+  const [statusModalValue, setStatusModalValue] = useState('pending')
+  const [statusModalLoading, setStatusModalLoading] = useState(false)
   
   // Refs for form components
   const addFormRef = useRef()
@@ -299,9 +305,11 @@ const OrdersList = () => {
     if (!order) {
       return { total: 0, paid: 0, balance: 0 }
     }
-    const total = Number(order.total_amount ?? order.total ?? 0)
-    const paid = Number(order.paid_amount ?? order.paid ?? 0)
-    const balance = Math.max(0, total - paid)
+    const total = Number(order.totalAmount ?? order.total_amount ?? order.total ?? 0)
+    const paid = Number(order.paidAmount ?? order.paid_amount ?? order.paid ?? 0)
+    const balanceSource = order.remainingAmount ?? order.remaining_amount ?? order.balance_amount
+    const fallbackBalance = Math.max(0, total - paid)
+    const balance = Math.max(0, Number(balanceSource ?? fallbackBalance))
     return { total, paid, balance }
   }
 
@@ -319,6 +327,51 @@ const OrdersList = () => {
   const handleDeleteOrder = (order) => {
     setOrderToDelete(order)
     setShowDeleteModal(true)
+  }
+
+  const handleOpenStatusModal = (order) => {
+    if (!order) return
+    setStatusModalOrder(order)
+    setStatusModalValue(order.status || 'pending')
+    setShowStatusModal(true)
+  }
+
+  const handleCloseStatusModal = () => {
+    setShowStatusModal(false)
+    setStatusModalOrder(null)
+    setStatusModalValue('pending')
+    setStatusModalLoading(false)
+  }
+
+  const handleConfirmStatusChange = async () => {
+    if (!statusModalOrder) {
+      showError('No order selected')
+      return
+    }
+
+    const orderId = getOrderIdentifier(statusModalOrder) || statusModalOrder.id
+    if (!orderId) {
+      showError('Missing order identifier')
+      return
+    }
+
+    try {
+      setStatusModalLoading(true)
+      const response = await orderService.updateOrderStatus(orderId, statusModalValue)
+      if (response.success) {
+        success('Order status updated successfully')
+        handleCloseStatusModal()
+        fetchOrders()
+        fetchStats()
+      } else {
+        showError(response.message || 'Failed to update order status')
+      }
+    } catch (err) {
+      console.error('Error updating order status:', err)
+      showError('An error occurred while updating order status')
+    } finally {
+      setStatusModalLoading(false)
+    }
   }
 
   const closeDeleteModal = () => {
@@ -575,15 +628,14 @@ const OrdersList = () => {
     return statusMap[status] || 'secondary'
   }
 
-  const getPaymentStatusColor = (status) => {
-    const statusMap = {
-      pending: 'warning',
-      paid: 'success',
-      failed: 'danger',
-      refunded: 'secondary',
-      partial: 'info'
-    }
-    return statusMap[status] || 'secondary'
+  const getDerivedPaymentStatus = (order) => {
+    if (!order) return 'Pending'
+    const { balance } = getOrderFinancials(order)
+    return balance <= 0.01 ? 'Completed' : 'Pending'
+  }
+
+  const getDerivedPaymentVariant = (order) => {
+    return getDerivedPaymentStatus(order) === 'Completed' ? 'success' : 'warning'
   }
 
   const tableColumns = [
@@ -592,11 +644,11 @@ const OrdersList = () => {
       label: 'Order ID',
       render: (value, order) => {
         if (!order) return <div>No order data</div>
-        const orderId = order.id || order.orderNumber || 'N/A'
+        const orderId = order.orderNumber || order.id || 'N/A'
         return (
           <div>
             <div className="fw-bold">#{orderId}</div>
-            <small className="text-muted">{formatDate(order.order_date || order.orderDate)}</small>
+            <small className="text-muted">{formatDate(order.orderDate || order.order_date)}</small>
           </div>
         )
       }
@@ -606,8 +658,9 @@ const OrdersList = () => {
       label: 'Customer',
       render: (value, order) => {
         if (!order) return <div>No customer data</div>
-        const customerName = order.customer_name || 
-          (order.customer ? (order.customer.name || `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim()) : 'Unknown')
+        const customerName = order.customer 
+          ? (order.customer.name || `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim() || 'Unknown')
+          : 'Unknown'
         return (
           <div>
             <div className="fw-bold">{customerName}</div>
@@ -628,7 +681,7 @@ const OrdersList = () => {
           <div>
             <div className="fw-bold">{items.length} Package{items.length > 1 ? 's' : ''}</div>
             <small className="text-muted">
-              {items.slice(0, 2).map(item => item.package_name || 'Package').join(', ')}
+              {items.slice(0, 2).map(item => item.packageName || item.package_name || 'Package').join(', ')}
               {items.length > 2 && ` +${items.length - 2} more`}
             </small>
           </div>
@@ -640,9 +693,9 @@ const OrdersList = () => {
       label: 'Amounts',
       render: (value, order) => {
         if (!order) return <div>No amount data</div>
-        const totalAmount = order.total_amount || order.total || 0
-        const paidAmount = order.paid_amount || order.paid || 0
-        const balanceAmount = order.balance_amount || (totalAmount - paidAmount)
+        const totalAmount = order.totalAmount || order.total_amount || order.total || 0
+        const paidAmount = order.paidAmount || order.paid_amount || order.paid || 0
+        const balanceAmount = order.remainingAmount || order.remaining_amount || order.balance_amount || (totalAmount - paidAmount)
         
         return (
           <div>
@@ -660,14 +713,24 @@ const OrdersList = () => {
       label: 'Status',
       render: (value, order) => {
         if (!order) return <div>No status data</div>
-        const totalAmount = order.total_amount || order.total || 0
-        const paidAmount = order.paid_amount || order.paid || 0
-        const balanceAmount = order.balance_amount || (totalAmount - paidAmount)
-        const derivedStatus = balanceAmount > 0 ? 'pending' : 'completed'
+        const orderStatus = order.status || 'pending'
+        const paymentStatus = getDerivedPaymentStatus(order)
+        const paymentVariant = getDerivedPaymentVariant(order)
         return (
-          <Badge bg={getStatusColor(derivedStatus)}>
-            {derivedStatus.charAt(0).toUpperCase() + derivedStatus.slice(1)}
-          </Badge>
+          <div>
+            <div className="mb-1">
+              <small className="text-muted me-1">Order:</small>
+              <Badge bg={getStatusColor(orderStatus)}>
+                {orderStatus.charAt(0).toUpperCase() + orderStatus.slice(1)}
+              </Badge>
+            </div>
+            <div>
+              <small className="text-muted me-1">Payment:</small>
+              <Badge bg={paymentVariant}>
+                {paymentStatus}
+              </Badge>
+            </div>
+          </div>
         )
       }
     },
@@ -702,6 +765,14 @@ const OrdersList = () => {
               title="Edit Order"
             >
               <FontAwesomeIcon icon={faEdit} />
+            </Button>
+            <Button
+              variant="outline-warning"
+              size="sm"
+              onClick={() => handleOpenStatusModal(order)}
+              title="Update Order Status"
+            >
+              <FontAwesomeIcon icon={faCheck} />
             </Button>
             <Button
               variant="outline-secondary"
@@ -1032,6 +1103,33 @@ const OrdersList = () => {
           onSubmit={handlePaymentFormSubmit}
         />
       </FormModal>
+
+      <Modal
+        visible={showStatusModal}
+        onClose={handleCloseStatusModal}
+        title={`Update Order Status${statusModalOrder ? ` - #${getOrderDisplayNumber(statusModalOrder)}` : ''}`}
+        onConfirm={handleConfirmStatusChange}
+        confirmText="Update Status"
+        cancelText="Cancel"
+        loading={statusModalLoading}
+      >
+        <Form.Group className="mb-3" controlId="orderStatusSelect">
+          <Form.Label>Select new status</Form.Label>
+          <FormSelect
+            value={statusModalValue}
+            onChange={(event) => setStatusModalValue(event.target.value)}
+          >
+            {ORDER_STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </option>
+            ))}
+          </FormSelect>
+        </Form.Group>
+        <p className="text-muted mb-0">
+          Use this action to manually override the order status when needed.
+        </p>
+      </Modal>
 
       <Modal
         visible={showDeleteModal}
