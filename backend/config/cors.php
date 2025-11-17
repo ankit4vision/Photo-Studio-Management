@@ -20,6 +20,10 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
+        'https://admin.lvclicks.in',
+        'https://lvclicks.in',
+        'http://admin.lvclicks.in',
+        'http://lvclicks.in',
         'http://localhost:3000',
         'http://localhost:5173',
         'http://localhost:5174',
