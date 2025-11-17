@@ -8,6 +8,7 @@ use App\Services\EmailService;
 use App\Services\S3Service;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 class SettingController extends Controller
 {
@@ -206,6 +207,98 @@ class SettingController extends Controller
                 ->map(fn (Setting $setting) => $this->formatSetting($setting))
                 ->values(),
         ]);
+    }
+
+    /**
+     * Upload business logo.
+     */
+    public function uploadLogo(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'logo' => 'required|image|mimes:jpeg,jpg,png,gif,webp|max:2048',
+                'key' => 'required|string',
+                'section' => 'required|string',
+            ]);
+
+            $file = $request->file('logo');
+            $key = $validated['key'];
+            $section = $validated['section'];
+
+            // Generate unique filename
+            $filename = 'logos/business_logo_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+
+            // Delete old logo if exists
+            $existingSetting = Setting::where('key', $key)
+                ->where('group', $section)
+                ->first();
+
+            if ($existingSetting && $existingSetting->value) {
+                $oldPath = $existingSetting->value;
+                // Extract path from URL if it's a full URL
+                $oldStoragePath = $oldPath;
+                if (strpos($oldPath, '/storage/') !== false) {
+                    $oldStoragePath = 'logos/' . basename(parse_url($oldPath, PHP_URL_PATH));
+                } elseif (strpos($oldPath, 'storage/') === 0) {
+                    $oldStoragePath = $oldPath;
+                } elseif (strpos($oldPath, 'logos/') === 0) {
+                    $oldStoragePath = $oldPath;
+                }
+                
+                // Try to delete old file
+                if (Storage::disk('public')->exists($oldStoragePath)) {
+                    Storage::disk('public')->delete($oldStoragePath);
+                }
+            }
+
+            // Store the file
+            $path = Storage::disk('public')->putFileAs('logos', $file, basename($filename));
+
+            // Get the public URL
+            $logoUrl = Storage::disk('public')->url($path);
+
+            // Save or update the setting
+            $setting = Setting::updateOrCreate(
+                [
+                    'key' => $key,
+                    'group' => $section,
+                ],
+                [
+                    'value' => $logoUrl,
+                    'description' => 'Business logo URL',
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Logo uploaded successfully',
+                'data' => [
+                    'id' => $setting->id,
+                    'key' => $setting->key,
+                    'value' => $setting->value,
+                    'logo_url' => $logoUrl,
+                    'section' => $setting->group,
+                ],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Logo upload error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload logo: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

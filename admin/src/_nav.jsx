@@ -78,6 +78,7 @@ const _nav = [
     to: '/payments',
     icon: <CIcon icon={cilCreditCard} customClassName="nav-icon" />,
     permission: PERMISSIONS.PAYMENT_READ,
+    disabled: true,
   },
   {
     component: CNavTitle,

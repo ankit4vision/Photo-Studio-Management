@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import {
@@ -15,6 +15,7 @@ import { AppSidebarNav } from './AppSidebarNav.jsx'
 
 // Replace CoreUI SVG logo with custom image logo
 import logoImg from 'src/assets/logo/logo-transprant.png'
+import { settingsService } from '../../services/settingsService'
 
 // sidebar nav config
 import navigation from '../../_nav.jsx'
@@ -25,6 +26,22 @@ const AppSidebar = () => {
   const unfoldable = useSelector((state) => state.sidebarUnfoldable)
   const sidebarShow = useSelector((state) => state.sidebarShow)
   const { hasPermission } = usePermissions()
+  const [businessLogo, setBusinessLogo] = useState(null)
+
+  useEffect(() => {
+    const fetchBusinessLogo = async () => {
+      try {
+        const response = await settingsService.getSettingByKey('business_logo', 'Business Information', true)
+        if (response.success && response.data && response.data.value) {
+          setBusinessLogo(response.data.value)
+        }
+      } catch (error) {
+        // Silently fail - use default logo
+        console.warn('Failed to fetch business logo:', error)
+      }
+    }
+    fetchBusinessLogo()
+  }, [])
 
   const filterNavItems = (items = []) => {
     return items
@@ -63,9 +80,15 @@ const AppSidebar = () => {
       <CSidebarHeader className="border-bottom">
         <CSidebarBrand to="/" className="sidebar-brand-custom">
           <img
-            src={logoImg}
+            src={businessLogo || logoImg}
             alt="Photo Studio Management App"
             className="sidebar-brand-logo-full"
+            onError={(e) => {
+              // Fallback to default logo if business logo fails to load
+              if (e.target.src !== logoImg) {
+                e.target.src = logoImg
+              }
+            }}
           />
         </CSidebarBrand>
         <CCloseButton

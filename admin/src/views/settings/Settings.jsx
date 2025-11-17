@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Container, Row, Col, Button, Spinner, Form, FormControl, FormSelect, FormText, Alert } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faBuilding, faEnvelope, faGlobe, faSave, faCheckCircle, faFileInvoice, faCloud, faPaperPlane, faCog } from '@fortawesome/free-solid-svg-icons'
+import { faBuilding, faEnvelope, faGlobe, faSave, faCheckCircle, faFileInvoice, faCloud, faPaperPlane, faCog, faImage, faTimes } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from '../../components'
 import { settingsService } from '../../services/settingsService'
 import { usePermissions } from '../../hooks'
@@ -26,7 +26,8 @@ const Settings = () => {
       business_phone: '',
       business_website: '',
       gstNumber: '',
-      businessAddress: ''
+      businessAddress: '',
+      business_logo: ''
     },
     invoiceSettings: {
       invoice_prefix: 'INV'
@@ -64,6 +65,8 @@ const Settings = () => {
   const [autoSaved, setAutoSaved] = useState({}) // Track which fields were recently saved
   const [testEmailAddress, setTestEmailAddress] = useState('')
   const [sendingTestEmail, setSendingTestEmail] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [logoPreview, setLogoPreview] = useState(null)
   
   const isInitialLoadRef = useRef(true) // Track if we're still loading initial data
   
@@ -75,6 +78,7 @@ const Settings = () => {
     'businessInfo.business_website': { key: 'business_website', section: 'Business Information' },
     'businessInfo.gstNumber': { key: 'gstNumber', section: 'Business Information' },
     'businessInfo.businessAddress': { key: 'businessAddress', section: 'Business Information' },
+    'businessInfo.business_logo': { key: 'business_logo', section: 'Business Information' },
     'invoiceSettings.invoice_prefix': { key: 'invoice_prefix', section: 'Invoice Settings' },
     'emailSettings.mailer': { key: 'mailer', section: 'Email Settings' },
     'emailSettings.host': { key: 'host', section: 'Email Settings' },
@@ -111,6 +115,10 @@ const Settings = () => {
           // transformSettingsToForm handles empty/null/undefined responses and returns defaults
           const transformedData = settingsService.transformSettingsToForm(response.data)
           setSettingsData(transformedData)
+          // Set logo preview if logo exists
+          if (transformedData.businessInfo?.business_logo) {
+            setLogoPreview(transformedData.businessInfo.business_logo)
+          }
           // Mark initial load as complete
           isInitialLoadRef.current = false
         } else {
@@ -446,6 +454,54 @@ const Settings = () => {
           </Form.Group>
         </Col>
       </Row>
+      <Row>
+        <Col md={12}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">Business Logo</Form.Label>
+            <div className="d-flex flex-column gap-3">
+              {logoPreview && (
+                <div className="position-relative d-inline-block" style={{ maxWidth: '200px' }}>
+                  <img
+                    src={logoPreview}
+                    alt="Business Logo"
+                    className="img-thumbnail"
+                    style={{ maxHeight: '150px', maxWidth: '200px', objectFit: 'contain' }}
+                  />
+                  {canEditSettings && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      className="position-absolute top-0 end-0"
+                      onClick={handleRemoveLogo}
+                      style={{ margin: '5px' }}
+                    >
+                      <FontAwesomeIcon icon={faTimes} />
+                    </Button>
+                  )}
+                </div>
+              )}
+              <div>
+                <FormControl
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  onChange={handleLogoUpload}
+                  disabled={uploadingLogo || isReadOnly}
+                  className="border-2"
+                />
+                <FormText className="text-muted">
+                  Upload a logo for your business (JPEG, PNG, GIF, or WebP, max 2MB)
+                </FormText>
+                {uploadingLogo && (
+                  <div className="mt-2">
+                    <Spinner size="sm" className="me-2" variant="primary" />
+                    <span className="text-muted">Uploading logo...</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Form.Group>
+        </Col>
+      </Row>
     </div>
   )
 
@@ -566,6 +622,85 @@ const Settings = () => {
       console.error('Save email settings error:', err)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleLogoUpload = async (e) => {
+    if (!canEditSettings) {
+      warning && warning('You do not have permission to modify settings.', { title: 'Read only' })
+      return
+    }
+
+    const file = e.target.files?.[0]
+    if (!file) {
+      return
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      error('Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.')
+      return
+    }
+
+    // Validate file size (max 2MB)
+    const maxSize = 2 * 1024 * 1024 // 2MB
+    if (file.size > maxSize) {
+      error('File size too large. Please upload an image smaller than 2MB.')
+      return
+    }
+
+    setUploadingLogo(true)
+    try {
+      const response = await settingsService.uploadLogo(file)
+      if (response.success) {
+        const logoUrl = response.data?.logo_url || response.data?.value
+        setSettingsData(prev => ({
+          ...prev,
+          businessInfo: {
+            ...prev.businessInfo,
+            business_logo: logoUrl
+          }
+        }))
+        setLogoPreview(logoUrl)
+        success('Business logo uploaded successfully!')
+      } else {
+        error(response.message || 'Failed to upload logo')
+      }
+    } catch (err) {
+      error('Failed to upload logo. Please try again.')
+      console.error('Logo upload error:', err)
+    } finally {
+      setUploadingLogo(false)
+      // Reset file input
+      e.target.value = ''
+    }
+  }
+
+  const handleRemoveLogo = async () => {
+    if (!canEditSettings) {
+      warning && warning('You do not have permission to modify settings.', { title: 'Read only' })
+      return
+    }
+
+    try {
+      const response = await settingsService.saveSetting('business_logo', 'Business Information', '')
+      if (response.success) {
+        setSettingsData(prev => ({
+          ...prev,
+          businessInfo: {
+            ...prev.businessInfo,
+            business_logo: ''
+          }
+        }))
+        setLogoPreview(null)
+        success('Business logo removed successfully!')
+      } else {
+        error(response.message || 'Failed to remove logo')
+      }
+    } catch (err) {
+      error('Failed to remove logo. Please try again.')
+      console.error('Remove logo error:', err)
     }
   }
 

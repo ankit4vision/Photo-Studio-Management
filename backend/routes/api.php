@@ -133,6 +133,7 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         Route::middleware('permission:edit_setting')->group(function () {
+            Route::post('/upload-logo', [SettingController::class, 'uploadLogo']);
             Route::post('/', [SettingController::class, 'store']);
             Route::put('/key/{key}', [SettingController::class, 'updateByKey']);
             Route::put('/{setting}', [SettingController::class, 'update']);

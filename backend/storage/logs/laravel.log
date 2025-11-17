@@ -4984,3 +4984,7 @@ Did you mean one of these?
 #54 E:\\management system\\Photo-Studio-Management\\backend\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\resources\\server.php(16): require_once('E:\\\\management s...')
 #55 {main}
 "} 
+[2025-11-17 13:24:58] local.INFO: Attempting to send email {"to":"ketulpatel29092@gmail.com","type":"test","from":"ketulpatel.codexaa29@gmail.com","mailer":"smtp","host":"smtp.gmail.com","port":587,"username":"ketulpatel.codexaa29@gmail.com"} 
+[2025-11-17 13:25:07] local.INFO: Email sent successfully {"to":"ketulpatel29092@gmail.com","type":"test"} 
+[2025-11-17 13:27:01] local.INFO: Attempting to send email {"to":"ketulpatel29092@gmail.com","type":"test","from":"ketulpatel.codexaa29@gmail.com","mailer":"smtp","host":"smtp.gmail.com","port":587,"username":"ketulpatel.codexaa29@gmail.com"} 
+[2025-11-17 13:27:06] local.INFO: Email sent successfully {"to":"ketulpatel29092@gmail.com","type":"test"} 

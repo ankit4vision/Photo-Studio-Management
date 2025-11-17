@@ -45,6 +45,30 @@ class SettingsService {
     }
   }
 
+  // Upload business logo
+  async uploadLogo(file) {
+    try {
+      const formData = new FormData()
+      formData.append('logo', file)
+      formData.append('key', 'business_logo')
+      formData.append('section', 'Business Information')
+
+      const response = await apiClient.post('/global-settings/upload-logo', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      
+      return {
+        success: true,
+        data: response.data,
+        message: 'Logo uploaded successfully'
+      }
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
   // Send test email
   async sendTestEmail(email) {
     try {
@@ -276,6 +300,7 @@ class SettingsService {
         { key: 'business_website', section: 'Business Information', formPath: ['businessInfo', 'business_website'], type: 'string' },
         { key: 'gstNumber', section: 'Business Information', formPath: ['businessInfo', 'gstNumber'], type: 'string' },
         { key: 'businessAddress', section: 'Business Information', formPath: ['businessInfo', 'businessAddress'], type: 'string' },
+        { key: 'business_logo', section: 'Business Information', formPath: ['businessInfo', 'business_logo'], type: 'string' },
         // Invoice Settings
         { key: 'invoice_prefix', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_prefix'], type: 'string' },
         // Email Settings
@@ -445,6 +470,7 @@ class SettingsService {
         business_phone: '',
         gstNumber: '',
         businessAddress: '',
+        business_logo: '',
       },
       invoiceSettings: {
         invoice_prefix: 'INV',
@@ -486,6 +512,7 @@ class SettingsService {
       'business_website': { section: 'Business Information', field: 'businessInfo', prop: 'business_website', type: 'string', useDefaultIfEmpty: false },
       'gstNumber': { section: 'Business Information', field: 'businessInfo', prop: 'gstNumber', type: 'string', useDefaultIfEmpty: false },
       'businessAddress': { section: 'Business Information', field: 'businessInfo', prop: 'businessAddress', type: 'string', useDefaultIfEmpty: false },
+      'business_logo': { section: 'Business Information', field: 'businessInfo', prop: 'business_logo', type: 'string', useDefaultIfEmpty: false },
       'invoice_prefix': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_prefix', type: 'string', useDefaultIfEmpty: true },
       'mailer': { section: 'Email Settings', field: 'emailSettings', prop: 'mailer', type: 'string', useDefaultIfEmpty: true },
       'host': { section: 'Email Settings', field: 'emailSettings', prop: 'host', type: 'string', useDefaultIfEmpty: false },
