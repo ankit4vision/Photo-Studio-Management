@@ -68,8 +68,6 @@ This document identifies redundant and calculated columns that should be removed
 | `discount` | Discount amount |
 | `total_amount` | Final amount (subtotal - discount) |
 | `status` | Order status (pending/processing/completed/cancelled) |
-| `payment_status` | Payment status (pending/paid/partial/refunded) |
-| `payment_method` | Payment method (if paid upfront) |
 | `notes` | Order notes |
 | `timeline` | Order status timeline (JSON) |
 | `created_at` | Timestamp |
@@ -81,6 +79,8 @@ This document identifies redundant and calculated columns that should be removed
 |--------|---------------------|-------------|
 | `paid_amount` | `payments` table | `SUM(payments.amount WHERE order_id = id AND payment_type = 'credit') - SUM(payments.amount WHERE order_id = id AND payment_type = 'debit')` |
 | `remaining_amount` | `total_amount` - `paid_amount` | `total_amount - paid_amount` (calculated) |
+| `payment_status` | `payments` table | Derived from paid vs total (`paid` / `partial` / `pending` / `refunded`) |
+| `payment_method` | `payments` table | Should reflect latest payment/receipt instead of static column |
 
 **Note on `subtotal`:**
 - `subtotal` can be calculated from `order_items`, but it's reasonable to keep it for performance
@@ -88,15 +88,15 @@ This document identifies redundant and calculated columns that should be removed
 
 **Impact:**
 - Remove `recalculateRemainingAmount()` method
-- Remove `recalculatePaymentStatus()` method (or simplify to only update `payment_status`)
-- `payment_status` should be calculated based on payments relationship
-- Remove `paid_amount` and `remaining_amount` from fillable array
+- Remove `recalculatePaymentStatus()` method (no longer needed)
+- Remove `paid_amount`, `remaining_amount`, `payment_status`, and `payment_method` from fillable array
+- Expose `payment_status` and `payment_method` via accessors (latest payment) or reporting queries
 
 ---
 
 ### 3. `order_items` Table
 
-#### ✅ KEEP (All Fields - No Redundancy)
+#### ✅ KEEP
 | Column | Reason |
 |--------|--------|
 | `id` | Primary key |
@@ -106,15 +106,17 @@ This document identifies redundant and calculated columns that should be removed
 | `unit_price` | Price at time of order |
 | `total_price` | Calculated: `quantity × unit_price` |
 | `package_name` | Snapshot of package name (for historical reference) |
-| `package_type` | Snapshot of package type (for historical reference) |
 | `created_at` | Timestamp |
 | `updated_at` | Timestamp |
 
+#### ❌ REMOVE
+| Column | Reason |
+|--------|--------|
+| `package_type` | Duplicates `packages.package_type`; removing keeps classification in one place. If historical type is needed, store in audit log or derive from package relationship. |
+
 **Note:**
 - `total_price` is calculated but should remain (auto-calculated on save)
-- Package snapshots are important for historical data integrity
-
-**No changes needed** ✅
+- `package_name` snapshot stays for historical context, but `package_type` is removed to avoid redundant enums.
 
 ---
 
@@ -150,12 +152,11 @@ This document identifies redundant and calculated columns that should be removed
 
 ### 5. `packages` Table
 
-#### ✅ KEEP (All Fields - No Redundancy)
+#### ✅ KEEP
 | Column | Reason |
 |--------|--------|
 | `id` | Primary key |
 | `package_name` | Package name |
-| `package_type` | Package type (Album/PhotoShoot/Editing/Video) |
 | `default_price` | Default price |
 | `description` | Package description |
 | `status` | active/inactive |
@@ -163,7 +164,10 @@ This document identifies redundant and calculated columns that should be removed
 | `updated_at` | Timestamp |
 | `deleted_at` | Soft delete |
 
-**No changes needed** ✅
+#### ❌ REMOVE
+| Column | Reason |
+|--------|--------|
+| `package_type` | Fixed enum (`Album/PhotoShoot/...`) forces schema edits whenever a new service is added. Remove and replace with a dedicated categories table or tag mapping later, keeping this table focused on pricing/details only. |
 
 ---
 
@@ -320,11 +324,19 @@ This document identifies redundant and calculated columns that should be removed
 6. ❌ `wallet_balance`
 7. ❌ `last_order_date`
 
-#### `orders` Table (2 columns)
+#### `orders` Table (4 columns)
 1. ❌ `paid_amount`
 2. ❌ `remaining_amount`
+3. ❌ `payment_status`
+4. ❌ `payment_method`
 
-### Total Columns to Remove: **9 columns**
+#### `order_items` Table (1 column)
+1. ❌ `package_type`
+
+#### `packages` Table (1 column)
+1. ❌ `package_type`
+
+### Total Columns to Remove: **13 columns**
 
 ---
 
@@ -394,15 +406,34 @@ public function getRemainingAmountAttribute()
 
 public function getPaymentStatusAttribute()
 {
-    $paid = $this->paid_amount;
     $total = $this->total_amount;
-    
-    if ($paid >= $total) {
+    $paid = $this->payments()
+        ->where('payment_type', 'credit')
+        ->sum('amount');
+    $refunded = $this->payments()
+        ->where('payment_type', 'debit')
+        ->sum('amount');
+
+    $netPaid = max(0, $paid - $refunded);
+
+    if ($netPaid >= $total && $total > 0) {
         return 'paid';
-    } elseif ($paid > 0) {
+    }
+
+    if ($netPaid > 0 && $netPaid < $total) {
         return 'partial';
     }
-    return 'pending';
+
+    return $refunded > 0 ? 'refunded' : 'pending';
+}
+
+public function getPaymentMethodAttribute()
+{
+    $latestPayment = $this->payments()
+        ->latest('payment_date')
+        ->first();
+
+    return $latestPayment?->payment_method ?? null;
 }
 ```
 

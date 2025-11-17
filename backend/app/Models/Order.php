@@ -26,11 +26,7 @@ class Order extends Model
         'subtotal',
         'discount',
         'total_amount',
-        'paid_amount',
-        'remaining_amount',
         'status',
-        'payment_status',
-        'payment_method',
         'notes',
         'timeline',
     ];
@@ -46,36 +42,9 @@ class Order extends Model
         'subtotal' => 'decimal:2',
         'discount' => 'decimal:2',
         'total_amount' => 'decimal:2',
-        'paid_amount' => 'decimal:2',
-        'remaining_amount' => 'decimal:2',
         'timeline' => 'array',
         'deleted_at' => 'datetime',
     ];
-
-    /**
-     * Boot the model.
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        // Update customer stats when order is created
-        static::created(function ($order) {
-            $order->updateCustomerStats();
-        });
-
-        // Update customer stats when order is updated
-        static::updated(function ($order) {
-            $order->updateCustomerStats();
-        });
-
-        // Update customer stats when order is deleted
-        static::deleted(function ($order) {
-            if ($order->customer) {
-                $order->customer->recalculateStats();
-            }
-        });
-    }
 
     /**
      * Get the customer that owns the order.
@@ -102,55 +71,6 @@ class Order extends Model
     }
 
     /**
-     * Update customer statistics when order changes.
-     */
-    public function updateCustomerStats(): void
-    {
-        if ($this->customer) {
-            $this->customer->recalculateStats();
-        }
-    }
-
-    /**
-     * Recalculate remaining amount and payment status\.
-     */
-    public function recalculateRemainingAmount(): void
-    {
-        $this->remaining_amount = $this->total_amount - $this->paid_amount;
-        
-        // Update payment status based on balance
-        if ($this->remaining_amount <= 0) {
-            $this->payment_status = 'paid';
-        } elseif ($this->paid_amount > 0) {
-            $this->payment_status = 'partial';
-        } else {
-            $this->payment_status = 'pending';
-        }
-    }
-
-    /**
-     * Recalculate payment status from payments.
-     */
-    public function recalculatePaymentStatus(): void
-    {
-        // Calculate paid_amount from payments
-        $totalPaid = $this->payments()
-            ->where('payment_type', 'credit')
-            ->sum('amount');
-        
-        $totalRefunded = $this->payments()
-            ->where('payment_type', 'debit')
-            ->sum('amount');
-        
-        $this->paid_amount = max(0, $totalPaid - $totalRefunded);
-        $this->recalculateRemainingAmount();
-        $this->save();
-        
-        // Update customer stats
-        $this->updateCustomerStats();
-    }
-
-    /**
      * Get the payments for the order.
      */
     public function payments()
@@ -165,7 +85,6 @@ class Order extends Model
     {
         $this->subtotal = $this->items()->sum('total_price');
         $this->total_amount = $this->subtotal - $this->discount;
-        $this->recalculateRemainingAmount();
         $this->save();
     }
 
@@ -177,11 +96,48 @@ class Order extends Model
         return $query->where('status', $status);
     }
 
-    /**
-     * Scope a query to only include orders by payment status.
-     */
-    public function scopeByPaymentStatus($query, $paymentStatus)
+    public function getPaidAmountAttribute(): float
     {
-        return $query->where('payment_status', $paymentStatus);
+        $credits = $this->payments()
+            ->where('payment_type', 'credit')
+            ->sum('amount');
+
+        $debits = $this->payments()
+            ->where('payment_type', 'debit')
+            ->sum('amount');
+
+        return (float) max(0, $credits - $debits);
+    }
+
+    public function getRemainingAmountAttribute(): float
+    {
+        return (float) max(0, $this->total_amount - $this->paid_amount);
+    }
+
+    public function getPaymentStatusAttribute(): string
+    {
+        $netPaid = $this->paid_amount;
+
+        if ($netPaid >= $this->total_amount && $this->total_amount > 0) {
+            return 'paid';
+        }
+
+        if ($netPaid > 0 && $netPaid < $this->total_amount) {
+            return 'partial';
+        }
+
+        return $netPaid === 0 && $this->payments()->where('payment_type', 'debit')->exists()
+            ? 'refunded'
+            : 'pending';
+    }
+
+    public function getPaymentMethodAttribute(): ?string
+    {
+        $latestPayment = $this->payments()
+            ->orderByDesc('payment_date')
+            ->orderByDesc('id')
+            ->first();
+
+        return $latestPayment?->payment_method;
     }
 }

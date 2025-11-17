@@ -13,20 +13,20 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('packages', function (Blueprint $table) {
+        Schema::create('branches', function (Blueprint $table) {
             $table->id();
-            $table->string('package_name');
-            $table->enum('package_type', ['Album', 'PhotoShoot', 'Editing', 'Video']);
-            $table->decimal('default_price', 10, 2);
-            $table->text('description')->nullable();
+            $table->string('branch_code')->unique();
+            $table->string('branch_name');
+            $table->string('email')->nullable();
+            $table->string('contact_number', 50)->nullable();
+            $table->string('address');
+            $table->string('city')->nullable();
+            $table->string('state')->nullable();
+            $table->string('country')->nullable();
+            $table->string('postal_code', 20)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
             $table->softDeletes();
-            
-            // Indexes for better query performance
-            $table->index('package_type');
-            $table->index('status');
-            $table->index('created_at');
         });
     }
 
@@ -37,6 +37,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('packages');
+        Schema::dropIfExists('branches');
     }
 };

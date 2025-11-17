@@ -20,8 +20,6 @@ class OrderItemResource extends JsonResource
             'package_id' => $this->package_id,
             'package_name' => $this->package_name ?? $this->package?->package_name,
             'packageName' => $this->package_name ?? $this->package?->package_name,
-            'package_type' => $this->package_type ?? $this->package?->package_type,
-            'packageType' => $this->package_type ?? $this->package?->package_type,
             'quantity' => $this->quantity,
             'qty' => $this->quantity,
             'unit_price' => (float) $this->unit_price,

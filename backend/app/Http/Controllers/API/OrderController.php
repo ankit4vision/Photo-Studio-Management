@@ -24,7 +24,7 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Order::with(['customer', 'branch', 'items.package']);
+        $query = Order::with(['customer', 'branch', 'items.package', 'payments']);
 
         if ($search = $request->input('search')) {
             $query->where(function ($builder) use ($search) {
@@ -39,10 +39,6 @@ class OrderController extends Controller
 
         if ($status = $request->input('status')) {
             $query->where('status', $status);
-        }
-
-        if ($paymentStatus = $request->input('payment_status') ?? $request->input('paymentStatus')) {
-            $query->where('payment_status', $paymentStatus);
         }
 
         if ($customerId = $request->input('customer_id') ?? $request->input('customerId')) {
@@ -72,7 +68,16 @@ class OrderController extends Controller
 
         // Filter by payment method
         if ($paymentMethod = $request->input('payment_method') ?? $request->input('paymentMethod')) {
-            $query->where('payment_method', $paymentMethod);
+            $query->whereExists(function ($sub) use ($paymentMethod) {
+                $sub->selectRaw(1)
+                    ->from('payments')
+                    ->whereColumn('payments.order_id', 'orders.id')
+                    ->where('payment_method', $paymentMethod);
+            });
+        }
+
+        if ($paymentStatus = $request->input('payment_status') ?? $request->input('paymentStatus')) {
+            $this->applyPaymentStatusFilter($query, $paymentStatus);
         }
 
         // Filter by amount ranges
@@ -85,11 +90,11 @@ class OrderController extends Controller
         }
 
         if ($minPaidAmount = $request->input('min_paid_amount') ?? $request->input('minPaidAmount')) {
-            $query->where('paid_amount', '>=', $minPaidAmount);
+            $query->whereRaw($this->netPaidExpression() . ' >= ?', [$minPaidAmount]);
         }
 
         if ($maxPaidAmount = $request->input('max_paid_amount') ?? $request->input('maxPaidAmount')) {
-            $query->where('paid_amount', '<=', $maxPaidAmount);
+            $query->whereRaw($this->netPaidExpression() . ' <= ?', [$maxPaidAmount]);
         }
 
         $minRemainingAmount = $request->input('min_remaining_amount')
@@ -97,7 +102,7 @@ class OrderController extends Controller
             ?? $request->input('min_balance_amount')
             ?? $request->input('minBalanceAmount');
         if ($minRemainingAmount !== null) {
-            $query->where('remaining_amount', '>=', $minRemainingAmount);
+            $query->whereRaw($this->remainingAmountExpression() . ' >= ?', [$minRemainingAmount]);
         }
 
         $maxRemainingAmount = $request->input('max_remaining_amount')
@@ -105,13 +110,13 @@ class OrderController extends Controller
             ?? $request->input('max_balance_amount')
             ?? $request->input('maxBalanceAmount');
         if ($maxRemainingAmount !== null) {
-            $query->where('remaining_amount', '<=', $maxRemainingAmount);
+            $query->whereRaw($this->remainingAmountExpression() . ' <= ?', [$maxRemainingAmount]);
         }
 
         $pagination = $this->buildPaginator(
             $request,
             $query,
-            ['order_number', 'order_date', 'due_date', 'total_amount', 'paid_amount', 'remaining_amount', 'status', 'payment_status', 'payment_method', 'created_at'],
+            ['order_number', 'order_date', 'due_date', 'total_amount', 'status', 'created_at'],
             ['column' => 'created_at', 'direction' => 'desc']
         );
 
@@ -160,9 +165,6 @@ class OrderController extends Controller
                 $data['total_amount'] = $data['subtotal'] - ($data['discount'] ?? 0);
             }
 
-            // Set remaining_amount
-            $data['remaining_amount'] = max(0, $data['total_amount'] - ($data['paid_amount'] ?? 0));
-
             // Create order
             $order = Order::create($data);
 
@@ -177,7 +179,6 @@ class OrderController extends Controller
                     'unit_price' => $itemData['unit_price'],
                     'total_price' => $itemData['quantity'] * $itemData['unit_price'],
                     'package_name' => $package?->package_name,
-                    'package_type' => $package?->package_type,
                 ]);
             }
 
@@ -186,7 +187,7 @@ class OrderController extends Controller
 
             DB::commit();
 
-            $order->load('customer', 'branch', 'items.package');
+            $order->load('customer', 'branch', 'items.package', 'payments');
 
             return (new OrderResource($order))
                 ->additional([
@@ -209,7 +210,7 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        $order->load('customer', 'branch', 'items.package');
+        $order->load('customer', 'branch', 'items.package', 'payments');
 
         return (new OrderResource($order))
             ->additional([
@@ -231,16 +232,7 @@ class OrderController extends Controller
 
             // Update order
             if (!empty($data)) {
-                // Recalculate remaining amount if amounts changed
-                if (isset($data['total_amount']) || isset($data['paid_amount'])) {
-                    $total = $data['total_amount'] ?? $order->total_amount;
-                    $paid = $data['paid_amount'] ?? $order->paid_amount;
-                    $data['remaining_amount'] = max(0, $total - $paid);
-                }
-
                 $order->update($data);
-                $order->recalculateRemainingAmount();
-                $order->save();
             }
 
             // Update items if provided
@@ -259,7 +251,6 @@ class OrderController extends Controller
                         'unit_price' => $itemData['unit_price'],
                         'total_price' => $itemData['quantity'] * $itemData['unit_price'],
                         'package_name' => $package?->package_name,
-                        'package_type' => $package?->package_type,
                     ]);
                 }
 
@@ -269,7 +260,7 @@ class OrderController extends Controller
 
             DB::commit();
 
-            $order->load('customer', 'branch', 'items.package');
+        $order->load('customer', 'branch', 'items.package', 'payments');
 
             return (new OrderResource($order))
                 ->additional([
@@ -309,7 +300,7 @@ class OrderController extends Controller
 
         $order->update(['status' => $request->status]);
 
-        $order->load('customer', 'branch', 'items.package');
+        $order->load('customer', 'branch', 'items.package', 'payments');
 
         return (new OrderResource($order))
             ->additional([
@@ -319,35 +310,44 @@ class OrderController extends Controller
     }
 
     /**
-     * Update payment status.
+     * Record a payment for the order (legacy endpoint compatibility).
      */
     public function updatePaymentStatus(Request $request, Order $order)
     {
-        $request->validate([
-            'payment_status' => ['required', 'in:pending,paid,partial,refunded'],
-            'paid_amount' => ['nullable', 'numeric', 'min:0'],
+        $validated = $request->validate([
+            'payment_type' => ['required', 'in:credit,debit'],
+            'amount' => ['nullable', 'numeric', 'min:0.01'],
             'payment_method' => ['nullable', 'string', 'in:cash,upi,card,bank_transfer'],
+            'payment_date' => ['nullable', 'date'],
+            'remarks' => ['nullable', 'string'],
         ]);
 
-        if ($request->has('paid_amount')) {
-            $order->paid_amount = $request->paid_amount;
+        $amount = $validated['amount'] ?? $order->remaining_amount;
+
+        if ($amount <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nothing to record. Provide an amount greater than zero.',
+            ], 422);
         }
 
-        $order->payment_status = $request->payment_status;
-        
-        if ($request->has('payment_method')) {
-            $order->payment_method = $request->payment_method;
-        }
+        $payment = $order->payments()->create([
+            'customer_id' => $order->customer_id,
+            'branch_id' => $order->branch_id,
+            'payment_date' => $validated['payment_date'] ?? now()->toDateString(),
+            'payment_type' => $validated['payment_type'],
+            'amount' => $amount,
+            'payment_method' => $validated['payment_method'] ?? 'cash',
+            'remarks' => $validated['remarks'] ?? null,
+        ]);
 
-        $order->recalculateRemainingAmount();
-        $order->save();
-
-        $order->load('customer', 'branch', 'items.package');
+        $order->refresh()->load('customer', 'branch', 'items.package', 'payments');
 
         return (new OrderResource($order))
             ->additional([
                 'success' => true,
-                'message' => 'Payment status updated successfully.',
+                'message' => 'Payment recorded successfully.',
+                'payment' => $payment,
             ]);
     }
 
@@ -357,7 +357,7 @@ class OrderController extends Controller
     public function getByCustomer(Request $request, $customerId)
     {
         $query = Order::where('customer_id', $customerId)
-            ->with(['branch', 'items.package']);
+            ->with(['branch', 'items.package', 'payments']);
 
         if ($status = $request->input('status')) {
             $query->where('status', $status);
@@ -418,7 +418,7 @@ class OrderController extends Controller
      */
     public function exportAllPdf(Request $request, PdfExportService $pdfService)
     {
-        $query = Order::with(['customer', 'branch', 'items.package']);
+        $query = Order::with(['customer', 'branch', 'items.package', 'payments']);
 
         // Apply same filters as index method
         if ($search = $request->input('search')) {
@@ -437,7 +437,16 @@ class OrderController extends Controller
         }
 
         if ($paymentStatus = $request->input('payment_status') ?? $request->input('paymentStatus')) {
-            $query->where('payment_status', $paymentStatus);
+            $this->applyPaymentStatusFilter($query, $paymentStatus);
+        }
+
+        if ($paymentMethod = $request->input('payment_method') ?? $request->input('paymentMethod')) {
+            $query->whereExists(function ($sub) use ($paymentMethod) {
+                $sub->selectRaw(1)
+                    ->from('payments')
+                    ->whereColumn('payments.order_id', 'orders.id')
+                    ->where('payment_method', $paymentMethod);
+            });
         }
 
         if ($customerId = $request->input('customer_id') ?? $request->input('customerId')) {
@@ -465,11 +474,52 @@ class OrderController extends Controller
             'orders' => $orders,
             'settings' => $settings,
             'exportDate' => now()->format('Y-m-d H:i:s'),
-            'filters' => $request->only(['search', 'status', 'payment_status', 'customer_id', 'branch_id', 'start_date', 'end_date']),
+            'filters' => $request->only(['search', 'status', 'payment_status', 'payment_method', 'customer_id', 'branch_id', 'start_date', 'end_date']),
         ];
 
         $filename = 'orders_export_' . date('Y-m-d') . '.pdf';
 
         return $pdfService->download('pdfs.orders', $data, $filename);
+    }
+    protected function netPaidExpression(): string
+    {
+        return "(SELECT COALESCE(SUM(CASE WHEN payment_type = 'credit' THEN amount ELSE 0 END), 0)
+                 - COALESCE(SUM(CASE WHEN payment_type = 'debit' THEN amount ELSE 0 END), 0)
+            FROM payments
+            WHERE payments.order_id = orders.id)";
+    }
+
+    protected function remainingAmountExpression(): string
+    {
+        return "(orders.total_amount - {$this->netPaidExpression()})";
+    }
+
+    protected function refundCountExpression(): string
+    {
+        return "(SELECT COUNT(*) FROM payments WHERE payments.order_id = orders.id AND payment_type = 'debit')";
+    }
+
+    protected function applyPaymentStatusFilter($query, string $paymentStatus): void
+    {
+        $netPaid = $this->netPaidExpression();
+        $refunds = $this->refundCountExpression();
+
+        switch ($paymentStatus) {
+            case 'paid':
+                $query->whereRaw("{$netPaid} >= orders.total_amount")
+                    ->where('total_amount', '>', 0);
+                break;
+            case 'partial':
+                $query->whereRaw("{$netPaid} > 0")
+                    ->whereRaw("{$netPaid} < orders.total_amount");
+                break;
+            case 'refunded':
+                $query->whereRaw("{$netPaid} <= 0")
+                    ->whereRaw("{$refunds} > 0");
+                break;
+            default: // pending
+                $query->whereRaw("{$netPaid} <= 0")
+                    ->whereRaw("{$refunds} = 0");
+        }
     }
 }

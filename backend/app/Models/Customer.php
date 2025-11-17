@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use App\Models\Payment;
 
 class Customer extends Model
@@ -34,13 +35,6 @@ class Customer extends Model
         'status',
         'dob',
         'anniversary_date',
-        'total_orders',
-        'total_services',
-        'total_amount',
-        'paid_amount',
-        'remaining_amount',
-        'wallet_balance',
-        'last_order_date',
         'notes',
         'preferences',
         'avatar',
@@ -54,13 +48,6 @@ class Customer extends Model
     protected $casts = [
         'dob' => 'date',
         'anniversary_date' => 'date',
-        'total_orders' => 'integer',
-        'total_services' => 'integer',
-        'total_amount' => 'decimal:2',
-        'paid_amount' => 'decimal:2',
-        'remaining_amount' => 'decimal:2',
-        'wallet_balance' => 'decimal:2',
-        'last_order_date' => 'datetime',
         'preferences' => 'array',
         'deleted_at' => 'datetime',
     ];
@@ -114,6 +101,14 @@ class Customer extends Model
     }
 
     /**
+     * Get all order items associated with the customer.
+     */
+    public function orderItems(): HasManyThrough
+    {
+        return $this->hasManyThrough(OrderItem::class, Order::class);
+    }
+
+    /**
      * Scope a query to only include active customers.
      */
     public function scopeActive($query)
@@ -122,23 +117,11 @@ class Customer extends Model
     }
 
     /**
-     * Recalculate customer statistics from orders.
-     * This method should be called when orders are created/updated/deleted.
+     * Statistics are derived on the fly now.
      */
     public function recalculateStats(): void
     {
-        $orders = $this->orders()->get();
-
-        $this->total_orders = $orders->count();
-        $this->total_services = $orders->sum(function ($order) {
-            return $order->items()->sum('quantity');
-        });
-        $this->total_amount = $orders->sum('total_amount');
-        $this->paid_amount = $orders->sum('paid_amount');
-        $this->remaining_amount = $this->total_amount - $this->paid_amount;
-        $this->last_order_date = $orders->max('order_date');
-
-        $this->save();
+        // No-op: values are calculated dynamically via accessors.
     }
 
     /**
@@ -148,5 +131,66 @@ class Customer extends Model
     public function getNameAttribute()
     {
         return trim($this->first_name . ' ' . ($this->last_name ?? ''));
+    }
+
+    public function getTotalOrdersAttribute(): int
+    {
+        if ($this->relationLoaded('orders')) {
+            return $this->orders->count();
+        }
+
+        return (int) $this->orders()->count();
+    }
+
+    public function getTotalServicesAttribute(): int
+    {
+        if ($this->relationLoaded('orderItems')) {
+            return (int) $this->orderItems->sum('quantity');
+        }
+
+        return (int) $this->orderItems()->sum('quantity');
+    }
+
+    public function getTotalAmountAttribute(): float
+    {
+        if ($this->relationLoaded('orders')) {
+            return (float) $this->orders->sum('total_amount');
+        }
+
+        return (float) $this->orders()->sum('total_amount');
+    }
+
+    public function getPaidAmountAttribute(): float
+    {
+        $credits = $this->payments()
+            ->where('payment_type', 'credit')
+            ->sum('amount');
+
+        $debits = $this->payments()
+            ->where('payment_type', 'debit')
+            ->sum('amount');
+
+        return (float) max(0, $credits - $debits);
+    }
+
+    public function getRemainingAmountAttribute(): float
+    {
+        return (float) max(0, $this->total_amount - $this->paid_amount);
+    }
+
+    public function getWalletBalanceAttribute(): float
+    {
+        return (float) max(0, $this->paid_amount - $this->total_amount);
+    }
+
+    public function getLastOrderDateAttribute()
+    {
+        if ($this->relationLoaded('orders') && $this->orders->isNotEmpty()) {
+            return $this->orders->max('order_date');
+        }
+
+        return $this->orders()
+            ->latest('order_date')
+            ->value('order_date');
     }
 }

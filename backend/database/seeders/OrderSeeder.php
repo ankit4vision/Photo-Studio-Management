@@ -32,14 +32,13 @@ class OrderSeeder extends Seeder
                 'subtotal' => 50000,
                 'discount' => 0,
                 'total_amount' => 50000,
-                'paid_amount' => 50000,
-                'remaining_amount' => 0,
                 'status' => 'completed',
-                'payment_status' => 'paid',
-                'payment_method' => 'upi',
                 'created_at' => Carbon::parse('2024-01-20T10:30:00.000Z'),
                 'items' => [
                     ['package_id' => 2, 'quantity' => 1, 'unit_price' => 50000], // Wedding Photography Premium
+                ],
+                'payments' => [
+                    ['amount' => 50000, 'payment_method' => 'upi', 'payment_date' => '2024-01-20', 'payment_type' => 'credit'],
                 ],
             ],
             [
@@ -50,14 +49,13 @@ class OrderSeeder extends Seeder
                 'subtotal' => 8000,
                 'discount' => 0,
                 'total_amount' => 8000,
-                'paid_amount' => 8000,
-                'remaining_amount' => 0,
                 'status' => 'processing',
-                'payment_status' => 'paid',
-                'payment_method' => 'card',
                 'created_at' => Carbon::parse('2024-02-15T14:20:00.000Z'),
                 'items' => [
                     ['package_id' => 3, 'quantity' => 1, 'unit_price' => 8000], // Portrait Photography Session
+                ],
+                'payments' => [
+                    ['amount' => 8000, 'payment_method' => 'card', 'payment_date' => '2024-02-16', 'payment_type' => 'credit'],
                 ],
             ],
             [
@@ -68,14 +66,13 @@ class OrderSeeder extends Seeder
                 'subtotal' => 25000,
                 'discount' => 0,
                 'total_amount' => 25000,
-                'paid_amount' => 20000,
-                'remaining_amount' => 5000,
                 'status' => 'pending',
-                'payment_status' => 'partial',
-                'payment_method' => 'cash',
                 'created_at' => Carbon::parse('2024-03-10T09:00:00.000Z'),
                 'items' => [
                     ['package_id' => 1, 'quantity' => 1, 'unit_price' => 25000], // Wedding Photography Basic
+                ],
+                'payments' => [
+                    ['amount' => 20000, 'payment_method' => 'cash', 'payment_date' => '2024-03-11', 'payment_type' => 'credit'],
                 ],
             ],
             [
@@ -86,14 +83,13 @@ class OrderSeeder extends Seeder
                 'subtotal' => 15000,
                 'discount' => 0,
                 'total_amount' => 15000,
-                'paid_amount' => 15000,
-                'remaining_amount' => 0,
                 'status' => 'completed',
-                'payment_status' => 'paid',
-                'payment_method' => 'bank_transfer',
                 'created_at' => Carbon::parse('2024-03-25T11:15:00.000Z'),
                 'items' => [
                     ['package_id' => 4, 'quantity' => 1, 'unit_price' => 15000], // Event Photography (using package 4 as Pre-Wedding Shoot doesn't exist)
+                ],
+                'payments' => [
+                    ['amount' => 15000, 'payment_method' => 'bank_transfer', 'payment_date' => '2024-03-26', 'payment_type' => 'credit'],
                 ],
             ],
             [
@@ -104,14 +100,13 @@ class OrderSeeder extends Seeder
                 'subtotal' => 25000,
                 'discount' => 0,
                 'total_amount' => 25000,
-                'paid_amount' => 20000,
-                'remaining_amount' => 5000,
                 'status' => 'processing',
-                'payment_status' => 'partial',
-                'payment_method' => 'upi',
                 'created_at' => Carbon::parse('2024-04-05T16:30:00.000Z'),
                 'items' => [
                     ['package_id' => 6, 'quantity' => 1, 'unit_price' => 25000], // Wedding Album Premium
+                ],
+                'payments' => [
+                    ['amount' => 20000, 'payment_method' => 'upi', 'payment_date' => '2024-04-06', 'payment_type' => 'credit'],
                 ],
             ],
             [
@@ -122,21 +117,22 @@ class OrderSeeder extends Seeder
                 'subtotal' => 2000,
                 'discount' => 0,
                 'total_amount' => 2000,
-                'paid_amount' => 10000,
-                'remaining_amount' => -8000, // Overpaid
                 'status' => 'pending',
-                'payment_status' => 'paid',
-                'payment_method' => 'cash',
                 'created_at' => Carbon::parse('2024-04-12T10:00:00.000Z'),
                 'items' => [
                     ['package_id' => 5, 'quantity' => 1, 'unit_price' => 2000], // Photo Editing Basic
+                ],
+                'payments' => [
+                    ['amount' => 10000, 'payment_method' => 'cash', 'payment_date' => '2024-04-12', 'payment_type' => 'credit'],
+                    ['amount' => 8000, 'payment_method' => 'cash', 'payment_date' => '2024-04-15', 'payment_type' => 'debit', 'remarks' => 'Refund extra payment'],
                 ],
             ],
         ];
 
         foreach ($orders as $orderData) {
             $items = $orderData['items'];
-            unset($orderData['items']);
+            $paymentsData = $orderData['payments'] ?? [];
+            unset($orderData['items'], $orderData['payments']);
 
             $order = Order::updateOrCreate(
                 ['order_number' => $orderData['order_number']],
@@ -157,16 +153,25 @@ class OrderSeeder extends Seeder
                             'unit_price' => $itemData['unit_price'],
                             'total_price' => $itemData['quantity'] * $itemData['unit_price'],
                             'package_name' => $package->package_name,
-                            'package_type' => $package->package_type,
                         ]
                     );
                 }
             }
 
-            // Recalculate customer stats
-            if ($order->customer) {
-                $order->customer->recalculateStats();
+            foreach ($paymentsData as $paymentData) {
+                $order->payments()->create([
+                    'customer_id' => $order->customer_id,
+                    'branch_id' => $order->branch_id,
+                    'payment_date' => $paymentData['payment_date'],
+                    'payment_type' => $paymentData['payment_type'],
+                    'amount' => $paymentData['amount'],
+                    'payment_method' => $paymentData['payment_method'] ?? 'cash',
+                    'remarks' => $paymentData['remarks'] ?? null,
+                ]);
             }
+
+            $order->load('items');
+            $order->updateSubtotal();
         }
     }
 }

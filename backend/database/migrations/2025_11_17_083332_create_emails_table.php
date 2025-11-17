@@ -17,15 +17,19 @@ return new class extends Migration
             $table->id();
             $table->string('to_email');
             $table->string('from_email');
-            $table->string('type');
-            $table->string('subject');
-            $table->longText('body');
-            $table->string('send_status'); // success, failed
+            $table->string('type')->nullable();
+            $table->string('subject')->nullable();
+            $table->longText('body')->nullable();
+            $table->string('send_status')->default('pending');
             $table->text('response_message')->nullable();
             $table->unsignedBigInteger('related_id')->nullable();
             $table->string('related_type')->nullable();
             $table->timestamp('sent_at')->nullable();
             $table->timestamps();
+
+            $table->index('to_email');
+            $table->index('send_status');
+            $table->index('sent_at');
         });
     }
 
@@ -39,4 +43,3 @@ return new class extends Migration
         Schema::dropIfExists('emails');
     }
 };
-

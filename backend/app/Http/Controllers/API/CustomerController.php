@@ -65,42 +65,42 @@ class CustomerController extends Controller
         }
 
         if ($lastOrderFrom = $request->input('last_order_from') ?? $request->input('lastOrderFrom')) {
-            $query->whereDate('last_order_date', '>=', $lastOrderFrom);
+            $query->whereRaw($this->lastOrderDateExpression() . ' >= ?', [$lastOrderFrom]);
         }
 
         if ($lastOrderTo = $request->input('last_order_to') ?? $request->input('lastOrderTo')) {
-            $query->whereDate('last_order_date', '<=', $lastOrderTo);
+            $query->whereRaw($this->lastOrderDateExpression() . ' <= ?', [$lastOrderTo]);
         }
 
         // Filter by amount ranges
         if ($minTotalAmount = $request->input('min_total_amount') ?? $request->input('minTotalAmount')) {
-            $query->where('total_amount', '>=', $minTotalAmount);
+            $query->whereRaw($this->customerTotalAmountExpression() . ' >= ?', [$minTotalAmount]);
         }
 
         if ($maxTotalAmount = $request->input('max_total_amount') ?? $request->input('maxTotalAmount')) {
-            $query->where('total_amount', '<=', $maxTotalAmount);
+            $query->whereRaw($this->customerTotalAmountExpression() . ' <= ?', [$maxTotalAmount]);
         }
 
         if ($minPaidAmount = $request->input('min_paid_amount') ?? $request->input('minPaidAmount')) {
-            $query->where('paid_amount', '>=', $minPaidAmount);
+            $query->whereRaw($this->customerPaidAmountExpression() . ' >= ?', [$minPaidAmount]);
         }
 
         if ($maxPaidAmount = $request->input('max_paid_amount') ?? $request->input('maxPaidAmount')) {
-            $query->where('paid_amount', '<=', $maxPaidAmount);
+            $query->whereRaw($this->customerPaidAmountExpression() . ' <= ?', [$maxPaidAmount]);
         }
 
         if ($minRemainingAmount = $request->input('min_remaining_amount') ?? $request->input('minRemainingAmount')) {
-            $query->where('remaining_amount', '>=', $minRemainingAmount);
+            $query->whereRaw($this->customerRemainingAmountExpression() . ' >= ?', [$minRemainingAmount]);
         }
 
         if ($maxRemainingAmount = $request->input('max_remaining_amount') ?? $request->input('maxRemainingAmount')) {
-            $query->where('remaining_amount', '<=', $maxRemainingAmount);
+            $query->whereRaw($this->customerRemainingAmountExpression() . ' <= ?', [$maxRemainingAmount]);
         }
 
         $pagination = $this->buildPaginator(
             $request,
             $query,
-            ['first_name', 'last_name', 'email', 'city', 'state', 'status', 'total_amount', 'paid_amount', 'remaining_amount', 'created_at', 'last_order_date'],
+            ['first_name', 'last_name', 'email', 'city', 'state', 'status', 'created_at'],
             ['column' => 'created_at', 'direction' => 'desc']
         );
 
@@ -220,12 +220,10 @@ class CustomerController extends Controller
      */
     public function recalculateStats(Customer $customer)
     {
-        $customer->recalculateStats();
-
         return (new CustomerResource($customer))
             ->additional([
                 'success' => true,
-                'message' => 'Customer statistics recalculated successfully.',
+                'message' => 'Customer statistics are calculated in real-time. No manual recalculation required.',
             ]);
     }
 
@@ -309,5 +307,28 @@ class CustomerController extends Controller
         $filename = 'customers_export_' . date('Y-m-d') . '.pdf';
 
         return $pdfService->download('pdfs.customers', $data, $filename);
+    }
+
+    protected function customerTotalAmountExpression(): string
+    {
+        return "(SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE orders.customer_id = customers.id)";
+    }
+
+    protected function customerPaidAmountExpression(): string
+    {
+        return "(SELECT COALESCE(SUM(CASE WHEN payment_type = 'credit' THEN amount ELSE 0 END), 0)
+                 - COALESCE(SUM(CASE WHEN payment_type = 'debit' THEN amount ELSE 0 END), 0)
+            FROM payments
+            WHERE payments.customer_id = customers.id)";
+    }
+
+    protected function customerRemainingAmountExpression(): string
+    {
+        return '(' . $this->customerTotalAmountExpression() . ' - ' . $this->customerPaidAmountExpression() . ')';
+    }
+
+    protected function lastOrderDateExpression(): string
+    {
+        return "(SELECT MAX(order_date) FROM orders WHERE orders.customer_id = customers.id)";
     }
 }

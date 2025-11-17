@@ -5,10 +5,10 @@
 | Table | Total Columns | Keep | Remove | Status |
 |-------|--------------|------|--------|--------|
 | `customers` | 28 | 21 | 7 | ⚠️ Needs cleanup |
-| `orders` | 18 | 16 | 2 | ⚠️ Needs cleanup |
-| `order_items` | 9 | 9 | 0 | ✅ Clean |
+| `orders` | 18 | 14 | 4 | ⚠️ Needs cleanup |
+| `order_items` | 9 | 8 | 1 | ⚠️ Needs cleanup |
 | `payments` | 13 | 13 | 0 | ✅ Clean |
-| `packages` | 9 | 9 | 0 | ✅ Clean |
+| `packages` | 9 | 8 | 1 | ⚠️ Needs cleanup |
 | `branches` | 12 | 12 | 0 | ✅ Clean |
 | `users` | 20 | 20 | 0 | ✅ Clean |
 | `roles` | 7 | 7 | 0 | ✅ Clean |
@@ -16,7 +16,7 @@
 | `settings` | 6 | 6 | 0 | ✅ Clean |
 | `emails` | 11 | 11 | 0 | ✅ Clean |
 
-**Total Columns to Remove: 9**
+**Total Columns to Remove: 13**
 
 ---
 
@@ -65,7 +65,7 @@ last_order_date       → Calculate: MAX(orders.order_date)
 
 ### 📋 `orders` Table - Final Columns
 
-#### ✅ KEEP (16 columns)
+#### ✅ KEEP (14 columns)
 ```
 id
 order_number
@@ -77,8 +77,6 @@ subtotal
 discount
 total_amount
 status
-payment_status
-payment_method
 notes
 timeline
 created_at
@@ -86,25 +84,23 @@ updated_at
 deleted_at
 ```
 
-#### ❌ REMOVE (2 columns)
+#### ❌ REMOVE (4 columns)
 ```
 paid_amount           → Calculate: SUM(payments WHERE payment_type='credit') - SUM(payments WHERE payment_type='debit')
 remaining_amount      → Calculate: total_amount - paid_amount
+payment_status        → Derive from net paid vs total (`paid`/`partial`/`pending`/`refunded`)
+payment_method        → Use latest payment's method; no need to persist on orders
 ```
 
 **Note on `subtotal`:**
 - Keep `subtotal` but ensure it's auto-calculated from `order_items`
 - Keep `total_amount` (subtotal - discount)
 
-**Note on `payment_status`:**
-- Keep `payment_status` but calculate it based on payments relationship
-- Logic: `paid` if paid_amount >= total_amount, `partial` if paid_amount > 0, `pending` otherwise
-
 ---
 
 ### 📋 `order_items` Table - Final Columns
 
-#### ✅ KEEP (9 columns) - No Changes
+#### ✅ KEEP (8 columns)
 ```
 id
 order_id
@@ -113,12 +109,14 @@ quantity
 unit_price
 total_price
 package_name
-package_type
 created_at
 updated_at
 ```
 
-**All columns are necessary** ✅
+#### ❌ REMOVE (1 column)
+```
+package_type        → Duplicate of packages table; remove to keep classification single-sourced.
+```
 
 ---
 
@@ -149,11 +147,10 @@ deleted_at
 
 ### 📋 `packages` Table - Final Columns
 
-#### ✅ KEEP (9 columns) - No Changes
+#### ✅ KEEP (8 columns)
 ```
 id
 package_name
-package_type
 default_price
 description
 status
@@ -162,7 +159,10 @@ updated_at
 deleted_at
 ```
 
-**All columns are necessary** ✅
+#### ❌ REMOVE (1 column)
+```
+package_type        → Fixed enum causes frequent schema changes. Replace later with lookup/tag table if categorization is required.
+```
 
 ---
 

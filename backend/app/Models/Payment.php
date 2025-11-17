@@ -53,21 +53,12 @@ class Payment extends Model
             }
         });
 
-        // Update order payment status when payment is created
-        static::created(function ($payment) {
-            $payment->updateOrderPaymentStatus();
+        static::saved(function ($payment) {
+            $payment->order?->touch();
         });
 
-        // Update order payment status when payment is updated
-        static::updated(function ($payment) {
-            $payment->updateOrderPaymentStatus();
-        });
-
-        // Update order payment status when payment is deleted
         static::deleted(function ($payment) {
-            if ($payment->order) {
-                $payment->order->recalculatePaymentStatus();
-            }
+            $payment->order?->touch();
         });
     }
 
@@ -83,21 +74,6 @@ class Payment extends Model
         $nextNumber = $lastPayment ? ((int) str_replace('#PAY', '', $lastPayment->payment_number)) + 1 : 1;
 
         return '#PAY' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
-    }
-
-    /**
-     * Update order payment status based on payments.
-     */
-    public function updateOrderPaymentStatus(): void
-    {
-        $order = $this->order()->first();
-
-        if (!$order) {
-            return;
-        }
-
-        $order->recalculatePaymentStatus();
-        $order->refresh();
     }
 
     /**

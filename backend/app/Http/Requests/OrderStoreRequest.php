@@ -31,10 +31,7 @@ class OrderStoreRequest extends FormRequest
             'subtotal' => ['nullable', 'numeric', 'min:0'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'total_amount' => ['nullable', 'numeric', 'min:0'],
-            'paid_amount' => ['nullable', 'numeric', 'min:0'],
             'status' => ['nullable', 'in:pending,processing,completed,cancelled'],
-            'payment_status' => ['nullable', 'in:pending,paid,partial,refunded'],
-            'payment_method' => ['nullable', 'string', 'in:cash,upi,card,bank_transfer'],
             'notes' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.package_id' => ['required', 'exists:packages,id'],
@@ -52,10 +49,8 @@ class OrderStoreRequest extends FormRequest
     {
         $this->merge([
             'status' => $this->input('status', 'pending'),
-            'payment_status' => $this->input('payment_status', 'pending'),
             'subtotal' => $this->input('subtotal', 0),
             'discount' => $this->input('discount', 0),
-            'paid_amount' => $this->input('paid_amount', 0),
         ]);
     }
 }

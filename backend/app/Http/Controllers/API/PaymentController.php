@@ -144,7 +144,7 @@ class PaymentController extends Controller
         // Validate payment amount based on payment type
         if ($validated['payment_type'] === 'credit') {
             // Credit payment cannot exceed order balance
-            $orderRemaining = $order->remaining_amount ?? ($order->total_amount - $order->paid_amount);
+            $orderRemaining = $order->remaining_amount;
             if ($validated['amount'] > $orderRemaining) {
                 return response()->json([
                     'success' => false,
@@ -274,12 +274,7 @@ class PaymentController extends Controller
      */
     protected function syncOrderFinancials(Order $order): void
     {
-        $order->recalculatePaymentStatus();
         $order->refresh();
-
-        if ($order->relationLoaded('customer')) {
-            $order->customer->refresh();
-        }
     }
 
     /**
