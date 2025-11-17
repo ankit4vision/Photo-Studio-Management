@@ -89,6 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/customers/{customer}/recalculate-stats', [CustomerController::class, 'recalculateStats'])->middleware('permission:edit_customer');
 
     // Order Management
+    Route::get('/orders/stats', [OrderController::class, 'stats'])->middleware('permission:view_order');
     Route::get('/orders', [OrderController::class, 'index'])->middleware('permission:view_order');
     Route::get('/orders/export-pdf', [OrderController::class, 'exportAllPdf'])->middleware('permission:view_order');
     Route::post('/orders', [OrderController::class, 'store'])->middleware('permission:create_order');

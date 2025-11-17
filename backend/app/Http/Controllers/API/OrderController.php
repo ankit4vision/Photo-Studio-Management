@@ -26,92 +26,7 @@ class OrderController extends Controller
     {
         $query = Order::with(['customer', 'branch', 'items.package', 'payments']);
 
-        if ($search = $request->input('search')) {
-            $query->where(function ($builder) use ($search) {
-                $builder->where('order_number', 'like', "%{$search}%")
-                    ->orWhereHas('customer', function ($q) use ($search) {
-                        $q->where('first_name', 'like', "%{$search}%")
-                            ->orWhere('last_name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%");
-                    });
-            });
-        }
-
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
-        }
-
-        if ($customerId = $request->input('customer_id') ?? $request->input('customerId')) {
-            $query->where('customer_id', $customerId);
-        }
-
-        if ($branchId = $request->input('branch_id')) {
-            $query->where('branch_id', $branchId);
-        }
-
-        if ($startDate = $request->input('start_date') ?? $request->input('startDate')) {
-            $query->where('order_date', '>=', $startDate);
-        }
-
-        if ($endDate = $request->input('end_date') ?? $request->input('endDate')) {
-            $query->where('order_date', '<=', $endDate);
-        }
-
-        // Filter by due date range
-        if ($dueDateFrom = $request->input('due_date_from') ?? $request->input('dueDateFrom')) {
-            $query->whereDate('due_date', '>=', $dueDateFrom);
-        }
-
-        if ($dueDateTo = $request->input('due_date_to') ?? $request->input('dueDateTo')) {
-            $query->whereDate('due_date', '<=', $dueDateTo);
-        }
-
-        // Filter by payment method
-        if ($paymentMethod = $request->input('payment_method') ?? $request->input('paymentMethod')) {
-            $query->whereExists(function ($sub) use ($paymentMethod) {
-                $sub->selectRaw(1)
-                    ->from('payments')
-                    ->whereColumn('payments.order_id', 'orders.id')
-                    ->where('payment_method', $paymentMethod);
-            });
-        }
-
-        if ($paymentStatus = $request->input('payment_status') ?? $request->input('paymentStatus')) {
-            $this->applyPaymentStatusFilter($query, $paymentStatus);
-        }
-
-        // Filter by amount ranges
-        if ($minTotalAmount = $request->input('min_total_amount') ?? $request->input('minTotalAmount')) {
-            $query->where('total_amount', '>=', $minTotalAmount);
-        }
-
-        if ($maxTotalAmount = $request->input('max_total_amount') ?? $request->input('maxTotalAmount')) {
-            $query->where('total_amount', '<=', $maxTotalAmount);
-        }
-
-        if ($minPaidAmount = $request->input('min_paid_amount') ?? $request->input('minPaidAmount')) {
-            $query->whereRaw($this->netPaidExpression() . ' >= ?', [$minPaidAmount]);
-        }
-
-        if ($maxPaidAmount = $request->input('max_paid_amount') ?? $request->input('maxPaidAmount')) {
-            $query->whereRaw($this->netPaidExpression() . ' <= ?', [$maxPaidAmount]);
-        }
-
-        $minRemainingAmount = $request->input('min_remaining_amount')
-            ?? $request->input('minRemainingAmount')
-            ?? $request->input('min_balance_amount')
-            ?? $request->input('minBalanceAmount');
-        if ($minRemainingAmount !== null) {
-            $query->whereRaw($this->remainingAmountExpression() . ' >= ?', [$minRemainingAmount]);
-        }
-
-        $maxRemainingAmount = $request->input('max_remaining_amount')
-            ?? $request->input('maxRemainingAmount')
-            ?? $request->input('max_balance_amount')
-            ?? $request->input('maxBalanceAmount');
-        if ($maxRemainingAmount !== null) {
-            $query->whereRaw($this->remainingAmountExpression() . ' <= ?', [$maxRemainingAmount]);
-        }
+        $this->applyOrderFilters($query, $request);
 
         $pagination = $this->buildPaginator(
             $request,
@@ -210,7 +125,15 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        $order->load('customer', 'branch', 'items.package', 'payments');
+        $order->load([
+            'customer',
+            'branch',
+            'items.package',
+            'payments' => function ($query) {
+                $query->orderBy('payment_date', 'desc')
+                    ->orderBy('created_at', 'desc');
+            }
+        ]);
 
         return (new OrderResource($order))
             ->additional([
@@ -386,6 +309,37 @@ class OrderController extends Controller
     }
 
     /**
+     * Provide order statistics (supports date range filters).
+     */
+    public function stats(Request $request)
+    {
+        $query = Order::query();
+
+        $this->applyOrderFilters($query, $request);
+
+        $totalOrders = (clone $query)->count();
+        $pendingOrders = (clone $query)->where('status', 'pending')->count();
+        $processingOrders = (clone $query)->where('status', 'processing')->count();
+        $completedOrders = (clone $query)->where('status', 'completed')->count();
+        $cancelledOrders = (clone $query)->where('status', 'cancelled')->count();
+        $totalRevenue = (float) (clone $query)->sum('total_amount');
+        $averageOrderValue = $totalOrders > 0 ? round($totalRevenue / $totalOrders, 2) : 0;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'totalOrders' => $totalOrders,
+                'pendingOrders' => $pendingOrders,
+                'processingOrders' => $processingOrders,
+                'completedOrders' => $completedOrders,
+                'cancelledOrders' => $cancelledOrders,
+                'totalRevenue' => $totalRevenue,
+                'averageOrderValue' => $averageOrderValue,
+            ],
+        ]);
+    }
+
+    /**
      * Export order data to PDF.
      */
     public function exportPdf(Order $order, PdfExportService $pdfService)
@@ -420,50 +374,7 @@ class OrderController extends Controller
     {
         $query = Order::with(['customer', 'branch', 'items.package', 'payments']);
 
-        // Apply same filters as index method
-        if ($search = $request->input('search')) {
-            $query->where(function ($builder) use ($search) {
-                $builder->where('order_number', 'like', "%{$search}%")
-                    ->orWhereHas('customer', function ($q) use ($search) {
-                        $q->where('first_name', 'like', "%{$search}%")
-                            ->orWhere('last_name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%");
-                    });
-            });
-        }
-
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
-        }
-
-        if ($paymentStatus = $request->input('payment_status') ?? $request->input('paymentStatus')) {
-            $this->applyPaymentStatusFilter($query, $paymentStatus);
-        }
-
-        if ($paymentMethod = $request->input('payment_method') ?? $request->input('paymentMethod')) {
-            $query->whereExists(function ($sub) use ($paymentMethod) {
-                $sub->selectRaw(1)
-                    ->from('payments')
-                    ->whereColumn('payments.order_id', 'orders.id')
-                    ->where('payment_method', $paymentMethod);
-            });
-        }
-
-        if ($customerId = $request->input('customer_id') ?? $request->input('customerId')) {
-            $query->where('customer_id', $customerId);
-        }
-
-        if ($branchId = $request->input('branch_id')) {
-            $query->where('branch_id', $branchId);
-        }
-
-        if ($startDate = $request->input('start_date') ?? $request->input('startDate')) {
-            $query->where('order_date', '>=', $startDate);
-        }
-
-        if ($endDate = $request->input('end_date') ?? $request->input('endDate')) {
-            $query->where('order_date', '<=', $endDate);
-        }
+        $this->applyOrderFilters($query, $request);
 
         $orders = $query->orderBy('order_date', 'desc')->get();
 
@@ -481,6 +392,93 @@ class OrderController extends Controller
 
         return $pdfService->download('pdfs.orders', $data, $filename);
     }
+    protected function applyOrderFilters($query, Request $request): void
+    {
+        if ($search = $request->input('search')) {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('order_number', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($q) use ($search) {
+                        $q->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if (($status = $request->input('status')) && $status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        if ($customerId = $request->input('customer_id') ?? $request->input('customerId')) {
+            $query->where('customer_id', $customerId);
+        }
+
+        if ($branchId = $request->input('branch_id')) {
+            $query->where('branch_id', $branchId);
+        }
+
+        if ($startDate = $request->input('start_date') ?? $request->input('startDate')) {
+            $query->whereDate('order_date', '>=', $startDate);
+        }
+
+        if ($endDate = $request->input('end_date') ?? $request->input('endDate')) {
+            $query->whereDate('order_date', '<=', $endDate);
+        }
+
+        if ($dueDateFrom = $request->input('due_date_from') ?? $request->input('dueDateFrom')) {
+            $query->whereDate('due_date', '>=', $dueDateFrom);
+        }
+
+        if ($dueDateTo = $request->input('due_date_to') ?? $request->input('dueDateTo')) {
+            $query->whereDate('due_date', '<=', $dueDateTo);
+        }
+
+        if ($paymentMethod = $request->input('payment_method') ?? $request->input('paymentMethod')) {
+            $query->whereExists(function ($sub) use ($paymentMethod) {
+                $sub->selectRaw(1)
+                    ->from('payments')
+                    ->whereColumn('payments.order_id', 'orders.id')
+                    ->where('payment_method', $paymentMethod);
+            });
+        }
+
+        if (($paymentStatus = $request->input('payment_status') ?? $request->input('paymentStatus')) && $paymentStatus !== 'all') {
+            $this->applyPaymentStatusFilter($query, $paymentStatus);
+        }
+
+        if ($minTotalAmount = $request->input('min_total_amount') ?? $request->input('minTotalAmount')) {
+            $query->where('total_amount', '>=', $minTotalAmount);
+        }
+
+        if ($maxTotalAmount = $request->input('max_total_amount') ?? $request->input('maxTotalAmount')) {
+            $query->where('total_amount', '<=', $maxTotalAmount);
+        }
+
+        if ($minPaidAmount = $request->input('min_paid_amount') ?? $request->input('minPaidAmount')) {
+            $query->whereRaw($this->netPaidExpression() . ' >= ?', [$minPaidAmount]);
+        }
+
+        if ($maxPaidAmount = $request->input('max_paid_amount') ?? $request->input('maxPaidAmount')) {
+            $query->whereRaw($this->netPaidExpression() . ' <= ?', [$maxPaidAmount]);
+        }
+
+        $minRemainingAmount = $request->input('min_remaining_amount')
+            ?? $request->input('minRemainingAmount')
+            ?? $request->input('min_balance_amount')
+            ?? $request->input('minBalanceAmount');
+        if ($minRemainingAmount !== null) {
+            $query->whereRaw($this->remainingAmountExpression() . ' >= ?', [$minRemainingAmount]);
+        }
+
+        $maxRemainingAmount = $request->input('max_remaining_amount')
+            ?? $request->input('maxRemainingAmount')
+            ?? $request->input('max_balance_amount')
+            ?? $request->input('maxBalanceAmount');
+        if ($maxRemainingAmount !== null) {
+            $query->whereRaw($this->remainingAmountExpression() . ' <= ?', [$maxRemainingAmount]);
+        }
+    }
+
     protected function netPaidExpression(): string
     {
         return "(SELECT COALESCE(SUM(CASE WHEN payment_type = 'credit' THEN amount ELSE 0 END), 0)

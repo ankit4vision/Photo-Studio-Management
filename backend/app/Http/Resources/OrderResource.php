@@ -16,10 +16,8 @@ class OrderResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'order_number' => $this->order_number,
             'orderNumber' => $this->order_number,
             'customerId' => $this->customer_id,
-            'customer_id' => $this->customer_id,
             'customer' => $this->whenLoaded('customer', function () {
                 return [
                     'id' => $this->customer->id,
@@ -28,40 +26,37 @@ class OrderResource extends JsonResource
                     'name' => $this->customer->name,
                     'email' => $this->customer->email,
                     'phone' => $this->customer->phone ?? $this->customer->mobile,
+                    'mobile' => $this->customer->mobile,
                     'avatar' => $this->customer->avatar,
-                    'customer_code' => $this->customer->customer_code,
-                    'customerId' => $this->customer->customer_code ?? '#CUST' . str_pad($this->customer->id, 3, '0', STR_PAD_LEFT),
-                    'photographerId' => $this->customer->customer_code ?? '#CUST' . str_pad($this->customer->id, 3, '0', STR_PAD_LEFT),
+                    'customerCode' => $this->customer->customer_code,
                 ];
             }),
-            'branch_id' => $this->branch_id,
-            'order_date' => $this->order_date?->format('Y-m-d'),
-            'orderDate' => $this->order_date?->toISOString(),
-            'due_date' => $this->due_date?->format('Y-m-d'),
-            'dueDate' => $this->due_date?->toISOString(),
+            'branchId' => $this->branch_id,
+            'branch' => $this->whenLoaded('branch', function () {
+                if (!$this->branch) {
+                    return null;
+                }
+                return [
+                    'id' => $this->branch->id,
+                    'branchName' => $this->branch->branch_name,
+                    'branchCode' => $this->branch->branch_code,
+                ];
+            }),
+            'orderDate' => $this->order_date?->format('Y-m-d'),
+            'dueDate' => $this->due_date?->format('Y-m-d'),
             'subtotal' => (float) $this->subtotal,
             'discount' => (float) $this->discount,
-            'total_amount' => (float) $this->total_amount,
             'totalAmount' => (float) $this->total_amount,
-            'amount' => (float) $this->total_amount,
-            'paid_amount' => (float) $this->paid_amount,
-            'paid' => (float) $this->paid_amount,
-            'remaining_amount' => (float) $this->remaining_amount,
+            'paidAmount' => (float) $this->paid_amount,
             'remainingAmount' => (float) $this->remaining_amount,
-            'remaining' => (float) $this->remaining_amount,
-            'balance_amount' => (float) ($this->remaining_amount ?? 0),
-            'balance' => (float) ($this->remaining_amount ?? 0),
             'status' => $this->status,
-            'payment_status' => $this->payment_status,
             'paymentStatus' => $this->payment_status,
-            'payment_method' => $this->payment_method,
             'paymentMethod' => $this->payment_method,
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
+            'payments' => PaymentResource::collection($this->whenLoaded('payments')),
             'notes' => $this->notes,
             'timeline' => $this->timeline,
-            'created_at' => $this->created_at,
             'createdAt' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at,
             'updatedAt' => $this->updated_at?->toISOString(),
         ];
     }

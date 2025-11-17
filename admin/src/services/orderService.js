@@ -447,31 +447,8 @@ class OrderService {
   // Get order statistics
   async getOrderStats(params = {}) {
     try {
-      // Calculate stats from orders list
-      const response = await this.getOrders({ ...params, limit: 10000 })
-      if (response.success && response.data) {
-        const orders = response.data.orders || []
-        const totalOrders = orders.length
-        const pendingOrders = orders.filter(o => o.status === 'pending').length
-        const processingOrders = orders.filter(o => o.status === 'processing').length
-        const completedOrders = orders.filter(o => o.status === 'completed').length
-        const totalRevenue = orders.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0)
-        const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
-
-        return {
-          success: true,
-          data: {
-            totalOrders,
-            pendingOrders,
-            processingOrders,
-            completedOrders,
-            totalRevenue,
-            averageOrderValue,
-          },
-          message: 'Order statistics fetched successfully'
-        }
-      }
-      return this.getMockOrderStats()
+      const response = await apiClient.get(API_ENDPOINTS.ORDERS.STATS, { params })
+      return this.transformItemResponse(response?.data)
     } catch (error) {
       console.warn('API call failed, using mock data:', error)
       return this.getMockOrderStats()

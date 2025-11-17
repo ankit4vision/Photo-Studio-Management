@@ -71,8 +71,11 @@ const OrdersList = () => {
 
   useEffect(() => {
     fetchOrders()
-    fetchStats()
   }, [pagination.currentPage, pagination.pageSize, filters])
+
+  useEffect(() => {
+    fetchStats()
+  }, [filters.dateRange])
 
   const fetchOrders = async () => {
     setLoading(true)
@@ -87,7 +90,9 @@ const OrdersList = () => {
       if (filters.status && filters.status !== 'all') params.status = filters.status
       if (filters.paymentStatus && filters.paymentStatus !== 'all') params.paymentStatus = filters.paymentStatus
       if (filters.customer) params.customerId = filters.customer
-      // dateRange reserved for future server support
+      const { startDate, endDate } = getDateRangeParams()
+      if (startDate) params.start_date = startDate
+      if (endDate) params.end_date = endDate
       
       const response = await orderService.getOrders(params)
 
@@ -127,11 +132,62 @@ const OrdersList = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await orderService.getOrderStats()
-      setStats(response.data || {})
+      const { startDate, endDate } = getDateRangeParams()
+      const params = {}
+      if (startDate) params.start_date = startDate
+      if (endDate) params.end_date = endDate
+
+      const response = await orderService.getOrderStats(params)
+      if (response?.success) {
+        setStats(response.data || {})
+      }
     } catch (err) {
       console.error('Error fetching order stats:', err)
     }
+  }
+
+  const formatDateForQuery = (date) => date.toISOString().split('T')[0]
+
+  const getDateRangeParams = () => {
+    const today = new Date()
+    let startDate = null
+    let endDate = null
+
+    switch (filters.dateRange) {
+      case 'today': {
+        const formatted = formatDateForQuery(today)
+        startDate = formatted
+        endDate = formatted
+        break
+      }
+      case 'week': {
+        const start = new Date(today)
+        start.setDate(start.getDate() - 6)
+        startDate = formatDateForQuery(start)
+        endDate = formatDateForQuery(today)
+        break
+      }
+      case 'month': {
+        const start = new Date(today.getFullYear(), today.getMonth(), 1)
+        const end = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+        startDate = formatDateForQuery(start)
+        endDate = formatDateForQuery(end)
+        break
+      }
+      case 'quarter': {
+        const quarterStartMonth = Math.floor(today.getMonth() / 3) * 3
+        const start = new Date(today.getFullYear(), quarterStartMonth, 1)
+        const end = new Date(today.getFullYear(), quarterStartMonth + 3, 0)
+        startDate = formatDateForQuery(start)
+        endDate = formatDateForQuery(end)
+        break
+      }
+      default:
+        startDate = null
+        endDate = null
+    }
+
+    return { startDate, endDate }
   }
 
   const handleFilterChange = (key, value) => {

@@ -18,14 +18,12 @@ import {
   faEdit
 } from '@fortawesome/free-solid-svg-icons'
 import orderService from '../../../services/orderService'
-import paymentService from '../../../services/paymentService'
 import { formatCurrency, formatDate } from '../../../utils'
 import { useToast } from '../../common/ToastProvider'
 
 const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, orderSnapshot }) => {
   const { success, error: showError } = useToast()
   const [order, setOrder] = useState(null)
-  const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('details')
   const [exportingPdf, setExportingPdf] = useState(false)
@@ -46,7 +44,6 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
   useEffect(() => {
     if (show && sanitizedOrderId) {
       fetchOrderDetails()
-      fetchOrderPayments()
     }
   }, [show, sanitizedOrderId])
 
@@ -64,17 +61,6 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
       console.error('Error fetching order details:', err)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fetchOrderPayments = async () => {
-    try {
-      const response = await paymentService.getPaymentsByOrder(sanitizedOrderId)
-      if (response.success) {
-        setPayments(response.data || [])
-      }
-    } catch (err) {
-      console.error('Error fetching payments:', err)
     }
   }
 
@@ -120,61 +106,26 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
 
   if (!order && !loading) return null
 
-  const totalAmount = order?.total_amount || order?.total || 0
-  const paidAmount = order?.paid_amount || order?.paid || 0
-  const balanceAmount = order?.balance_amount || (totalAmount - paidAmount)
-  const flatDiscount = order?.flat_discount || 0
+  const totalAmount = order?.totalAmount || 0
+  const paidAmount = order?.paidAmount || 0
+  const balanceAmount = order?.remainingAmount || 0
+  const discount = order?.discount || 0
   const items = order?.items || []
-  const customerName = order?.customer_name || 
-    (order?.customer ? (order.customer.name || `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim()) : 'Unknown')
+  const payments = order?.payments || []
+  const customerName = order?.customer 
+    ? (order.customer.name || `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim() || 'Unknown')
+    : 'Unknown'
 
   // Calculate subtotal from items
-  const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.amount || item.price * item.qty) || 0), 0)
+  const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.totalPrice || 0) || 0), 0)
 
-  // Order items columns
-  const orderItemsColumns = [
-    {
-      key: 'package',
-      label: 'Package',
-      render: (value, item) => (
-        <div className="d-flex align-items-center">
-          <FontAwesomeIcon icon={faTag} className="me-2 text-primary" />
-          <div>
-            <div className="fw-semibold">{item.package_name || item.packageName || 'Package'}</div>
-            {(item.package_type || item.package?.package_type || item.packageType) && (
-              <small className="text-muted">{item.package_type || item.package?.package_type || item.packageType}</small>
-            )}
-          </div>
-        </div>
-      )
-    },
-    {
-      key: 'price',
-      label: 'Price',
-      render: (value, item) => formatCurrency(item.price || item.unitPrice || 0)
-    },
-    {
-      key: 'qty',
-      label: 'Qty',
-      render: (value, item) => item.qty || item.quantity || 1
-    },
-    {
-      key: 'amount',
-      label: 'Amount',
-      render: (value, item) => (
-        <div className="fw-semibold text-primary">
-          {formatCurrency(item.amount || (item.price * (item.qty || item.quantity || 1)) || 0)}
-        </div>
-      )
-    }
-  ]
 
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
       <Modal.Header closeButton className="border-bottom border-primary border-2">
         <Modal.Title className="text-primary">
           <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
-          Order Details - #{order?.id || order?.order_number || order?.orderNumber || orderId}
+          Order Details - #{order?.orderNumber || order?.id || orderId}
         </Modal.Title>
       </Modal.Header>
       
@@ -210,10 +161,10 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                       <p className="text-muted mb-0 small">
                         {order?.customer?.mobile || order?.customer?.phone || order?.customer?.email || 'N/A'}
                       </p>
-                      {order?.branch_name && (
+                      {order?.branch?.branchName && (
                         <small className="text-muted">
                           <FontAwesomeIcon icon={faBuilding} className="me-1" />
-                          {order.branch_name} {order.branch_code && `(${order.branch_code})`}
+                          {order.branch.branchName} {order.branch.branchCode && `(${order.branch.branchCode})`}
                         </small>
                       )}
                     </div>
@@ -224,13 +175,13 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                     <div className="text-muted small mb-1">Order Date</div>
                     <div className="fw-semibold">
                       <FontAwesomeIcon icon={faCalendarAlt} className="me-2 text-primary" />
-                      {formatDate(order?.order_date || order?.orderDate)}
+                      {formatDate(order?.orderDate)}
                     </div>
-                    {order?.due_date && (
+                    {order?.dueDate && (
                       <>
                         <div className="text-muted small mb-1 mt-2">Due Date</div>
-                        <div className={`fw-semibold ${new Date(order.due_date) < new Date() ? 'text-danger' : 'text-primary'}`}>
-                          {formatDate(order.due_date)}
+                        <div className={`fw-semibold ${new Date(order.dueDate) < new Date() ? 'text-danger' : 'text-primary'}`}>
+                          {formatDate(order.dueDate)}
                         </div>
                       </>
                     )}
@@ -244,10 +195,10 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                       <Badge bg={getStatusColor(order?.status)} className="me-2 px-3 py-2">
                         {order?.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending'}
                       </Badge>
-                      <Badge bg={getPaymentStatusColor(order?.payment_status || order?.paymentStatus)} className="px-3 py-2">
-                        {order?.payment_status || order?.paymentStatus ? 
-                          (order.payment_status || order.paymentStatus).charAt(0).toUpperCase() + 
-                          (order.payment_status || order.paymentStatus).slice(1) : 'Pending'}
+                      <Badge bg={getPaymentStatusColor(order?.paymentStatus)} className="px-3 py-2">
+                        {order?.paymentStatus ? 
+                          order.paymentStatus.charAt(0).toUpperCase() + 
+                          order.paymentStatus.slice(1) : 'Pending'}
                       </Badge>
                     </div>
                   </div>
@@ -299,17 +250,14 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                                       <div className="d-flex align-items-center">
                                         <FontAwesomeIcon icon={faTag} className="me-2 text-primary" />
                                         <div>
-                                          <div className="fw-semibold">{item.package_name || item.packageName || 'Package'}</div>
-                                          {(item.package_type || item.package?.package_type || item.packageType) && (
-                                            <small className="text-muted">{item.package_type || item.package?.package_type || item.packageType}</small>
-                                          )}
+                                          <div className="fw-semibold">{item.packageName || 'Package'}</div>
                                         </div>
                                       </div>
                                     </td>
-                                    <td>{formatCurrency(item.price || item.unitPrice || 0)}</td>
-                                    <td>{item.qty || item.quantity || 1}</td>
+                                    <td>{formatCurrency(item.unitPrice || 0)}</td>
+                                    <td>{item.quantity || 1}</td>
                                     <td className="text-end fw-semibold text-primary">
-                                      {formatCurrency(item.amount || ((item.price || 0) * (item.qty || item.quantity || 1)) || 0)}
+                                      {formatCurrency(item.totalPrice || 0)}
                                     </td>
                                   </tr>
                                 ))}
@@ -335,10 +283,10 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                             <span className="text-muted">Subtotal:</span>
                             <span className="fw-semibold">{formatCurrency(subtotal)}</span>
                           </div>
-                          {flatDiscount > 0 && (
+                          {discount > 0 && (
                             <div className="d-flex justify-content-between mb-2 text-danger">
                               <span>Discount:</span>
-                              <span className="fw-semibold">-{formatCurrency(flatDiscount)}</span>
+                              <span className="fw-semibold">-{formatCurrency(discount)}</span>
                             </div>
                           )}
                           <hr />
@@ -409,30 +357,28 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                             <th>Type</th>
                             <th>Amount</th>
                             <th>Method</th>
-                            <th>Status</th>
+                            <th>Remarks</th>
                           </tr>
                         </thead>
                         <tbody>
                           {payments.map((payment, index) => (
                             <tr key={payment.id || index}>
-                              <td>{formatDate(payment.payment_date || payment.created_at)}</td>
+                              <td>{formatDate(payment.paymentDate || payment.createdAt)}</td>
                               <td>
-                                <Badge bg={payment.payment_type === 'debit' ? 'danger' : 'success'}>
-                                  {(payment.payment_type || payment.paymentType || 'credit').toUpperCase()}
+                                <Badge bg={payment.paymentType === 'debit' ? 'danger' : 'success'}>
+                                  {(payment.paymentType || 'credit').toUpperCase()}
                                 </Badge>
                               </td>
-                              <td className={`fw-semibold ${ (payment.payment_type || payment.paymentType) === 'debit' ? 'text-danger' : 'text-success'}`}>
+                              <td className={`fw-semibold ${payment.paymentType === 'debit' ? 'text-danger' : 'text-success'}`}>
                                 {formatCurrency(payment.amount || 0)}
                               </td>
                               <td>
                                 <Badge bg="info">
-                                  {payment.payment_method || payment.paymentMethod || 'Cash'}
+                                  {payment.paymentMethod || 'Cash'}
                                 </Badge>
                               </td>
                               <td>
-                                <Badge bg={getPaymentStatusColor(payment.status)}>
-                                  {payment.status ? payment.status.charAt(0).toUpperCase() + payment.status.slice(1) : 'Paid'}
-                                </Badge>
+                                <small className="text-muted">{payment.remarks || '-'}</small>
                               </td>
                             </tr>
                           ))}
