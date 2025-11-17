@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Permission extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -21,7 +22,6 @@ class Permission extends Model
         'submodule',
         'type',
         'is_active',
-        'is_deleted',
     ];
 
     /**
@@ -31,7 +31,6 @@ class Permission extends Model
      */
     protected $casts = [
         'is_active' => 'boolean',
-        'is_deleted' => 'boolean',
     ];
 
     /**
@@ -39,7 +38,7 @@ class Permission extends Model
      */
     public function roles()
     {
-        return $this->belongsToMany(Role::class, 'role_permission');
+        return $this->belongsToMany(Role::class, 'permission_role');
     }
 
     /**
@@ -50,7 +49,7 @@ class Permission extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true)->where('is_deleted', false);
+        return $query->where('is_active', true);
     }
 
     /**
@@ -61,27 +60,7 @@ class Permission extends Model
      */
     public function scopeNotDeleted($query)
     {
-        return $query->where('is_deleted', false);
-    }
-
-    /**
-     * Soft delete the permission.
-     *
-     * @return bool
-     */
-    public function softDelete()
-    {
-        return $this->update(['is_deleted' => true]);
-    }
-
-    /**
-     * Restore the permission.
-     *
-     * @return bool
-     */
-    public function restore()
-    {
-        return $this->update(['is_deleted' => false]);
+        return $query->whereNull('deleted_at');
     }
 
     /**

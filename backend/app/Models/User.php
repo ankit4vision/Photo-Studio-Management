@@ -78,7 +78,7 @@ class User extends Authenticatable
      */
     public function roles()
     {
-        return $this->belongsToMany(Role::class, 'user_role');
+        return $this->belongsToMany(Role::class, 'role_user');
     }
 
     /**
@@ -89,7 +89,10 @@ class User extends Authenticatable
      */
     public function hasRole($role)
     {
-        return $this->roles()->where('name', $role)->where('is_active', true)->where('is_deleted', false)->exists();
+        return $this->roles()
+            ->where('name', $role)
+            ->where('is_active', true)
+            ->exists();
     }
 
     /**
@@ -108,11 +111,9 @@ class User extends Authenticatable
 
         return $this->roles()
             ->where('is_active', true)
-            ->where('is_deleted', false)
             ->whereHas('permissions', function ($query) use ($permission) {
                 $query->where('name', $permission)
-                    ->where('is_active', true)
-                    ->where('is_deleted', false);
+                    ->where('is_active', true);
             })
             ->exists();
     }
@@ -131,11 +132,9 @@ class User extends Authenticatable
 
         return $this->roles()
             ->where('is_active', true)
-            ->where('is_deleted', false)
             ->whereHas('permissions', function ($query) use ($permissions) {
                 $query->whereIn('name', $permissions)
-                    ->where('is_active', true)
-                    ->where('is_deleted', false);
+                    ->where('is_active', true);
             })
             ->exists();
     }
@@ -154,16 +153,13 @@ class User extends Authenticatable
 
         $userPermissionCount = $this->roles()
             ->where('is_active', true)
-            ->where('is_deleted', false)
             ->whereHas('permissions', function ($query) use ($permissions) {
                 $query->whereIn('name', $permissions)
-                    ->where('is_active', true)
-                    ->where('is_deleted', false);
+                    ->where('is_active', true);
             })
             ->withCount(['permissions' => function ($query) use ($permissions) {
                 $query->whereIn('name', $permissions)
-                    ->where('is_active', true)
-                    ->where('is_deleted', false);
+                    ->where('is_active', true);
             }])
             ->count();
 
@@ -179,20 +175,16 @@ class User extends Authenticatable
     public function getAllPermissions()
     {
         if ($this->hasRole('admin')) {
-            return Permission::where('is_active', true)
-                ->where('is_deleted', false)
-                ->get();
+            return Permission::where('is_active', true)->get();
         }
 
         return Permission::whereHas('roles', function ($query) {
             $query->whereHas('users', function ($q) {
                 $q->where('users.id', $this->id);
             })
-                ->where('is_active', true)
-                ->where('is_deleted', false);
+                ->where('is_active', true);
         })
             ->where('is_active', true)
-            ->where('is_deleted', false)
             ->distinct()
             ->get();
     }

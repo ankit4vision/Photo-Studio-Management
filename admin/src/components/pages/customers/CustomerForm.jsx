@@ -12,29 +12,52 @@ const CustomerForm = forwardRef(({
   loading = false 
 }, ref) => {
   const [formData, setFormData] = useState({
-    name: '',
+    first_name: '',
+    last_name: '',
+    phone: '',
     mobile: '',
     email: '',
     address: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    country: '',
     dob: '',
     anniversary_date: '',
     branch_id: '',
-    status: 'active'
+    status: 'active',
+    notes: ''
   })
   const [errors, setErrors] = useState({})
 
   // Load customer data for edit mode
   useEffect(() => {
     if (mode === 'edit' && customerData) {
+      const addressLine = customerData.address_line 
+        ?? (typeof customerData.address === 'string' ? customerData.address : customerData.address?.street)
+        ?? ''
+
+      const city = customerData.city ?? customerData.address?.city ?? ''
+      const state = customerData.state ?? customerData.address?.state ?? ''
+      const postal = customerData.postal_code ?? customerData.postalCode ?? customerData.address?.postalCode ?? ''
+      const country = customerData.country ?? customerData.address?.country ?? ''
+
       setFormData({
-        name: customerData.name || '',
-        mobile: customerData.mobile || '',
+        first_name: customerData.first_name || customerData.firstName || '',
+        last_name: customerData.last_name || customerData.lastName || '',
+        phone: customerData.phone || '',
+        mobile: customerData.mobile || customerData.phone || '',
         email: customerData.email || '',
-        address: customerData.address || '',
+        address: addressLine,
+        city,
+        state,
+        postal_code: postal,
+        country,
         dob: customerData.dob ? customerData.dob.split('T')[0] : '',
         anniversary_date: customerData.anniversary_date ? customerData.anniversary_date.split('T')[0] : '',
         branch_id: customerData.branch_id || '',
-        status: customerData.status || 'active'
+        status: customerData.status || 'active',
+        notes: customerData.notes || ''
       })
     }
   }, [mode, customerData])
@@ -53,16 +76,19 @@ const CustomerForm = forwardRef(({
   const validateForm = () => {
     const newErrors = {}
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Customer name is required'
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'Customer name must be at least 2 characters'
+    if (!formData.first_name.trim()) {
+      newErrors.first_name = 'First name is required'
+    } else if (formData.first_name.trim().length < 2) {
+      newErrors.first_name = 'First name must be at least 2 characters'
     }
 
-    if (!formData.mobile.trim()) {
-      newErrors.mobile = 'Mobile number is required'
-    } else if (!/^[\d\s\+\-\(\)]+$/.test(formData.mobile.trim())) {
-      newErrors.mobile = 'Please enter a valid mobile number'
+    if (!formData.phone.trim() && !formData.mobile.trim()) {
+      newErrors.phone = 'Phone or mobile number is required'
+    } else {
+      const phoneValue = formData.phone.trim() || formData.mobile.trim()
+      if (!/^[\d\s\+\-\(\)]+$/.test(phoneValue)) {
+        newErrors.phone = 'Please enter a valid phone number'
+      }
     }
 
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -83,14 +109,21 @@ const CustomerForm = forwardRef(({
     }
 
     const submitData = {
-      name: formData.name.trim(),
-      mobile: formData.mobile.trim(),
+      first_name: formData.first_name.trim(),
+      last_name: formData.last_name.trim() || null,
+      phone: formData.phone.trim() || formData.mobile.trim(),
+      mobile: formData.mobile.trim() || formData.phone.trim(),
       email: formData.email.trim() || null,
       address: formData.address.trim() || null,
+      city: formData.city.trim() || null,
+      state: formData.state.trim() || null,
+      postal_code: formData.postal_code.trim() || null,
+      country: formData.country.trim() || null,
       dob: formData.dob || null,
       anniversary_date: formData.anniversary_date || null,
       branch_id: parseInt(formData.branch_id),
-      status: formData.status
+      status: formData.status,
+      notes: formData.notes.trim() || null,
     }
 
     onSubmit(submitData)
@@ -118,26 +151,45 @@ const CustomerForm = forwardRef(({
     <div>
       <FormRow>
         <TextField
-          id="name"
-          label="Customer Name"
-          value={formData.name}
-          onChange={(e) => handleChange('name', e.target.value)}
-          placeholder="Enter customer name"
+          id="first_name"
+          label="First Name"
+          value={formData.first_name}
+          onChange={(e) => handleChange('first_name', e.target.value)}
+          placeholder="Enter first name"
           required
           col={6}
-          invalid={!!errors.name}
-          feedback={errors.name}
+          invalid={!!errors.first_name}
+          feedback={errors.first_name}
+        />
+        <TextField
+          id="last_name"
+          label="Last Name"
+          value={formData.last_name}
+          onChange={(e) => handleChange('last_name', e.target.value)}
+          placeholder="Enter last name (optional)"
+          col={6}
+        />
+      </FormRow>
+
+      <FormRow>
+        <TextField
+          id="phone"
+          label="Phone Number"
+          value={formData.phone}
+          onChange={(e) => handleChange('phone', e.target.value)}
+          placeholder="Enter phone number"
+          required
+          col={6}
+          invalid={!!errors.phone}
+          feedback={errors.phone}
         />
         <TextField
           id="mobile"
           label="Mobile Number"
           value={formData.mobile}
           onChange={(e) => handleChange('mobile', e.target.value)}
-          placeholder="Enter mobile number"
-          required
+          placeholder="Enter alternate mobile (optional)"
           col={6}
-          invalid={!!errors.mobile}
-          feedback={errors.mobile}
         />
       </FormRow>
 
@@ -181,6 +233,41 @@ const CustomerForm = forwardRef(({
 
       <FormRow>
         <TextField
+          id="city"
+          label="City"
+          value={formData.city}
+          onChange={(e) => handleChange('city', e.target.value)}
+          placeholder="Enter city"
+          col={3}
+        />
+        <TextField
+          id="state"
+          label="State"
+          value={formData.state}
+          onChange={(e) => handleChange('state', e.target.value)}
+          placeholder="Enter state"
+          col={3}
+        />
+        <TextField
+          id="postal_code"
+          label="Postal Code"
+          value={formData.postal_code}
+          onChange={(e) => handleChange('postal_code', e.target.value)}
+          placeholder="Enter postal code"
+          col={3}
+        />
+        <TextField
+          id="country"
+          label="Country"
+          value={formData.country}
+          onChange={(e) => handleChange('country', e.target.value)}
+          placeholder="Enter country"
+          col={3}
+        />
+      </FormRow>
+
+      <FormRow>
+        <TextField
           id="dob"
           label="Date of Birth"
           type="date"
@@ -208,6 +295,19 @@ const CustomerForm = forwardRef(({
           col={6}
           invalid={!!errors.status}
           feedback={errors.status}
+        />
+      </FormRow>
+
+      <FormRow>
+        <TextField
+          id="notes"
+          label="Notes"
+          value={formData.notes}
+          onChange={(e) => handleChange('notes', e.target.value)}
+          placeholder="Add internal notes"
+          col={12}
+          as="textarea"
+          rows={3}
         />
       </FormRow>
     </div>

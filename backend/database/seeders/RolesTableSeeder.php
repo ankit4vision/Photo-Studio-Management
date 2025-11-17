@@ -19,19 +19,16 @@ class RolesTableSeeder extends Seeder
                 'name' => 'admin',
                 'description' => 'Administrator with full access',
                 'is_active' => true,
-                'is_deleted' => false,
             ],
             [
                 'name' => 'manager',
                 'description' => 'Manager role',
                 'is_active' => true,
-                'is_deleted' => false,
             ],
             [
                 'name' => 'staff',
                 'description' => 'Staff member',
                 'is_active' => true,
-                'is_deleted' => false,
             ],
         ];
 

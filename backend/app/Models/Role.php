@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Role extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -18,7 +19,6 @@ class Role extends Model
         'name',
         'description',
         'is_active',
-        'is_deleted',
     ];
 
     /**
@@ -28,7 +28,6 @@ class Role extends Model
      */
     protected $casts = [
         'is_active' => 'boolean',
-        'is_deleted' => 'boolean',
     ];
 
     /**
@@ -36,7 +35,7 @@ class Role extends Model
      */
     public function permissions()
     {
-        return $this->belongsToMany(Permission::class, 'role_permission');
+        return $this->belongsToMany(Permission::class, 'permission_role');
     }
 
     /**
@@ -44,7 +43,7 @@ class Role extends Model
      */
     public function users()
     {
-        return $this->belongsToMany(User::class, 'user_role');
+        return $this->belongsToMany(User::class, 'role_user');
     }
 
     /**
@@ -55,7 +54,7 @@ class Role extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true)->where('is_deleted', false);
+        return $query->where('is_active', true);
     }
 
     /**
@@ -66,27 +65,7 @@ class Role extends Model
      */
     public function scopeNotDeleted($query)
     {
-        return $query->where('is_deleted', false);
-    }
-
-    /**
-     * Soft delete the role.
-     *
-     * @return bool
-     */
-    public function softDelete()
-    {
-        return $this->update(['is_deleted' => true]);
-    }
-
-    /**
-     * Restore the role.
-     *
-     * @return bool
-     */
-    public function restore()
-    {
-        return $this->update(['is_deleted' => false]);
+        return $query->whereNull('deleted_at');
     }
 
     /**

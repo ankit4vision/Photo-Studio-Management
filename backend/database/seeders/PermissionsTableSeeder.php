@@ -73,7 +73,6 @@ class PermissionsTableSeeder extends Seeder
                 ['name' => $permission['name']],
                 array_merge($permission, [
                     'is_active' => true,
-                    'is_deleted' => false,
                 ])
             );
         }
