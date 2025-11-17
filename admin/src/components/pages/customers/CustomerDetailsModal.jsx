@@ -189,7 +189,7 @@ const CustomerDetailsModal = ({
       render: (value, order) => {
         const primaryItem = order.items?.[0]
         const packageName = primaryItem?.package_name || primaryItem?.packageName
-        const packageType = primaryItem?.package_type || primaryItem?.packageType
+        const packageType = primaryItem?.package_type || primaryItem?.package?.package_type || primaryItem?.packageType
         return (
           <div>
             <div className="fw-semibold">{packageName || 'Multiple Packages'}</div>

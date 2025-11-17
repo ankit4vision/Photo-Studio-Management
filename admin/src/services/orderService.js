@@ -193,23 +193,21 @@ class OrderService {
   // Create new order
   async createOrder(orderData) {
     try {
-      // Transform frontend format to backend format
+      const { itemsPayload, subtotal } = this.prepareOrderItems(orderData.items)
+      const discount = Number(orderData.discount ?? orderData.flat_discount ?? 0)
+      const totalAmount = Number(orderData.total_amount ?? (subtotal - discount))
+
       const backendData = {
         customer_id: orderData.customer_id || orderData.customerId,
         branch_id: orderData.branch_id || orderData.branchId,
         order_date: orderData.order_date || orderData.orderDate || new Date().toISOString().split('T')[0],
         due_date: orderData.due_date || orderData.dueDate,
-        discount: orderData.discount || orderData.flat_discount || 0,
-        paid_amount: orderData.paid_amount || orderData.paidAmount || 0,
+        subtotal,
+        discount,
+        total_amount: totalAmount,
         status: orderData.status || 'pending',
-        payment_status: orderData.payment_status || orderData.paymentStatus || 'pending',
-        payment_method: orderData.payment_method || orderData.paymentMethod,
         notes: orderData.notes,
-        items: (orderData.items || []).map(item => ({
-          package_id: item.package_id || item.packageId,
-          quantity: item.quantity || item.qty || 1,
-          unit_price: item.unit_price || item.unitPrice || item.price || 0,
-        })),
+        items: itemsPayload,
       }
 
       const response = await apiClient.post(API_ENDPOINTS.ORDERS.CREATE, backendData)
@@ -374,26 +372,27 @@ class OrderService {
   // Update order
   async updateOrder(orderId, orderData) {
     try {
-      // Transform frontend format to backend format
-      const backendData = {
+      const payload = {
         customer_id: orderData.customer_id || orderData.customerId,
         branch_id: orderData.branch_id || orderData.branchId,
         order_date: orderData.order_date || orderData.orderDate,
         due_date: orderData.due_date || orderData.dueDate,
-        discount: orderData.discount || orderData.flat_discount,
-        paid_amount: orderData.paid_amount || orderData.paidAmount,
+        discount: orderData.discount ?? orderData.flat_discount,
         status: orderData.status,
-        payment_status: orderData.payment_status || orderData.paymentStatus,
-        payment_method: orderData.payment_method || orderData.paymentMethod,
         notes: orderData.notes,
-        items: orderData.items ? (orderData.items || []).map(item => ({
-          package_id: item.package_id || item.packageId,
-          quantity: item.quantity || item.qty || 1,
-          unit_price: item.unit_price || item.unitPrice || item.price || 0,
-        })) : undefined,
       }
 
-      const response = await apiClient.put(API_ENDPOINTS.ORDERS.UPDATE(orderId), backendData)
+      if (orderData.items) {
+        const { itemsPayload, subtotal } = this.prepareOrderItems(orderData.items)
+        const discount = Number(payload.discount ?? 0)
+        payload.subtotal = subtotal
+        payload.total_amount = Number(orderData.total_amount ?? (subtotal - discount))
+        payload.items = itemsPayload
+      } else if (orderData.total_amount !== undefined) {
+        payload.total_amount = Number(orderData.total_amount)
+      }
+
+      const response = await apiClient.put(API_ENDPOINTS.ORDERS.UPDATE(orderId), payload)
       return this.transformItemResponse(response?.data)
     } catch (error) {
       console.warn('API call failed:', error)
@@ -426,14 +425,18 @@ class OrderService {
     }
   }
 
-  // Update payment status
-  async updatePaymentStatus(orderId, paymentStatus, paymentMethod = '', paidAmount = null) {
+  // Record payment/refund for an order
+  async updatePaymentStatus(orderId, paymentData = {}) {
     try {
-      const data = { payment_status: paymentStatus }
-      if (paymentMethod) data.payment_method = paymentMethod
-      if (paidAmount !== null) data.paid_amount = paidAmount
+      const payload = {
+        payment_type: paymentData.payment_type || paymentData.type || 'credit',
+        amount: paymentData.amount,
+        payment_method: paymentData.payment_method || paymentData.method || 'cash',
+        payment_date: paymentData.payment_date || paymentData.date || new Date().toISOString().split('T')[0],
+        remarks: paymentData.remarks || '',
+      }
 
-      const response = await apiClient.put(API_ENDPOINTS.ORDERS.UPDATE_PAYMENT_STATUS(orderId), data)
+      const response = await apiClient.put(API_ENDPOINTS.ORDERS.UPDATE_PAYMENT_STATUS(orderId), payload)
       return this.transformItemResponse(response?.data)
     } catch (error) {
       console.warn('API call failed:', error)
@@ -518,6 +521,31 @@ class OrderService {
       customerId: customerId
     }
     return this.getMockOrders(mockParams)
+  }
+
+  prepareOrderItems(items = []) {
+    let subtotal = 0
+
+    const itemsPayload = (items || []).map(item => {
+      const quantity = Number(item.quantity ?? item.qty ?? 1)
+      const unitPrice = Number(
+        item.unit_price ??
+        item.unitPrice ??
+        item.price ??
+        (item.amount && quantity ? item.amount / quantity : 0)
+      )
+      const packageId = item.package_id || item.packageId || item.productId || item.id
+
+      subtotal += quantity * unitPrice
+
+      return {
+        package_id: packageId,
+        quantity,
+        unit_price: unitPrice,
+      }
+    })
+
+    return { itemsPayload, subtotal }
   }
 
 

@@ -412,7 +412,6 @@ const OrdersList = () => {
         id: item.id || index + 1,
         package_id: (item.package_id || item.packageId || item.productId || item.id || index + 1).toString(),
         package_name: item.package_name || item.packageName || item.productName || item.title || `Package ${index + 1}`,
-        package_type: item.package_type || item.packageType || '',
         price,
         qty: quantity,
         amount

@@ -141,8 +141,8 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
           <FontAwesomeIcon icon={faTag} className="me-2 text-primary" />
           <div>
             <div className="fw-semibold">{item.package_name || item.packageName || 'Package'}</div>
-            {item.package_type && (
-              <small className="text-muted">{item.package_type || item.packageType}</small>
+            {(item.package_type || item.package?.package_type || item.packageType) && (
+              <small className="text-muted">{item.package_type || item.package?.package_type || item.packageType}</small>
             )}
           </div>
         </div>
@@ -300,8 +300,8 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                                         <FontAwesomeIcon icon={faTag} className="me-2 text-primary" />
                                         <div>
                                           <div className="fw-semibold">{item.package_name || item.packageName || 'Package'}</div>
-                                          {item.package_type && (
-                                            <small className="text-muted">{item.package_type || item.packageType}</small>
+                                          {(item.package_type || item.package?.package_type || item.packageType) && (
+                                            <small className="text-muted">{item.package_type || item.package?.package_type || item.packageType}</small>
                                           )}
                                         </div>
                                       </div>

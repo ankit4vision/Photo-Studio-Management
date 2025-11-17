@@ -4,6 +4,12 @@ import { API_ENDPOINTS } from '../constants/api'
 import customersData from '../mock/customers.json'
 import { handleApiError } from '../utils/errorHandler'
 
+const normalizeNumber = (value, fallback = 0) => {
+  if (value === null || value === undefined || value === '') return fallback
+  const num = Number(value)
+  return Number.isNaN(num) ? fallback : num
+}
+
 class CustomerService {
   normalizeName(customerData = {}) {
     const directFirst = customerData.firstName || customerData.first_name
@@ -33,6 +39,71 @@ class CustomerService {
       lastName
     }
   }
+  enrichCustomer(customer = {}) {
+    if (!customer || typeof customer !== 'object') {
+      return customer
+    }
+
+    const total = normalizeNumber(
+      customer.total_amount ??
+      customer.total_earnings ??
+      customer.totalSpent ??
+      customer.totalAmount
+    )
+
+    const paid = normalizeNumber(
+      customer.paid_amount ??
+      customer.paidAmount ??
+      customer.wallet_balance ??
+      customer.walletBalance
+    )
+
+    const remaining = customer.remaining_amount !== undefined && customer.remaining_amount !== null
+      ? normalizeNumber(customer.remaining_amount)
+      : customer.remainingAmount !== undefined && customer.remainingAmount !== null
+        ? normalizeNumber(customer.remainingAmount)
+        : Math.max(0, total - paid)
+
+    const totalOrders = normalizeNumber(
+      customer.total_orders ??
+      customer.totalOrders ??
+      customer.total_services ??
+      customer.totalServices,
+      0
+    )
+
+    const totalServices = normalizeNumber(
+      customer.total_services ??
+      customer.totalServices ??
+      customer.total_orders ??
+      customer.totalOrders,
+      0
+    )
+
+    const customerCode = customer.customer_code ||
+      customer.customerCode ||
+      customer.photographerId ||
+      (customer.id ? `#CUST${String(customer.id).padStart(3, '0')}` : '')
+
+    const joinedDate = customer.joinedDate || customer.createdAt || customer.created_at
+
+    return {
+      ...customer,
+      total_amount: total,
+      total_earnings: total,
+      totalSpent: total,
+      paid_amount: paid,
+      remaining_amount: remaining,
+      wallet_balance: customer.wallet_balance ?? customer.walletBalance ?? paid,
+      total_orders: totalOrders,
+      total_services: totalServices,
+      customer_code: customerCode,
+      photographerId: customer.photographerId || customerCode,
+      joinedDate,
+      created_at: customer.created_at || customer.createdAt || joinedDate,
+    }
+  }
+
   transformListResponse(payload) {
     if (!payload) {
       return {
@@ -51,9 +122,11 @@ class CustomerService {
 
     const meta = payload.meta ?? {}
 
+    const normalizedData = data.map((customer) => this.enrichCustomer(customer))
+
     return {
       success: payload.success ?? true,
-      data,
+      data: normalizedData,
       meta: {
         total: meta.total ?? data.length,
         page: meta.page ?? 1,
@@ -79,7 +152,7 @@ class CustomerService {
 
     return {
       success: payload.success ?? true,
-      data: payload.data ?? payload,
+      data: this.enrichCustomer(payload.data ?? payload),
       message: payload.message ?? '',
     }
   }
@@ -134,7 +207,7 @@ class CustomerService {
 
   // Get mock customers data (fallback)
   getMockCustomers(params = {}) {
-    let customers = [...customersData]
+    let customers = customersData.map((customer) => this.enrichCustomer(customer))
     
     // Apply search filter
     if (params.search) {
@@ -191,7 +264,7 @@ class CustomerService {
     if (customer) {
       return {
         success: true,
-        data: customer,
+        data: this.enrichCustomer(customer),
         message: 'Customer fetched successfully (mock)'
       }
     } else {
@@ -286,10 +359,11 @@ class CustomerService {
     }
     
     customersData.push(newCustomer)
+    const normalized = this.enrichCustomer(newCustomer)
     
     return {
       success: true,
-      data: newCustomer,
+      data: normalized,
       message: 'Customer created successfully'
     }
   }
@@ -377,9 +451,11 @@ class CustomerService {
         updated_at: new Date().toISOString()
       }
       
+      const normalized = this.enrichCustomer(customersData[customerIndex])
+
       return {
         success: true,
-        data: customersData[customerIndex],
+        data: normalized,
         message: 'Customer updated successfully'
       }
     } else {
