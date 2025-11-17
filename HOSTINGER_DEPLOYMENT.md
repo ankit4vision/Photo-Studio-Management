@@ -12,23 +12,68 @@ This guide walks through deploying the Photo Studio Management stack (React admi
 
 ## 1. Backend (Laravel API)
 
-1. Upload the entire backend project into `public_html/api/`.
-2. Point the `api.lvclicks.in` subdomain to `public_html/api/public`.
-3. Copy `backend/env.example` to `public_html/api/.env` and update values (see sample below).
-4. Install dependencies and optimize:
+### What to Upload
+
+**✅ UPLOAD these folders/files:**
+- `app/` - Application code
+- `bootstrap/` - Bootstrap files
+- `config/` - Configuration files
+- `database/` - Migrations and seeders
+- `public/` - Public assets (this is the document root)
+  - **IMPORTANT:** `public/.htaccess` must be uploaded (required for Laravel routing)
+- `resources/` - Views, lang files
+- `routes/` - Route definitions
+- `storage/` - **Upload the folder structure** (see notes below)
+- `artisan` - Artisan CLI
+- `composer.json` & `composer.lock` - Dependency definitions
+
+**❌ DO NOT UPLOAD:**
+- `vendor/` - **Generate on server** with `composer install`
+- `tests/` - Not needed in production
+- `.env` - Create fresh on server
+- `node_modules/` - Not needed (if present)
+- `.git/` - Version control (if present)
+
+### Storage Folder Notes
+
+**Upload `storage/` folder structure, but:**
+- ✅ Upload `storage/app/public/avatars/` and `storage/app/public/logos/` **if you want to keep existing user uploads**
+- ✅ Upload `storage/logs/` folder (empty is fine, Laravel will create log files)
+- ✅ Upload `storage/framework/` folder structure (cache, sessions, views folders)
+- ⚠️ Cache files in `storage/framework/cache/` will be regenerated automatically
+- ⚠️ Session files can be cleared (users will need to re-login)
+
+### Deployment Steps
+
+1. **Upload files** (excluding `vendor/`, `tests/`, `.env`)
+2. Point the `api.lvclicks.in` subdomain to `public_html/api/public/` (not `public_html/api/`)
+3. **On the server**, run these commands via SSH or Hostinger Terminal:
    ```bash
    cd ~/public_html/api
+   
+   # Install dependencies (generates vendor/ folder)
    composer install --no-dev --optimize-autoloader
+   
+   # Generate application key
    php artisan key:generate
-   php artisan migrate --force   # if the database is empty
+   
+   # Create storage symlink (if not exists)
+   php artisan storage:link
+   
+   # Run migrations (if database is empty)
+   php artisan migrate --force
+   
+   # Optimize for production
    php artisan config:cache
    php artisan route:cache
    php artisan view:cache
    ```
-5. Ensure `storage/` and `bootstrap/cache/` are writable:
+4. **Set file permissions:**
    ```bash
    chmod -R 755 storage bootstrap/cache
+   chown -R [your_user]:[your_group] storage bootstrap/cache
    ```
+5. Copy `backend/env.example` to `public_html/api/.env` and update values (see sample below).
 6. Update `config/cors.php` so the production origins are allowed (already configured in repo).
 
 ### Production `.env` template
