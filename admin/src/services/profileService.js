@@ -193,52 +193,6 @@ class ProfileService {
     }
   }
 
-  // Upload profile avatar
-  async uploadAvatar(file) {
-    try {
-      const formData = new FormData()
-      formData.append('avatar', file)
-
-      const response = await apiService.post(API_ENDPOINTS.USERS.UPLOAD_AVATAR, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
-      
-      return {
-        success: true,
-        data: response.data,
-        message: 'Avatar uploaded successfully'
-      }
-    } catch (error) {
-      console.error('Error uploading avatar:', error)
-      return {
-        success: false,
-        data: null,
-        message: error.response?.data?.message || 'Failed to upload avatar'
-      }
-    }
-  }
-
-  // Delete profile avatar
-  async deleteAvatar() {
-    try {
-      const response = await apiService.delete(API_ENDPOINTS.USERS.UPLOAD_AVATAR)
-      return {
-        success: true,
-        data: response.data,
-        message: 'Avatar deleted successfully'
-      }
-    } catch (error) {
-      console.error('Error deleting avatar:', error)
-      return {
-        success: false,
-        data: null,
-        message: error.response?.data?.message || 'Failed to delete avatar'
-      }
-    }
-  }
-
   // Get user activity logs
   async getActivityLogs(params = {}) {
     try {

@@ -45,30 +45,6 @@ class SettingsService {
     }
   }
 
-  // Upload business logo
-  async uploadLogo(file) {
-    try {
-      const formData = new FormData()
-      formData.append('logo', file)
-      formData.append('key', 'business_logo')
-      formData.append('section', 'Business Information')
-
-      const response = await apiClient.post('/global-settings/upload-logo', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
-      
-      return {
-        success: true,
-        data: response.data,
-        message: 'Logo uploaded successfully'
-      }
-    } catch (error) {
-      return handleApiError(error)
-    }
-  }
-
   // Send test email
   async sendTestEmail(email) {
     try {
@@ -111,21 +87,6 @@ class SettingsService {
       }
       
       return errorResponse
-    }
-  }
-
-  // Test S3 connection
-  async testS3() {
-    try {
-      const response = await apiClient.post('/settings/test-s3')
-      
-      return {
-        success: response.data?.success || false,
-        data: response.data,
-        message: response.data?.message || 'S3 connection test completed'
-      }
-    } catch (error) {
-      return handleApiError(error)
     }
   }
 
@@ -247,15 +208,10 @@ class SettingsService {
   // Save or update a single setting by key (used for auto-save on change)
   async saveSetting(key, section, value) {
     const normalizedSection = section || 'general'
-    // For boolean values, convert to '1'/'0' for S3 enabled field, otherwise use 'true'/'false'
+    // For boolean values, convert to 'true'/'false'
     let normalizedValue
     if (typeof value === 'boolean') {
-      // For S3 enabled field, use '1'/'0' format (backend S3Service accepts both)
-      if (section === 's3' && key === 'enabled') {
-        normalizedValue = value ? '1' : '0'
-      } else {
-        normalizedValue = value ? 'true' : 'false'
-      }
+      normalizedValue = value ? 'true' : 'false'
     } else {
       normalizedValue = value === undefined || value === null ? '' : String(value)
     }
@@ -326,7 +282,6 @@ class SettingsService {
         { key: 'business_website', section: 'Business Information', formPath: ['businessInfo', 'business_website'], type: 'string' },
         { key: 'gstNumber', section: 'Business Information', formPath: ['businessInfo', 'gstNumber'], type: 'string' },
         { key: 'businessAddress', section: 'Business Information', formPath: ['businessInfo', 'businessAddress'], type: 'string' },
-        { key: 'business_logo', section: 'Business Information', formPath: ['businessInfo', 'business_logo'], type: 'string' },
         // Invoice Settings
         { key: 'invoice_prefix', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_prefix'], type: 'string' },
         // Email Settings
@@ -342,13 +297,6 @@ class SettingsService {
         { key: 'currency', section: 'Currency & Regional', formPath: ['currencyRegional', 'currency'], type: 'string' },
         { key: 'dateFormat', section: 'Currency & Regional', formPath: ['currencyRegional', 'dateFormat'], type: 'string' },
         { key: 'timeZone', section: 'Currency & Regional', formPath: ['currencyRegional', 'timeZone'], type: 'string' },
-        // S3 Settings
-        { key: 'enabled', section: 's3', formPath: ['s3Settings', 'enabled'], type: 'boolean' },
-        { key: 'bucket', section: 's3', formPath: ['s3Settings', 'bucketName'], type: 'string' },
-        { key: 'region', section: 's3', formPath: ['s3Settings', 'region'], type: 'string' },
-        { key: 'key', section: 's3', formPath: ['s3Settings', 'accessKey'], type: 'string' },
-        { key: 'secret', section: 's3', formPath: ['s3Settings', 'secretKey'], type: 'string' },
-        { key: 'use_path_style', section: 's3', formPath: ['s3Settings', 'useSSL'], type: 'boolean' },
       ]
 
       // Get all current settings to check what exists
@@ -384,9 +332,6 @@ class SettingsService {
             stringValue = String(formValue ?? '')
           }
 
-          if (mapping.key === 'secret' && stringValue === '') {
-            continue
-          }
 
           // Check if setting exists
           const existingSetting = existingSettingsMap.get(mapping.key)
@@ -449,8 +394,6 @@ class SettingsService {
       'Invoice Settings': 'invoiceSettings',
       'Email Settings': 'emailSettings',
       'Currency & Regional': 'currencyRegional',
-      'S3 Settings': 's3Settings',
-      's3': 's3Settings' // Backend uses 's3' as section name
     }
 
     const sectionKey = sectionMap[section]
@@ -499,7 +442,6 @@ class SettingsService {
         business_phone: '',
         gstNumber: '',
         businessAddress: '',
-        business_logo: '',
       },
       invoiceSettings: {
         invoice_prefix: 'INV',
@@ -519,14 +461,6 @@ class SettingsService {
         dateFormat: 'DD/MM/YYYY',
         timeZone: 'Asia/Kolkata',
       },
-      s3Settings: {
-        enabled: false,
-        bucketName: '',
-        region: 'ap-south-1',
-        accessKey: '',
-        secretKey: '',
-        useSSL: true,
-      },
       appSettings: {
         web_url: '',
       }
@@ -542,7 +476,6 @@ class SettingsService {
       'business_website': { section: 'Business Information', field: 'businessInfo', prop: 'business_website', type: 'string', useDefaultIfEmpty: false },
       'gstNumber': { section: 'Business Information', field: 'businessInfo', prop: 'gstNumber', type: 'string', useDefaultIfEmpty: false },
       'businessAddress': { section: 'Business Information', field: 'businessInfo', prop: 'businessAddress', type: 'string', useDefaultIfEmpty: false },
-      'business_logo': { section: 'Business Information', field: 'businessInfo', prop: 'business_logo', type: 'string', useDefaultIfEmpty: false },
       'invoice_prefix': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_prefix', type: 'string', useDefaultIfEmpty: true },
       'mailer': { section: 'Email Settings', field: 'emailSettings', prop: 'mailer', type: 'string', useDefaultIfEmpty: true },
       'host': { section: 'Email Settings', field: 'emailSettings', prop: 'host', type: 'string', useDefaultIfEmpty: false },
@@ -555,12 +488,6 @@ class SettingsService {
       'currency': { section: 'Currency & Regional', field: 'currencyRegional', prop: 'currency', type: 'string', useDefaultIfEmpty: true },
       'dateFormat': { section: 'Currency & Regional', field: 'currencyRegional', prop: 'dateFormat', type: 'string', useDefaultIfEmpty: true },
       'timeZone': { section: 'Currency & Regional', field: 'currencyRegional', prop: 'timeZone', type: 'string', useDefaultIfEmpty: true },
-      'enabled': { section: 's3', field: 's3Settings', prop: 'enabled', type: 'boolean', useDefaultIfEmpty: true },
-      'bucket': { section: 's3', field: 's3Settings', prop: 'bucketName', type: 'string', useDefaultIfEmpty: false },
-      'region': { section: 's3', field: 's3Settings', prop: 'region', type: 'string', useDefaultIfEmpty: false },
-      'key': { section: 's3', field: 's3Settings', prop: 'accessKey', type: 'string', useDefaultIfEmpty: false },
-      'secret': { section: 's3', field: 's3Settings', prop: 'secretKey', type: 'string', useDefaultIfEmpty: false },
-      'use_path_style': { section: 's3', field: 's3Settings', prop: 'useSSL', type: 'boolean', useDefaultIfEmpty: true },
       'web_url': { section: 'App Settings', field: 'appSettings', prop: 'web_url', type: 'string', useDefaultIfEmpty: false },
     }
 

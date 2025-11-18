@@ -55,41 +55,13 @@ class User extends Authenticatable
 
     /**
      * Get the avatar URL attribute.
+     * Upload functionality removed - always returns null.
      *
      * @return string|null
      */
     public function getAvatarUrlAttribute()
     {
-        if (!$this->avatar) {
-            return null;
-        }
-
-        // If it's already a full URL, return as is
-        if (filter_var($this->avatar, FILTER_VALIDATE_URL)) {
-            return $this->avatar;
-        }
-
-        // Handle S3 paths (s3://path/to/file)
-        if (strpos($this->avatar, 's3://') === 0) {
-            // S3 URLs should be handled by FileUploadService in controllers
-            // For now, return null and let controllers handle it
-            return null;
-        }
-
-        // Handle /uploads/ paths (new format)
-        if (strpos($this->avatar, '/uploads/') === 0 || strpos($this->avatar, 'uploads/') === 0) {
-            $baseUrl = config('app.url');
-            return $baseUrl . (strpos($this->avatar, '/') === 0 ? $this->avatar : '/uploads/' . $this->avatar);
-        }
-
-        // Handle old /storage/ paths (backward compatibility)
-        if (strpos($this->avatar, '/storage/') === 0 || strpos($this->avatar, 'storage/') === 0) {
-            $baseUrl = config('app.url');
-            return $baseUrl . (strpos($this->avatar, '/') === 0 ? $this->avatar : '/storage/' . $this->avatar);
-        }
-
-        // Otherwise, return public storage URL (old format: avatars/filename.jpg)
-        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->avatar);
+        return null;
     }
 
     /**

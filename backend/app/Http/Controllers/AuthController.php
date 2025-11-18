@@ -11,16 +11,9 @@ use Illuminate\Validation\ValidationException;
 use App\Models\User;
 use App\Models\Setting;
 use App\Services\EmailService;
-use App\Services\FileUploadService;
 
 class AuthController extends Controller
 {
-    protected $fileUploadService;
-
-    public function __construct(FileUploadService $fileUploadService)
-    {
-        $this->fileUploadService = $fileUploadService;
-    }
     /**
      * User login.
      *
@@ -71,7 +64,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Format user data with avatar URL.
+     * Format user data.
      *
      * @param User $user
      * @return array
@@ -80,33 +73,9 @@ class AuthController extends Controller
     {
         $userData = $user->toArray();
         
-        // Convert avatar path to full URL
-        if ($user->avatar) {
-            $avatarUrl = $this->fileUploadService->getFileUrl($user->avatar);
-            
-            // Only use URL if it's a valid HTTP(S) URL (not s3:// protocol)
-            if ($avatarUrl && 
-                is_string($avatarUrl) && 
-                (strpos($avatarUrl, 'http://') === 0 || strpos($avatarUrl, 'https://') === 0) &&
-                filter_var($avatarUrl, FILTER_VALIDATE_URL)) {
-                $userData['avatar_url'] = $avatarUrl;
-                // Also update avatar field to URL for frontend compatibility
-                $userData['avatar'] = $avatarUrl;
-            } else {
-                // If URL generation failed, log it and return null
-                \Log::warning('Failed to generate avatar URL', [
-                    'avatar_path' => $user->avatar,
-                    'generated_url' => $avatarUrl,
-                    'user_id' => $user->id
-                ]);
-                $userData['avatar_url'] = null;
-                // Keep the path in avatar field but it won't be a valid URL
-                $userData['avatar'] = null;
-            }
-        } else {
-            $userData['avatar_url'] = null;
-            $userData['avatar'] = null;
-        }
+        // Avatar field - set to null (upload functionality removed)
+        $userData['avatar_url'] = null;
+        $userData['avatar'] = null;
         
         return $userData;
     }

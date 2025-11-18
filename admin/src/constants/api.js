@@ -27,7 +27,6 @@ export const API_ENDPOINTS = {
     SEARCH: '/users/search',
     GET_PROFILE: '/users/profile',
     UPDATE_PROFILE: '/users/profile',
-    UPLOAD_AVATAR: '/users/avatar',
     CHANGE_STATUS: (id) => `/users/${id}/status`,
     RESET_PASSWORD: (id) => `/users/${id}/reset-password`,
   },
@@ -86,22 +85,6 @@ export const API_ENDPOINTS = {
     SYSTEM: '/settings/system',
     BACKUP: '/settings/backup',
     RESTORE: '/settings/restore',
-  },
-
-  // File Management
-  FILES: {
-    BASE: '/files',
-    UPLOAD: '/files/upload',
-    DOWNLOAD: (id) => `/files/${id}/download`,
-    DELETE: (id) => `/files/${id}`,
-    LIST: '/files',
-    GET_BY_ID: (id) => `/files/${id}`,
-  },
-
-  // Common Upload
-  UPLOADS: {
-    BASE: '/uploads',
-    UPLOAD: '/uploads',
   },
 
   // Audit Logs
@@ -261,22 +244,10 @@ export const REQUEST_CONFIG = {
   RETRY_DELAY: 1000, // 1 second
 }
 
-// File Upload Configuration
-export const FILE_UPLOAD_CONFIG = {
-  MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
-  ALLOWED_TYPES: {
-    IMAGES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-    DOCUMENTS: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-    SPREADSHEETS: ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
-  },
-  MAX_FILES: 5,
-}
-
 export default {
   API_ENDPOINTS,
   HTTP_METHODS,
   API_STATUS,
   API_ERRORS,
   REQUEST_CONFIG,
-  FILE_UPLOAD_CONFIG,
 }

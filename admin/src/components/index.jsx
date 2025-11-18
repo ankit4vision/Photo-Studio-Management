@@ -16,7 +16,6 @@ import Table from './common/Table'
 import FormModal from './common/FormModal'
 import GlobalSpinner from './common/GlobalSpinner'
 import ImageUpload from './common/ImageUpload'
-import ImageUploadWithUpload from './common/ImageUploadWithUpload'
 import StepIndicator from './common/StepIndicator'
 import ScrollToTop from './common/ScrollToTop'
 import ThemeToggle from './common/ThemeToggle'
@@ -57,7 +56,6 @@ export {
   FormModal,
   GlobalSpinner,
   ImageUpload,
-  ImageUploadWithUpload,
   StepIndicator,
   ScrollToTop,
   ThemeToggle,

@@ -5,22 +5,16 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\EmailService;
-use App\Services\FileUploadService;
-use App\Services\S3Service;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class SettingController extends Controller
 {
     protected $emailService;
-    protected $s3Service;
-    protected $fileUploadService;
 
-    public function __construct(EmailService $emailService, S3Service $s3Service, FileUploadService $fileUploadService)
+    public function __construct(EmailService $emailService)
     {
         $this->emailService = $emailService;
-        $this->s3Service = $s3Service;
-        $this->fileUploadService = $fileUploadService;
     }
 
     /**
@@ -51,28 +45,9 @@ class SettingController extends Controller
             Setting::set($key, $value, $group);
         }
 
-        // Reload service settings if applicable
-        if ($group === 's3') {
-            $this->s3Service->reloadSettings();
-        }
-
         return response()->json(['message' => 'Settings updated successfully']);
     }
 
-    /**
-     * Test S3 connection.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function testS3()
-    {
-        // Reload settings to get the latest values from database
-        $this->s3Service->reloadSettings();
-        
-        $result = $this->s3Service->testConnection();
-
-        return response()->json($result);
-    }
 
     /**
      * Test email configuration.
@@ -214,86 +189,6 @@ class SettingController extends Controller
         ]);
     }
 
-    /**
-     * Upload business logo.
-     */
-    public function uploadLogo(Request $request)
-    {
-        try {
-            $validated = $request->validate([
-                'logo' => 'required|image|mimes:jpeg,jpg,png,gif,webp|max:2048',
-                'key' => 'required|string',
-                'section' => 'required|string',
-            ]);
-
-            $file = $request->file('logo');
-            $key = $validated['key'];
-            $section = $validated['section'];
-
-            $existingSetting = Setting::where('key', $key)
-                ->where('group', $section)
-                ->first();
-
-            $filename = 'business_logo_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-
-            $uploadResult = $this->fileUploadService->replaceFile(
-                $existingSetting->value ?? null,
-                $file,
-                'logos',
-                $filename,
-                'public',
-                'settings'
-            );
-
-            \Log::info('Logo upload result', [
-                'stored_in_s3' => $uploadResult['stored_in_s3'],
-                'path' => $uploadResult['path'],
-                'url' => $uploadResult['url'],
-                's3_status' => $this->s3Service->getStatus(),
-            ]);
-
-            $setting = Setting::updateOrCreate(
-                [
-                    'key' => $key,
-                    'group' => $section,
-                ],
-                [
-                    'value' => $uploadResult['path'],
-                    'description' => 'Business logo URL',
-                ]
-            );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Logo uploaded successfully',
-                'data' => [
-                    'id' => $setting->id,
-                    'key' => $setting->key,
-                    'value' => $setting->value,
-                    'logo_url' => $uploadResult['url'],
-                    'section' => $setting->group,
-                ],
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            \Log::error('Logo upload error', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to upload logo: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
 
     /**
      * Store a newly created setting.
@@ -478,35 +373,10 @@ class SettingController extends Controller
      */
     protected function formatSetting(Setting $setting): array
     {
-        $value = $setting->value;
-        
-        // Convert storage paths to full URLs for logo settings
-        if (in_array($setting->key, ['business_logo', 'logo']) && $value) {
-            if (strpos($value, 's3://') === 0) {
-                $s3Path = ltrim(substr($value, strlen('s3://')), '/');
-                $s3Url = $this->s3Service->getFileUrl($s3Path);
-                if ($s3Url) {
-                    $value = $s3Url;
-                }
-            }
-
-            // If it's already a full URL, keep it
-            if (filter_var($value, FILTER_VALIDATE_URL)) {
-                // Already a full URL, keep as is
-            } 
-            // If it's a relative path starting with /storage/ or /uploads/, convert to full URL
-            elseif (strpos($value, '/storage/') === 0 || strpos($value, 'storage/') === 0 ||
-                    strpos($value, '/uploads/') === 0 || strpos($value, 'uploads/') === 0) {
-                // Get base URL from database settings (Web URL) or fallback to config
-                $baseUrl = $this->getBaseUrl();
-                $value = $baseUrl . (strpos($value, '/') === 0 ? $value : '/' . $value);
-            }
-        }
-        
         return [
             'id' => $setting->id,
             'key' => $setting->key,
-            'value' => $value,
+            'value' => $setting->value,
             'section' => $setting->group,
             'description' => $setting->description,
             'created_at' => $setting->created_at,
@@ -514,25 +384,5 @@ class SettingController extends Controller
         ];
     }
 
-    /**
-     * Get base URL from database settings or fallback to config.
-     *
-     * @return string
-     */
-    protected function getBaseUrl(): string
-    {
-        // Try to get Web URL from database settings (common key names)
-        $webUrlKeys = ['web_url', 'Web URL', 'app_url', 'APP_URL', 'site_url', 'Site URL'];
-        
-        foreach ($webUrlKeys as $key) {
-            $webUrl = Setting::get($key);
-            if ($webUrl) {
-                return rtrim($webUrl, '/');
-            }
-        }
-        
-        // Fallback to config if not found in database
-        return rtrim(config('app.url'), '/');
-    }
 }
 

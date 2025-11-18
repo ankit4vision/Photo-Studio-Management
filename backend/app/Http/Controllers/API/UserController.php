@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\PaginatesResults;
 use App\Models\Role;
 use App\Models\User;
-use App\Services\FileUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -17,12 +16,6 @@ class UserController extends Controller
 {
     use PaginatesResults;
 
-    protected $fileUploadService;
-
-    public function __construct(FileUploadService $fileUploadService)
-    {
-        $this->fileUploadService = $fileUploadService;
-    }
 
     /**
      * Format user data with avatar URL.
@@ -38,44 +31,9 @@ class UserController extends Controller
         $userData['created_at'] = $user->created_at;
         $userData['updated_at'] = $user->updated_at;
         
-        // Convert avatar path to full URL
-        $originalAvatar = $user->getOriginal('avatar') ?? $user->avatar;
-        
-        if ($originalAvatar) {
-            $avatarUrl = $this->fileUploadService->getFileUrl($originalAvatar);
-            
-            // Debug logging
-            \Log::info('Formatting user avatar', [
-                'user_id' => $user->id,
-                'original_avatar' => $originalAvatar,
-                'generated_url' => $avatarUrl,
-                'url_type' => gettype($avatarUrl),
-                'is_valid_url' => $avatarUrl && filter_var($avatarUrl, FILTER_VALIDATE_URL)
-            ]);
-            
-            // Only use URL if it's a valid HTTP(S) URL (not s3:// protocol)
-            if ($avatarUrl && 
-                is_string($avatarUrl) && 
-                (strpos($avatarUrl, 'http://') === 0 || strpos($avatarUrl, 'https://') === 0) &&
-                filter_var($avatarUrl, FILTER_VALIDATE_URL)) {
-                $userData['avatar_url'] = $avatarUrl;
-                $userData['avatar'] = $avatarUrl;
-            } else {
-                // If URL generation failed, log it
-                \Log::warning('Failed to generate avatar URL', [
-                    'avatar_path' => $originalAvatar,
-                    'generated_url' => $avatarUrl,
-                    'url_type' => gettype($avatarUrl),
-                    'user_id' => $user->id
-                ]);
-                // Return null instead of the S3 path
-                $userData['avatar_url'] = null;
-                $userData['avatar'] = null;
-            }
-        } else {
-            $userData['avatar_url'] = null;
-            $userData['avatar'] = null;
-        }
+        // Avatar field - set to null (upload functionality removed)
+        $userData['avatar_url'] = null;
+        $userData['avatar'] = null;
         
         return $userData;
     }
@@ -276,50 +234,13 @@ class UserController extends Controller
             'zip_code' => 'nullable|string|max:20',
             'country' => 'nullable|string',
             'bio' => 'nullable|string',
-            'avatar' => 'nullable|string', // Base64 encoded image or URL
             'date_of_birth' => 'nullable|date',
             'gender' => 'nullable|string|in:male,female,other,prefer-not-to-say',
         ]);
 
-        // Handle avatar upload using FileUploadService
-        if ($request->has('avatar') && $request->avatar) {
-            $avatarData = $request->avatar;
-            
-            // If empty string, delete avatar
-            if ($avatarData === '') {
-                if ($user->avatar) {
-                    $this->fileUploadService->deleteFile($user->avatar);
-                }
-                $validated['avatar'] = null;
-            } elseif (preg_match('/^data:image\/(\w+);base64,/', $avatarData, $matches)) {
-                // Validate image type
-                $imageType = $matches[1];
-                $allowedTypes = ['jpeg', 'jpg', 'png', 'gif', 'webp'];
-                if (!in_array(strtolower($imageType), $allowedTypes)) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid image type. Allowed types: JPEG, PNG, GIF, WebP',
-                    ], 422);
-                }
-
-                // Generate unique filename
-                $filename = 'user_' . $user->id . '_' . time() . '.' . $imageType;
-
-                $uploadResult = $this->fileUploadService->replaceFile(
-                    $user->avatar,
-                    $avatarData,
-                    'avatars',
-                    $filename,
-                    'public',
-                    'users'
-                );
-
-                $validated['avatar'] = $uploadResult['path'];
-            }
-            // If it's already a URL or path, keep it as is
-            else {
-                $validated['avatar'] = $avatarData;
-            }
+        // Avatar upload functionality removed
+        if ($request->has('avatar')) {
+            unset($validated['avatar']);
         }
 
         // Only update fields that are present in the request

@@ -27,7 +27,6 @@ class OrderResource extends JsonResource
                     'email' => $this->customer->email,
                     'phone' => $this->customer->phone ?? $this->customer->mobile,
                     'mobile' => $this->customer->mobile,
-                    'avatar' => $this->customer->avatar,
                     'customerCode' => $this->customer->customer_code,
                 ];
             }),

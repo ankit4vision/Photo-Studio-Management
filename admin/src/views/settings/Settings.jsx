@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Container, Row, Col, Button, Spinner, Form, FormControl, FormSelect, FormText, Alert } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faBuilding, faEnvelope, faGlobe, faSave, faCheckCircle, faFileInvoice, faCloud, faPaperPlane, faCog, faImage, faTimes } from '@fortawesome/free-solid-svg-icons'
+import { faBuilding, faEnvelope, faGlobe, faSave, faCheckCircle, faFileInvoice, faPaperPlane, faCog } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from '../../components'
 import { settingsService } from '../../services/settingsService'
 import { usePermissions } from '../../hooks'
 import { PERMISSIONS } from '../../constants/permissions'
-import ImageUploadWithUpload from '../../components/common/ImageUploadWithUpload'
 
 const Settings = () => {
   const { hasPermission } = usePermissions()
@@ -27,8 +26,7 @@ const Settings = () => {
       business_phone: '',
       business_website: '',
       gstNumber: '',
-      businessAddress: '',
-      business_logo: ''
+      businessAddress: ''
     },
     invoiceSettings: {
       invoice_prefix: 'INV'
@@ -48,13 +46,6 @@ const Settings = () => {
       dateFormat: 'DD/MM/YYYY',
       timeZone: 'Asia/Kolkata'
     },
-    s3Settings: {
-      bucketName: '',
-      region: 'ap-south-1',
-      accessKey: '',
-      secretKey: '',
-      useSSL: true
-    },
     appSettings: {
       web_url: ''
     }
@@ -66,8 +57,6 @@ const Settings = () => {
   const [autoSaved, setAutoSaved] = useState({}) // Track which fields were recently saved
   const [testEmailAddress, setTestEmailAddress] = useState('')
   const [sendingTestEmail, setSendingTestEmail] = useState(false)
-  const [testingS3, setTestingS3] = useState(false)
-  const [logoPreview, setLogoPreview] = useState(null)
   
   const isInitialLoadRef = useRef(true) // Track if we're still loading initial data
   
@@ -79,7 +68,6 @@ const Settings = () => {
     'businessInfo.business_website': { key: 'business_website', section: 'Business Information' },
     'businessInfo.gstNumber': { key: 'gstNumber', section: 'Business Information' },
     'businessInfo.businessAddress': { key: 'businessAddress', section: 'Business Information' },
-    'businessInfo.business_logo': { key: 'business_logo', section: 'Business Information' },
     'invoiceSettings.invoice_prefix': { key: 'invoice_prefix', section: 'Invoice Settings' },
     'emailSettings.mailer': { key: 'mailer', section: 'Email Settings' },
     'emailSettings.host': { key: 'host', section: 'Email Settings' },
@@ -92,12 +80,6 @@ const Settings = () => {
     'currencyRegional.currency': { key: 'currency', section: 'Currency & Regional' },
     'currencyRegional.dateFormat': { key: 'dateFormat', section: 'Currency & Regional' },
     'currencyRegional.timeZone': { key: 'timeZone', section: 'Currency & Regional' },
-    's3Settings.enabled': { key: 'enabled', section: 's3' },
-    's3Settings.bucketName': { key: 'bucket', section: 's3' },
-    's3Settings.region': { key: 'region', section: 's3' },
-    's3Settings.accessKey': { key: 'key', section: 's3' },
-    's3Settings.secretKey': { key: 'secret', section: 's3' },
-    's3Settings.useSSL': { key: 'use_path_style', section: 's3' },
     'appSettings.web_url': { key: 'web_url', section: 'App Settings' }
   }
 
@@ -117,10 +99,6 @@ const Settings = () => {
           // transformSettingsToForm handles empty/null/undefined responses and returns defaults
           const transformedData = settingsService.transformSettingsToForm(response.data)
           setSettingsData(transformedData)
-          // Set logo preview if logo exists
-          if (transformedData.businessInfo?.business_logo) {
-            setLogoPreview(transformedData.businessInfo.business_logo)
-          }
           // Mark initial load as complete
           isInitialLoadRef.current = false
         } else {
@@ -152,10 +130,6 @@ const Settings = () => {
       return
     }
 
-    if (fieldPath === 's3Settings.secretKey' && !value) {
-      return
-    }
-    
     const fieldId = fieldPath
     
     // Set auto-saving state
@@ -274,19 +248,6 @@ const Settings = () => {
     }
     if (settingsData.emailSettings.port && (!/^\d+$/.test(settingsData.emailSettings.port) || parseInt(settingsData.emailSettings.port) < 1 || parseInt(settingsData.emailSettings.port) > 65535)) {
       newErrors['emailSettings.port'] = 'Please enter a valid port number (1-65535)'
-    }
-    
-    // Validate S3 settings
-    if (settingsData.s3Settings.bucketName && settingsData.s3Settings.bucketName.length < 3) {
-      newErrors['s3Settings.bucketName'] = 'Bucket name must be at least 3 characters'
-    }
-    const hasS3Config =
-      settingsData.s3Settings.bucketName ||
-      settingsData.s3Settings.accessKey ||
-      settingsData.s3Settings.secretKey
-
-    if (hasS3Config && !settingsData.s3Settings.region?.trim()) {
-      newErrors['s3Settings.region'] = 'Region is required'
     }
     
     setErrors(newErrors)
@@ -456,27 +417,6 @@ const Settings = () => {
           </Form.Group>
         </Col>
       </Row>
-      <Row>
-        <Col md={12}>
-          <Form.Group className="mb-3">
-            <ImageUploadWithUpload
-              value={logoPreview || settingsData.businessInfo.business_logo || ''}
-              onChange={handleLogoChange}
-              label="Business Logo"
-              module="settings"
-              folder="logos"
-              existingPath={settingsData.businessInfo.business_logo || null}
-              visibility="public"
-              maxSize={2 * 1024 * 1024} // 2MB
-              previewSize={{ width: 200, height: 150 }}
-              disabled={isReadOnly}
-              onUploadComplete={handleLogoUploadComplete}
-              onUploadError={(errorMsg) => error(errorMsg)}
-              onRemove={handleRemoveLogo}
-            />
-          </Form.Group>
-        </Col>
-      </Row>
     </div>
   )
 
@@ -600,62 +540,6 @@ const Settings = () => {
     }
   }
 
-  const handleLogoChange = (path, url, uploadResult) => {
-    // Update settings data with the stored path
-    setSettingsData(prev => ({
-      ...prev,
-      businessInfo: {
-        ...prev.businessInfo,
-        business_logo: path || ''
-      }
-    }))
-    
-    // Update preview with URL if available
-    if (url) {
-      setLogoPreview(url)
-    } else if (path) {
-      setLogoPreview(path)
-    } else {
-      setLogoPreview(null)
-    }
-
-    // Auto-save the logo path to settings
-    if (path && !isInitialLoadRef.current) {
-      autoSaveSetting('businessInfo.business_logo', 'business_logo', 'Business Information', path)
-    }
-  }
-
-  const handleLogoUploadComplete = (uploadResult, file) => {
-    success('Business logo uploaded successfully!')
-  }
-
-  const handleRemoveLogo = async () => {
-    if (!canEditSettings) {
-      warning && warning('You do not have permission to modify settings.', { title: 'Read only' })
-      return
-    }
-
-    try {
-      const response = await settingsService.saveSetting('business_logo', 'Business Information', '')
-      if (response.success) {
-        setSettingsData(prev => ({
-          ...prev,
-          businessInfo: {
-            ...prev.businessInfo,
-            business_logo: ''
-          }
-        }))
-        setLogoPreview(null)
-        success('Business logo removed successfully!')
-      } else {
-        error(response.message || 'Failed to remove logo')
-      }
-    } catch (err) {
-      error('Failed to remove logo. Please try again.')
-      console.error('Remove logo error:', err)
-    }
-  }
-
   const handleSendTestEmail = async () => {
     if (!testEmailAddress?.trim()) {
       error('Please enter a test email address')
@@ -688,23 +572,6 @@ const Settings = () => {
       console.error('Send test email error:', err)
     } finally {
       setSendingTestEmail(false)
-    }
-  }
-
-  const handleTestS3 = async () => {
-    setTestingS3(true)
-    try {
-      const response = await settingsService.testS3()
-      if (response.success) {
-        success(response.message || 'S3 connection test successful!')
-      } else {
-        error(response.message || 'S3 connection test failed. Please check your S3 configuration.')
-      }
-    } catch (err) {
-      error('Failed to test S3 connection. Please try again.')
-      console.error('Test S3 error:', err)
-    } finally {
-      setTestingS3(false)
     }
   }
 
@@ -997,185 +864,6 @@ const Settings = () => {
     </div>
   )
 
-  const renderS3Settings = () => (
-    <div className="mb-5">
-      {/* Section Header */}
-      <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-success border-2">
-        <FontAwesomeIcon icon={faCloud} className="me-3 text-success fs-4" />
-        <h4 className="mb-0 text-success">S3 Bucket Settings</h4>
-      </div>
-
-      <Row className="mb-3">
-        <Col md={12}>
-          <Form.Group>
-            <Form.Label className="fw-semibold me-3">
-              Enable S3 Uploads
-              {autoSaving['s3Settings.enabled'] && (
-                <Spinner size="sm" className="ms-2" variant="primary" />
-              )}
-              {autoSaved['s3Settings.enabled'] && (
-                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
-              )}
-            </Form.Label>
-            <Form.Check
-              type="switch"
-              id="s3-enabled-toggle"
-              label={settingsData.s3Settings.enabled ? 'Enabled' : 'Disabled'}
-              checked={settingsData.s3Settings.enabled}
-              onChange={(e) => handleChange('s3Settings', 'enabled', e.target.checked)}
-              onBlur={(e) => handleBlur('s3Settings', 'enabled', e.target.checked)}
-              disabled={autoSaving['s3Settings.enabled']}
-              className="fs-6"
-            />
-            <FormText className="text-muted">
-              Toggle on to store uploads in your S3 bucket. When off, files stay on this server.
-            </FormText>
-          </Form.Group>
-        </Col>
-      </Row>
-
-      <Row>
-        <Col md={6}>
-          <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">
-              Bucket Name
-              {autoSaving['s3Settings.bucketName'] && (
-                <Spinner size="sm" className="ms-2" variant="primary" />
-              )}
-              {autoSaved['s3Settings.bucketName'] && (
-                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
-              )}
-            </Form.Label>
-            <FormControl
-              placeholder="e.g., my-photo-bucket"
-              value={settingsData.s3Settings.bucketName}
-              onChange={(e) => handleChange('s3Settings', 'bucketName', e.target.value)}
-              onBlur={(e) => handleBlur('s3Settings', 'bucketName', e.target.value)}
-              isInvalid={!!errors['s3Settings.bucketName']}
-              className="border-2"
-            />
-            {errors['s3Settings.bucketName'] && (
-              <FormText className="text-danger">{errors['s3Settings.bucketName']}</FormText>
-            )}
-          </Form.Group>
-        </Col>
-        <Col md={6}>
-          <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">
-              Region
-              {autoSaving['s3Settings.region'] && (
-                <Spinner size="sm" className="ms-2" variant="primary" />
-              )}
-              {autoSaved['s3Settings.region'] && (
-                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
-              )}
-            </Form.Label>
-            <FormControl
-              placeholder="e.g., ap-south-1"
-              value={settingsData.s3Settings.region}
-              onChange={(e) => handleChange('s3Settings', 'region', e.target.value)}
-              onBlur={(e) => handleBlur('s3Settings', 'region', e.target.value)}
-              isInvalid={!!errors['s3Settings.region']}
-              className="border-2"
-            />
-            {errors['s3Settings.region'] && (
-              <FormText className="text-danger">{errors['s3Settings.region']}</FormText>
-            )}
-          </Form.Group>
-        </Col>
-      </Row>
-
-      <Row>
-        <Col md={6}>
-          <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">
-              Access Key ID
-              {autoSaving['s3Settings.accessKey'] && (
-                <Spinner size="sm" className="ms-2" variant="primary" />
-              )}
-              {autoSaved['s3Settings.accessKey'] && (
-                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
-              )}
-            </Form.Label>
-            <FormControl
-              placeholder="AWS access key ID"
-              value={settingsData.s3Settings.accessKey}
-              onChange={(e) => handleChange('s3Settings', 'accessKey', e.target.value)}
-              onBlur={(e) => handleBlur('s3Settings', 'accessKey', e.target.value)}
-              className="border-2"
-            />
-          </Form.Group>
-        </Col>
-        <Col md={6}>
-          <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">
-              Secret Access Key
-              {autoSaving['s3Settings.secretKey'] && (
-                <Spinner size="sm" className="ms-2" variant="primary" />
-              )}
-              {autoSaved['s3Settings.secretKey'] && (
-                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
-              )}
-            </Form.Label>
-            <FormControl
-              type="password"
-              placeholder="AWS secret access key"
-              value={settingsData.s3Settings.secretKey}
-              onChange={(e) => handleChange('s3Settings', 'secretKey', e.target.value)}
-              onBlur={(e) => handleBlur('s3Settings', 'secretKey', e.target.value)}
-              className="border-2"
-            />
-            <FormText className="text-muted">We store this encrypted. Leave blank to keep the current secret.</FormText>
-          </Form.Group>
-        </Col>
-      </Row>
-
-      <Row>
-        <Col md={12}>
-          <Form.Group className="mb-3">
-            <Form.Check
-              type="checkbox"
-              label="Use SSL when connecting to S3"
-              checked={settingsData.s3Settings.useSSL}
-              onChange={(e) => handleChange('s3Settings', 'useSSL', e.target.checked)}
-              onBlur={(e) => handleBlur('s3Settings', 'useSSL', e.target.checked)}
-              disabled={autoSaving['s3Settings.useSSL']}
-              className="fs-6"
-            />
-          </Form.Group>
-        </Col>
-      </Row>
-
-      {/* Test S3 Connection Section */}
-      <Row>
-        <Col md={12}>
-          <div className="border-top pt-4 mt-4">
-            <h5 className="mb-3">Test S3 Connection</h5>
-            <p className="text-muted mb-4">Test your S3 configuration to verify connectivity and credentials.</p>
-            <Button
-              variant="outline-primary"
-              onClick={handleTestS3}
-              disabled={testingS3 || isReadOnly}
-              className="d-flex align-items-center"
-            >
-              {testingS3 ? (
-                <>
-                  <Spinner size="sm" className="me-2" />
-                  Testing...
-                </>
-              ) : (
-                <>
-                  <FontAwesomeIcon icon={faCloud} className="me-2" />
-                  Test S3 Connection
-                </>
-              )}
-            </Button>
-          </div>
-        </Col>
-      </Row>
-    </div>
-  )
-
   if (loading) {
     return (
       <Container fluid className="d-flex justify-content-center align-items-center min-vh-100">
@@ -1189,7 +877,7 @@ const Settings = () => {
       <Container fluid className="py-5">
         <Row className="justify-content-center">
           <Col md={6} className="text-center">
-            <FontAwesomeIcon icon={faCloud} className="text-muted mb-3" size="3x" />
+            <FontAwesomeIcon icon={faCog} className="text-muted mb-3" size="3x" />
             <h4 className="text-muted">Access Restricted</h4>
             <p className="text-muted">
               You do not have permission to view application settings. Please contact your administrator if you need additional access.
@@ -1240,7 +928,6 @@ const Settings = () => {
               {renderEmailSettings()}
               {renderAppSettings()}
               {renderCurrencyRegional()}
-              {renderS3Settings()}
             </fieldset>
             
             {/* Bottom Save Button */}

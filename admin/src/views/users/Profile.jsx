@@ -68,91 +68,6 @@ const Profile = () => {
     }
   }
 
-  // Handle avatar change
-  const handleAvatarChange = async (file, base64, path, url) => {
-    try {
-      setSaving(true)
-      // Use path if available (from upload service), otherwise fall back to base64
-      const avatarValue = path || base64
-      const response = await profileService.updateProfile({ avatar: avatarValue })
-      
-      if (response.success) {
-        setProfileData(response.data)
-        success('Profile picture updated successfully')
-        
-        // Update auth context with new user data
-        if (updateUser && response.data) {
-          // Use the avatar URL directly from response (already includes full URL)
-          const updatedData = {
-            ...response.data,
-            avatar: response.data.avatar, // This should already be the full URL from backend
-          }
-          
-          // Update localStorage and context
-          updateUser(updatedData)
-          
-          // Force a refresh of the current user from API to ensure consistency
-          setTimeout(async () => {
-            try {
-              const { default: authService } = await import('../../services/authService')
-              const userResponse = await authService.fetchCurrentUser()
-              if (userResponse.success && userResponse.data) {
-                updateUser(userResponse.data)
-              }
-            } catch (err) {
-              console.warn('Failed to refresh user data:', err)
-            }
-          }, 500)
-        }
-      } else {
-        error(response.message || 'Failed to update profile picture')
-      }
-    } catch (err) {
-      console.error('Error updating avatar:', err)
-      error('Failed to update profile picture')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // Handle avatar delete
-  const handleAvatarDelete = async () => {
-    try {
-      setSaving(true)
-      const response = await profileService.updateProfile({ avatar: '' })
-      
-      if (response.success) {
-        setProfileData(response.data)
-        success('Profile picture deleted successfully')
-        
-        // Update auth context with new user data
-        if (updateUser && response.data) {
-          const updatedData = { ...response.data, avatar: null }
-          updateUser(updatedData)
-          
-          // Force a refresh of the current user from API
-          setTimeout(async () => {
-            try {
-              const { default: authService } = await import('../../services/authService')
-              const userResponse = await authService.fetchCurrentUser()
-              if (userResponse.success && userResponse.data) {
-                updateUser(userResponse.data)
-              }
-            } catch (err) {
-              console.warn('Failed to refresh user data:', err)
-            }
-          }, 500)
-        }
-      } else {
-        error(response.message || 'Failed to delete profile picture')
-      }
-    } catch (err) {
-      console.error('Error deleting avatar:', err)
-      error('Failed to delete profile picture')
-    } finally {
-      setSaving(false)
-    }
-  }
 
   // Handle personal info save
   const handlePersonalInfoSave = async (personalData) => {
@@ -324,10 +239,7 @@ const Profile = () => {
                 <CCol xs={12} className="mb-4">
                   <ProfilePictureSection
                     avatar={profileData.avatar}
-                    onAvatarChange={handleAvatarChange}
-                    onAvatarDelete={handleAvatarDelete}
                     loading={saving}
-                    userId={profileData.id}
                   />
                 </CCol>
 

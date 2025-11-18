@@ -59,7 +59,6 @@ class CustomerResource extends JsonResource
             'anniversary_date' => $this->anniversary_date?->format('Y-m-d'),
             'notes' => $this->notes,
             'preferences' => $this->preferences,
-            'avatar' => $this->avatar,
         ];
     }
 }
