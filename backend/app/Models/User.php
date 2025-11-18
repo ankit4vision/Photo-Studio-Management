@@ -69,7 +69,26 @@ class User extends Authenticatable
             return $this->avatar;
         }
 
-        // Otherwise, return public storage URL
+        // Handle S3 paths (s3://path/to/file)
+        if (strpos($this->avatar, 's3://') === 0) {
+            // S3 URLs should be handled by FileUploadService in controllers
+            // For now, return null and let controllers handle it
+            return null;
+        }
+
+        // Handle /uploads/ paths (new format)
+        if (strpos($this->avatar, '/uploads/') === 0 || strpos($this->avatar, 'uploads/') === 0) {
+            $baseUrl = config('app.url');
+            return $baseUrl . (strpos($this->avatar, '/') === 0 ? $this->avatar : '/uploads/' . $this->avatar);
+        }
+
+        // Handle old /storage/ paths (backward compatibility)
+        if (strpos($this->avatar, '/storage/') === 0 || strpos($this->avatar, 'storage/') === 0) {
+            $baseUrl = config('app.url');
+            return $baseUrl . (strpos($this->avatar, '/') === 0 ? $this->avatar : '/storage/' . $this->avatar);
+        }
+
+        // Otherwise, return public storage URL (old format: avatars/filename.jpg)
         return \Illuminate\Support\Facades\Storage::disk('public')->url($this->avatar);
     }
 

@@ -30,44 +30,91 @@ class S3Service
     public function reloadSettings()
     {
         $settings = Setting::getAsArray('s3');
+        
+        // Log what we got from database (without sensitive data)
+        Log::debug('S3 settings loaded from database', [
+            'has_enabled' => isset($settings['enabled']),
+            'enabled_value' => $settings['enabled'] ?? 'not set',
+            'has_bucket' => isset($settings['bucket']),
+            'has_region' => isset($settings['region']),
+            'has_key' => isset($settings['key']),
+            'has_secret' => isset($settings['secret']),
+            'all_keys' => array_keys($settings)
+        ]);
 
-        $this->enabled = isset($settings['enabled']) && $settings['enabled'] === '1';
+        // Accept both '1' and 'true' as enabled values
+        $enabledValue = $settings['enabled'] ?? '0';
+        $this->enabled = in_array($enabledValue, ['1', 'true', 1, true], true);
+        
+        Log::debug('S3 enabled status', [
+            'enabled_value' => $enabledValue,
+            'is_enabled' => $this->enabled
+        ]);
 
         if ($this->enabled) {
-            $this->bucket = $settings['bucket'] ?? config('filesystems.disks.s3.bucket');
-            $this->region = $settings['region'] ?? config('filesystems.disks.s3.region', 'us-east-1');
+            // Only use database settings - no .env fallback
+            $this->bucket = $settings['bucket'] ?? null;
+            $this->region = $settings['region'] ?? null;
+
+            // Validate required settings are present
+            if (empty($this->bucket) || empty($this->region)) {
+                Log::error('S3 settings incomplete: bucket or region missing', [
+                    'bucket' => $this->bucket,
+                    'region' => $this->region
+                ]);
+                $this->enabled = false;
+                return;
+            }
+
+            // Check for credentials
+            $accessKey = $settings['key'] ?? null;
+            $secretKey = $settings['secret'] ?? null;
+
+            if (empty($accessKey) || empty($secretKey)) {
+                Log::error('S3 credentials missing from database settings');
+                $this->enabled = false;
+                return;
+            }
 
             $config = [
                 'version' => 'latest',
                 'region' => $this->region,
+                'credentials' => [
+                    'key' => $accessKey,
+                    'secret' => $secretKey,
+                ],
             ];
 
-            if (isset($settings['key']) && isset($settings['secret'])) {
-                $config['credentials'] = [
-                    'key' => $settings['key'],
-                    'secret' => $settings['secret'],
-                ];
-            } else {
-                $config['credentials'] = [
-                    'key' => config('filesystems.disks.s3.key'),
-                    'secret' => config('filesystems.disks.s3.secret'),
-                ];
-            }
-
-            if (isset($settings['endpoint'])) {
+            // Optional settings
+            if (isset($settings['endpoint']) && !empty($settings['endpoint'])) {
                 $config['endpoint'] = $settings['endpoint'];
             }
 
             if (isset($settings['use_path_style'])) {
-                $config['use_path_style_endpoint'] = $settings['use_path_style'] === '1';
+                $usePathStyleValue = $settings['use_path_style'];
+                $config['use_path_style_endpoint'] = in_array($usePathStyleValue, ['1', 'true', 1, true], true);
             }
 
             try {
                 $this->s3Client = new S3Client($config);
+                Log::info('S3 Client initialized successfully', [
+                    'bucket' => $this->bucket,
+                    'region' => $this->region
+                ]);
             } catch (\Exception $e) {
-                Log::error('S3 Client initialization failed: ' . $e->getMessage());
+                Log::error('S3 Client initialization failed', [
+                    'message' => $e->getMessage(),
+                    'bucket' => $this->bucket,
+                    'region' => $this->region
+                ]);
                 $this->enabled = false;
+                $this->s3Client = null;
             }
+        } else {
+            // Reset when disabled
+            $this->s3Client = null;
+            $this->bucket = null;
+            $this->region = null;
         }
     }
 
@@ -79,30 +126,80 @@ class S3Service
      * @param string $visibility
      * @return string|false
      */
-    public function uploadFile($file, $path, $visibility = 'public')
+    public function uploadFile($file, $path, $visibility = 'public', $filename = null)
     {
-        if (!$this->isEnabled()) {
+        if (!$this->isEnabled() || !$this->s3Client || !$this->bucket) {
+            Log::warning('S3 upload attempted but S3 is not enabled or client not initialized', [
+                'enabled' => $this->enabled,
+                'has_client' => !is_null($this->s3Client),
+                'has_bucket' => !empty($this->bucket)
+            ]);
             return false;
         }
 
         try {
+            // Get file content
             if (is_string($file)) {
-                // File path
                 $content = file_get_contents($file);
-                $filename = basename($file);
+                $originalName = basename($file);
             } else {
-                // Uploaded file
                 $content = file_get_contents($file->getRealPath());
-                $filename = $file->getClientOriginalName();
+                $originalName = $file->getClientOriginalName();
             }
 
-            $fullPath = rtrim($path, '/') . '/' . $filename;
+            $finalName = $filename ?: $originalName;
+            $fullPath = rtrim($path, '/') . '/' . ltrim($finalName, '/');
 
-            Storage::disk('s3')->put($fullPath, $content, $visibility);
+            // Use S3Client directly instead of Storage::disk('s3')
+            // This ensures we use the database settings, not .env config
+            // Note: ACLs are disabled for newer S3 buckets, so we don't set ACL
+            // Public access should be controlled via bucket policy instead
+            $putObjectParams = [
+                'Bucket' => $this->bucket,
+                'Key' => $fullPath,
+                'Body' => $content,
+            ];
+            
+            // Only set ACL if bucket supports it (for older buckets)
+            // For newer buckets, use bucket policy for public access
+            // Try without ACL first - if bucket doesn't allow ACLs, it will fail gracefully
+            try {
+                if ($visibility === 'public') {
+                    // Try with ACL for backward compatibility with older buckets
+                    $putObjectParams['ACL'] = 'public-read';
+                }
+                $this->s3Client->putObject($putObjectParams);
+            } catch (\Exception $aclException) {
+                // If ACL fails, try without ACL (for buckets with ACLs disabled)
+                if (strpos($aclException->getMessage(), 'AccessControlListNotSupported') !== false || 
+                    strpos($aclException->getMessage(), 'ACL') !== false) {
+                    unset($putObjectParams['ACL']);
+                    $this->s3Client->putObject($putObjectParams);
+                    Log::info('S3 upload succeeded without ACL (bucket has ACLs disabled)', [
+                        'bucket' => $this->bucket,
+                        'path' => $fullPath
+                    ]);
+                } else {
+                    // Re-throw if it's a different error
+                    throw $aclException;
+                }
+            }
+
+            Log::info('S3 upload successful', [
+                'bucket' => $this->bucket,
+                'path' => $fullPath,
+                'visibility' => $visibility
+            ]);
 
             return $fullPath;
         } catch (\Exception $e) {
-            Log::error('S3 upload failed: ' . $e->getMessage());
+            Log::error('S3 upload failed', [
+                'message' => $e->getMessage(),
+                'bucket' => $this->bucket ?? 'not set',
+                'path' => $path,
+                'filename' => $filename,
+                'trace' => $e->getTraceAsString()
+            ]);
             return false;
         }
     }
@@ -136,14 +233,26 @@ class S3Service
      */
     public function getFileUrl($path)
     {
-        if (!$this->isEnabled()) {
+        if (!$this->isEnabled() || !$this->s3Client || !$this->bucket) {
             return false;
         }
 
         try {
-            return Storage::disk('s3')->url($path);
+            // Construct public URL for S3 objects
+            // Format: https://bucket-name.s3.region.amazonaws.com/path/to/file
+            // For eu-north-1: https://bucket-name.s3.eu-north-1.amazonaws.com/path/to/file
+            $publicUrl = "https://{$this->bucket}.s3.{$this->region}.amazonaws.com/{$path}";
+            
+            // For most use cases, we upload with public-read ACL, so return public URL
+            // If you need presigned URLs for private files, we can add that later
+            return $publicUrl;
         } catch (\Exception $e) {
-            Log::error('S3 URL generation failed: ' . $e->getMessage());
+            Log::error('S3 URL generation failed', [
+                'message' => $e->getMessage(),
+                'path' => $path,
+                'bucket' => $this->bucket,
+                'region' => $this->region
+            ]);
             return false;
         }
     }
@@ -183,7 +292,35 @@ class S3Service
      */
     public function isEnabled()
     {
-        return $this->enabled && $this->s3Client !== null;
+        $isEnabled = $this->enabled && $this->s3Client !== null;
+        
+        // Log status for debugging
+        if (!$isEnabled) {
+            Log::debug('S3 is not enabled', [
+                'enabled' => $this->enabled,
+                'has_client' => !is_null($this->s3Client),
+                'has_bucket' => !empty($this->bucket),
+                'has_region' => !empty($this->region)
+            ]);
+        }
+        
+        return $isEnabled;
+    }
+    
+    /**
+     * Get current S3 status for debugging.
+     *
+     * @return array
+     */
+    public function getStatus()
+    {
+        return [
+            'enabled' => $this->enabled,
+            'has_client' => !is_null($this->s3Client),
+            'bucket' => $this->bucket,
+            'region' => $this->region,
+            'is_fully_enabled' => $this->isEnabled(),
+        ];
     }
 }
 

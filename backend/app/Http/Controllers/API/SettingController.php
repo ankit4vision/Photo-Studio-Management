@@ -64,6 +64,9 @@ class SettingController extends Controller
      */
     public function testS3()
     {
+        // Reload settings to get the latest values from database
+        $this->s3Service->reloadSettings();
+        
         $result = $this->s3Service->testConnection();
 
         return response()->json($result);
@@ -235,31 +238,63 @@ class SettingController extends Controller
 
             if ($existingSetting && $existingSetting->value) {
                 $oldPath = $existingSetting->value;
+
                 // Extract path from URL if it's a full URL
-                $oldStoragePath = $oldPath;
-                if (strpos($oldPath, '/storage/') !== false) {
-                    $oldStoragePath = 'logos/' . basename(parse_url($oldPath, PHP_URL_PATH));
-                } elseif (strpos($oldPath, 'storage/') === 0) {
-                    $oldStoragePath = $oldPath;
-                } elseif (strpos($oldPath, 'logos/') === 0) {
-                    $oldStoragePath = $oldPath;
+                if (filter_var($oldPath, FILTER_VALIDATE_URL)) {
+                    $oldPath = parse_url($oldPath, PHP_URL_PATH) ?? $oldPath;
                 }
-                
-                // Try to delete old file
-                if (Storage::disk('public')->exists($oldStoragePath)) {
-                    Storage::disk('public')->delete($oldStoragePath);
+
+                if (strpos($oldPath, 's3://') === 0) {
+                    $s3Path = ltrim(substr($oldPath, strlen('s3://')), '/');
+                    $this->s3Service->deleteFile($s3Path);
+                } else {
+                    // Determine which local disk and path to use
+                    $oldDisk = 'uploads'; // New uploads use 'uploads' disk
+                    $oldStoragePath = $oldPath;
+
+                    // Handle old /storage/ paths (backward compatibility)
+                    if (strpos($oldPath, '/storage/') !== false) {
+                        $oldDisk = 'public';
+                        $oldStoragePath = str_replace('/storage/', '', $oldPath);
+                    } elseif (strpos($oldPath, '/uploads/') !== false) {
+                        $oldDisk = 'uploads';
+                        $oldStoragePath = str_replace('/uploads/', '', $oldPath);
+                    } elseif (strpos($oldPath, 'logos/') === 0) {
+                        $oldStoragePath = $oldPath;
+                    }
+
+                    if (Storage::disk($oldDisk)->exists($oldStoragePath)) {
+                        Storage::disk($oldDisk)->delete($oldStoragePath);
+                    }
                 }
             }
 
-            // Store the file
-            $path = Storage::disk('public')->putFileAs('logos', $file, basename($filename));
-
-            // Save relative path in database (e.g., /storage/logos/filename.webp)
-            $relativePath = '/storage/' . $path;
-            
-            // Get the full URL for response using database Web URL or config
             $baseUrl = $this->getBaseUrl();
-            $logoUrl = $baseUrl . '/storage/' . $path;
+            $relativePath = null;
+            $logoUrl = null;
+
+            $useS3 = $this->s3Service->isEnabled();
+            $storedInS3 = false;
+
+            // Use FileUploadService for consistent module-based structure
+            // Module: 'settings', Folder: 'logos'
+            // Reload S3 settings to ensure we have latest config
+            $this->s3Service->reloadSettings();
+            
+            $fileUploadService = app(\App\Services\FileUploadService::class);
+            $uploadResult = $fileUploadService->uploadFile($file, 'logos', basename($filename), 'public', 'settings');
+            
+            $relativePath = $uploadResult['path'];
+            $logoUrl = $uploadResult['url'];
+            $storedInS3 = $uploadResult['stored_in_s3'];
+            
+            // Log upload result for debugging
+            \Log::info('Logo upload result', [
+                'stored_in_s3' => $storedInS3,
+                'path' => $relativePath,
+                'url' => $logoUrl,
+                's3_status' => $this->s3Service->getStatus(),
+            ]);
 
             // Save or update the setting with relative path
             $setting = Setting::updateOrCreate(
@@ -490,14 +525,23 @@ class SettingController extends Controller
     {
         $value = $setting->value;
         
-        // Convert relative storage paths to full URLs for logo settings
+        // Convert storage paths to full URLs for logo settings
         if (in_array($setting->key, ['business_logo', 'logo']) && $value) {
+            if (strpos($value, 's3://') === 0) {
+                $s3Path = ltrim(substr($value, strlen('s3://')), '/');
+                $s3Url = $this->s3Service->getFileUrl($s3Path);
+                if ($s3Url) {
+                    $value = $s3Url;
+                }
+            }
+
             // If it's already a full URL, keep it
             if (filter_var($value, FILTER_VALIDATE_URL)) {
                 // Already a full URL, keep as is
             } 
-            // If it's a relative path starting with /storage/, convert to full URL
-            elseif (strpos($value, '/storage/') === 0 || strpos($value, 'storage/') === 0) {
+            // If it's a relative path starting with /storage/ or /uploads/, convert to full URL
+            elseif (strpos($value, '/storage/') === 0 || strpos($value, 'storage/') === 0 ||
+                    strpos($value, '/uploads/') === 0 || strpos($value, 'uploads/') === 0) {
                 // Get base URL from database settings (Web URL) or fallback to config
                 $baseUrl = $this->getBaseUrl();
                 $value = $baseUrl . (strpos($value, '/') === 0 ? $value : '/' . $value);

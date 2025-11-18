@@ -11,9 +11,16 @@ use Illuminate\Validation\ValidationException;
 use App\Models\User;
 use App\Models\Setting;
 use App\Services\EmailService;
+use App\Services\FileUploadService;
 
 class AuthController extends Controller
 {
+    protected $fileUploadService;
+
+    public function __construct(FileUploadService $fileUploadService)
+    {
+        $this->fileUploadService = $fileUploadService;
+    }
     /**
      * User login.
      *
@@ -42,15 +49,7 @@ class AuthController extends Controller
 
         // Add avatar_url to user data
         $userData = $user->load('roles')->toArray();
-        if ($user->avatar) {
-            if (!filter_var($user->avatar, FILTER_VALIDATE_URL)) {
-                $userData['avatar_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($user->avatar);
-            } else {
-                $userData['avatar_url'] = $user->avatar;
-            }
-        } else {
-            $userData['avatar_url'] = null;
-        }
+        $userData['avatar_url'] = $this->fileUploadService->getFileUrl($user->avatar);
 
         return response()->json([
             'token' => $token,
@@ -87,15 +86,7 @@ class AuthController extends Controller
 
         // Add avatar_url to user data
         $userData = $user->toArray();
-        if ($user->avatar) {
-            if (!filter_var($user->avatar, FILTER_VALIDATE_URL)) {
-                $userData['avatar_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($user->avatar);
-            } else {
-                $userData['avatar_url'] = $user->avatar;
-            }
-        } else {
-            $userData['avatar_url'] = null;
-        }
+        $userData['avatar_url'] = $this->fileUploadService->getFileUrl($user->avatar);
 
         return response()->json([
             'user' => $userData,

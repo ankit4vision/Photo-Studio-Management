@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\PaginatesResults;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\FileUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +16,13 @@ use Illuminate\Validation\ValidationException;
 class UserController extends Controller
 {
     use PaginatesResults;
+
+    protected $fileUploadService;
+
+    public function __construct(FileUploadService $fileUploadService)
+    {
+        $this->fileUploadService = $fileUploadService;
+    }
 
     /**
      * Display a listing of users.
@@ -185,17 +193,8 @@ class UserController extends Controller
         // Convert to array and add avatar_url
         $userData = $user->toArray();
         
-        // Add avatar_url attribute
-        if ($user->avatar) {
-            if (!filter_var($user->avatar, FILTER_VALIDATE_URL)) {
-                // Use asset() helper for public storage URLs
-                $userData['avatar_url'] = asset('storage/' . $user->avatar);
-            } else {
-                $userData['avatar_url'] = $user->avatar;
-            }
-        } else {
-            $userData['avatar_url'] = null;
-        }
+        // Add avatar_url using FileUploadService
+        $userData['avatar_url'] = $this->fileUploadService->getFileUrl($user->avatar);
         
         return response()->json([
             'success' => true,
@@ -229,31 +228,27 @@ class UserController extends Controller
             'gender' => 'nullable|string|in:male,female,other,prefer-not-to-say',
         ]);
 
-        // Handle avatar upload (base64 to local file)
+        // Handle avatar upload using FileUploadService
         if ($request->has('avatar') && $request->avatar) {
             $avatarData = $request->avatar;
             
             // If empty string, delete avatar
             if ($avatarData === '') {
                 // Delete old avatar if exists
-                if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-                    Storage::disk('public')->delete($user->avatar);
+                if ($user->avatar) {
+                    $this->fileUploadService->deleteFile($user->avatar);
                 }
                 $validated['avatar'] = null;
             } 
-            // If base64 image, save to local storage
+            // If base64 image, upload using FileUploadService
             elseif (preg_match('/^data:image\/(\w+);base64,/', $avatarData, $matches)) {
                 // Delete old avatar if exists
-                if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-                    Storage::disk('public')->delete($user->avatar);
+                if ($user->avatar) {
+                    $this->fileUploadService->deleteFile($user->avatar);
                 }
 
-                // Extract image data
-                $imageData = substr($avatarData, strpos($avatarData, ',') + 1);
-                $imageData = base64_decode($imageData);
-                $imageType = $matches[1]; // jpeg, png, gif, webp
-                
                 // Validate image type
+                $imageType = $matches[1];
                 $allowedTypes = ['jpeg', 'jpg', 'png', 'gif', 'webp'];
                 if (!in_array(strtolower($imageType), $allowedTypes)) {
                     return response()->json([
@@ -263,13 +258,14 @@ class UserController extends Controller
                 }
 
                 // Generate unique filename
-                $filename = 'avatars/user_' . $user->id . '_' . time() . '.' . $imageType;
+                $filename = 'user_' . $user->id . '_' . time() . '.' . $imageType;
                 
-                // Save to public storage
-                Storage::disk('public')->put($filename, $imageData);
+                // Upload using FileUploadService (handles S3/local automatically)
+                // Module: 'users', Folder: 'avatars'
+                $uploadResult = $this->fileUploadService->uploadFile($avatarData, 'avatars', $filename, 'public', 'users');
                 
                 // Store relative path in database
-                $validated['avatar'] = $filename;
+                $validated['avatar'] = $uploadResult['path'];
             }
             // If it's already a URL or path, keep it as is
             else {
@@ -297,15 +293,10 @@ class UserController extends Controller
         $user->refresh();
         $user->load('roles');
         
-        // Convert avatar path to full URL if it's a local file
+        // Convert avatar path to full URL using FileUploadService
         $avatarUrl = null;
         if ($user->avatar) {
-            if (!filter_var($user->avatar, FILTER_VALIDATE_URL)) {
-                // Use asset() helper for public storage URLs
-                $avatarUrl = asset('storage/' . $user->avatar);
-            } else {
-                $avatarUrl = $user->avatar;
-            }
+            $avatarUrl = $this->fileUploadService->getFileUrl($user->avatar);
         }
         
         // Add avatar_url to user array for response

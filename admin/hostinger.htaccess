@@ -2,7 +2,11 @@
   RewriteEngine On
   RewriteBase /
   
-  # Route /storage/* requests to Laravel storage (symlink in api/public/storage)
+  # Route /uploads/* requests to Laravel public/uploads (direct access, no symlink needed)
+  RewriteCond %{REQUEST_URI} ^/uploads
+  RewriteRule ^uploads/(.*)$ api/public/uploads/$1 [L]
+  
+  # Route /storage/* requests to Laravel storage (symlink in api/public/storage) - for backward compatibility
   RewriteCond %{REQUEST_URI} ^/storage
   RewriteRule ^storage/(.*)$ api/public/storage/$1 [L]
   
@@ -13,12 +17,14 @@
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^api/(.*)$ api/public/index.php [L]
   
-  # Handle frontend routes (React SPA) - only if not /api or /storage
+  # Handle frontend routes (React SPA) - only if not /api, /storage, or /uploads
   RewriteCond %{REQUEST_URI} !^/api
   RewriteCond %{REQUEST_URI} !^/storage
+  RewriteCond %{REQUEST_URI} !^/uploads
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_URI} !^/api
   RewriteCond %{REQUEST_URI} !^/storage
+  RewriteCond %{REQUEST_URI} !^/uploads
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /index.html [L]

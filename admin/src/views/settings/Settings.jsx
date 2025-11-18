@@ -65,6 +65,7 @@ const Settings = () => {
   const [autoSaved, setAutoSaved] = useState({}) // Track which fields were recently saved
   const [testEmailAddress, setTestEmailAddress] = useState('')
   const [sendingTestEmail, setSendingTestEmail] = useState(false)
+  const [testingS3, setTestingS3] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [logoPreview, setLogoPreview] = useState(null)
   
@@ -91,11 +92,12 @@ const Settings = () => {
     'currencyRegional.currency': { key: 'currency', section: 'Currency & Regional' },
     'currencyRegional.dateFormat': { key: 'dateFormat', section: 'Currency & Regional' },
     'currencyRegional.timeZone': { key: 'timeZone', section: 'Currency & Regional' },
-    's3Settings.bucketName': { key: 's3_bucket_name', section: 'S3 Settings' },
-    's3Settings.region': { key: 's3_region', section: 'S3 Settings' },
-    's3Settings.accessKey': { key: 's3_access_key', section: 'S3 Settings' },
-    's3Settings.secretKey': { key: 's3_secret_key', section: 'S3 Settings' },
-    's3Settings.useSSL': { key: 's3_use_ssl', section: 'S3 Settings' },
+    's3Settings.enabled': { key: 'enabled', section: 's3' },
+    's3Settings.bucketName': { key: 'bucket', section: 's3' },
+    's3Settings.region': { key: 'region', section: 's3' },
+    's3Settings.accessKey': { key: 'key', section: 's3' },
+    's3Settings.secretKey': { key: 'secret', section: 's3' },
+    's3Settings.useSSL': { key: 'use_path_style', section: 's3' },
     'appSettings.web_url': { key: 'web_url', section: 'App Settings' }
   }
 
@@ -739,6 +741,23 @@ const Settings = () => {
     }
   }
 
+  const handleTestS3 = async () => {
+    setTestingS3(true)
+    try {
+      const response = await settingsService.testS3()
+      if (response.success) {
+        success(response.message || 'S3 connection test successful!')
+      } else {
+        error(response.message || 'S3 connection test failed. Please check your S3 configuration.')
+      }
+    } catch (err) {
+      error('Failed to test S3 connection. Please try again.')
+      console.error('Test S3 error:', err)
+    } finally {
+      setTestingS3(false)
+    }
+  }
+
   const renderEmailSettings = () => (
     <div className="mb-5">
       {/* Section Header */}
@@ -1036,6 +1055,35 @@ const Settings = () => {
         <h4 className="mb-0 text-success">S3 Bucket Settings</h4>
       </div>
 
+      <Row className="mb-3">
+        <Col md={12}>
+          <Form.Group>
+            <Form.Label className="fw-semibold me-3">
+              Enable S3 Uploads
+              {autoSaving['s3Settings.enabled'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['s3Settings.enabled'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <Form.Check
+              type="switch"
+              id="s3-enabled-toggle"
+              label={settingsData.s3Settings.enabled ? 'Enabled' : 'Disabled'}
+              checked={settingsData.s3Settings.enabled}
+              onChange={(e) => handleChange('s3Settings', 'enabled', e.target.checked)}
+              onBlur={(e) => handleBlur('s3Settings', 'enabled', e.target.checked)}
+              disabled={autoSaving['s3Settings.enabled']}
+              className="fs-6"
+            />
+            <FormText className="text-muted">
+              Toggle on to store uploads in your S3 bucket. When off, files stay on this server.
+            </FormText>
+          </Form.Group>
+        </Col>
+      </Row>
+
       <Row>
         <Col md={6}>
           <Form.Group className="mb-3">
@@ -1145,6 +1193,34 @@ const Settings = () => {
               className="fs-6"
             />
           </Form.Group>
+        </Col>
+      </Row>
+
+      {/* Test S3 Connection Section */}
+      <Row>
+        <Col md={12}>
+          <div className="border-top pt-4 mt-4">
+            <h5 className="mb-3">Test S3 Connection</h5>
+            <p className="text-muted mb-4">Test your S3 configuration to verify connectivity and credentials.</p>
+            <Button
+              variant="outline-primary"
+              onClick={handleTestS3}
+              disabled={testingS3 || isReadOnly}
+              className="d-flex align-items-center"
+            >
+              {testingS3 ? (
+                <>
+                  <Spinner size="sm" className="me-2" />
+                  Testing...
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faCloud} className="me-2" />
+                  Test S3 Connection
+                </>
+              )}
+            </Button>
+          </div>
         </Col>
       </Row>
     </div>
