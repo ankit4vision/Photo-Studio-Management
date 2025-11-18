@@ -169,6 +169,35 @@ class FileUploadService
     }
 
     /**
+     * Replace an existing file by deleting it (if present) and uploading the new one.
+     *
+     * @param string|null $existingPath Path currently stored in DB (S3 or local)
+     * @param UploadedFile|string $file New file (UploadedFile or base64 string)
+     * @param string $folder Destination folder (e.g., 'logos', 'avatars')
+     * @param string|null $filename Optional filename override
+     * @param string $visibility Visibility for S3 uploads
+     * @param string|null $module Module name (e.g., 'settings', 'users')
+     * @return array Same response as uploadFile()
+     */
+    public function replaceFile(?string $existingPath, $file, string $folder, $filename = null, string $visibility = 'public', ?string $module = null)
+    {
+        if ($existingPath) {
+            try {
+                $this->deleteFile($existingPath);
+            } catch (\Throwable $e) {
+                Log::warning('Failed to delete existing file before replacement', [
+                    'path' => $existingPath,
+                    'module' => $module,
+                    'folder' => $folder,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $this->uploadFile($file, $folder, $filename, $visibility, $module);
+    }
+
+    /**
      * Delete a file (handles both S3 and local storage).
      *
      * @param string $path File path (can be relative path, S3 path, or full URL)

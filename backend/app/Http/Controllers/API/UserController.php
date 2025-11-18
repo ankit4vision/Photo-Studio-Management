@@ -234,19 +234,11 @@ class UserController extends Controller
             
             // If empty string, delete avatar
             if ($avatarData === '') {
-                // Delete old avatar if exists
                 if ($user->avatar) {
                     $this->fileUploadService->deleteFile($user->avatar);
                 }
                 $validated['avatar'] = null;
-            } 
-            // If base64 image, upload using FileUploadService
-            elseif (preg_match('/^data:image\/(\w+);base64,/', $avatarData, $matches)) {
-                // Delete old avatar if exists
-                if ($user->avatar) {
-                    $this->fileUploadService->deleteFile($user->avatar);
-                }
-
+            } elseif (preg_match('/^data:image\/(\w+);base64,/', $avatarData, $matches)) {
                 // Validate image type
                 $imageType = $matches[1];
                 $allowedTypes = ['jpeg', 'jpg', 'png', 'gif', 'webp'];
@@ -259,12 +251,16 @@ class UserController extends Controller
 
                 // Generate unique filename
                 $filename = 'user_' . $user->id . '_' . time() . '.' . $imageType;
-                
-                // Upload using FileUploadService (handles S3/local automatically)
-                // Module: 'users', Folder: 'avatars'
-                $uploadResult = $this->fileUploadService->uploadFile($avatarData, 'avatars', $filename, 'public', 'users');
-                
-                // Store relative path in database
+
+                $uploadResult = $this->fileUploadService->replaceFile(
+                    $user->avatar,
+                    $avatarData,
+                    'avatars',
+                    $filename,
+                    'public',
+                    'users'
+                );
+
                 $validated['avatar'] = $uploadResult['path'];
             }
             // If it's already a URL or path, keep it as is

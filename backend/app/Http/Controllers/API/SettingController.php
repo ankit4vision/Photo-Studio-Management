@@ -5,20 +5,22 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\EmailService;
+use App\Services\FileUploadService;
 use App\Services\S3Service;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Storage;
 
 class SettingController extends Controller
 {
     protected $emailService;
     protected $s3Service;
+    protected $fileUploadService;
 
-    public function __construct(EmailService $emailService, S3Service $s3Service)
+    public function __construct(EmailService $emailService, S3Service $s3Service, FileUploadService $fileUploadService)
     {
         $this->emailService = $emailService;
         $this->s3Service = $s3Service;
+        $this->fileUploadService = $fileUploadService;
     }
 
     /**
@@ -228,82 +230,35 @@ class SettingController extends Controller
             $key = $validated['key'];
             $section = $validated['section'];
 
-            // Generate unique filename
-            $filename = 'logos/business_logo_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-
-            // Delete old logo if exists
             $existingSetting = Setting::where('key', $key)
                 ->where('group', $section)
                 ->first();
 
-            if ($existingSetting && $existingSetting->value) {
-                $oldPath = $existingSetting->value;
+            $filename = 'business_logo_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
 
-                // Extract path from URL if it's a full URL
-                if (filter_var($oldPath, FILTER_VALIDATE_URL)) {
-                    $oldPath = parse_url($oldPath, PHP_URL_PATH) ?? $oldPath;
-                }
+            $uploadResult = $this->fileUploadService->replaceFile(
+                $existingSetting->value ?? null,
+                $file,
+                'logos',
+                $filename,
+                'public',
+                'settings'
+            );
 
-                if (strpos($oldPath, 's3://') === 0) {
-                    $s3Path = ltrim(substr($oldPath, strlen('s3://')), '/');
-                    $this->s3Service->deleteFile($s3Path);
-                } else {
-                    // Determine which local disk and path to use
-                    $oldDisk = 'uploads'; // New uploads use 'uploads' disk
-                    $oldStoragePath = $oldPath;
-
-                    // Handle old /storage/ paths (backward compatibility)
-                    if (strpos($oldPath, '/storage/') !== false) {
-                        $oldDisk = 'public';
-                        $oldStoragePath = str_replace('/storage/', '', $oldPath);
-                    } elseif (strpos($oldPath, '/uploads/') !== false) {
-                        $oldDisk = 'uploads';
-                        $oldStoragePath = str_replace('/uploads/', '', $oldPath);
-                    } elseif (strpos($oldPath, 'logos/') === 0) {
-                        $oldStoragePath = $oldPath;
-                    }
-
-                    if (Storage::disk($oldDisk)->exists($oldStoragePath)) {
-                        Storage::disk($oldDisk)->delete($oldStoragePath);
-                    }
-                }
-            }
-
-            $baseUrl = $this->getBaseUrl();
-            $relativePath = null;
-            $logoUrl = null;
-
-            $useS3 = $this->s3Service->isEnabled();
-            $storedInS3 = false;
-
-            // Use FileUploadService for consistent module-based structure
-            // Module: 'settings', Folder: 'logos'
-            // Reload S3 settings to ensure we have latest config
-            $this->s3Service->reloadSettings();
-            
-            $fileUploadService = app(\App\Services\FileUploadService::class);
-            $uploadResult = $fileUploadService->uploadFile($file, 'logos', basename($filename), 'public', 'settings');
-            
-            $relativePath = $uploadResult['path'];
-            $logoUrl = $uploadResult['url'];
-            $storedInS3 = $uploadResult['stored_in_s3'];
-            
-            // Log upload result for debugging
             \Log::info('Logo upload result', [
-                'stored_in_s3' => $storedInS3,
-                'path' => $relativePath,
-                'url' => $logoUrl,
+                'stored_in_s3' => $uploadResult['stored_in_s3'],
+                'path' => $uploadResult['path'],
+                'url' => $uploadResult['url'],
                 's3_status' => $this->s3Service->getStatus(),
             ]);
 
-            // Save or update the setting with relative path
             $setting = Setting::updateOrCreate(
                 [
                     'key' => $key,
                     'group' => $section,
                 ],
                 [
-                    'value' => $relativePath,
+                    'value' => $uploadResult['path'],
                     'description' => 'Business logo URL',
                 ]
             );
@@ -314,8 +269,8 @@ class SettingController extends Controller
                 'data' => [
                     'id' => $setting->id,
                     'key' => $setting->key,
-                    'value' => $setting->value, // Relative path saved in DB
-                    'logo_url' => $logoUrl, // Full URL for frontend use
+                    'value' => $setting->value,
+                    'logo_url' => $uploadResult['url'],
                     'section' => $setting->group,
                 ],
             ]);
