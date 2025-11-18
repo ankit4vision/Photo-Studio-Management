@@ -10,8 +10,10 @@ export default defineConfig(({ command, mode }) => {
   
   return {
     base: './',
+    root: process.cwd(),
     build: {
       outDir: 'dist',
+      emptyOutDir: true,
       sourcemap: env.VITE_BUILD_SOURCEMAP === 'true',
       minify: env.VITE_BUILD_MINIFY === 'true' ? 'esbuild' : false,
       rollupOptions: {

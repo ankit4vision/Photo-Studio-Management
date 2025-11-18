@@ -1,5 +1,11 @@
 const resolveApiBaseUrl = () => {
   const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+  
+  // If empty or starts with /, use relative URL (same domain)
+  if (!rawBaseUrl || rawBaseUrl === '/' || rawBaseUrl.startsWith('/')) {
+    return '/api'
+  }
+  
   const trimmedBaseUrl = rawBaseUrl.replace(/\/$/, '')
   return trimmedBaseUrl.endsWith('/api') ? trimmedBaseUrl : `${trimmedBaseUrl}/api`
 }

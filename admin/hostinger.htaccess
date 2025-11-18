@@ -1,7 +1,24 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+  
+  # Route /storage/* requests to Laravel storage (symlink in api/public/storage)
+  RewriteCond %{REQUEST_URI} ^/storage
+  RewriteRule ^storage/(.*)$ api/public/storage/$1 [L]
+  
+  # Route /api/* requests to Laravel backend FIRST (before React routing)
+  # Laravel will see REQUEST_URI as /api/auth/login (preserved automatically)
+  RewriteCond %{REQUEST_URI} ^/api
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^api/(.*)$ api/public/index.php [L]
+  
+  # Handle frontend routes (React SPA) - only if not /api or /storage
+  RewriteCond %{REQUEST_URI} !^/api
+  RewriteCond %{REQUEST_URI} !^/storage
   RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_URI} !^/api
+  RewriteCond %{REQUEST_URI} !^/storage
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /index.html [L]

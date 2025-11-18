@@ -254,17 +254,21 @@ class SettingController extends Controller
             // Store the file
             $path = Storage::disk('public')->putFileAs('logos', $file, basename($filename));
 
-            // Get the public URL
-            $logoUrl = Storage::disk('public')->url($path);
+            // Save relative path in database (e.g., /storage/logos/filename.webp)
+            $relativePath = '/storage/' . $path;
+            
+            // Get the full URL for response using database Web URL or config
+            $baseUrl = $this->getBaseUrl();
+            $logoUrl = $baseUrl . '/storage/' . $path;
 
-            // Save or update the setting
+            // Save or update the setting with relative path
             $setting = Setting::updateOrCreate(
                 [
                     'key' => $key,
                     'group' => $section,
                 ],
                 [
-                    'value' => $logoUrl,
+                    'value' => $relativePath,
                     'description' => 'Business logo URL',
                 ]
             );
@@ -275,8 +279,8 @@ class SettingController extends Controller
                 'data' => [
                     'id' => $setting->id,
                     'key' => $setting->key,
-                    'value' => $setting->value,
-                    'logo_url' => $logoUrl,
+                    'value' => $setting->value, // Relative path saved in DB
+                    'logo_url' => $logoUrl, // Full URL for frontend use
                     'section' => $setting->group,
                 ],
             ]);
@@ -484,15 +488,52 @@ class SettingController extends Controller
      */
     protected function formatSetting(Setting $setting): array
     {
+        $value = $setting->value;
+        
+        // Convert relative storage paths to full URLs for logo settings
+        if (in_array($setting->key, ['business_logo', 'logo']) && $value) {
+            // If it's already a full URL, keep it
+            if (filter_var($value, FILTER_VALIDATE_URL)) {
+                // Already a full URL, keep as is
+            } 
+            // If it's a relative path starting with /storage/, convert to full URL
+            elseif (strpos($value, '/storage/') === 0 || strpos($value, 'storage/') === 0) {
+                // Get base URL from database settings (Web URL) or fallback to config
+                $baseUrl = $this->getBaseUrl();
+                $value = $baseUrl . (strpos($value, '/') === 0 ? $value : '/' . $value);
+            }
+        }
+        
         return [
             'id' => $setting->id,
             'key' => $setting->key,
-            'value' => $setting->value,
+            'value' => $value,
             'section' => $setting->group,
             'description' => $setting->description,
             'created_at' => $setting->created_at,
             'updated_at' => $setting->updated_at,
         ];
+    }
+
+    /**
+     * Get base URL from database settings or fallback to config.
+     *
+     * @return string
+     */
+    protected function getBaseUrl(): string
+    {
+        // Try to get Web URL from database settings (common key names)
+        $webUrlKeys = ['web_url', 'Web URL', 'app_url', 'APP_URL', 'site_url', 'Site URL'];
+        
+        foreach ($webUrlKeys as $key) {
+            $webUrl = Setting::get($key);
+            if ($webUrl) {
+                return rtrim($webUrl, '/');
+            }
+        }
+        
+        // Fallback to config if not found in database
+        return rtrim(config('app.url'), '/');
     }
 }
 
