@@ -6,6 +6,7 @@ import { useToast } from '../../components'
 import { settingsService } from '../../services/settingsService'
 import { usePermissions } from '../../hooks'
 import { PERMISSIONS } from '../../constants/permissions'
+import ImageUploadWithUpload from '../../components/common/ImageUploadWithUpload'
 
 const Settings = () => {
   const { hasPermission } = usePermissions()
@@ -66,7 +67,6 @@ const Settings = () => {
   const [testEmailAddress, setTestEmailAddress] = useState('')
   const [sendingTestEmail, setSendingTestEmail] = useState(false)
   const [testingS3, setTestingS3] = useState(false)
-  const [uploadingLogo, setUploadingLogo] = useState(false)
   const [logoPreview, setLogoPreview] = useState(null)
   
   const isInitialLoadRef = useRef(true) // Track if we're still loading initial data
@@ -459,48 +459,21 @@ const Settings = () => {
       <Row>
         <Col md={12}>
           <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">Business Logo</Form.Label>
-            <div className="d-flex flex-column gap-3">
-              {logoPreview && (
-                <div className="position-relative d-inline-block" style={{ maxWidth: '200px' }}>
-                  <img
-                    src={logoPreview}
-                    alt="Business Logo"
-                    className="img-thumbnail"
-                    style={{ maxHeight: '150px', maxWidth: '200px', objectFit: 'contain' }}
-                  />
-                  {canEditSettings && (
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      className="position-absolute top-0 end-0"
-                      onClick={handleRemoveLogo}
-                      style={{ margin: '5px' }}
-                    >
-                      <FontAwesomeIcon icon={faTimes} />
-                    </Button>
-                  )}
-                </div>
-              )}
-              <div>
-                <FormControl
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                  onChange={handleLogoUpload}
-                  disabled={uploadingLogo || isReadOnly}
-                  className="border-2"
-                />
-                <FormText className="text-muted">
-                  Upload a logo for your business (JPEG, PNG, GIF, or WebP, max 2MB)
-                </FormText>
-                {uploadingLogo && (
-                  <div className="mt-2">
-                    <Spinner size="sm" className="me-2" variant="primary" />
-                    <span className="text-muted">Uploading logo...</span>
-                  </div>
-                )}
-              </div>
-            </div>
+            <ImageUploadWithUpload
+              value={logoPreview || settingsData.businessInfo.business_logo || ''}
+              onChange={handleLogoChange}
+              label="Business Logo"
+              module="settings"
+              folder="logos"
+              existingPath={settingsData.businessInfo.business_logo || null}
+              visibility="public"
+              maxSize={2 * 1024 * 1024} // 2MB
+              previewSize={{ width: 200, height: 150 }}
+              disabled={isReadOnly}
+              onUploadComplete={handleLogoUploadComplete}
+              onUploadError={(errorMsg) => error(errorMsg)}
+              onRemove={handleRemoveLogo}
+            />
           </Form.Group>
         </Col>
       </Row>
@@ -627,56 +600,33 @@ const Settings = () => {
     }
   }
 
-  const handleLogoUpload = async (e) => {
-    if (!canEditSettings) {
-      warning && warning('You do not have permission to modify settings.', { title: 'Read only' })
-      return
-    }
-
-    const file = e.target.files?.[0]
-    if (!file) {
-      return
-    }
-
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
-    if (!allowedTypes.includes(file.type)) {
-      error('Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.')
-      return
-    }
-
-    // Validate file size (max 2MB)
-    const maxSize = 2 * 1024 * 1024 // 2MB
-    if (file.size > maxSize) {
-      error('File size too large. Please upload an image smaller than 2MB.')
-      return
-    }
-
-    setUploadingLogo(true)
-    try {
-      const response = await settingsService.uploadLogo(file)
-      if (response.success) {
-        const logoUrl = response.data?.logo_url || response.data?.value
-        setSettingsData(prev => ({
-          ...prev,
-          businessInfo: {
-            ...prev.businessInfo,
-            business_logo: logoUrl
-          }
-        }))
-        setLogoPreview(logoUrl)
-        success('Business logo uploaded successfully!')
-      } else {
-        error(response.message || 'Failed to upload logo')
+  const handleLogoChange = (path, url, uploadResult) => {
+    // Update settings data with the stored path
+    setSettingsData(prev => ({
+      ...prev,
+      businessInfo: {
+        ...prev.businessInfo,
+        business_logo: path || ''
       }
-    } catch (err) {
-      error('Failed to upload logo. Please try again.')
-      console.error('Logo upload error:', err)
-    } finally {
-      setUploadingLogo(false)
-      // Reset file input
-      e.target.value = ''
+    }))
+    
+    // Update preview with URL if available
+    if (url) {
+      setLogoPreview(url)
+    } else if (path) {
+      setLogoPreview(path)
+    } else {
+      setLogoPreview(null)
     }
+
+    // Auto-save the logo path to settings
+    if (path && !isInitialLoadRef.current) {
+      autoSaveSetting('businessInfo.business_logo', 'business_logo', 'Business Information', path)
+    }
+  }
+
+  const handleLogoUploadComplete = (uploadResult, file) => {
+    success('Business logo uploaded successfully!')
   }
 
   const handleRemoveLogo = async () => {

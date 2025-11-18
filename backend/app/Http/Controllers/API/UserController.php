@@ -25,6 +25,62 @@ class UserController extends Controller
     }
 
     /**
+     * Format user data with avatar URL.
+     *
+     * @param User $user
+     * @return array
+     */
+    protected function formatUserData(User $user)
+    {
+        // Get raw attributes to avoid accessor interference
+        $userData = $user->getAttributes();
+        $userData['roles'] = $user->roles->toArray();
+        $userData['created_at'] = $user->created_at;
+        $userData['updated_at'] = $user->updated_at;
+        
+        // Convert avatar path to full URL
+        $originalAvatar = $user->getOriginal('avatar') ?? $user->avatar;
+        
+        if ($originalAvatar) {
+            $avatarUrl = $this->fileUploadService->getFileUrl($originalAvatar);
+            
+            // Debug logging
+            \Log::info('Formatting user avatar', [
+                'user_id' => $user->id,
+                'original_avatar' => $originalAvatar,
+                'generated_url' => $avatarUrl,
+                'url_type' => gettype($avatarUrl),
+                'is_valid_url' => $avatarUrl && filter_var($avatarUrl, FILTER_VALIDATE_URL)
+            ]);
+            
+            // Only use URL if it's a valid HTTP(S) URL (not s3:// protocol)
+            if ($avatarUrl && 
+                is_string($avatarUrl) && 
+                (strpos($avatarUrl, 'http://') === 0 || strpos($avatarUrl, 'https://') === 0) &&
+                filter_var($avatarUrl, FILTER_VALIDATE_URL)) {
+                $userData['avatar_url'] = $avatarUrl;
+                $userData['avatar'] = $avatarUrl;
+            } else {
+                // If URL generation failed, log it
+                \Log::warning('Failed to generate avatar URL', [
+                    'avatar_path' => $originalAvatar,
+                    'generated_url' => $avatarUrl,
+                    'url_type' => gettype($avatarUrl),
+                    'user_id' => $user->id
+                ]);
+                // Return null instead of the S3 path
+                $userData['avatar_url'] = null;
+                $userData['avatar'] = null;
+            }
+        } else {
+            $userData['avatar_url'] = null;
+            $userData['avatar'] = null;
+        }
+        
+        return $userData;
+    }
+
+    /**
      * Display a listing of users.
      *
      * @param Request $request
@@ -68,8 +124,8 @@ class UserController extends Controller
         $paginator = $pagination['paginator'];
 
         $users = array_map(
-            static function (User $user) {
-                return $user->toArray();
+            function (User $user) {
+                return $this->formatUserData($user);
             },
             $paginator->items()
         );
@@ -113,7 +169,8 @@ class UserController extends Controller
             $user->roles()->sync($roleIds);
         }
 
-        return response()->json($user->load('roles'), 201);
+        $user->load('roles');
+        return response()->json($this->formatUserData($user), 201);
     }
 
     /**
@@ -124,7 +181,8 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
-        return response()->json($user->load('roles'));
+        $user->load('roles');
+        return response()->json($this->formatUserData($user));
     }
 
     /**
@@ -164,7 +222,8 @@ class UserController extends Controller
             $user->roles()->sync($roleIds);
         }
 
-        return response()->json($user->load('roles'));
+        $user->load('roles');
+        return response()->json($this->formatUserData($user));
     }
 
     /**
@@ -190,15 +249,9 @@ class UserController extends Controller
     {
         $user = $request->user()->load('roles');
         
-        // Convert to array and add avatar_url
-        $userData = $user->toArray();
-        
-        // Add avatar_url using FileUploadService
-        $userData['avatar_url'] = $this->fileUploadService->getFileUrl($user->avatar);
-        
         return response()->json([
             'success' => true,
-            'data' => $userData,
+            'data' => $this->formatUserData($user),
         ]);
     }
 
@@ -288,20 +341,10 @@ class UserController extends Controller
         // Reload user to get fresh data
         $user->refresh();
         $user->load('roles');
-        
-        // Convert avatar path to full URL using FileUploadService
-        $avatarUrl = null;
-        if ($user->avatar) {
-            $avatarUrl = $this->fileUploadService->getFileUrl($user->avatar);
-        }
-        
-        // Add avatar_url to user array for response
-        $userData = $user->toArray();
-        $userData['avatar_url'] = $avatarUrl;
 
         return response()->json([
             'success' => true,
-            'data' => $userData,
+            'data' => $this->formatUserData($user),
             'message' => 'Profile updated successfully',
         ]);
     }

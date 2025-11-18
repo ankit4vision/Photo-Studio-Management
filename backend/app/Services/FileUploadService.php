@@ -256,15 +256,78 @@ class FileUploadService
             return null;
         }
 
-        // If already a full URL, return as is
-        if (filter_var($path, FILTER_VALIDATE_URL)) {
-            return $path;
+        // Handle S3 paths FIRST (before URL validation, since s3:// is a valid URL scheme)
+        if (strpos($path, 's3://') === 0) {
+            Log::debug('FileUploadService::getFileUrl - Processing S3 path', [
+                'originalPath' => $path
+            ]);
+            
+            // Reload S3 settings to ensure we have latest config
+            $this->s3Service->reloadSettings();
+            
+            $s3Path = ltrim(substr($path, strlen('s3://')), '/');
+            
+            Log::debug('FileUploadService::getFileUrl - Extracted S3 path', [
+                's3Path' => $s3Path,
+                'isEnabled' => $this->s3Service->isEnabled()
+            ]);
+            
+            // Only try S3 if it's enabled
+            if ($this->s3Service->isEnabled()) {
+                Log::debug('FileUploadService::getFileUrl - Calling S3Service::getFileUrl', [
+                    's3Path' => $s3Path
+                ]);
+                
+                $s3Url = $this->s3Service->getFileUrl($s3Path);
+                
+                Log::debug('FileUploadService::getFileUrl - S3Service returned', [
+                    's3Url' => $s3Url,
+                    's3UrlType' => gettype($s3Url),
+                    'isString' => is_string($s3Url),
+                    'startsWithHttp' => $s3Url && is_string($s3Url) ? (strpos($s3Url, 'http://') === 0 || strpos($s3Url, 'https://') === 0) : false
+                ]);
+                
+                // If S3 service returns a valid HTTPS/HTTP URL, return it
+                // Must be a real HTTP(S) URL, not s3:// protocol
+                if ($s3Url && 
+                    $s3Url !== false && 
+                    is_string($s3Url) && 
+                    (strpos($s3Url, 'http://') === 0 || strpos($s3Url, 'https://') === 0) &&
+                    filter_var($s3Url, FILTER_VALIDATE_URL)) {
+                    Log::debug('FileUploadService::getFileUrl - Returning valid HTTPS URL', [
+                        'url' => $s3Url
+                    ]);
+                    return $s3Url;
+                }
+                
+                // If S3 is enabled but URL generation failed, log it
+                Log::warning('FileUploadService::getFileUrl - S3 URL generation failed or returned invalid URL', [
+                    's3Path' => $s3Path,
+                    's3Url' => $s3Url,
+                    's3UrlType' => gettype($s3Url),
+                    'originalPath' => $path,
+                    's3Status' => $this->s3Service->getStatus()
+                ]);
+            } else {
+                Log::debug('FileUploadService::getFileUrl - S3 is not enabled', [
+                    's3Path' => $s3Path,
+                    'originalPath' => $path,
+                    's3Status' => $this->s3Service->getStatus()
+                ]);
+            }
+            
+            // If S3 is not enabled or URL generation failed, return null
+            // The file might have been uploaded to S3 but S3 is now disabled
+            Log::debug('FileUploadService::getFileUrl - Returning null for S3 path', [
+                'originalPath' => $path
+            ]);
+            return null;
         }
 
-        // Handle S3 paths
-        if (strpos($path, 's3://') === 0) {
-            $s3Path = ltrim(substr($path, strlen('s3://')), '/');
-            return $this->s3Service->getFileUrl($s3Path);
+        // If already a full HTTP(S) URL, return as is
+        if (filter_var($path, FILTER_VALIDATE_URL) && 
+            (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0)) {
+            return $path;
         }
 
         // Handle local storage paths

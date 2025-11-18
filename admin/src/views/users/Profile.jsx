@@ -69,10 +69,12 @@ const Profile = () => {
   }
 
   // Handle avatar change
-  const handleAvatarChange = async (file, base64) => {
+  const handleAvatarChange = async (file, base64, path, url) => {
     try {
       setSaving(true)
-      const response = await profileService.updateProfile({ avatar: base64 })
+      // Use path if available (from upload service), otherwise fall back to base64
+      const avatarValue = path || base64
+      const response = await profileService.updateProfile({ avatar: avatarValue })
       
       if (response.success) {
         setProfileData(response.data)
@@ -325,6 +327,7 @@ const Profile = () => {
                     onAvatarChange={handleAvatarChange}
                     onAvatarDelete={handleAvatarDelete}
                     loading={saving}
+                    userId={profileData.id}
                   />
                 </CCol>
 

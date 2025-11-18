@@ -47,13 +47,11 @@ class AuthController extends Controller
         $permissions = $user->getAllPermissions();
         $permissionsByModule = $user->getPermissionsByModule();
 
-        // Add avatar_url to user data
-        $userData = $user->load('roles')->toArray();
-        $userData['avatar_url'] = $this->fileUploadService->getFileUrl($user->avatar);
+        $user->load('roles');
 
         return response()->json([
             'token' => $token,
-            'user' => $userData,
+            'user' => $this->formatUserData($user),
             'permissions' => $permissions,
             'permissionsByModule' => $permissionsByModule,
         ]);
@@ -73,6 +71,47 @@ class AuthController extends Controller
     }
 
     /**
+     * Format user data with avatar URL.
+     *
+     * @param User $user
+     * @return array
+     */
+    protected function formatUserData(User $user)
+    {
+        $userData = $user->toArray();
+        
+        // Convert avatar path to full URL
+        if ($user->avatar) {
+            $avatarUrl = $this->fileUploadService->getFileUrl($user->avatar);
+            
+            // Only use URL if it's a valid HTTP(S) URL (not s3:// protocol)
+            if ($avatarUrl && 
+                is_string($avatarUrl) && 
+                (strpos($avatarUrl, 'http://') === 0 || strpos($avatarUrl, 'https://') === 0) &&
+                filter_var($avatarUrl, FILTER_VALIDATE_URL)) {
+                $userData['avatar_url'] = $avatarUrl;
+                // Also update avatar field to URL for frontend compatibility
+                $userData['avatar'] = $avatarUrl;
+            } else {
+                // If URL generation failed, log it and return null
+                \Log::warning('Failed to generate avatar URL', [
+                    'avatar_path' => $user->avatar,
+                    'generated_url' => $avatarUrl,
+                    'user_id' => $user->id
+                ]);
+                $userData['avatar_url'] = null;
+                // Keep the path in avatar field but it won't be a valid URL
+                $userData['avatar'] = null;
+            }
+        } else {
+            $userData['avatar_url'] = null;
+            $userData['avatar'] = null;
+        }
+        
+        return $userData;
+    }
+
+    /**
      * Get current authenticated user.
      *
      * @param Request $request
@@ -84,12 +123,8 @@ class AuthController extends Controller
         $permissions = $user->getAllPermissions();
         $permissionsByModule = $user->getPermissionsByModule();
 
-        // Add avatar_url to user data
-        $userData = $user->toArray();
-        $userData['avatar_url'] = $this->fileUploadService->getFileUrl($user->avatar);
-
         return response()->json([
-            'user' => $userData,
+            'user' => $this->formatUserData($user),
             'permissions' => $permissions,
             'permissionsByModule' => $permissionsByModule,
         ]);

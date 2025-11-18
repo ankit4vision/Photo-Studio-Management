@@ -233,7 +233,21 @@ class S3Service
      */
     public function getFileUrl($path)
     {
+        Log::debug('S3Service::getFileUrl called', [
+            'path' => $path,
+            'isEnabled' => $this->isEnabled(),
+            'hasClient' => !is_null($this->s3Client),
+            'bucket' => $this->bucket,
+            'region' => $this->region
+        ]);
+        
         if (!$this->isEnabled() || !$this->s3Client || !$this->bucket) {
+            Log::warning('S3Service::getFileUrl returning false - S3 not properly configured', [
+                'isEnabled' => $this->isEnabled(),
+                'hasClient' => !is_null($this->s3Client),
+                'hasBucket' => !empty($this->bucket),
+                'hasRegion' => !empty($this->region)
+            ]);
             return false;
         }
 
@@ -243,6 +257,11 @@ class S3Service
             // For eu-north-1: https://bucket-name.s3.eu-north-1.amazonaws.com/path/to/file
             $publicUrl = "https://{$this->bucket}.s3.{$this->region}.amazonaws.com/{$path}";
             
+            Log::debug('S3Service::getFileUrl generated URL', [
+                'path' => $path,
+                'generatedUrl' => $publicUrl
+            ]);
+            
             // For most use cases, we upload with public-read ACL, so return public URL
             // If you need presigned URLs for private files, we can add that later
             return $publicUrl;
@@ -251,7 +270,8 @@ class S3Service
                 'message' => $e->getMessage(),
                 'path' => $path,
                 'bucket' => $this->bucket,
-                'region' => $this->region
+                'region' => $this->region,
+                'trace' => $e->getTraceAsString()
             ]);
             return false;
         }

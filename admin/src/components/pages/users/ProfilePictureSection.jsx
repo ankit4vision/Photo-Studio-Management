@@ -3,12 +3,14 @@ import { Card, Button, Image, Spinner, FormControl, FormText, Alert } from 'reac
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUser, faPencil, faTrash, faSave, faX } from '@fortawesome/free-solid-svg-icons'
 import PropTypes from 'prop-types'
+import { uploadService } from '../../../services/uploadService'
 
 const ProfilePictureSection = ({ 
   avatar, 
   onAvatarChange, 
   onAvatarDelete, 
-  loading = false 
+  loading = false,
+  userId = null
 }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState(avatar || '')
@@ -64,21 +66,35 @@ const ProfilePictureSection = ({
       const previewUrl = URL.createObjectURL(file)
       setAvatarPreview(previewUrl)
       
-      // Convert to base64 for form submission
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const base64 = e.target.result
-        setAvatarLoading(false)
+      // Upload using the upload service
+      const result = await uploadService.uploadAvatar(file, userId, avatar || null)
+      
+      if (result.success && result.data) {
+        const { path, url } = result.data
         
-        // Call parent callback
-        if (onAvatarChange) {
-          onAvatarChange(file, base64)
+        // Update preview with uploaded URL if available
+        if (url) {
+          setAvatarPreview(url)
         }
+        
+        // Call parent callback with the path (for saving to profile)
+        if (onAvatarChange) {
+          // Pass both file and path - parent can decide what to use
+          // For backward compatibility, also pass base64
+          const reader = new FileReader()
+          reader.onload = (e) => {
+            const base64 = e.target.result
+            onAvatarChange(file, base64, path, url)
+          }
+          reader.readAsDataURL(file)
+        }
+      } else {
+        setError(result.message || 'Failed to upload avatar')
       }
-      reader.readAsDataURL(file)
     } catch (error) {
-      console.error('Error processing avatar:', error)
-      setError('Error processing image')
+      console.error('Error uploading avatar:', error)
+      setError('Error uploading image')
+    } finally {
       setAvatarLoading(false)
     }
   }
@@ -236,7 +252,8 @@ ProfilePictureSection.propTypes = {
   avatar: PropTypes.string,
   onAvatarChange: PropTypes.func,
   onAvatarDelete: PropTypes.func,
-  loading: PropTypes.bool
+  loading: PropTypes.bool,
+  userId: PropTypes.number
 }
 
 export default ProfilePictureSection

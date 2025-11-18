@@ -12,6 +12,7 @@ use App\Http\Controllers\API\CustomerController;
 use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\DashboardController;
+use App\Http\Controllers\API\UploadController;
 
 /*
 |--------------------------------------------------------------------------
@@ -115,6 +116,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/summary', [DashboardController::class, 'summary'])->middleware('permission:view_dashboard');
     Route::get('/dashboard/revenue-trend', [DashboardController::class, 'revenueTrend'])->middleware('permission:view_dashboard');
     Route::get('/dashboard/recent-activities', [DashboardController::class, 'recentActivities'])->middleware('permission:view_dashboard');
+
+    // Shared uploads
+    Route::post('/uploads', [UploadController::class, 'store']);
 
     // Settings
     Route::get('/settings', [SettingController::class, 'index'])->middleware('permission:view_setting');

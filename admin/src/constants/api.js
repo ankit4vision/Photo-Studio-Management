@@ -98,6 +98,12 @@ export const API_ENDPOINTS = {
     GET_BY_ID: (id) => `/files/${id}`,
   },
 
+  // Common Upload
+  UPLOADS: {
+    BASE: '/uploads',
+    UPLOAD: '/uploads',
+  },
+
   // Audit Logs
   AUDIT: {
     BASE: '/audit',

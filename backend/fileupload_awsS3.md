@@ -188,3 +188,74 @@ Replace `codexaa-dev` with your bucket.
 4. [ ] Admin settings completed (bucket, region, key, secret, enable toggle).
 5. [ ] **Test S3 Connection** succeeds.
 6. [ ] Upload logo/avatar → confirm URL resolves (S3 or local as expected).
+
+---
+
+## 9. Common Upload API
+Use the new endpoint for any module needing uploads (business logo, user avatar, package image, etc.).
+
+### Endpoint
+- `POST /api/uploads`
+- Authenticated via Sanctum (same session as the admin app)
+- Payload (either `multipart/form-data` or JSON for base64 uploads)
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `file` | file | required\* | Standard file input. Required when `file_base64` is empty. |
+| `file_base64` | string | required\* | Base64 data URI (e.g. `data:image/png;base64,...`). Required when `file` missing. |
+| `module` | string | yes | e.g. `users`, `settings`, `customers`, etc. |
+| `folder` | string | yes | e.g. `avatars`, `logos`, `photos`. |
+| `filename` | string | no | Optional explicit filename; service auto-generates if omitted. |
+| `visibility` | string | no | `public` (default) or `private` (S3 only). |
+| `existing_path` | string | no | When provided, the service deletes this path before saving the new file. |
+
+### Response
+```json
+{
+  "success": true,
+  "data": {
+    "path": "s3://settings/logos/business_logo_...webp",
+    "url": "https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/...",
+    "stored_in_s3": true,
+    "module": "settings",
+    "folder": "logos"
+  }
+}
+```
+
+### Frontend Usage
+
+A reusable `ImageUploadWithUpload` component is available at `admin/src/components/common/ImageUploadWithUpload.jsx`:
+
+**Features:**
+- Accepts `module`, `folder`, `existingPath`, `visibility`, etc. via props
+- Handles file selection, validation, and automatic upload
+- Displays upload progress and success/error states
+- Supports drag & drop
+- Automatically calls `/api/uploads` endpoint
+- Returns `path` (for DB storage) and `url` (for display) via `onChange` callback
+
+**Example:**
+```jsx
+import { ImageUploadWithUpload } from '../components'
+
+<ImageUploadWithUpload
+  value={logoUrl}
+  onChange={(path, url, uploadResult) => setLogoPath(path)}
+  label="Business Logo"
+  module="settings"
+  folder="logos"
+  existingPath={currentLogoPath}
+  visibility="public"
+/>
+```
+
+**Upload Service:**
+The `uploadService` provides helper methods for common uploads:
+- `uploadService.uploadAvatar(file, userId, existingPath)`
+- `uploadService.uploadLogo(file, existingPath)`
+- `uploadService.uploadCustomerPhoto(file, customerId, existingPath)`
+- `uploadService.uploadFile(file, options)` - Generic method
+
+Modules that need to persist paths (e.g. settings, users) can use the component, which automatically uploads and returns the path for storage.
+
