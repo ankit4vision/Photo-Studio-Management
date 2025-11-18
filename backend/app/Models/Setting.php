@@ -108,5 +108,41 @@ class Setting extends Model
             ->pluck('value', 'key')
             ->toArray();
     }
+
+    /**
+     * Get logo resource for logo settings.
+     *
+     * @return Resource|null
+     */
+    public function logoResource()
+    {
+        if (in_array($this->key, ['business_logo', 'logo'])) {
+            return Resource::where('related_table', 'settings')
+                ->where('related_id', $this->id)
+                ->where('module', 'settings')
+                ->where('folder', 'logos')
+                ->where('is_primary', true)
+                ->where('status', 'active')
+                ->first();
+        }
+        return null;
+    }
+
+    /**
+     * Get logo image object for API responses.
+     * ONLY from Resource table - no fallback to value field.
+     *
+     * @return array|null
+     */
+    public function getLogoImageAttribute()
+    {
+        $resource = $this->logoResource();
+        
+        if (!$resource) {
+            return null;
+        }
+
+        return $resource->toImageObject();
+    }
 }
 

@@ -113,8 +113,8 @@ const normalizeUser = (apiUser, permissions = [], permissionsByModule = {}) => {
 
   const permissionNamesWithAliases = applyPermissionAliases(canonicalPermissionNames)
 
-  // Get avatar URL - prefer avatar_url, fallback to avatar
-  const avatarUrl = apiUser.avatar_url || apiUser.avatar || null
+  // Get avatar URL - prefer avatar_image.url (new structure), fallback to avatar_url or avatar
+  const avatarUrl = apiUser.avatar_image?.url || apiUser.avatar_url || apiUser.avatar || null
 
   return {
     id: apiUser.id,

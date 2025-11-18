@@ -25,58 +25,19 @@ class UserController extends Controller
     }
 
     /**
-     * Format user data with avatar URL.
+     * Format user data with avatar image object (simplified - uses automatic accessor).
      *
      * @param User $user
      * @return array
      */
     protected function formatUserData(User $user)
     {
-        // Get raw attributes to avoid accessor interference
-        $userData = $user->getAttributes();
+        // Get user data - avatar_image is automatically included via accessor
+        $userData = $user->toArray();
         $userData['roles'] = $user->roles->toArray();
-        $userData['created_at'] = $user->created_at;
-        $userData['updated_at'] = $user->updated_at;
         
-        // Convert avatar path to full URL
-        $originalAvatar = $user->getOriginal('avatar') ?? $user->avatar;
-        
-        if ($originalAvatar) {
-            $avatarUrl = $this->fileUploadService->getFileUrl($originalAvatar);
-            
-            // Debug logging
-            \Log::info('Formatting user avatar', [
-                'user_id' => $user->id,
-                'original_avatar' => $originalAvatar,
-                'generated_url' => $avatarUrl,
-                'url_type' => gettype($avatarUrl),
-                'is_valid_url' => $avatarUrl && filter_var($avatarUrl, FILTER_VALIDATE_URL)
-            ]);
-            
-            // Only use URL if it's a valid HTTP(S) URL (not s3:// protocol)
-            if ($avatarUrl && 
-                is_string($avatarUrl) && 
-                (strpos($avatarUrl, 'http://') === 0 || strpos($avatarUrl, 'https://') === 0) &&
-                filter_var($avatarUrl, FILTER_VALIDATE_URL)) {
-                $userData['avatar_url'] = $avatarUrl;
-                $userData['avatar'] = $avatarUrl;
-            } else {
-                // If URL generation failed, log it
-                \Log::warning('Failed to generate avatar URL', [
-                    'avatar_path' => $originalAvatar,
-                    'generated_url' => $avatarUrl,
-                    'url_type' => gettype($avatarUrl),
-                    'user_id' => $user->id
-                ]);
-                // Return null instead of the S3 path
-                $userData['avatar_url'] = null;
-                $userData['avatar'] = null;
-            }
-        } else {
-            $userData['avatar_url'] = null;
-            $userData['avatar'] = null;
-        }
-        
+        // Keep backward compatibility with avatar field (path)
+        // avatar_image object is automatically included via $appends
         return $userData;
     }
 
@@ -290,6 +251,12 @@ class UserController extends Controller
                 if ($user->avatar) {
                     $this->fileUploadService->deleteFile($user->avatar);
                 }
+                // Also delete Resource record if exists
+                $avatarResource = $user->avatarResource();
+                if ($avatarResource) {
+                    $avatarResource->update(['status' => 'deleted']);
+                    $avatarResource->delete();
+                }
                 $validated['avatar'] = null;
             } elseif (preg_match('/^data:image\/(\w+);base64,/', $avatarData, $matches)) {
                 // Validate image type
@@ -315,10 +282,137 @@ class UserController extends Controller
                 );
 
                 $validated['avatar'] = $uploadResult['path'];
+
+                // MANDATORY: Create or update Resource record
+                $existingResource = $user->avatarResource();
+                if ($existingResource) {
+                    // Normalize path before storing (remove s3:// or /uploads/ prefix)
+                    $normalizedPath = $this->fileUploadService->normalizeFilePath(
+                        $uploadResult['path'],
+                        $uploadResult['stored_in_s3']
+                    );
+                    
+                    // Update existing resource
+                    $existingResource->update([
+                        'filename' => $uploadResult['filename'] ?? basename($uploadResult['path']),
+                        'file_path' => $normalizedPath, // Store normalized path only
+                        'file_url' => null, // Don't store URL - generate dynamically
+                        'location' => $uploadResult['stored_in_s3'] ? 's3' : 'local',
+                        'storage_disk' => $uploadResult['stored_in_s3'] ? 's3' : 'uploads',
+                    ]);
+                } else {
+                    // Create new resource - MANDATORY
+                    try {
+                        $resource = $this->fileUploadService->createResource(
+                            $uploadResult,
+                            'users',
+                            $user->id,
+                            [
+                                'file' => $avatarData,
+                                'module' => 'users',
+                                'folder' => 'avatars',
+                                'resource_type' => 'avatar',
+                                'is_primary' => true,
+                                'visibility' => 'public',
+                            ]
+                        );
+                        
+                        if (!$resource) {
+                            throw new \Exception('Resource creation returned null');
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to create Resource record for user avatar', [
+                            'user_id' => $user->id,
+                            'upload_result' => $uploadResult,
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString(),
+                        ]);
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Avatar uploaded but failed to save resource record: ' . $e->getMessage(),
+                        ], 500);
+                    }
+                }
             }
-            // If it's already a URL or path, keep it as is
+            // If it's already a URL or path (from upload service), MANDATORY: Create/update Resource record
             else {
                 $validated['avatar'] = $avatarData;
+                
+                // MANDATORY: Always ensure Resource record exists for this path
+                $existingResource = $user->avatarResource();
+                
+                if ($existingResource) {
+                    // Normalize path before storing
+                    $location = strpos($avatarData, 's3://') === 0 ? 's3' : 'local';
+                    $storedInS3 = $location === 's3';
+                    $normalizedPath = $this->fileUploadService->normalizeFilePath($avatarData, $storedInS3);
+                    
+                    // Update existing resource with normalized path
+                    $existingResource->update([
+                        'file_path' => $normalizedPath, // Store normalized path only
+                        'file_url' => null, // Don't store URL - generate dynamically
+                        'location' => $location,
+                        'storage_disk' => $location === 's3' ? 's3' : 'uploads',
+                        'filename' => basename($avatarData),
+                    ]);
+                } else {
+                    // MANDATORY: Create Resource record from path
+                    try {
+                        $fileUploadService = app(\App\Services\FileUploadService::class);
+                        $avatarUrl = $fileUploadService->getFileUrl($avatarData);
+                        
+                        // Determine location from path
+                        $location = strpos($avatarData, 's3://') === 0 ? 's3' : 'local';
+                        $storedInS3 = $location === 's3';
+                        
+                        // Extract module and folder from path (e.g., s3://users/avatars/file.jpg or /uploads/users/avatars/file.jpg)
+                        $module = 'users';
+                        $folder = 'avatars';
+                        
+                        // Create Resource record from path
+                        $resource = $this->fileUploadService->createResource(
+                            [
+                                'path' => $avatarData,
+                                'url' => $avatarUrl,
+                                'stored_in_s3' => $storedInS3,
+                                'module' => $module,
+                                'folder' => $folder,
+                                'filename' => basename($avatarData),
+                            ],
+                            'users',
+                            $user->id,
+                            [
+                                'module' => $module,
+                                'folder' => $folder,
+                                'resource_type' => 'avatar',
+                                'is_primary' => true,
+                                'visibility' => 'public',
+                            ]
+                        );
+                        
+                        if (!$resource) {
+                            \Log::error('MANDATORY: Failed to create Resource record from avatar path', [
+                                'user_id' => $user->id,
+                                'avatar_path' => $avatarData,
+                            ]);
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Failed to save resource record. Please try again.',
+                            ], 500);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('MANDATORY: Error creating Resource from avatar path', [
+                            'user_id' => $user->id,
+                            'avatar_path' => $avatarData,
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString(),
+                        ]);
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Failed to save resource record: ' . $e->getMessage(),
+                        ], 500);
+                    }
+                }
             }
         }
 

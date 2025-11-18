@@ -8,20 +8,26 @@ class ProfileService {
   normalizeProfileData(user) {
     if (!user) return null
     
-    // Use avatar_url if available (full URL), otherwise use avatar (relative path)
-    // Priority: avatar_url > avatar
+    // Get avatar URL - prefer avatar_image.url (new structure), fallback to avatar_url or avatar
+    // Priority: avatar_image.url > avatar_url > avatar
     let avatarUrl = null
-    if (user.avatar_url) {
+    if (user.avatar_image?.url) {
+      // New structure: avatar_image object with url property
+      avatarUrl = user.avatar_image.url
+    } else if (user.avatar_url) {
+      // Legacy: avatar_url field
       avatarUrl = user.avatar_url
     } else if (user.avatar) {
-      // If avatar is a relative path, convert to full URL
+      // Legacy: avatar field (could be path or URL)
       if (user.avatar.startsWith('avatars/') || user.avatar.startsWith('/avatars/')) {
-        // This shouldn't happen if backend is working correctly, but handle it
+        // Relative path - convert to full URL
         const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
         avatarUrl = `${baseURL}/storage/${user.avatar.replace(/^\/?/, '')}`
       } else if (user.avatar.startsWith('http')) {
+        // Already a full URL
         avatarUrl = user.avatar
       } else {
+        // Assume it's a path or URL
         avatarUrl = user.avatar
       }
     }

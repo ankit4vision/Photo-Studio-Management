@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Resource;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -165,7 +166,105 @@ class FileUploadService
             'stored_in_s3' => $storedInS3,
             'module' => $module,
             'folder' => $folder,
+            'filename' => $filename,
         ];
+    }
+
+    /**
+     * Create a Resource record for an uploaded file.
+     *
+     * @param array $uploadResult Result from uploadFile() method
+     * @param string $relatedTable Table name (e.g., 'users', 'customers', 'settings')
+     * @param int $relatedId Record ID in the related table
+     * @param array $options Additional options (resource_type, is_primary, sort_order, etc.)
+     * @return Resource|null
+     */
+    public function createResource(array $uploadResult, string $relatedTable, int $relatedId, array $options = [])
+    {
+        try {
+            // Get file info
+            $file = $options['file'] ?? null;
+            $originalFilename = null;
+            $fileSize = null;
+            $mimeType = null;
+            $fileExtension = null;
+
+            if ($file instanceof UploadedFile) {
+                $originalFilename = $file->getClientOriginalName();
+                $fileSize = $file->getSize();
+                $mimeType = $file->getMimeType();
+                $fileExtension = $file->getClientOriginalExtension();
+            } elseif (is_string($file) && preg_match('/^data:image\/(\w+);base64,/', $file, $matches)) {
+                $fileExtension = $matches[1];
+                $mimeType = 'image/' . $fileExtension;
+                $imageData = substr($file, strpos($file, ',') + 1);
+                $imageData = base64_decode($imageData);
+                $fileSize = strlen($imageData);
+            }
+
+            // Extract extension from filename if not set
+            if (!$fileExtension && isset($uploadResult['filename'])) {
+                $fileExtension = pathinfo($uploadResult['filename'], PATHINFO_EXTENSION);
+            }
+
+            // Validate required fields
+            if (empty($uploadResult['module']) && empty($options['module'])) {
+                throw new \Exception('Module is required for Resource creation');
+            }
+            if (empty($uploadResult['folder']) && empty($options['folder'])) {
+                throw new \Exception('Folder is required for Resource creation');
+            }
+
+            // Normalize file_path: Store only relative path (no s3:// prefix, no /uploads/ prefix)
+            $normalizedPath = $this->normalizeFilePath($uploadResult['path'], $uploadResult['stored_in_s3']);
+            
+            $resource = Resource::create([
+                'filename' => $uploadResult['filename'] ?? basename($uploadResult['path']),
+                'original_filename' => $originalFilename,
+                'file_path' => $normalizedPath, // Store normalized relative path only
+                'file_url' => null, // Don't store full URL - generate dynamically
+                'file_size' => $fileSize,
+                'mime_type' => $mimeType,
+                'file_extension' => $fileExtension,
+                'location' => $uploadResult['stored_in_s3'] ? 's3' : 'local',
+                'storage_disk' => $uploadResult['stored_in_s3'] ? 's3' : 'uploads',
+                'module' => $uploadResult['module'] ?? $options['module'],
+                'folder' => $uploadResult['folder'] ?? $options['folder'],
+                'resource_type' => $options['resource_type'] ?? null,
+                'related_table' => $relatedTable,
+                'related_id' => $relatedId,
+                'title' => $options['title'] ?? null,
+                'description' => $options['description'] ?? null,
+                'alt_text' => $options['alt_text'] ?? null,
+                'is_primary' => $options['is_primary'] ?? false,
+                'sort_order' => $options['sort_order'] ?? 0,
+                'visibility' => $options['visibility'] ?? 'public',
+                'status' => 'active',
+                'uploaded_by' => auth()->id(),
+            ]);
+
+            Log::info('Resource record created successfully', [
+                'resource_id' => $resource->id,
+                'related_table' => $relatedTable,
+                'related_id' => $relatedId,
+                'location' => $resource->location,
+                'module' => $resource->module,
+                'folder' => $resource->folder,
+            ]);
+
+            return $resource;
+        } catch (\Exception $e) {
+            Log::error('Failed to create Resource record', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'related_table' => $relatedTable,
+                'related_id' => $relatedId,
+                'upload_result' => $uploadResult,
+                'options' => $options,
+            ]);
+            // Re-throw exception so controllers can handle it
+            throw new \Exception('Failed to create Resource record: ' . $e->getMessage(), 0, $e);
+        }
     }
 
     /**
@@ -349,6 +448,31 @@ class FileUploadService
         }
 
         return $baseUrl . $path;
+    }
+
+    /**
+     * Normalize file path to store only relative path (no s3:// prefix, no /uploads/ prefix).
+     * This makes paths bucket-agnostic and allows easy migration.
+     *
+     * @param string $path Original path (e.g., "s3://users/avatars/file.jpg" or "/uploads/users/avatars/file.jpg")
+     * @param bool $isS3 Whether the file is stored in S3
+     * @return string Normalized relative path (e.g., "users/avatars/file.jpg")
+     */
+    public function normalizeFilePath(string $path, bool $isS3): string
+    {
+        // Remove s3:// prefix if present
+        if (strpos($path, 's3://') === 0) {
+            $path = substr($path, 5); // Remove "s3://"
+        }
+        
+        // Remove /uploads/ prefix if present
+        $path = ltrim($path, '/');
+        if (strpos($path, 'uploads/') === 0) {
+            $path = substr($path, 8); // Remove "uploads/"
+        }
+        
+        // Ensure no leading slashes
+        return ltrim($path, '/');
     }
 }
 

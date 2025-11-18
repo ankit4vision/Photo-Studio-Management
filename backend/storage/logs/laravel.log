@@ -1,162 +1,457 @@
-[2025-11-18 12:40:46] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:40:46] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:40:46] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:40:46] local.WARNING: Failed to generate avatar URL {"avatar_path":"s3://users/avatars/user_1_1763469453758.webp","generated_url":"s3://users/avatars/user_1_1763469453758.webp","user_id":1} 
-[2025-11-18 12:40:46] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:40:46] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:40:46] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:40:46] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:40:46] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:40:46] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:40:46] local.DEBUG: S3Service::getFileUrl called {"path":"settings/logos/logos_1763468919_691c6677b1125.png","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:40:46] local.DEBUG: S3Service::getFileUrl generated URL {"path":"settings/logos/logos_1763468919_691c6677b1125.png","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/logos_1763468919_691c6677b1125.png"} 
-[2025-11-18 12:40:46] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:40:46] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:40:46] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:40:46] local.INFO: Formatting user avatar {"user_id":1,"original_avatar":"s3://users/avatars/user_1_1763469453758.webp","generated_url":"s3://users/avatars/user_1_1763469453758.webp","url_type":"string","is_valid_url":true} 
-[2025-11-18 12:40:46] local.WARNING: Failed to generate avatar URL {"avatar_path":"s3://users/avatars/user_1_1763469453758.webp","generated_url":"s3://users/avatars/user_1_1763469453758.webp","url_type":"string","user_id":1} 
-[2025-11-18 12:40:59] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:40:59] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:40:59] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:40:59] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:40:59] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:40:59] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:40:59] local.INFO: S3 is enabled, attempting S3 upload {"folder":"avatars","module":"users","filename":"user_1_1763469659125.webp"} 
-[2025-11-18 12:41:01] local.INFO: S3 upload succeeded without ACL (bucket has ACLs disabled) {"bucket":"codexaa-dev","path":"users/avatars/user_1_1763469659125.webp"} 
-[2025-11-18 12:41:01] local.INFO: S3 upload successful {"bucket":"codexaa-dev","path":"users/avatars/user_1_1763469659125.webp","visibility":"public"} 
-[2025-11-18 12:41:01] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763469659125.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:41:01] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763469659125.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763469659125.webp"} 
-[2025-11-18 12:41:02] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:41:02] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:41:02] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:41:02] local.INFO: Formatting user avatar {"user_id":1,"original_avatar":"s3://users/avatars/user_1_1763469659125.webp","generated_url":"s3://users/avatars/user_1_1763469659125.webp","url_type":"string","is_valid_url":true} 
-[2025-11-18 12:41:02] local.WARNING: Failed to generate avatar URL {"avatar_path":"s3://users/avatars/user_1_1763469659125.webp","generated_url":"s3://users/avatars/user_1_1763469659125.webp","url_type":"string","user_id":1} 
-[2025-11-18 12:41:03] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:41:03] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:41:03] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:41:03] local.WARNING: Failed to generate avatar URL {"avatar_path":"s3://users/avatars/user_1_1763469659125.webp","generated_url":"s3://users/avatars/user_1_1763469659125.webp","user_id":1} 
-[2025-11-18 12:41:30] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:41:30] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:41:30] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:41:30] local.WARNING: Failed to generate avatar URL {"avatar_path":"s3://users/avatars/user_1_1763469659125.webp","generated_url":"s3://users/avatars/user_1_1763469659125.webp","user_id":1} 
-[2025-11-18 12:41:30] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:41:30] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:41:30] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:41:30] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:41:30] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:41:30] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:41:30] local.DEBUG: S3Service::getFileUrl called {"path":"settings/logos/logos_1763468919_691c6677b1125.png","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:41:30] local.DEBUG: S3Service::getFileUrl generated URL {"path":"settings/logos/logos_1763468919_691c6677b1125.png","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/logos_1763468919_691c6677b1125.png"} 
-[2025-11-18 12:41:31] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:41:31] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:41:31] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:41:31] local.INFO: Formatting user avatar {"user_id":1,"original_avatar":"s3://users/avatars/user_1_1763469659125.webp","generated_url":"s3://users/avatars/user_1_1763469659125.webp","url_type":"string","is_valid_url":true} 
-[2025-11-18 12:41:31] local.WARNING: Failed to generate avatar URL {"avatar_path":"s3://users/avatars/user_1_1763469659125.webp","generated_url":"s3://users/avatars/user_1_1763469659125.webp","url_type":"string","user_id":1} 
-[2025-11-18 12:46:40] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:40] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:40] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:40] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763469659125.webp"} 
-[2025-11-18 12:46:40] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:40] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:40] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:40] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763469659125.webp","isEnabled":true} 
-[2025-11-18 12:46:40] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763469659125.webp"} 
-[2025-11-18 12:46:40] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763469659125.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:40] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763469659125.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763469659125.webp"} 
-[2025-11-18 12:46:40] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763469659125.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
-[2025-11-18 12:46:40] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763469659125.webp"} 
-[2025-11-18 12:46:40] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:40] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:40] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:40] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:40] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:40] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:40] local.DEBUG: S3Service::getFileUrl called {"path":"settings/logos/logos_1763468919_691c6677b1125.png","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:40] local.DEBUG: S3Service::getFileUrl generated URL {"path":"settings/logos/logos_1763468919_691c6677b1125.png","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/logos_1763468919_691c6677b1125.png"} 
-[2025-11-18 12:46:41] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:41] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:41] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:41] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763469659125.webp"} 
-[2025-11-18 12:46:41] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:41] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:41] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:41] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763469659125.webp","isEnabled":true} 
-[2025-11-18 12:46:41] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763469659125.webp"} 
-[2025-11-18 12:46:41] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763469659125.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:41] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763469659125.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763469659125.webp"} 
-[2025-11-18 12:46:41] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763469659125.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
-[2025-11-18 12:46:41] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763469659125.webp"} 
-[2025-11-18 12:46:41] local.INFO: Formatting user avatar {"user_id":1,"original_avatar":"s3://users/avatars/user_1_1763469659125.webp","generated_url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763469659125.webp","url_type":"string","is_valid_url":true} 
-[2025-11-18 12:46:51] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:51] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:51] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:51] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:51] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:51] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:51] local.INFO: S3 is enabled, attempting S3 upload {"folder":"avatars","module":"users","filename":"user_1_1763470010412.webp"} 
-[2025-11-18 12:46:52] local.INFO: S3 upload succeeded without ACL (bucket has ACLs disabled) {"bucket":"codexaa-dev","path":"users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:52] local.INFO: S3 upload successful {"bucket":"codexaa-dev","path":"users/avatars/user_1_1763470010412.webp","visibility":"public"} 
-[2025-11-18 12:46:52] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763470010412.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:52] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763470010412.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:52] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:52] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:52] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:53] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:53] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:53] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:53] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:53] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763470010412.webp","isEnabled":true} 
-[2025-11-18 12:46:53] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:53] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763470010412.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:53] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763470010412.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:53] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
-[2025-11-18 12:46:53] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:53] local.INFO: Formatting user avatar {"user_id":1,"original_avatar":"s3://users/avatars/user_1_1763470010412.webp","generated_url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp","url_type":"string","is_valid_url":true} 
-[2025-11-18 12:46:54] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:54] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:54] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:54] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:54] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:54] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:54] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:54] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763470010412.webp","isEnabled":true} 
-[2025-11-18 12:46:54] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:54] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763470010412.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:54] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763470010412.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:54] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
-[2025-11-18 12:46:54] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:57] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:57] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:57] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:57] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:57] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:57] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:57] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:57] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763470010412.webp","isEnabled":true} 
-[2025-11-18 12:46:57] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:57] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763470010412.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:57] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763470010412.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:57] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
-[2025-11-18 12:46:57] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:57] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:57] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:57] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:57] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:57] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:57] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:57] local.DEBUG: S3Service::getFileUrl called {"path":"settings/logos/logos_1763468919_691c6677b1125.png","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:57] local.DEBUG: S3Service::getFileUrl generated URL {"path":"settings/logos/logos_1763468919_691c6677b1125.png","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/logos_1763468919_691c6677b1125.png"} 
-[2025-11-18 12:46:57] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:57] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:57] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:58] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:58] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
-[2025-11-18 12:46:58] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
-[2025-11-18 12:46:58] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:58] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763470010412.webp","isEnabled":true} 
-[2025-11-18 12:46:58] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:58] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763470010412.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
-[2025-11-18 12:46:58] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763470010412.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:58] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
-[2025-11-18 12:46:58] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp"} 
-[2025-11-18 12:46:58] local.INFO: Formatting user avatar {"user_id":1,"original_avatar":"s3://users/avatars/user_1_1763470010412.webp","generated_url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763470010412.webp","url_type":"string","is_valid_url":true} 
+[2025-11-18 13:24:58] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:24:58] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:24:58] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:24:59] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:24:59] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:24:59] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:24:59] local.INFO: S3 is enabled, attempting S3 upload {"folder":"avatars","module":"users","filename":"user_1_1763472298227.webp"} 
+[2025-11-18 13:25:00] local.INFO: S3 upload succeeded without ACL (bucket has ACLs disabled) {"bucket":"codexaa-dev","path":"users/avatars/user_1_1763472298227.webp"} 
+[2025-11-18 13:25:00] local.INFO: S3 upload successful {"bucket":"codexaa-dev","path":"users/avatars/user_1_1763472298227.webp","visibility":"public"} 
+[2025-11-18 13:25:00] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763472298227.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:25:00] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763472298227.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763472298227.webp"} 
+[2025-11-18 13:25:01] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:25:01] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:25:01] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:25:02] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:25:02] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:25:02] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:39:26] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:39:26] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:39:26] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:39:26] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:39:26] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:39:26] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:39:26] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:39:26] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:39:26] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:39:26] local.DEBUG: S3Service::getFileUrl called {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:39:26] local.DEBUG: S3Service::getFileUrl generated URL {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/logos_1763471928_691c72381c69b.webp"} 
+[2025-11-18 13:39:26] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:39:26] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:39:27] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:39:33] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:39:33] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:39:33] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:43:03] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:43:03] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:43:03] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:43:03] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:43:03] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:43:03] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:43:04] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:43:04] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:43:04] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:43:04] local.DEBUG: S3Service::getFileUrl called {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:43:04] local.DEBUG: S3Service::getFileUrl generated URL {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/logos_1763471928_691c72381c69b.webp"} 
+[2025-11-18 13:43:04] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:43:04] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:43:04] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:43:10] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:43:10] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:43:10] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:43:10] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:43:10] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:43:10] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:43:10] local.INFO: S3 is enabled, attempting S3 upload {"folder":"avatars","module":"users","filename":"user_1_1763473390053.webp"} 
+[2025-11-18 13:43:12] local.INFO: S3 upload succeeded without ACL (bucket has ACLs disabled) {"bucket":"codexaa-dev","path":"users/avatars/user_1_1763473390053.webp"} 
+[2025-11-18 13:43:12] local.INFO: S3 upload successful {"bucket":"codexaa-dev","path":"users/avatars/user_1_1763473390053.webp","visibility":"public"} 
+[2025-11-18 13:43:12] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473390053.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:43:12] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473390053.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473390053.webp"} 
+[2025-11-18 13:43:12] local.INFO: Resource record created successfully {"resource_id":1,"related_table":"users","related_id":1,"location":"s3","module":"users","folder":"avatars"} 
+[2025-11-18 13:43:13] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:43:13] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:43:13] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:43:13] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:43:13] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:43:13] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:43:13] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473390053.webp"} 
+[2025-11-18 13:43:13] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:43:13] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:43:13] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:43:13] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473390053.webp","isEnabled":true} 
+[2025-11-18 13:43:13] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473390053.webp"} 
+[2025-11-18 13:43:13] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473390053.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:43:13] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473390053.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473390053.webp"} 
+[2025-11-18 13:43:13] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473390053.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:43:13] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473390053.webp"} 
+[2025-11-18 13:43:14] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:43:14] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:43:14] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:48:51] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:48:51] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:48:51] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:48:51] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:48:51] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:48:51] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:48:51] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://s3://users/avatars/user_1_1763473390053.webp"} 
+[2025-11-18 13:48:51] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:48:51] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:48:51] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:48:51] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"s3://users/avatars/user_1_1763473390053.webp","isEnabled":true} 
+[2025-11-18 13:48:51] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"s3://users/avatars/user_1_1763473390053.webp"} 
+[2025-11-18 13:48:51] local.DEBUG: S3Service::getFileUrl called {"path":"s3://users/avatars/user_1_1763473390053.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:48:51] local.DEBUG: S3Service::getFileUrl generated URL {"path":"s3://users/avatars/user_1_1763473390053.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/s3://users/avatars/user_1_1763473390053.webp"} 
+[2025-11-18 13:48:51] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/s3://users/avatars/user_1_1763473390053.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:48:51] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/s3://users/avatars/user_1_1763473390053.webp"} 
+[2025-11-18 13:48:51] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:48:51] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:48:51] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:48:51] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:48:51] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:48:51] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:48:52] local.DEBUG: S3Service::getFileUrl called {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:48:52] local.DEBUG: S3Service::getFileUrl generated URL {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/logos_1763471928_691c72381c69b.webp"} 
+[2025-11-18 13:48:52] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:48:52] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:48:52] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:48:52] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:48:52] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:48:52] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:48:52] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://s3://users/avatars/user_1_1763473390053.webp"} 
+[2025-11-18 13:48:52] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:48:52] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:48:52] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:48:52] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"s3://users/avatars/user_1_1763473390053.webp","isEnabled":true} 
+[2025-11-18 13:48:52] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"s3://users/avatars/user_1_1763473390053.webp"} 
+[2025-11-18 13:48:52] local.DEBUG: S3Service::getFileUrl called {"path":"s3://users/avatars/user_1_1763473390053.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:48:52] local.DEBUG: S3Service::getFileUrl generated URL {"path":"s3://users/avatars/user_1_1763473390053.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/s3://users/avatars/user_1_1763473390053.webp"} 
+[2025-11-18 13:48:52] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/s3://users/avatars/user_1_1763473390053.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:48:52] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/s3://users/avatars/user_1_1763473390053.webp"} 
+[2025-11-18 13:49:00] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:00] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:00] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:00] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:00] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:00] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:00] local.INFO: S3 is enabled, attempting S3 upload {"folder":"avatars","module":"users","filename":"user_1_1763473740018.webp"} 
+[2025-11-18 13:49:02] local.INFO: S3 upload succeeded without ACL (bucket has ACLs disabled) {"bucket":"codexaa-dev","path":"users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:02] local.INFO: S3 upload successful {"bucket":"codexaa-dev","path":"users/avatars/user_1_1763473740018.webp","visibility":"public"} 
+[2025-11-18 13:49:02] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473740018.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:02] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473740018.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:02] local.INFO: Resource record created successfully {"resource_id":2,"related_table":"users","related_id":1,"location":"s3","module":"users","folder":"avatars"} 
+[2025-11-18 13:49:02] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:02] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:02] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:02] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:02] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:02] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:02] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:02] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473740018.webp","isEnabled":true} 
+[2025-11-18 13:49:02] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:02] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473740018.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:02] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473740018.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:02] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:49:02] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:03] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:03] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:03] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:03] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:03] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:03] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:03] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:03] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:03] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:03] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:03] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473740018.webp","isEnabled":true} 
+[2025-11-18 13:49:03] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:03] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473740018.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:03] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473740018.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:03] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:49:03] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:04] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:04] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:04] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:04] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:04] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:04] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:04] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:04] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:04] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:04] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:04] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473740018.webp","isEnabled":true} 
+[2025-11-18 13:49:04] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:04] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473740018.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:04] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473740018.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:04] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:49:04] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:56] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:56] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:56] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:57] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:57] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:57] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:57] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:57] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:57] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:57] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:57] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473740018.webp","isEnabled":true} 
+[2025-11-18 13:49:57] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:57] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473740018.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:57] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473740018.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:57] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:49:57] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:57] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:57] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:57] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:57] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:57] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:57] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:57] local.DEBUG: S3Service::getFileUrl called {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:57] local.DEBUG: S3Service::getFileUrl generated URL {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/logos_1763471928_691c72381c69b.webp"} 
+[2025-11-18 13:49:57] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:57] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:57] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:57] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:57] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:57] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:57] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:57] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:49:57] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:49:57] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:57] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473740018.webp","isEnabled":true} 
+[2025-11-18 13:49:57] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:57] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473740018.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:49:57] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473740018.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:49:57] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:49:57] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473740018.webp"} 
+[2025-11-18 13:50:03] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:03] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:03] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:03] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:03] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:03] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:03] local.INFO: S3 is enabled, attempting S3 upload {"folder":"avatars","module":"users","filename":"user_1_1763473802757.webp"} 
+[2025-11-18 13:50:04] local.INFO: S3 upload succeeded without ACL (bucket has ACLs disabled) {"bucket":"codexaa-dev","path":"users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:04] local.INFO: S3 upload successful {"bucket":"codexaa-dev","path":"users/avatars/user_1_1763473802757.webp","visibility":"public"} 
+[2025-11-18 13:50:04] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473802757.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:04] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473802757.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:04] local.INFO: Resource record created successfully {"resource_id":3,"related_table":"users","related_id":1,"location":"s3","module":"users","folder":"avatars"} 
+[2025-11-18 13:50:04] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:04] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:04] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:04] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:04] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:04] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:04] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:04] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473802757.webp","isEnabled":true} 
+[2025-11-18 13:50:04] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:04] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473802757.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:04] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473802757.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:04] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:50:04] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:05] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:05] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:05] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:05] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:05] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:05] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:05] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:05] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:05] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:05] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:05] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473802757.webp","isEnabled":true} 
+[2025-11-18 13:50:05] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:05] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473802757.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:05] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473802757.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:05] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:50:05] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:06] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:06] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:06] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:06] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:06] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:06] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:06] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:06] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:06] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:06] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:06] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473802757.webp","isEnabled":true} 
+[2025-11-18 13:50:06] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:06] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473802757.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:06] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473802757.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:06] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:50:06] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:10] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:10] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:10] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:10] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:10] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:10] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:10] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:10] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:10] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:10] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:10] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473802757.webp","isEnabled":true} 
+[2025-11-18 13:50:10] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:10] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473802757.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:10] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473802757.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:10] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:50:10] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:10] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:10] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:10] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:10] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:10] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:10] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:10] local.DEBUG: S3Service::getFileUrl called {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:10] local.DEBUG: S3Service::getFileUrl generated URL {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/logos_1763471928_691c72381c69b.webp"} 
+[2025-11-18 13:50:10] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:10] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:11] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:11] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:11] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:11] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:11] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:11] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:11] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:11] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:11] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473802757.webp","isEnabled":true} 
+[2025-11-18 13:50:11] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:11] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473802757.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:11] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473802757.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:11] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:50:11] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:34] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:34] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:34] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:34] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:34] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:34] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:34] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:34] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:34] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:34] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:34] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473802757.webp","isEnabled":true} 
+[2025-11-18 13:50:34] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:34] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473802757.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:34] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473802757.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:34] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:50:34] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:34] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:34] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:34] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:34] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:34] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:34] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:34] local.DEBUG: S3Service::getFileUrl called {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:34] local.DEBUG: S3Service::getFileUrl generated URL {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/logos_1763471928_691c72381c69b.webp"} 
+[2025-11-18 13:50:34] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:34] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:34] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:35] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:35] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:35] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:35] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:35] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:35] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:35] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:35] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473802757.webp","isEnabled":true} 
+[2025-11-18 13:50:35] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:35] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473802757.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:35] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473802757.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:35] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:50:35] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473802757.webp"} 
+[2025-11-18 13:50:48] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:48] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:48] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:48] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:48] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:48] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:48] local.INFO: S3 is enabled, attempting S3 upload {"folder":"avatars","module":"users","filename":"user_1_1763473847893.jpg"} 
+[2025-11-18 13:50:50] local.INFO: S3 upload succeeded without ACL (bucket has ACLs disabled) {"bucket":"codexaa-dev","path":"users/avatars/user_1_1763473847893.jpg"} 
+[2025-11-18 13:50:50] local.INFO: S3 upload successful {"bucket":"codexaa-dev","path":"users/avatars/user_1_1763473847893.jpg","visibility":"public"} 
+[2025-11-18 13:50:50] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473847893.jpg","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:50] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473847893.jpg","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473847893.jpg"} 
+[2025-11-18 13:50:50] local.INFO: Resource record created successfully {"resource_id":4,"related_table":"users","related_id":1,"location":"s3","module":"users","folder":"avatars"} 
+[2025-11-18 13:50:50] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:50] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:50] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:50] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473847893.jpg"} 
+[2025-11-18 13:50:50] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:50] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:50] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:50] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473847893.jpg","isEnabled":true} 
+[2025-11-18 13:50:50] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473847893.jpg"} 
+[2025-11-18 13:50:50] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473847893.jpg","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:50] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473847893.jpg","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473847893.jpg"} 
+[2025-11-18 13:50:50] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473847893.jpg","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:50:50] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473847893.jpg"} 
+[2025-11-18 13:50:50] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:50] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:50] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:50] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:50] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:50] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:50] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473847893.jpg"} 
+[2025-11-18 13:50:50] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:50] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:50] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:50] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473847893.jpg","isEnabled":true} 
+[2025-11-18 13:50:50] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473847893.jpg"} 
+[2025-11-18 13:50:50] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473847893.jpg","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:50] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473847893.jpg","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473847893.jpg"} 
+[2025-11-18 13:50:50] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473847893.jpg","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:50:50] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473847893.jpg"} 
+[2025-11-18 13:50:52] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:52] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:52] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:52] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:52] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:52] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:52] local.DEBUG: FileUploadService::getFileUrl - Processing S3 path {"originalPath":"s3://users/avatars/user_1_1763473847893.jpg"} 
+[2025-11-18 13:50:52] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:50:52] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:50:52] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:52] local.DEBUG: FileUploadService::getFileUrl - Extracted S3 path {"s3Path":"users/avatars/user_1_1763473847893.jpg","isEnabled":true} 
+[2025-11-18 13:50:52] local.DEBUG: FileUploadService::getFileUrl - Calling S3Service::getFileUrl {"s3Path":"users/avatars/user_1_1763473847893.jpg"} 
+[2025-11-18 13:50:52] local.DEBUG: S3Service::getFileUrl called {"path":"users/avatars/user_1_1763473847893.jpg","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:50:52] local.DEBUG: S3Service::getFileUrl generated URL {"path":"users/avatars/user_1_1763473847893.jpg","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473847893.jpg"} 
+[2025-11-18 13:50:52] local.DEBUG: FileUploadService::getFileUrl - S3Service returned {"s3Url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473847893.jpg","s3UrlType":"string","isString":true,"startsWithHttp":true} 
+[2025-11-18 13:50:52] local.DEBUG: FileUploadService::getFileUrl - Returning valid HTTPS URL {"url":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/users/avatars/user_1_1763473847893.jpg"} 
+[2025-11-18 13:51:20] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:51:20] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:51:20] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:20] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:51:20] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:51:20] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:20] local.DEBUG: S3Service::getFileUrl called {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:20] local.DEBUG: S3Service::getFileUrl generated URL {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/logos_1763471928_691c72381c69b.webp"} 
+[2025-11-18 13:51:23] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:51:23] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:51:23] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:23] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:51:23] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:51:23] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:23] local.DEBUG: S3Service::getFileUrl called {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:23] local.DEBUG: S3Service::getFileUrl generated URL {"path":"settings/logos/logos_1763471928_691c72381c69b.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/logos_1763471928_691c72381c69b.webp"} 
+[2025-11-18 13:51:24] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:51:24] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:51:24] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:24] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:51:24] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:51:24] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:34] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:51:34] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:51:34] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:34] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:51:34] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:51:34] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:34] local.INFO: S3 is enabled, attempting S3 upload {"folder":"logos","module":"settings","filename":null} 
+[2025-11-18 13:51:35] local.INFO: S3 upload succeeded without ACL (bucket has ACLs disabled) {"bucket":"codexaa-dev","path":"settings/logos/logos_1763473894_691c79e661412.webp"} 
+[2025-11-18 13:51:35] local.INFO: S3 upload successful {"bucket":"codexaa-dev","path":"settings/logos/logos_1763473894_691c79e661412.webp","visibility":"public"} 
+[2025-11-18 13:51:35] local.DEBUG: S3Service::getFileUrl called {"path":"settings/logos/logos_1763473894_691c79e661412.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:35] local.DEBUG: S3Service::getFileUrl generated URL {"path":"settings/logos/logos_1763473894_691c79e661412.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/logos_1763473894_691c79e661412.webp"} 
+[2025-11-18 13:51:36] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:51:36] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:51:36] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:36] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:51:36] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:51:36] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:36] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:51:36] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:51:36] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:36] local.DEBUG: S3 settings loaded from database {"has_enabled":true,"enabled_value":"1","has_bucket":true,"has_region":true,"has_key":true,"has_secret":true,"all_keys":["bucket","enabled","key","region","secret","use_path_style"]} 
+[2025-11-18 13:51:36] local.DEBUG: S3 enabled status {"enabled_value":"1","is_enabled":true} 
+[2025-11-18 13:51:36] local.INFO: S3 Client initialized successfully {"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:36] local.DEBUG: S3Service::getFileUrl called {"path":"settings/logos/logos_1763473894_691c79e661412.webp","isEnabled":true,"hasClient":true,"bucket":"codexaa-dev","region":"eu-north-1"} 
+[2025-11-18 13:51:36] local.DEBUG: S3Service::getFileUrl generated URL {"path":"settings/logos/logos_1763473894_691c79e661412.webp","generatedUrl":"https://codexaa-dev.s3.eu-north-1.amazonaws.com/settings/logos/logos_1763473894_691c79e661412.webp"} 

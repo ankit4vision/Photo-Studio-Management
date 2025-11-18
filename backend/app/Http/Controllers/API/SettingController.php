@@ -263,6 +263,57 @@ class SettingController extends Controller
                 ]
             );
 
+            // MANDATORY: Create or update Resource record
+            $existingResource = $setting->logoResource();
+            if ($existingResource) {
+                // Update existing resource
+                // Normalize path before storing
+                $normalizedPath = $this->fileUploadService->normalizeFilePath(
+                    $uploadResult['path'],
+                    $uploadResult['stored_in_s3']
+                );
+                
+                $existingResource->update([
+                    'filename' => $uploadResult['filename'] ?? basename($uploadResult['path']),
+                    'file_path' => $normalizedPath, // Store normalized path only
+                    'file_url' => null, // Don't store URL - generate dynamically
+                    'location' => $uploadResult['stored_in_s3'] ? 's3' : 'local',
+                    'storage_disk' => $uploadResult['stored_in_s3'] ? 's3' : 'uploads',
+                ]);
+            } else {
+                // Create new resource - MANDATORY
+                try {
+                    $resource = $this->fileUploadService->createResource(
+                        $uploadResult,
+                        'settings',
+                        $setting->id,
+                        [
+                            'file' => $file,
+                            'module' => 'settings',
+                            'folder' => 'logos',
+                            'resource_type' => 'logo',
+                            'is_primary' => true,
+                            'visibility' => 'public',
+                        ]
+                    );
+                    
+                    if (!$resource) {
+                        throw new \Exception('Resource creation returned null');
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to create Resource record for logo', [
+                        'setting_id' => $setting->id,
+                        'upload_result' => $uploadResult,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Logo uploaded but failed to save resource record: ' . $e->getMessage(),
+                    ], 500);
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Logo uploaded successfully',

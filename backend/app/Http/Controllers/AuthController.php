@@ -71,43 +71,18 @@ class AuthController extends Controller
     }
 
     /**
-     * Format user data with avatar URL.
+     * Format user data with avatar image object (simplified - uses automatic accessor).
      *
      * @param User $user
      * @return array
      */
     protected function formatUserData(User $user)
     {
+        // Get user data - avatar_image is automatically included via accessor
         $userData = $user->toArray();
         
-        // Convert avatar path to full URL
-        if ($user->avatar) {
-            $avatarUrl = $this->fileUploadService->getFileUrl($user->avatar);
-            
-            // Only use URL if it's a valid HTTP(S) URL (not s3:// protocol)
-            if ($avatarUrl && 
-                is_string($avatarUrl) && 
-                (strpos($avatarUrl, 'http://') === 0 || strpos($avatarUrl, 'https://') === 0) &&
-                filter_var($avatarUrl, FILTER_VALIDATE_URL)) {
-                $userData['avatar_url'] = $avatarUrl;
-                // Also update avatar field to URL for frontend compatibility
-                $userData['avatar'] = $avatarUrl;
-            } else {
-                // If URL generation failed, log it and return null
-                \Log::warning('Failed to generate avatar URL', [
-                    'avatar_path' => $user->avatar,
-                    'generated_url' => $avatarUrl,
-                    'user_id' => $user->id
-                ]);
-                $userData['avatar_url'] = null;
-                // Keep the path in avatar field but it won't be a valid URL
-                $userData['avatar'] = null;
-            }
-        } else {
-            $userData['avatar_url'] = null;
-            $userData['avatar'] = null;
-        }
-        
+        // Keep backward compatibility with avatar field (path)
+        // avatar_image object is automatically included via $appends
         return $userData;
     }
 

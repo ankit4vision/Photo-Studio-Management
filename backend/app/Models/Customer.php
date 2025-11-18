@@ -53,6 +53,13 @@ class Customer extends Model
     ];
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = ['avatar_image'];
+
+    /**
      * Get the branch that owns the customer.
      */
     public function branch(): BelongsTo
@@ -192,5 +199,50 @@ class Customer extends Model
         return $this->orders()
             ->latest('order_date')
             ->value('order_date');
+    }
+
+    /**
+     * Get resources relationship.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function resources()
+    {
+        return Resource::where('related_table', 'customers')
+            ->where('related_id', $this->id);
+    }
+
+    /**
+     * Get avatar resource.
+     *
+     * @return Resource|null
+     */
+    public function avatarResource()
+    {
+        return Resource::where('related_table', 'customers')
+            ->where('related_id', $this->id)
+            ->where('module', 'customers')
+            ->where('folder', 'photos')
+            ->where('resource_type', 'avatar')
+            ->where('is_primary', true)
+            ->where('status', 'active')
+            ->first();
+    }
+
+    /**
+     * Get avatar image object for API responses.
+     * ONLY from Resource table - no fallback to avatar path.
+     *
+     * @return array|null
+     */
+    public function getAvatarImageAttribute()
+    {
+        $resource = $this->avatarResource();
+        
+        if (!$resource) {
+            return null;
+        }
+
+        return $resource->toImageObject();
     }
 }

@@ -54,7 +54,14 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the avatar URL attribute.
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = ['avatar_image'];
+
+    /**
+     * Get the avatar URL attribute (backward compatibility).
      *
      * @return string|null
      */
@@ -90,6 +97,51 @@ class User extends Authenticatable
 
         // Otherwise, return public storage URL (old format: avatars/filename.jpg)
         return \Illuminate\Support\Facades\Storage::disk('public')->url($this->avatar);
+    }
+
+    /**
+     * Get resources relationship.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function resources()
+    {
+        return Resource::where('related_table', 'users')
+            ->where('related_id', $this->id);
+    }
+
+    /**
+     * Get avatar resource.
+     *
+     * @return Resource|null
+     */
+    public function avatarResource()
+    {
+        return Resource::where('related_table', 'users')
+            ->where('related_id', $this->id)
+            ->where('module', 'users')
+            ->where('folder', 'avatars')
+            ->where('resource_type', 'avatar')
+            ->where('is_primary', true)
+            ->where('status', 'active')
+            ->first();
+    }
+
+    /**
+     * Get avatar image object for API responses.
+     * ONLY from Resource table - no fallback to avatar path.
+     *
+     * @return array|null
+     */
+    public function getAvatarImageAttribute()
+    {
+        $resource = $this->avatarResource();
+        
+        if (!$resource) {
+            return null;
+        }
+
+        return $resource->toImageObject();
     }
 
     /**

@@ -64,6 +64,20 @@ class UploadService {
         formData.append('existing_path', existingPath)
       }
 
+      // MANDATORY: Add related_table and related_id if provided (for Resource creation)
+      if (options.related_table) {
+        formData.append('related_table', options.related_table)
+      }
+      if (options.related_id) {
+        formData.append('related_id', options.related_id)
+      }
+      if (options.resource_type) {
+        formData.append('resource_type', options.resource_type)
+      }
+      if (options.is_primary !== undefined) {
+        formData.append('is_primary', options.is_primary)
+      }
+
       const response = await apiClient.post('/uploads', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -120,7 +134,12 @@ class UploadService {
       folder: 'avatars',
       filename,
       visibility: 'public',
-      existingPath
+      existingPath,
+      // MANDATORY: Pass related_table and related_id to create Resource record
+      related_table: userId ? 'users' : null,
+      related_id: userId || null,
+      resource_type: 'avatar',
+      is_primary: true
     })
   }
 

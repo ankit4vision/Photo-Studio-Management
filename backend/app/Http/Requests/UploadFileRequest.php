@@ -16,6 +16,22 @@ class UploadFileRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        // Convert string booleans to actual booleans for FormData compatibility
+        if ($this->has('is_primary')) {
+            $value = $this->input('is_primary');
+            if (is_string($value)) {
+                $this->merge([
+                    'is_primary' => filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
+                ]);
+            }
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
@@ -30,6 +46,10 @@ class UploadFileRequest extends FormRequest
             'visibility' => 'nullable|in:public,private',
             'filename' => 'nullable|string|max:255',
             'existing_path' => 'nullable|string|max:2048',
+            'related_table' => 'nullable|string|max:100',
+            'related_id' => 'nullable|integer',
+            'resource_type' => 'nullable|string|max:100',
+            'is_primary' => 'nullable|boolean',
         ];
     }
 
