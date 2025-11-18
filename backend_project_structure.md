@@ -73,13 +73,21 @@ backend/
 │   │   │   ├── ValidateSignature.php
 │   │   │   └── VerifyCsrfToken.php
 │   │   ├── 📁 Requests/            # Form request validation
-│   │   │   └── [Request classes]
+│   │   │   ├── BranchStoreRequest.php
+│   │   │   ├── BranchUpdateRequest.php
+│   │   │   ├── CustomerStoreRequest.php
+│   │   │   ├── CustomerUpdateRequest.php
+│   │   │   ├── OrderStoreRequest.php
+│   │   │   ├── OrderUpdateRequest.php
+│   │   │   ├── PackageStoreRequest.php
+│   │   │   └── PackageUpdateRequest.php
 │   │   └── 📁 Resources/            # API resources
+│   │       ├── BranchResource.php
 │   │       ├── CustomerResource.php
-│   │       ├── OrderResource.php
 │   │       ├── OrderItemResource.php
-│   │       ├── PaymentResource.php
-│   │       └── [Other Resource classes]
+│   │       ├── OrderResource.php
+│   │       ├── PackageResource.php
+│   │       └── PaymentResource.php
 │   │
 │   ├── 📁 Mail/                     # Email classes
 │   │   └── GenericEmail.php        # Generic mailable class
@@ -104,8 +112,7 @@ backend/
 │   │
 │   └── 📁 Services/                 # Business logic services
 │       ├── EmailService.php         # Email sending service
-│       ├── PdfExportService.php     # PDF generation service
-│       └── S3Service.php             # AWS S3 file storage service
+│       └── PdfExportService.php     # PDF generation service
 │
 ├── 📁 bootstrap/                    # Bootstrap files
 │   ├── app.php                      # Application bootstrap
@@ -131,22 +138,18 @@ backend/
 │   ├── 📁 factories/                # Model factories
 │   │   └── BranchFactory.php
 │   ├── 📁 migrations/               # Database migrations
-│   │   ├── 2014_10_12_000000_create_users_table.php
-│   │   ├── 2014_10_12_100000_create_password_resets_table.php
-│   │   ├── 2019_08_19_000000_create_failed_jobs_table.php
-│   │   ├── 2019_12_14_000001_create_personal_access_tokens_table.php
-│   │   ├── 2024_01_01_000001_create_roles_table.php
-│   │   ├── 2024_01_01_000002_create_permissions_table.php
-│   │   ├── 2024_01_01_000003_create_user_role_table.php
-│   │   ├── 2024_01_01_000004_create_role_permission_table.php
-│   │   ├── 2024_01_01_000005_create_settings_table.php
-│   │   ├── 2024_01_01_000006_create_emails_table.php
-│   │   ├── 2025_11_11_000000_create_branches_table.php
-│   │   ├── 2025_11_13_063625_create_packages_table.php
-│   │   ├── 2025_11_13_071304_create_customers_table.php
-│   │   ├── 2025_11_13_071741_create_orders_table.php
-│   │   ├── 2025_11_13_071758_create_order_items_table.php
-│   │   └── 2025_11_13_090017_create_payments_table.php
+│   │   ├── 2025_11_17_083104_create_users_table.php
+│   │   ├── 2025_11_17_083129_create_roles_and_permissions_tables.php
+│   │   ├── 2025_11_17_083142_create_branches_table.php
+│   │   ├── 2025_11_17_083203_create_customers_table.php
+│   │   ├── 2025_11_17_083220_create_packages_table.php
+│   │   ├── 2025_11_17_083234_create_orders_table.php
+│   │   ├── 2025_11_17_083253_create_order_items_table.php
+│   │   ├── 2025_11_17_083306_create_payments_table.php
+│   │   ├── 2025_11_17_083320_create_settings_table.php
+│   │   ├── 2025_11_17_083332_create_emails_table.php
+│   │   ├── 2025_11_17_083347_create_password_reset_tokens_table.php
+│   │   └── 2025_11_17_083400_create_failed_jobs_table.php
 │   └── 📁 seeders/                  # Database seeders
 │       ├── BranchSeeder.php
 │       ├── DatabaseSeeder.php
@@ -220,7 +223,6 @@ backend/
 ### Third-Party Packages
 - **barryvdh/laravel-dompdf 3.1** - PDF generation
 - **guzzlehttp/guzzle 7.2** - HTTP client
-- **league/flysystem-aws-s3-v3 3.29** - AWS S3 integration
 
 ### Development Tools
 - **Laravel Pint 1.0** - Code formatter
@@ -255,7 +257,7 @@ backend/
   - Update user
   - Delete user
   - Get current user profile
-  - Update current user profile (with avatar upload, address, personal info)
+  - Update current user profile (with address, personal info)
 - **Permissions**: `view_user`, `create_user`, `edit_user`, `delete_user`
 - **Status**: ✅ Fully implemented
 
@@ -383,7 +385,6 @@ backend/
   - Update setting
   - Delete setting
   - Update settings group
-  - Test S3 connection
   - Test email configuration (uses database email settings)
   - App Settings section (Web URL for reset password links)
 - **Permissions**: `view_setting`, `edit_setting`
@@ -406,14 +407,6 @@ backend/
 - **Features**:
   - Generate PDF documents
   - Export reports to PDF
-- **Status**: ✅ Fully implemented
-
-### 14. **S3 Storage Service**
-- **Location**: `app/Services/S3Service.php`
-- **Features**:
-  - Upload files to S3
-  - Delete files from S3
-  - Get file URLs
 - **Status**: ✅ Fully implemented
 
 ---
@@ -967,6 +960,7 @@ php artisan serve
 - ✅ Convert empty strings to null for nullable fields
 - ✅ Use database settings with fallback to .env
 - ✅ Provide user-friendly error messages
+- ✅ All upload-related code removed (S3, file uploads, avatars)
 
 ### ❌ Don'ts
 - ❌ Don't put business logic in controllers
@@ -1037,3 +1031,5 @@ php artisan serve
 - ✅ Order statistics endpoint (`/api/orders/stats`) added with date range filtering
 - ✅ API resources cleaned up - removed duplicate fields, using camelCase only
 - ✅ Payment numbers auto-generated in #PAY001 format
+- ✅ All upload-related code removed (S3Service, FileUploadService, UploadController, upload routes)
+- ✅ Avatar/image fields removed from API responses (UserController, AuthController, CustomerResource, OrderResource)

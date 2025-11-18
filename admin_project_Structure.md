@@ -73,7 +73,7 @@ admin/
 │   │   │   ├── FormFields.jsx         # Form input components
 │   │   │   ├── FormModal.jsx          # Modal wrapper for forms
 │   │   │   ├── GlobalSpinner.jsx     # Global loading spinner
-│   │   │   ├── ImageUpload.jsx        # Drag-and-drop image upload
+│   │   │   ├── ImageUpload.jsx        # Image display/preview component (upload removed)
 │   │   │   ├── Modal.jsx              # Reusable modal component
 │   │   │   ├── ScrollToTop.jsx       # Scroll to top component
 │   │   │   ├── StepIndicator.jsx     # Multi-step form progress
@@ -126,7 +126,7 @@ admin/
 │   │   │       ├── AddressSection.jsx      # Address information section (with state, zipCode)
 │   │   │       ├── PersonalInfoSection.jsx # Personal info section (with dateOfBirth, gender)
 │   │   │       ├── ProfileForm.jsx
-│   │   │       ├── ProfilePictureSection.jsx # Avatar upload/delete section
+│   │   │       ├── ProfilePictureSection.jsx # Avatar display section (upload removed)
 │   │   │       └── UserForm.jsx
 │   │   │
 │   │   ├── index.jsx                 # Component exports
@@ -186,11 +186,11 @@ admin/
 │   │   ├── packageService.js         # Package API
 │   │   ├── paymentService.js        # Payment API
 │   │   ├── permissionService.js      # Permission API
-│   │   ├── profileService.js         # Profile API (get/update profile, change password, avatar)
+│   │   ├── profileService.js         # Profile API (get/update profile, change password)
 │   │   ├── README.md
 │   │   ├── reportService.js          # Report API
 │   │   ├── roleService.js            # Role API
-│   │   ├── settingsService.js        # Settings API (email settings, test email)
+│   │   ├── settingsService.js        # Settings API (email settings, test email, business info)
 │   │   ├── transactionService.js     # Transaction API
 │   │   └── userService.js            # User API
 │   │
@@ -404,7 +404,7 @@ admin/
 - **Features**:
   - User list
   - Create/Edit user
-  - User profile (with avatar upload, personal info, address)
+  - User profile (with personal info, address)
   - Delete user
   - User status management
   - Change password
@@ -744,9 +744,9 @@ const userService = {
 ### ✅ Fully Implemented
 - Authentication (Login, Forgot Password, Reset Password, Change Password)
 - User Management (CRUD operations)
-- User Profile (Avatar upload, Personal Info, Address, Change Password)
+- User Profile (Personal Info, Address, Change Password)
 - Role & Permission Management
-- Settings Management (Business Info, Invoice, Email Settings with test, App Settings with Web URL, Currency & Regional, S3 Settings)
+- Settings Management (Business Info, Invoice, Email Settings with test, App Settings with Web URL, Currency & Regional)
 - Dashboard (live KPI cards, revenue trends with backend analytics endpoints)
 - Customer Management (with PDF export, auto-calculated stats from orders, server-side pagination/filtering)
 - Order Management (multi-package support, customer stats auto-update, server-side pagination/filtering, payment recording)
@@ -779,7 +779,7 @@ const userService = {
 - **FormModal** - Modal wrapper for forms
 - **ThemeToggle** - Theme switching component
 - **ToastProvider** - Global notification system
-- **ImageUpload** - Drag-and-drop image upload
+- **ImageUpload** - Image display/preview component (upload functionality removed)
 - **StepIndicator** - Multi-step form progress
 
 ### Development Commands
@@ -819,3 +819,5 @@ npm run lint
 - ✅ Manual order status update functionality added
 - ✅ Payment numbers displayed in #PAY003 format in payment history and transactions
 - ✅ API responses cleaned up - removed duplicate fields, using camelCase only
+- ✅ All upload-related code removed (uploadService, ImageUploadWithUpload, S3 settings, avatar uploads)
+- ✅ Avatar/image fields removed from API responses and frontend components
