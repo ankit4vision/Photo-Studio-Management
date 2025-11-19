@@ -14,6 +14,7 @@ use App\Models\Setting;
 use App\Services\PdfExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
@@ -364,13 +365,24 @@ class OrderController extends Controller
             'invoice_prefix',
         ]);
 
+        $invoicePrefix = trim($settings['invoice_prefix'] ?? 'INV');
+        $orderNumber = $order->order_number ?? $order->id;
+        $invoiceNumber = $invoicePrefix !== '' ? $invoicePrefix . $orderNumber : $orderNumber;
+
+        $customerName = trim(implode(' ', array_filter([
+            $order->customer->first_name ?? null,
+            $order->customer->last_name ?? null,
+        ]))) ?: ($order->customer->name ?? 'Customer');
+        $customerSlug = Str::slug($customerName, '') ?: 'Customer';
+
         $data = [
             'order' => $order,
             'settings' => $settings,
             'exportDate' => now()->format('Y-m-d H:i:s'),
+            'invoiceNumber' => $invoiceNumber,
         ];
 
-        $filename = 'order_' . $order->order_number . '_' . date('Y-m-d') . '.pdf';
+        $filename = "{$invoiceNumber}_{$customerSlug}.pdf";
 
         return $pdfService->download('pdfs.order_invoice', $data, $filename);
     }

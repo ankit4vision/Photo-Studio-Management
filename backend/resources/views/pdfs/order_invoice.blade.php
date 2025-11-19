@@ -179,9 +179,20 @@
         $exportedAt = \Carbon\Carbon::parse($exportDate ?? now());
         $invoicePrefix = trim($settings['invoice_prefix'] ?? 'INV');
         $orderNumber = $order->order_number ?? $order->id;
-        $invoiceNumber = $invoicePrefix !== '' ? $invoicePrefix . '-' . $orderNumber : $orderNumber;
-        $invoiceDate = optional($order->order_date)->format('d M Y') ?? $exportedAt->format('d M Y');
-        $invoiceTime = $exportedAt->format('h:i A');
+        $invoiceNumber = $invoiceNumber ?? ($invoicePrefix !== '' ? $invoicePrefix . $orderNumber : $orderNumber);
+        
+        // Invoice Generated date & time
+        $invoiceGeneratedDate = $exportedAt->format('d M Y');
+        $invoiceGeneratedTime = $exportedAt->format('h:i A');
+        
+        // Order date
+        $orderDate = optional($order->order_date)->format('d M Y') ?? 'N/A';
+        
+        // Order created on
+        $orderCreatedOn = optional($order->created_at)->format('d M Y, h:i A') ?? 'N/A';
+        
+        // Order last updated on
+        $orderUpdatedOn = optional($order->updated_at)->format('d M Y, h:i A') ?? 'N/A';
 
         $businessName = $settings['invoice_business_name']
             ?? $settings['business_name']
@@ -233,8 +244,8 @@
         <div class="left">INVOICE</div>
         <div class="right">
             <div class="meta-row"><strong>Invoice #:</strong> {{ $invoiceNumber }}</div>
-            <div class="meta-row"><strong>Date:</strong> {{ $invoiceDate }}</div>
-            <div class="meta-row"><strong>Time:</strong> {{ $invoiceTime }}</div>
+            <div class="meta-row"><strong>Invoice Generated:</strong> {{ $invoiceGeneratedDate }}, {{ $invoiceGeneratedTime }}</div>
+            <div class="meta-row"><strong>Order Date:</strong> {{ $orderDate }}</div>
         </div>
     </div>
     <hr style="border:0;border-top:1.5px solid #bbb;margin:0 0 10px 0;">
@@ -256,6 +267,9 @@
                 @if($businessPhone)
                     <div class="company-meta">Phone: {{ $businessPhone }}</div>
                 @endif
+                @if($businessWebsite)
+                    <div class="company-meta">Website: {{ $businessWebsite }}</div>
+                @endif
             </td>
             <td class="info-cell">
                 <div class="company-name">{{ $customerName ?: 'Walk-in' }}</div>
@@ -267,6 +281,10 @@
                 @if($customerAddress && $customerAddress !== '-')
                     <div class="company-meta">Address: {{ $customerAddress }}</div>
                 @endif
+                <div class="company-meta" style="margin-top: 4px; padding-top: 4px; border-top: 1px solid #e0e0e0;">
+                    <div style="font-size: 10px; color: #777;">Created: {{ $orderCreatedOn }}</div>
+                    <div style="font-size: 10px; color: #777;">Updated: {{ $orderUpdatedOn }}</div>
+                </div>
             </td>
         </tr>
     </table>
@@ -277,10 +295,9 @@
         <thead>
             <tr>
                 <th class="text-center">#</th>
-                <th class="text-start">Product</th>
+                <th class="text-start">Items</th>
                 <th class="text-center">Qty</th>
                 <th class="text-end">Price</th>
-                <th class="text-end">Discount</th>
                 <th class="text-end">Subtotal</th>
             </tr>
         </thead>
@@ -301,7 +318,6 @@
                     <td class="text-start">{{ $productName }}</td>
                     <td class="text-center">{{ $item->quantity ?? 1 }}</td>
                     <td class="text-end">₹{{ number_format($item->unit_price ?? 0, 2) }}</td>
-                    <td class="text-end">{{ $lineDiscount > 0 ? '₹' . number_format($lineDiscount, 2) : '-' }}</td>
                     <td class="text-end">₹{{ number_format($itemSubtotal, 2) }}</td>
                 </tr>
             @endforeach
@@ -344,7 +360,7 @@
                         <td class="value">₹{{ number_format($subtotal, 2) }}</td>
                     </tr>
                     <tr>
-                        <td class="label">Total Discount:</td>
+                        <td class="label">Flat Discount:</td>
                         <td class="value">₹{{ number_format($discountAmount, 2) }}</td>
                     </tr>
                     <tr>
