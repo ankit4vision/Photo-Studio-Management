@@ -1,30 +1,42 @@
 <?php
     $metaItems = collect($meta ?? [])->filter(fn ($value) => !blank($value));
+    $displayName = $settings['invoice_business_name']
+        ?? $settings['business_name']
+        ?? 'Photo Studio Management';
+    $displayAddress = $settings['invoice_business_address']
+        ?? $settings['business_address']
+        ?? null;
+    $displayPhone = $settings['invoice_contact_phone']
+        ?? $settings['business_phone']
+        ?? null;
+    $displayEmail = $settings['invoice_contact_email']
+        ?? $settings['business_email']
+        ?? null;
+    $displayWebsite = $settings['invoice_business_website']
+        ?? $settings['business_website']
+        ?? null;
 ?>
 
 <div class="pdf-header">
     <div class="pdf-intro">
         <p class="document-title"><?php echo e(strtoupper($title ?? 'Document')); ?></p>
         <div class="business-card">
-            <h1><?php echo e($settings['business_name'] ?? 'Photo Studio Management'); ?></h1>
-            <?php if(!empty($settings['business_address'])): ?>
-                <p><?php echo e($settings['business_address']); ?></p>
+            <h1><?php echo e($displayName); ?></h1>
+            <?php if($displayAddress): ?>
+                <p><?php echo e($displayAddress); ?></p>
             <?php endif; ?>
             <p>
-                <?php if(!empty($settings['business_phone'])): ?>
-                    Phone: <?php echo e($settings['business_phone']); ?>
+                <?php if($displayPhone): ?>
+                    Phone: <?php echo e($displayPhone); ?>
 
                 <?php endif; ?>
-                <?php if(!empty($settings['business_email'])): ?>
-                    <?php echo e(!empty($settings['business_phone']) ? ' | ' : ''); ?>Email: <?php echo e($settings['business_email']); ?>
+                <?php if($displayEmail): ?>
+                    <?php echo e($displayPhone ? ' | ' : ''); ?>Email: <?php echo e($displayEmail); ?>
 
                 <?php endif; ?>
             </p>
-            <?php if(!empty($settings['business_website'])): ?>
-                <p>Website: <?php echo e($settings['business_website']); ?></p>
-            <?php endif; ?>
-            <?php if(!empty($settings['tax_id'])): ?>
-                <p>Tax ID: <?php echo e($settings['tax_id']); ?></p>
+            <?php if($displayWebsite): ?>
+                <p>Website: <?php echo e($displayWebsite); ?></p>
             <?php endif; ?>
         </div>
     </div>

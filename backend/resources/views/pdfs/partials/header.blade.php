@@ -1,28 +1,40 @@
 @php
     $metaItems = collect($meta ?? [])->filter(fn ($value) => !blank($value));
+    $displayName = $settings['invoice_business_name']
+        ?? $settings['business_name']
+        ?? 'Photo Studio Management';
+    $displayAddress = $settings['invoice_business_address']
+        ?? $settings['business_address']
+        ?? null;
+    $displayPhone = $settings['invoice_contact_phone']
+        ?? $settings['business_phone']
+        ?? null;
+    $displayEmail = $settings['invoice_contact_email']
+        ?? $settings['business_email']
+        ?? null;
+    $displayWebsite = $settings['invoice_business_website']
+        ?? $settings['business_website']
+        ?? null;
 @endphp
 
 <div class="pdf-header">
     <div class="pdf-intro">
         <p class="document-title">{{ strtoupper($title ?? 'Document') }}</p>
         <div class="business-card">
-            <h1>{{ $settings['business_name'] ?? 'Photo Studio Management' }}</h1>
-            @if(!empty($settings['business_address']))
-                <p>{{ $settings['business_address'] }}</p>
+            <h1>{{ $displayName }}</h1>
+            @if($displayAddress)
+                <p>{{ $displayAddress }}</p>
             @endif
             <p>
-                @if(!empty($settings['business_phone']))
-                    Phone: {{ $settings['business_phone'] }}
+                @if($displayPhone)
+                    Phone: {{ $displayPhone }}
                 @endif
-                @if(!empty($settings['business_email']))
-                    {{ !empty($settings['business_phone']) ? ' | ' : '' }}Email: {{ $settings['business_email'] }}
+                @if($displayEmail)
+                    {{ $displayPhone ? ' | ' : '' }}Email: {{ $displayEmail }}
                 @endif
             </p>
-            @if(!empty($settings['business_website']))
-                <p>Website: {{ $settings['business_website'] }}</p>
-            @endif
-            @if(!empty($settings['tax_id']))
-                <p>Tax ID: {{ $settings['tax_id'] }}</p>
+            @if($displayWebsite)
+                <p>Website: {{ $displayWebsite }}</p>
             @endif
         </div>
     </div>

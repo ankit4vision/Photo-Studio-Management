@@ -1,22 +1,33 @@
+<?php
+    $footerName = $settings['invoice_business_name']
+        ?? $settings['business_name']
+        ?? 'Photo Studio Management';
+    $footerWebsite = $settings['invoice_business_website']
+        ?? $settings['business_website']
+        ?? null;
+    $footerEmail = $settings['invoice_contact_email']
+        ?? $settings['business_email']
+        ?? null;
+    $footerPhone = $settings['invoice_contact_phone']
+        ?? $settings['business_phone']
+        ?? null;
+    $footerText = $settings['invoice_footer_text']
+        ?? 'Thank you for your business.';
+?>
+
 <div class="pdf-footer">
+    <p class="footer-title"><?php echo e($footerName); ?> <?php if($footerWebsite): ?> • <?php echo e($footerWebsite); ?> <?php endif; ?></p>
     <p>
-        <?php echo e($settings['business_name'] ?? 'Photo Studio Management'); ?>
+        <?php if($footerEmail): ?>
+            <?php echo e($footerEmail); ?>
 
-        <?php if(!empty($settings['business_website'])): ?>
-            • <?php echo e($settings['business_website']); ?>
+        <?php endif; ?>
+        <?php if($footerPhone): ?>
+            <?php echo e($footerEmail ? ' • ' : ''); ?><?php echo e($footerPhone); ?>
 
         <?php endif; ?>
     </p>
-    <p>
-        <?php if(!empty($settings['business_email'])): ?>
-            <?php echo e($settings['business_email']); ?>
-
-        <?php endif; ?>
-        <?php if(!empty($settings['business_phone'])): ?>
-            <?php echo e(!empty($settings['business_email']) ? ' • ' : ''); ?><?php echo e($settings['business_phone']); ?>
-
-        <?php endif; ?>
-    </p>
+    <p><?php echo e($footerText); ?></p>
     <p>Generated on <?php echo e($exportDate ?? now()->format('Y-m-d H:i:s')); ?></p>
 </div>
 

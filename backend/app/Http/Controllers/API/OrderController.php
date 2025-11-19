@@ -353,8 +353,16 @@ class OrderController extends Controller
             }
         ]);
 
-        // Get business settings
-        $settings = Setting::businessInfo();
+        // Get business & invoice settings for PDF branding
+        $settings = Setting::businessInfo([
+            'invoice_business_name',
+            'invoice_business_website',
+            'invoice_business_address',
+            'invoice_contact_phone',
+            'invoice_contact_email',
+            'invoice_footer_text',
+            'invoice_prefix',
+        ]);
 
         $data = [
             'order' => $order,
