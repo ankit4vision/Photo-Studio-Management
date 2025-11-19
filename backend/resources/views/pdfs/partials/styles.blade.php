@@ -1,385 +1,140 @@
 <style>
-    @page {
-        margin: 32px 28px;
-    }
-
-    * {
-        box-sizing: border-box;
-    }
-
-    body {
-        font-family: 'DejaVu Sans', sans-serif;
-        font-size: 11px;
-        color: #111;
-        line-height: 1.5;
-        background: #fff;
-    }
-
-    .invoice-body {
-        margin: 0;
-        padding: 0;
-    }
-
-    .muted {
-        color: #666;
-        font-size: 10px;
-    }
-
-    .invoice-masthead {
-        display: flex;
-        justify-content: space-between;
-        gap: 24px;
-        padding-bottom: 14px;
-        margin-bottom: 20px;
-        border-bottom: 1px solid #111;
-    }
-
-    .masthead-title {
-        font-size: 24px;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        margin: 0;
-    }
-
-    .masthead-right p {
-        margin: 2px 0;
-        text-align: right;
-    }
-
-    .invoice-info-row {
-        display: flex;
-        gap: 18px;
-        margin-bottom: 20px;
-    }
-
-    .info-block {
-        flex: 1;
-        border: 1px solid #d5d5d5;
-        padding: 10px 12px;
-        min-height: 110px;
-        background: #fff;
-    }
-
-    .info-label {
-        font-size: 10px;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
-        margin: 0 0 6px;
-    }
-
-    .info-line {
-        margin: 2px 0;
-    }
-
-    .section-title {
-        text-transform: uppercase;
-        letter-spacing: 0.18em;
-        font-size: 11px;
-        margin-bottom: 8px;
-    }
-
-    .line-section {
-        margin-bottom: 18px;
-    }
-
-    .products-grid {
-        display: flex;
-        gap: 16px;
-    }
-
-    .products-table {
-        flex: 3;
-    }
-
-    .line-items {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 11px;
-    }
-
-    .line-items th,
-    .line-items td {
-        border: 1px solid #bcbcbc;
-        padding: 6px;
-    }
-
-    .line-items th {
-        font-weight: 600;
-        font-size: 10px;
-        background: #f6f6f6;
-        text-transform: uppercase;
-    }
-
-    .line-items tbody tr:nth-child(even) td {
-        background: #fafafa;
-    }
-
-    .order-summary {
-        flex: 1;
-        min-width: 220px;
-    }
-
-    .order-summary table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 11px;
-    }
-
-    .order-summary td {
-        border: 1px solid #d5d5d5;
-        padding: 7px;
-    }
-
-    .text-right {
-        text-align: right;
-    }
-
-    .text-center {
-        text-align: center;
-    }
-
-    .text-success {
-        color: #0b6623;
-        font-weight: 600;
-    }
-
-    .text-danger {
-        color: #a60000;
-        font-weight: 600;
-    }
-
-    .summary-grid {
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
-        margin-bottom: 18px;
-    }
-
-    .summary-grid > div {
-        flex: 1;
-        min-width: 220px;
-    }
-
-    .summary-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .summary-table td {
-        border: 1px solid #d5d5d5;
-        padding: 8px;
-    }
-
-    .payment-lines {
-        border: 1px solid #d5d5d5;
-        padding: 10px 12px;
-    }
-
-    .payment-line {
-        padding: 4px 0;
-        font-size: 11px;
-        border-bottom: 1px solid #e5e5e5;
-    }
-
-    .payment-line:last-child {
-        border-bottom: none;
-    }
-
-    .pdf-footer {
-        margin-top: 28px;
-        padding-top: 12px;
-        border-top: 1px solid #bbb;
-        text-align: center;
-        font-size: 10px;
-        color: #555;
-    }
+  :root {
+    --pad: 10px;
+    --font-sans: "Helvetica Neue", Arial, Helvetica, "DejaVu Sans", sans-serif;
+    --muted: #444;
+  }
+  
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+  
+  html, body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: #fff;
+  }
+  
+  .page {
+    width: 210mm;
+    padding: 12mm;
+    box-sizing: border-box;
+    font-size: 11px;
+    color: #111;
+  }
+  
+  .dd-hr {
+    height: 2px;
+    margin: 10px 0;
+    background-image: radial-gradient(circle, rgba(0,0,0,0.35) 1px, transparent 1px);
+    background-size: 6px 2px;
+    background-repeat: repeat-x;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  
+  .biz {
+    font-weight: 700;
+    font-size: 20px;
+  }
+  
+  .biz-sub {
+    font-size: 10.5px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.3;
+  }
+  
+  .body-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+  
+  .left, .right {
+    width: 48%;
+  }
+  
+  .inv-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  
+  .meta, .cust {
+    font-size: 10.5px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  
+  table.invoice-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5px;
+    margin-top: 6px;
+  }
+  
+  table.invoice-table thead th {
+    text-align: left;
+    padding: 6px;
+    font-weight: 600;
+    font-size: 10.5px;
+  }
+  
+  table.invoice-table tbody td {
+    padding: 6px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  
+  table.invoice-table td.num {
+    text-align: right;
+    white-space: nowrap;
+  }
+  
+  .product-col {
+    word-break: break-word;
+  }
+  
+  /* Order Summary Below Table */
+  .order-summary-block {
+    width: 100%;
+    margin-top: 10px;
+    text-align: right;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+  
+  .order-summary-block .line {
+    padding: 3px 0;
+  }
+  
+  .order-summary-block .grand {
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  
+  .payments {
+    margin-top: 10px;
+    font-size: 10.5px;
+    color: var(--muted);
+  }
+  
+  .footer {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.3;
+  }
+  
+  .section-title {
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
 </style>
-<style>
-    @page {
-        margin: 32px 28px;
-    }
-
-    * {
-        box-sizing: border-box;
-    }
-
-    body {
-        font-family: 'DejaVu Sans', sans-serif;
-        font-size: 11px;
-        color: #111;
-        line-height: 1.5;
-        background: #fff;
-    }
-
-    .muted {
-        color: #666;
-        font-size: 10px;
-    }
-
-    .invoice-body {
-        margin: 0;
-        padding: 0;
-    }
-
-    .invoice-header {
-        display: flex;
-        justify-content: space-between;
-        gap: 24px;
-        padding-bottom: 16px;
-        margin-bottom: 18px;
-        border-bottom: 1px solid #111;
-    }
-
-    .invoice-type {
-        font-size: 15px;
-        letter-spacing: 0.25em;
-        margin: 0 0 8px;
-    }
-
-    .invoice-brand h1 {
-        margin: 0 0 6px;
-        font-size: 22px;
-    }
-
-    .invoice-brand p {
-        margin: 2px 0;
-    }
-
-    .invoice-meta table {
-        border-collapse: collapse;
-        font-size: 11px;
-    }
-
-    .invoice-meta td:first-child {
-        font-weight: 600;
-        padding-right: 12px;
-        white-space: nowrap;
-    }
-
-    .invoice-meta td {
-        padding: 3px 0;
-    }
-
-    .party-section {
-        display: flex;
-        gap: 12px;
-        margin-bottom: 18px;
-    }
-
-    .party-card {
-        flex: 1;
-        border: 1px solid #dcdcdc;
-        padding: 10px;
-        background: #fff;
-        min-height: 110px;
-    }
-
-    .party-label {
-        font-size: 10px;
-        letter-spacing: 0.15em;
-        text-transform: uppercase;
-        margin-bottom: 6px;
-        color: #444;
-    }
-
-    .party-name {
-        font-size: 13px;
-        font-weight: bold;
-        margin: 0 0 4px;
-    }
-
-    .section-title {
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        font-size: 11px;
-        margin-bottom: 6px;
-    }
-
-    .line-section {
-        margin-bottom: 18px;
-    }
-
-    .line-items {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 11px;
-    }
-
-    .line-items th,
-    .line-items td {
-        border: 1px solid #bcbcbc;
-        padding: 6px;
-    }
-
-    .line-items th {
-        font-weight: 600;
-        font-size: 10px;
-        text-transform: uppercase;
-        background: #f5f5f5;
-    }
-
-    .line-items tbody tr:nth-child(even) td {
-        background: #fafafa;
-    }
-
-    .line-meta {
-        display: flex;
-        justify-content: space-between;
-        font-size: 10px;
-        margin-top: 6px;
-    }
-
-    .summary-grid {
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
-        margin-bottom: 18px;
-    }
-
-    .summary-grid > div {
-        flex: 1;
-        min-width: 220px;
-    }
-
-    .summary-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .summary-table td {
-        border: 1px solid #d5d5d5;
-        padding: 8px;
-    }
-
-    .summary-table.compact td {
-        font-size: 11px;
-    }
-
-    .text-right {
-        text-align: right;
-    }
-
-    .text-center {
-        text-align: center;
-    }
-
-    .text-success {
-        color: #0b6623;
-        font-weight: 600;
-    }
-
-    .text-danger {
-        color: #a60000;
-        font-weight: 600;
-    }
-
-    .pdf-footer {
-        margin-top: 30px;
-        padding-top: 12px;
-        border-top: 1px solid #bbb;
-        text-align: center;
-        font-size: 10px;
-        color: #555;
-    }
-</style>
-

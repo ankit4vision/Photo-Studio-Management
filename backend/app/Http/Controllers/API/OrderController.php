@@ -372,7 +372,7 @@ class OrderController extends Controller
 
         $filename = 'order_' . $order->order_number . '_' . date('Y-m-d') . '.pdf';
 
-        return $pdfService->download('pdfs.order', $data, $filename);
+        return $pdfService->download('pdfs.order_invoice', $data, $filename);
     }
 
     protected function applyOrderFilters($query, Request $request): void
