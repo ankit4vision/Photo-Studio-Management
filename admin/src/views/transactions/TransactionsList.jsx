@@ -182,23 +182,6 @@ const TransactionsList = () => {
     }
   }
 
-  const handleExportAll = async () => {
-    try {
-      const params = {}
-      if (searchTerm) params.search = searchTerm
-      
-      const result = await paymentService.exportAllTransactionsPdf(params)
-      if (result.success) {
-        success('Transactions PDF exported successfully')
-      } else {
-        showError(result.message || 'Failed to export PDF')
-      }
-    } catch (err) {
-      console.error('Error exporting transactions PDF:', err)
-      showError('An error occurred while exporting PDF')
-    }
-  }
-
   const handleDeletePayment = (payment) => {
     setPaymentToDelete(payment)
     setShowDeleteModal(true)
@@ -398,14 +381,6 @@ const TransactionsList = () => {
               <h2 className="mb-0 text-dark">Transactions</h2>
             </div>
             <div className="ms-auto d-flex gap-2">
-              <Button 
-                variant="outline-primary" 
-                onClick={handleExportAll}
-                title="Export All Transactions to PDF"
-              >
-                <FontAwesomeIcon icon={faFilePdf} className="me-2" />
-                Export PDF
-              </Button>
               {canCreateTransaction && (
                 <Button variant="primary" onClick={() => navigate('/transactions/create')}>
                   <FontAwesomeIcon icon={faPlus} className="me-2" />

@@ -312,61 +312,6 @@ class PackageService {
     }
   }
 
-  async exportPackagePdf(packageId, params = {}) {
-    try {
-      const queryParams = new URLSearchParams()
-      Object.keys(params).forEach((key) => {
-        if (params[key]) queryParams.append(key, params[key])
-      })
-
-      const url = `${API_ENDPOINTS.PACKAGES.EXPORT_PDF(packageId)}${
-        queryParams.toString() ? `?${queryParams.toString()}` : ''
-      }`
-      const response = await apiClient.get(url, { responseType: 'blob' })
-
-      const blob = new Blob([response.data], { type: 'application/pdf' })
-      const blobUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = `package_${packageId}_${new Date().toISOString().split('T')[0]}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(blobUrl)
-
-      return { success: true }
-    } catch (error) {
-      return handleApiError(error)
-    }
-  }
-
-  async exportAllPackagesPdf(params = {}) {
-    try {
-      const queryParams = new URLSearchParams()
-      Object.keys(params).forEach((key) => {
-        if (params[key]) queryParams.append(key, params[key])
-      })
-
-      const url = `${API_ENDPOINTS.PACKAGES.EXPORT_ALL_PDF}${
-        queryParams.toString() ? `?${queryParams.toString()}` : ''
-      }`
-      const response = await apiClient.get(url, { responseType: 'blob' })
-
-      const blob = new Blob([response.data], { type: 'application/pdf' })
-      const blobUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = `packages_${new Date().toISOString().split('T')[0]}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(blobUrl)
-
-      return { success: true }
-    } catch (error) {
-      return handleApiError(error)
-    }
-  }
 }
 
 // Create and export singleton instance

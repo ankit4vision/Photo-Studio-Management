@@ -284,6 +284,12 @@ class SettingsService {
         { key: 'businessAddress', section: 'Business Information', formPath: ['businessInfo', 'businessAddress'], type: 'string' },
         // Invoice Settings
         { key: 'invoice_prefix', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_prefix'], type: 'string' },
+        { key: 'invoice_business_name', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_business_name'], type: 'string' },
+        { key: 'invoice_business_website', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_business_website'], type: 'string' },
+        { key: 'invoice_business_address', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_business_address'], type: 'string' },
+        { key: 'invoice_contact_phone', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_contact_phone'], type: 'string' },
+        { key: 'invoice_contact_email', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_contact_email'], type: 'string' },
+        { key: 'invoice_footer_text', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_footer_text'], type: 'string' },
         // Email Settings
         { key: 'mailer', section: 'Email Settings', formPath: ['emailSettings', 'mailer'], type: 'string' },
         { key: 'host', section: 'Email Settings', formPath: ['emailSettings', 'host'], type: 'string' },
@@ -445,6 +451,12 @@ class SettingsService {
       },
       invoiceSettings: {
         invoice_prefix: 'INV',
+        invoice_business_name: '',
+        invoice_business_website: '',
+        invoice_business_address: '',
+        invoice_contact_phone: '',
+        invoice_contact_email: '',
+        invoice_footer_text: '',
       },
       emailSettings: {
         mailer: 'smtp',
@@ -477,6 +489,12 @@ class SettingsService {
       'gstNumber': { section: 'Business Information', field: 'businessInfo', prop: 'gstNumber', type: 'string', useDefaultIfEmpty: false },
       'businessAddress': { section: 'Business Information', field: 'businessInfo', prop: 'businessAddress', type: 'string', useDefaultIfEmpty: false },
       'invoice_prefix': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_prefix', type: 'string', useDefaultIfEmpty: true },
+      'invoice_business_name': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_business_name', type: 'string', useDefaultIfEmpty: false },
+      'invoice_business_website': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_business_website', type: 'string', useDefaultIfEmpty: false },
+      'invoice_business_address': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_business_address', type: 'string', useDefaultIfEmpty: false },
+      'invoice_contact_phone': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_contact_phone', type: 'string', useDefaultIfEmpty: false },
+      'invoice_contact_email': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_contact_email', type: 'string', useDefaultIfEmpty: false },
+      'invoice_footer_text': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_footer_text', type: 'string', useDefaultIfEmpty: false },
       'mailer': { section: 'Email Settings', field: 'emailSettings', prop: 'mailer', type: 'string', useDefaultIfEmpty: true },
       'host': { section: 'Email Settings', field: 'emailSettings', prop: 'host', type: 'string', useDefaultIfEmpty: false },
       'port': { section: 'Email Settings', field: 'emailSettings', prop: 'port', type: 'string', useDefaultIfEmpty: false },

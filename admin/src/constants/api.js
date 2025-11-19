@@ -118,7 +118,6 @@ export const API_ENDPOINTS = {
     RECALCULATE_STATS: (id) => `/customers/${id}/recalculate-stats`,
     WALLET: (id) => `/customers/${id}/wallet`,
     EXPORT_PDF: (id) => `/customers/${id}/export-pdf`,
-    EXPORT_ALL_PDF: '/customers/export-pdf',
     LEDGER: (id) => `/customers/${id}/ledger`,
   },
 
@@ -140,8 +139,6 @@ export const API_ENDPOINTS = {
     GET_BY_ID: (id) => `/packages/${id}`,
     UPDATE: (id) => `/packages/${id}`,
     DELETE: (id) => `/packages/${id}`,
-    EXPORT_PDF: (id) => `/packages/${id}/export-pdf`,
-    EXPORT_ALL_PDF: '/packages/export-pdf',
   },
 
   // Order Management
@@ -157,7 +154,6 @@ export const API_ENDPOINTS = {
     SEARCH: '/orders/search',
     EXPORT: '/orders/export',
     EXPORT_PDF: (id) => `/orders/${id}/export-pdf`,
-    EXPORT_ALL_PDF: '/orders/export-pdf',
     STATS: '/orders/stats',
     ANALYTICS: '/orders/analytics',
     UPDATE_STATUS: (id) => `/orders/${id}/status`,
@@ -189,7 +185,6 @@ export const API_ENDPOINTS = {
     GET_BY_ORDER: (orderId) => `/payments/order/${orderId}`,
     GET_BY_ID: (id) => `/payments/${id}`,
     EXPORT_PDF: (id) => `/payments/${id}/export-pdf`,
-    EXPORT_ALL_PDF: '/payments/export-pdf',
   },
 
   // Reports

@@ -71,8 +71,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Package Management
     Route::get('/packages', [PackageController::class, 'index'])->middleware('permission:view_package');
     Route::post('/packages', [PackageController::class, 'store'])->middleware('permission:create_package');
-    Route::get('/packages/export-pdf', [PackageController::class, 'exportAllPdf'])->middleware('permission:view_package');
-    Route::get('/packages/{package}/export-pdf', [PackageController::class, 'exportPdf'])->middleware('permission:view_package');
     Route::get('/packages/{package}', [PackageController::class, 'show'])->middleware('permission:view_package');
     Route::put('/packages/{package}', [PackageController::class, 'update'])->middleware('permission:edit_package');
     Route::delete('/packages/{package}', [PackageController::class, 'destroy'])->middleware('permission:delete_package');
@@ -80,7 +78,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Customer Management
     Route::get('/customers', [CustomerController::class, 'index'])->middleware('permission:view_customer');
     Route::post('/customers', [CustomerController::class, 'store'])->middleware('permission:create_customer');
-    Route::get('/customers/export-pdf', [CustomerController::class, 'exportAllPdf'])->middleware('permission:view_customer');
     Route::get('/customers/{customer}', [CustomerController::class, 'show'])->middleware('permission:view_customer');
     Route::get('/customers/{customer}/export-pdf', [CustomerController::class, 'exportPdf'])->middleware('permission:view_customer');
     Route::put('/customers/{customer}', [CustomerController::class, 'update'])->middleware('permission:edit_customer');
@@ -91,7 +88,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Order Management
     Route::get('/orders/stats', [OrderController::class, 'stats'])->middleware('permission:view_order');
     Route::get('/orders', [OrderController::class, 'index'])->middleware('permission:view_order');
-    Route::get('/orders/export-pdf', [OrderController::class, 'exportAllPdf'])->middleware('permission:view_order');
     Route::post('/orders', [OrderController::class, 'store'])->middleware('permission:create_order');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->middleware('permission:view_order');
     Route::get('/orders/{order}/export-pdf', [OrderController::class, 'exportPdf'])->middleware('permission:view_order');
@@ -103,7 +99,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Payment Management
     Route::get('/payments', [PaymentController::class, 'index'])->middleware('permission:view_payment');
-    Route::get('/payments/export-pdf', [PaymentController::class, 'exportAllPdf'])->middleware('permission:view_payment');
     Route::post('/payments', [PaymentController::class, 'store'])->middleware('permission:create_payment');
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->middleware('permission:view_payment');
     Route::get('/payments/{payment}/export-pdf', [PaymentController::class, 'exportPdf'])->middleware('permission:view_payment');

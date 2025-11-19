@@ -29,7 +29,13 @@ const Settings = () => {
       businessAddress: ''
     },
     invoiceSettings: {
-      invoice_prefix: 'INV'
+      invoice_prefix: 'INV',
+      invoice_business_name: '',
+      invoice_business_website: '',
+      invoice_business_address: '',
+      invoice_contact_phone: '',
+      invoice_contact_email: '',
+      invoice_footer_text: ''
     },
     emailSettings: {
       mailer: 'smtp',
@@ -69,6 +75,12 @@ const Settings = () => {
     'businessInfo.gstNumber': { key: 'gstNumber', section: 'Business Information' },
     'businessInfo.businessAddress': { key: 'businessAddress', section: 'Business Information' },
     'invoiceSettings.invoice_prefix': { key: 'invoice_prefix', section: 'Invoice Settings' },
+    'invoiceSettings.invoice_business_name': { key: 'invoice_business_name', section: 'Invoice Settings' },
+    'invoiceSettings.invoice_business_website': { key: 'invoice_business_website', section: 'Invoice Settings' },
+    'invoiceSettings.invoice_business_address': { key: 'invoice_business_address', section: 'Invoice Settings' },
+    'invoiceSettings.invoice_contact_phone': { key: 'invoice_contact_phone', section: 'Invoice Settings' },
+    'invoiceSettings.invoice_contact_email': { key: 'invoice_contact_email', section: 'Invoice Settings' },
+    'invoiceSettings.invoice_footer_text': { key: 'invoice_footer_text', section: 'Invoice Settings' },
     'emailSettings.mailer': { key: 'mailer', section: 'Email Settings' },
     'emailSettings.host': { key: 'host', section: 'Email Settings' },
     'emailSettings.port': { key: 'port', section: 'Email Settings' },
@@ -448,6 +460,149 @@ const Settings = () => {
               className="border-2"
             />
             <FormText className="text-muted">Prefix for invoice numbers (e.g., INV-001, ORD-001)</FormText>
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Invoice Business Name
+              {autoSaving['invoiceSettings.invoice_business_name'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['invoiceSettings.invoice_business_name'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              placeholder="Your Business Name"
+              value={settingsData.invoiceSettings.invoice_business_name}
+              onChange={(e) => handleChange('invoiceSettings', 'invoice_business_name', e.target.value)}
+              onBlur={(e) => handleBlur('invoiceSettings', 'invoice_business_name', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">Business name to display on invoices</FormText>
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Invoice Business Website
+              {autoSaving['invoiceSettings.invoice_business_website'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['invoiceSettings.invoice_business_website'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              placeholder="https://www.example.com"
+              value={settingsData.invoiceSettings.invoice_business_website}
+              onChange={(e) => handleChange('invoiceSettings', 'invoice_business_website', e.target.value)}
+              onBlur={(e) => handleBlur('invoiceSettings', 'invoice_business_website', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">Business website URL to display on invoices</FormText>
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col md={12}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Invoice Business Address
+              {autoSaving['invoiceSettings.invoice_business_address'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['invoiceSettings.invoice_business_address'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              as="textarea"
+              rows={3}
+              placeholder="Street Address, City, State, ZIP Code"
+              value={settingsData.invoiceSettings.invoice_business_address}
+              onChange={(e) => handleChange('invoiceSettings', 'invoice_business_address', e.target.value)}
+              onBlur={(e) => handleBlur('invoiceSettings', 'invoice_business_address', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">Complete business address to display on invoices</FormText>
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Invoice Contact Phone
+              {autoSaving['invoiceSettings.invoice_contact_phone'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['invoiceSettings.invoice_contact_phone'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              placeholder="+1 234 567 8900"
+              value={settingsData.invoiceSettings.invoice_contact_phone}
+              onChange={(e) => handleChange('invoiceSettings', 'invoice_contact_phone', e.target.value)}
+              onBlur={(e) => handleBlur('invoiceSettings', 'invoice_contact_phone', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">Contact phone number to display on invoices</FormText>
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Invoice Contact Email
+              {autoSaving['invoiceSettings.invoice_contact_email'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['invoiceSettings.invoice_contact_email'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              type="email"
+              placeholder="contact@example.com"
+              value={settingsData.invoiceSettings.invoice_contact_email}
+              onChange={(e) => handleChange('invoiceSettings', 'invoice_contact_email', e.target.value)}
+              onBlur={(e) => handleBlur('invoiceSettings', 'invoice_contact_email', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">Contact email address to display on invoices</FormText>
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col md={12}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Invoice Footer Text
+              {autoSaving['invoiceSettings.invoice_footer_text'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['invoiceSettings.invoice_footer_text'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              as="textarea"
+              rows={3}
+              placeholder="Thank you for your business!"
+              value={settingsData.invoiceSettings.invoice_footer_text}
+              onChange={(e) => handleChange('invoiceSettings', 'invoice_footer_text', e.target.value)}
+              onBlur={(e) => handleBlur('invoiceSettings', 'invoice_footer_text', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">Footer text/message to display at the bottom of invoices</FormText>
           </Form.Group>
         </Col>
       </Row>

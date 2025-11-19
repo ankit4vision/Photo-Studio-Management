@@ -367,31 +367,6 @@ class OrderController extends Controller
         return $pdfService->download('pdfs.order', $data, $filename);
     }
 
-    /**
-     * Export all orders to PDF with filters.
-     */
-    public function exportAllPdf(Request $request, PdfExportService $pdfService)
-    {
-        $query = Order::with(['customer', 'branch', 'items.package', 'payments']);
-
-        $this->applyOrderFilters($query, $request);
-
-        $orders = $query->orderBy('order_date', 'desc')->get();
-
-        // Get business settings
-        $settings = Setting::businessInfo();
-
-        $data = [
-            'orders' => $orders,
-            'settings' => $settings,
-            'exportDate' => now()->format('Y-m-d H:i:s'),
-            'filters' => $request->only(['search', 'status', 'payment_status', 'payment_method', 'customer_id', 'branch_id', 'start_date', 'end_date']),
-        ];
-
-        $filename = 'orders_export_' . date('Y-m-d') . '.pdf';
-
-        return $pdfService->download('pdfs.orders', $data, $filename);
-    }
     protected function applyOrderFilters($query, Request $request): void
     {
         if ($search = $request->input('search')) {

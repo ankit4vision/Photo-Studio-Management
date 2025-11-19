@@ -571,25 +571,6 @@ const OrdersList = () => {
     }
   }
 
-  const handleExportAll = async () => {
-    try {
-      const params = {}
-      if (searchTerm) params.search = searchTerm
-      if (statusFilter) params.status = statusFilter
-      if (paymentStatusFilter) params.payment_status = paymentStatusFilter
-      
-      const result = await orderService.exportAllOrdersPdf(params)
-      if (result.success) {
-        success('Orders PDF exported successfully')
-      } else {
-        showError(result.message || 'Failed to export PDF')
-      }
-    } catch (err) {
-      console.error('Error exporting orders PDF:', err)
-      showError('An error occurred while exporting PDF')
-    }
-  }
-
   // Edit Order Handlers
   const handleEditOrder = (order) => {
     const normalized = normalizeOrderData(order)
@@ -1015,15 +996,6 @@ const OrdersList = () => {
                 <h4 className="mb-0 text-primary">Orders List</h4>
                 </div>
                 <div className="d-flex align-items-center gap-2">
-                  <Button 
-                    variant="outline-primary" 
-                    size="sm"
-                    onClick={handleExportAll}
-                    title="Export All Orders to PDF"
-                  >
-                    <FontAwesomeIcon icon={faFilePdf} className="me-2" />
-                    Export PDF
-                  </Button>
                   <div className="text-muted">
                     Showing {((pagination.currentPage - 1) * pagination.pageSize) + 1}-{Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems)} of {pagination.totalItems} orders
                   </div>

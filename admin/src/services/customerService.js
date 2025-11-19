@@ -546,34 +546,6 @@ class CustomerService {
     }
   }
 
-  // Export all customers to PDF
-  async exportAllCustomersPdf(params = {}) {
-    try {
-      const queryParams = new URLSearchParams()
-      Object.keys(params).forEach(key => {
-        if (params[key]) queryParams.append(key, params[key])
-      })
-      
-      const url = `${API_ENDPOINTS.CUSTOMERS.EXPORT_ALL_PDF}${queryParams.toString() ? '?' + queryParams.toString() : ''}`
-      const response = await apiClient.get(url, { responseType: 'blob' })
-      
-      // Create blob and download
-      const blob = new Blob([response.data], { type: 'application/pdf' })
-      const url_blob = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url_blob
-      link.download = `customers_export_${new Date().toISOString().split('T')[0]}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url_blob)
-      
-      return { success: true, message: 'PDF exported successfully' }
-    } catch (error) {
-      return handleApiError(error)
-    }
-  }
-
   // Get customer statistics
   async getCustomerStats() {
     try {

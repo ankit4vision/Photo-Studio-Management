@@ -51,8 +51,6 @@ const PackagesList = () => {
   })
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [packageToDelete, setPackageToDelete] = useState(null)
-  const [exportingAll, setExportingAll] = useState(false)
-  const [exportingPackageId, setExportingPackageId] = useState(null)
   
   // Add/Edit Modal States
   const [showAddModal, setShowAddModal] = useState(false)
@@ -164,41 +162,6 @@ const PackagesList = () => {
     package_type: typeFilter || undefined,
     status: statusFilter || undefined,
   })
-
-  const handleExportAllPackages = async () => {
-    try {
-      setExportingAll(true)
-      const params = buildFilterParams()
-      const result = await packageService.exportAllPackagesPdf(params)
-      if (result.success) {
-        success('Packages PDF exported')
-      } else {
-        error(result.message || 'Failed to export packages PDF')
-      }
-    } catch (err) {
-      console.error('Error exporting packages PDF:', err)
-      error('An error occurred while exporting PDF')
-    } finally {
-      setExportingAll(false)
-    }
-  }
-
-  const handleExportSinglePackage = async (pkg) => {
-    try {
-      setExportingPackageId(pkg.id)
-      const result = await packageService.exportPackagePdf(pkg.id)
-      if (result.success) {
-        success('Package PDF downloaded')
-      } else {
-        error(result.message || 'Failed to export package PDF')
-      }
-    } catch (err) {
-      console.error('Error exporting package PDF:', err)
-      error('An error occurred while exporting PDF')
-    } finally {
-      setExportingPackageId(null)
-    }
-  }
 
   const confirmDeletePackage = async () => {
     try {
@@ -383,16 +346,6 @@ const PackagesList = () => {
               <FontAwesomeIcon icon={faTrash} />
             </Button>
           )}
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            onClick={() => handleExportSinglePackage(pkg)}
-            title="Download PDF"
-            style={{ minWidth: '32px', padding: '4px 8px' }}
-            disabled={exportingPackageId === pkg.id}
-          >
-            <FontAwesomeIcon icon={faFilePdf} />
-          </Button>
         </div>
       )
     }
@@ -410,14 +363,6 @@ const PackagesList = () => {
             </div>
             <div className="ms-auto">
               <div className="d-flex gap-2">
-                <Button
-                  variant="outline-secondary"
-                  onClick={handleExportAllPackages}
-                  disabled={exportingAll}
-                >
-                  <FontAwesomeIcon icon={faDownload} className="me-2" />
-                  Export PDF
-                </Button>
                 {canCreatePackage && (
                   <Button variant="primary" onClick={handleAddPackage} className="text-white">
                     <FontAwesomeIcon icon={faPlus} className="me-2" />

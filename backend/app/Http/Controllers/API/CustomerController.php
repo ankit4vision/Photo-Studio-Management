@@ -261,54 +261,6 @@ class CustomerController extends Controller
         return $pdfService->download('pdfs.customer', $data, $filename);
     }
 
-    /**
-     * Export all customers to PDF with filters.
-     */
-    public function exportAllPdf(Request $request, PdfExportService $pdfService)
-    {
-        $query = Customer::with('branch');
-
-        // Apply same filters as index method
-        if ($search = $request->input('search')) {
-            $query->where(function ($builder) use ($search) {
-                $builder->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('mobile', 'like', "%{$search}%")
-                    ->orWhere('customer_code', 'like', "%{$search}%");
-            });
-        }
-
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
-        }
-
-        if ($branchId = $request->input('branch_id')) {
-            $query->where('branch_id', $branchId);
-        }
-
-        if ($city = $request->input('city')) {
-            $query->where('city', 'like', "%{$city}%");
-        }
-
-        $customers = $query->orderBy('created_at', 'desc')->get();
-
-        // Get business settings
-        $settings = Setting::businessInfo();
-
-        $data = [
-            'customers' => $customers,
-            'settings' => $settings,
-            'exportDate' => now()->format('Y-m-d H:i:s'),
-            'filters' => $request->only(['search', 'status', 'branch_id', 'city']),
-        ];
-
-        $filename = 'customers_export_' . date('Y-m-d') . '.pdf';
-
-        return $pdfService->download('pdfs.customers', $data, $filename);
-    }
-
     protected function customerTotalAmountExpression(): string
     {
         return "(SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE orders.customer_id = customers.id)";
