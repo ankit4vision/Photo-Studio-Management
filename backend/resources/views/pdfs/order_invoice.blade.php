@@ -9,49 +9,45 @@
             margin: 18px 18px 12px 18px;
             font-size: 12px;
             color: #222;
+            line-height: 1.4;
         }
         .top-bar {
             width: 100%;
-            display: table;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .top-bar .left {
-            display: table-cell;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
-            letter-spacing: 1px;
-            vertical-align: middle;
-            text-transform: uppercase;
-        }
-        .top-bar .right {
-            display: table-cell;
-            text-align: right;
-            vertical-align: middle;
-            font-size: 12px;
+            letter-spacing: 0.5px;
         }
         .top-bar .meta-row {
-            margin-bottom: 0;
+            margin-bottom: 3px;
+            line-height: 1.5;
         }
         .company-name {
             font-size: 14px;
             font-weight: bold;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
             letter-spacing: 0.5px;
         }
         .company-meta {
             font-size: 12px;
             color: #555;
-            margin-bottom: 1px;
+            margin-bottom: 3px;
+            line-height: 1.4;
         }
         .header-table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0 0;
-            margin-bottom: 10px;
+            margin-bottom: 14px;
         }
         .header-table td {
             vertical-align: top;
-            padding: 0 4px 0 0;
+            padding: 0 6px 0 0;
         }
         .header-table .company-cell {
             width: 50%;
@@ -71,8 +67,8 @@
         .section-title {
             font-weight: bold;
             font-size: 12px;
-            margin-bottom: 6px;
-            margin-top: 16px;
+            margin-bottom: 8px;
+            margin-top: 14px;
             letter-spacing: 0.5px;
             color: #2d2d2d;
             text-transform: uppercase;
@@ -80,13 +76,13 @@
         .products-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
         }
         .products-table th {
             background: #f2f2f2;
             font-weight: bold;
             font-size: 12px;
-            padding: 5px 3px;
+            padding: 6px 4px;
             border: 1px solid #e0e0e0;
         }
         .products-table th.text-center {
@@ -100,7 +96,7 @@
         }
         .products-table td {
             border: 1px solid #e0e0e0;
-            padding: 5px 3px;
+            padding: 6px 4px;
             font-size: 12px;
         }
         .products-table td.text-center {
@@ -117,8 +113,9 @@
         }
         .totals-row {
             font-size: 12px;
-            margin-bottom: 10px;
-            margin-top: 2px;
+            margin-bottom: 12px;
+            margin-top: 6px;
+            padding: 6px 0;
         }
         .totals-row strong {
             font-weight: 600;
@@ -127,27 +124,28 @@
             width: 100%;
             border-collapse: separate;
             border-spacing: 0 0;
-            margin-top: 10px;
+            margin-top: 14px;
         }
         .bottom-table td {
             vertical-align: top;
-            padding: 0 4px 0 0;
+            padding: 0 6px 0 0;
         }
         .payment-list {
             font-size: 12px;
-            margin: 0;
+            margin: 6px 0 0 0;
             padding-left: 14px;
         }
         .payment-list li {
-            margin-bottom: 2px;
+            margin-bottom: 4px;
+            line-height: 1.5;
         }
         .summary-table {
             width: 100%;
-            margin-top: 0;
+            margin-top: 6px;
             border-spacing: 0;
         }
         .summary-table td {
-            padding: 4px 3px;
+            padding: 5px 4px;
             font-size: 12px;
         }
         .summary-table .label {
@@ -162,15 +160,35 @@
         .summary-table .final {
             font-size: 13px;
             border-top: 1px solid #333;
-            padding-top: 5px;
+            padding-top: 6px;
+            margin-top: 3px;
             color: #1a1a1a;
         }
         .footer {
-            margin-top: 24px;
+            margin-top: 20px;
+            padding-top: 12px;
             text-align: center;
-            font-size: 12px;
+            font-size: 11px;
             color: #333;
+            letter-spacing: 0.3px;
+            line-height: 1.6;
+        }
+        .footer div {
+            margin-bottom: 3px;
+        }
+        .footer .footer-name {
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .footer .footer-contact {
+            margin: 4px 0;
+        }
+        .footer .footer-text {
+            margin-top: 8px;
+            font-style: italic;
         }
     </style>
 </head>
@@ -239,37 +257,22 @@
         $remainingAmount = $order->remaining_amount ?? 0;
     @endphp
 
-    <!-- Top Bar: INVOICE (left) and Invoice Meta (right) -->
+    <!-- Top Bar: Business Name -->
     <div class="top-bar">
-        <div class="left">INVOICE</div>
-        <div class="right">
-            <div class="meta-row"><strong>Invoice #:</strong> {{ $invoiceNumber }}</div>
-            <div class="meta-row"><strong>Invoice Generated:</strong> {{ $invoiceGeneratedDate }}, {{ $invoiceGeneratedTime }}</div>
-            <div class="meta-row"><strong>Order Date:</strong> {{ $orderDate }}</div>
-        </div>
+        <div class="left">{{ $businessName }}</div>
     </div>
-    <hr style="border:0;border-top:1.5px solid #bbb;margin:0 0 10px 0;">
+    <hr style="border:0;border-top:1.5px solid #bbb;margin:0 0 12px 0;">
 
-    <!-- Header: Business and Customer Info (Table) -->
+    <!-- Second Section: Invoice Details (left) and Customer Info (right) -->
     <table class="header-table">
         <tr>
             <td class="company-cell">
-                <div class="company-name">{{ $businessName }}</div>
-                @if($businessAddress)
-                    <div class="company-meta">{{ $businessAddress }}</div>
-                @endif
-                @if($branchName)
-                    <div class="company-meta">Branch: {{ $branchName }}@if($branchCode) ({{ $branchCode }})@endif</div>
-                @endif
-                @if($businessEmail)
-                    <div class="company-meta">Email: {{ $businessEmail }}</div>
-                @endif
-                @if($businessPhone)
-                    <div class="company-meta">Phone: {{ $businessPhone }}</div>
-                @endif
-                @if($businessWebsite)
-                    <div class="company-meta">Website: {{ $businessWebsite }}</div>
-                @endif
+                <div class="company-name" style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px;">INVOICE</div>
+                <div class="company-meta" style="margin-top: 4px;">
+                    <div><strong>Invoice #:</strong> {{ $invoiceNumber }}</div>
+                    <div><strong>Invoice Generated:</strong> {{ $invoiceGeneratedDate }}, {{ $invoiceGeneratedTime }}</div>
+                    <div><strong>Order Date:</strong> {{ $orderDate }}</div>
+                </div>
             </td>
             <td class="info-cell">
                 <div class="company-name">{{ $customerName ?: 'Walk-in' }}</div>
@@ -281,10 +284,6 @@
                 @if($customerAddress && $customerAddress !== '-')
                     <div class="company-meta">Address: {{ $customerAddress }}</div>
                 @endif
-                <div class="company-meta" style="margin-top: 4px; padding-top: 4px; border-top: 1px solid #e0e0e0;">
-                    <div style="font-size: 10px; color: #777;">Created: {{ $orderCreatedOn }}</div>
-                    <div style="font-size: 10px; color: #777;">Updated: {{ $orderUpdatedOn }}</div>
-                </div>
             </td>
         </tr>
     </table>
@@ -385,7 +384,26 @@
     </table>
 
     <div class="footer">
-        {{ $footerText }}
+        <div class="footer-name">{{ $businessName }}</div>
+        @if($businessAddress)
+            <div>{{ $businessAddress }}</div>
+        @endif
+        @if($branchName)
+            <div>Branch: {{ $branchName }}@if($branchCode) ({{ $branchCode }})@endif</div>
+        @endif
+        <div class="footer-contact">
+            @if($businessEmail && $businessPhone)
+                {{ $businessEmail }} • {{ $businessPhone }}
+            @elseif($businessEmail)
+                {{ $businessEmail }}
+            @elseif($businessPhone)
+                {{ $businessPhone }}
+            @endif
+        </div>
+        @if($businessWebsite)
+            <div>{{ $businessWebsite }}</div>
+        @endif
+        <div class="footer-text">{{ $footerText }}</div>
     </div>
 </body>
 </html>
