@@ -8,9 +8,11 @@ use App\Http\Resources\PaymentResource;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Setting;
+use App\Services\PdfExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PaymentController extends Controller
 {
@@ -302,5 +304,53 @@ class PaymentController extends Controller
         ]);
     }
 
+    /**
+     * Export payment receipt as PDF.
+     */
+    public function exportPdf(Payment $payment, PdfExportService $pdfService)
+    {
+        $payment->load([
+            'order.items.package',
+            'customer',
+            'branch',
+        ]);
+
+        // Get business & invoice settings for PDF branding
+        $settings = Setting::businessInfo([
+            'invoice_business_name',
+            'invoice_business_website',
+            'invoice_business_address',
+            'invoice_contact_phone',
+            'invoice_contact_email',
+            'invoice_footer_text',
+        ]);
+
+        // Get customer name safely
+        $customer = $payment->customer;
+        $customerName = 'Customer';
+        if ($customer) {
+            $firstName = $customer->first_name ?? '';
+            $lastName = $customer->last_name ?? '';
+            $fullName = trim($firstName . ' ' . $lastName);
+            $customerName = !empty($fullName) ? $fullName : 'Customer';
+        }
+        
+        // Sanitize customer name for filename
+        $customerNameSafe = preg_replace('/[^a-zA-Z0-9_\- ]/', '', $customerName);
+        $customerNameSafe = str_replace(' ', '_', trim($customerNameSafe)) ?: 'Customer';
+        
+        // Get payment ID
+        $paymentId = $payment->id ?? 'Unknown';
+
+        $data = [
+            'payment' => $payment,
+            'settings' => $settings,
+            'exportDate' => now()->format('Y-m-d H:i:s'),
+        ];
+
+        $filename = "Payment_{$paymentId}_{$customerNameSafe}.pdf";
+
+        return $pdfService->download('pdfs.transaction', $data, $filename);
+    }
 
 }

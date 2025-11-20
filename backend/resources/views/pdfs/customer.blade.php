@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>CUSTOMER REPORT #<?php echo e($customer->customer_code ?? $customer->id); ?></title>
+    <title>CUSTOMER REPORT #{{ $customer->customer_code ?? $customer->id }}</title>
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
@@ -219,7 +219,7 @@
     </style>
 </head>
 <body>
-    <?php
+    @php
         $exportedAt = \Carbon\Carbon::parse($exportDate ?? now());
         
         // Report Generated date & time
@@ -283,11 +283,11 @@
         $dob = optional($customer->dob)->format('d M Y') ?? null;
         $anniversaryDate = optional($customer->anniversary_date)->format('d M Y') ?? null;
         $status = \Illuminate\Support\Str::title($customer->status ?? 'N/A');
-    ?>
+    @endphp
 
     <!-- Top Bar: Business Name -->
     <div class="top-bar">
-        <div class="left"><?php echo e($businessName); ?></div>
+        <div class="left">{{ $businessName }}</div>
     </div>
     <hr style="border:0;border-top:1px solid #000;margin:0 0 12px 0;">
 
@@ -297,30 +297,30 @@
             <td class="company-cell">
                 <div class="company-name" style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px;">CUSTOMER REPORT</div>
                 <div class="company-meta" style="margin-top: 4px;">
-                    <div><strong>Customer Code:</strong> <?php echo e($customerCode); ?></div>
-                    <div><strong>Report Generated:</strong> <?php echo e($reportGeneratedDate); ?>, <?php echo e($reportGeneratedTime); ?></div>
-                    <div><strong>Customer Since:</strong> <?php echo e($customerCreatedOn); ?></div>
+                    <div><strong>Customer Code:</strong> {{ $customerCode }}</div>
+                    <div><strong>Report Generated:</strong> {{ $reportGeneratedDate }}, {{ $reportGeneratedTime }}</div>
+                    <div><strong>Customer Since:</strong> {{ $customerCreatedOn }}</div>
                 </div>
             </td>
             <td class="info-cell">
-                <div class="company-name"><?php echo e($customerName); ?></div>
-                <div class="company-meta">Phone: <?php echo e($customerPhone); ?></div>
-                <?php if($customerEmail): ?>
-                    <div class="company-meta">Email: <?php echo e($customerEmail); ?></div>
-                <?php endif; ?>
-                <?php if($customerAddress && $customerAddress !== '-'): ?>
-                    <div class="company-meta">Address: <?php echo e($customerAddress); ?></div>
-                <?php endif; ?>
-                <?php if($dob): ?>
-                    <div class="company-meta">DOB: <?php echo e($dob); ?></div>
-                <?php endif; ?>
-                <?php if($anniversaryDate): ?>
-                    <div class="company-meta">Anniversary: <?php echo e($anniversaryDate); ?></div>
-                <?php endif; ?>
-                <div class="company-meta">Status: <?php echo e($status); ?></div>
-                <?php if($branchName): ?>
-                    <div class="company-meta">Branch: <?php echo e($branchName); ?><?php if($branchCode): ?> (<?php echo e($branchCode); ?>)<?php endif; ?></div>
-                <?php endif; ?>
+                <div class="company-name">{{ $customerName }}</div>
+                <div class="company-meta">Phone: {{ $customerPhone }}</div>
+                @if($customerEmail)
+                    <div class="company-meta">Email: {{ $customerEmail }}</div>
+                @endif
+                @if($customerAddress && $customerAddress !== '-')
+                    <div class="company-meta">Address: {{ $customerAddress }}</div>
+                @endif
+                @if($dob)
+                    <div class="company-meta">DOB: {{ $dob }}</div>
+                @endif
+                @if($anniversaryDate)
+                    <div class="company-meta">Anniversary: {{ $anniversaryDate }}</div>
+                @endif
+                <div class="company-meta">Status: {{ $status }}</div>
+                @if($branchName)
+                    <div class="company-meta">Branch: {{ $branchName }}@if($branchCode) ({{ $branchCode }})@endif</div>
+                @endif
             </td>
         </tr>
     </table>
@@ -330,31 +330,31 @@
     <div class="stats-grid">
         <div class="stat-item">
             <div class="stat-label">Total Orders</div>
-            <div class="stat-value"><?php echo e($totalOrders); ?></div>
+            <div class="stat-value">{{ $totalOrders }}</div>
         </div>
         <div class="stat-item">
             <div class="stat-label">Total Amount</div>
-            <div class="stat-value">₹<?php echo e(number_format($totalAmount, 2)); ?></div>
+            <div class="stat-value">₹{{ number_format($totalAmount, 2) }}</div>
         </div>
         <div class="stat-item">
             <div class="stat-label">Paid Amount</div>
-            <div class="stat-value">₹<?php echo e(number_format($paidAmount, 2)); ?></div>
+            <div class="stat-value">₹{{ number_format($paidAmount, 2) }}</div>
         </div>
         <div class="stat-item">
             <div class="stat-label">Remaining</div>
-            <div class="stat-value">₹<?php echo e(number_format($remainingAmount, 2)); ?></div>
+            <div class="stat-value">₹{{ number_format($remainingAmount, 2) }}</div>
         </div>
-        <?php if($walletBalance > 0): ?>
+        @if($walletBalance > 0)
         <div class="stat-item">
             <div class="stat-label">Wallet Balance</div>
-            <div class="stat-value">₹<?php echo e(number_format($walletBalance, 2)); ?></div>
+            <div class="stat-value">₹{{ number_format($walletBalance, 2) }}</div>
         </div>
-        <?php endif; ?>
+        @endif
     </div>
 
     <!-- Order History -->
     <div class="section-title">Order History</div>
-    <?php if($customer->orders && $customer->orders->count() > 0): ?>
+    @if($customer->orders && $customer->orders->count() > 0)
         <table class="products-table">
             <thead>
                 <tr>
@@ -368,37 +368,36 @@
                 </tr>
             </thead>
             <tbody>
-                <?php $__currentLoopData = $customer->orders; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $idx => $order): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                    <?php
+                @foreach($customer->orders as $idx => $order)
+                    @php
                         $orderDate = optional($order->order_date)->format('d M Y') ?? 'N/A';
                         $orderStatus = \Illuminate\Support\Str::title($order->status ?? 'N/A');
                         $orderTotal = $order->total_amount ?? 0;
                         $orderPaid = $order->paid_amount ?? 0;
                         $orderDue = $order->remaining_amount ?? 0;
-                    ?>
+                    @endphp
                     <tr>
-                        <td class="text-center"><?php echo e($idx + 1); ?></td>
-                        <td class="text-start"><?php echo e($order->order_number ?? 'N/A'); ?></td>
-                        <td class="text-center"><?php echo e($orderDate); ?></td>
-                        <td class="text-center"><?php echo e($orderStatus); ?></td>
-                        <td class="text-end">₹<?php echo e(number_format($orderTotal, 2)); ?></td>
-                        <td class="text-end">₹<?php echo e(number_format($orderPaid, 2)); ?></td>
-                        <td class="text-end">₹<?php echo e(number_format($orderDue, 2)); ?></td>
+                        <td class="text-center">{{ $idx + 1 }}</td>
+                        <td class="text-start">{{ $order->order_number ?? 'N/A' }}</td>
+                        <td class="text-center">{{ $orderDate }}</td>
+                        <td class="text-center">{{ $orderStatus }}</td>
+                        <td class="text-end">₹{{ number_format($orderTotal, 2) }}</td>
+                        <td class="text-end">₹{{ number_format($orderPaid, 2) }}</td>
+                        <td class="text-end">₹{{ number_format($orderDue, 2) }}</td>
                     </tr>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                @endforeach
             </tbody>
         </table>
         <div class="totals-row">
-            <strong>Total Orders:</strong> <?php echo e($customer->orders->count()); ?>
-
+            <strong>Total Orders:</strong> {{ $customer->orders->count() }}
         </div>
-    <?php else: ?>
+    @else
         <div style="color:#000; padding: 12px 0;">No orders found.</div>
-    <?php endif; ?>
+    @endif
 
     <!-- Payment History -->
     <div class="section-title">Payment History</div>
-    <?php if($customer->payments && $customer->payments->count() > 0): ?>
+    @if($customer->payments && $customer->payments->count() > 0)
         <table class="products-table">
             <thead>
                 <tr>
@@ -412,38 +411,37 @@
                 </tr>
             </thead>
             <tbody>
-                <?php $__currentLoopData = $customer->payments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $idx => $payment): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                    <?php
+                @foreach($customer->payments as $idx => $payment)
+                    @php
                         $paymentDate = optional($payment->payment_date)->format('d M Y') ?? 'N/A';
                         $paymentType = \Illuminate\Support\Str::title($payment->payment_type ?? 'N/A');
                         $paymentMethod = \Illuminate\Support\Str::title(str_replace('_', ' ', $payment->payment_method ?? 'N/A'));
                         $paymentAmount = $payment->amount ?? 0;
                         $orderNumber = $payment->order->order_number ?? 'N/A';
-                    ?>
+                    @endphp
                     <tr>
-                        <td class="text-center"><?php echo e($idx + 1); ?></td>
-                        <td class="text-start"><?php echo e($payment->payment_number ?? 'N/A'); ?></td>
-                        <td class="text-center"><?php echo e($paymentDate); ?></td>
-                        <td class="text-center"><?php echo e($paymentType); ?></td>
-                        <td class="text-center"><?php echo e($paymentMethod); ?></td>
-                        <td class="text-end">₹<?php echo e(number_format($paymentAmount, 2)); ?></td>
-                        <td class="text-start"><?php echo e($orderNumber); ?></td>
+                        <td class="text-center">{{ $idx + 1 }}</td>
+                        <td class="text-start">{{ $payment->payment_number ?? 'N/A' }}</td>
+                        <td class="text-center">{{ $paymentDate }}</td>
+                        <td class="text-center">{{ $paymentType }}</td>
+                        <td class="text-center">{{ $paymentMethod }}</td>
+                        <td class="text-end">₹{{ number_format($paymentAmount, 2) }}</td>
+                        <td class="text-start">{{ $orderNumber }}</td>
                     </tr>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                @endforeach
             </tbody>
         </table>
         <div class="totals-row">
-            <strong>Total Payments:</strong> <?php echo e($customer->payments->count()); ?>
-
+            <strong>Total Payments:</strong> {{ $customer->payments->count() }}
         </div>
-    <?php else: ?>
+    @else
         <div style="color:#000; padding: 12px 0;">No payments found.</div>
-    <?php endif; ?>
+    @endif
 
     <div class="footer">
-        <div class="footer-name"><?php echo e($businessName); ?></div>
+        <div class="footer-name">{{ $businessName }}</div>
         <div class="footer-contact">
-            <?php
+            @php
                 $footerParts = [];
                 if($businessAddress) {
                     $footerParts[] = $businessAddress;
@@ -454,13 +452,11 @@
                 if($businessWebsite) {
                     $footerParts[] = $businessWebsite;
                 }
-            ?>
-            <?php echo e(implode(' | ', $footerParts)); ?>
-
+            @endphp
+            {{ implode(' | ', $footerParts) }}
         </div>
-        <div class="footer-text"><?php echo e($footerText); ?></div>
+        <div class="footer-text">{{ $footerText }}</div>
     </div>
 </body>
 </html>
 
-<?php /**PATH D:\Codexaa\Projects\1-ravi-patel\Photo-Studio-Management\backend\resources\views/pdfs/customer.blade.php ENDPATH**/ ?>

@@ -172,12 +172,29 @@ class PaymentService {
       const url = `${API_ENDPOINTS.PAYMENTS.EXPORT_PDF(paymentId)}${queryParams.toString() ? '?' + queryParams.toString() : ''}`
       const response = await apiClient.get(url, { responseType: 'blob' })
       
+      // Extract filename from Content-Disposition header
+      let filename = `transaction_${paymentId}.pdf`
+      const contentDisposition = response.headers['content-disposition'] || response.headers['Content-Disposition']
+      if (contentDisposition) {
+        // Try to extract filename (handles both quoted and unquoted, and URL-encoded)
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '').trim()
+          // Decode URL-encoded filename if needed
+          try {
+            filename = decodeURIComponent(filename)
+          } catch (e) {
+            // If decoding fails, use as-is
+          }
+        }
+      }
+      
       // Create blob and download
       const blob = new Blob([response.data], { type: 'application/pdf' })
       const url_blob = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url_blob
-      link.download = `transaction_${paymentId}_${new Date().toISOString().split('T')[0]}.pdf`
+      link.download = filename
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)

@@ -8,7 +8,7 @@
             font-family: DejaVu Sans, sans-serif;
             margin: 18px 18px 12px 18px;
             font-size: 12px;
-            color: #222;
+            color: #000;
             line-height: 1.4;
         }
         .top-bar {
@@ -35,7 +35,7 @@
         }
         .company-meta {
             font-size: 12px;
-            color: #555;
+            color: #000;
             margin-bottom: 3px;
             line-height: 1.4;
         }
@@ -70,7 +70,7 @@
             margin-bottom: 8px;
             margin-top: 14px;
             letter-spacing: 0.5px;
-            color: #2d2d2d;
+            color: #000;
             text-transform: uppercase;
         }
         .products-table {
@@ -79,11 +79,11 @@
             margin-bottom: 8px;
         }
         .products-table th {
-            background: #f2f2f2;
+            background: transparent;
             font-weight: bold;
             font-size: 12px;
             padding: 6px 4px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #000;
         }
         .products-table th.text-center {
             text-align: center;
@@ -95,7 +95,7 @@
             text-align: right;
         }
         .products-table td {
-            border: 1px solid #e0e0e0;
+            border: 1px solid #000;
             padding: 6px 4px;
             font-size: 12px;
         }
@@ -109,7 +109,7 @@
             text-align: right;
         }
         .products-table tr:last-child td {
-            border: 1px solid #e0e0e0;
+            border: 1px solid #000;
         }
         .totals-row {
             font-size: 12px;
@@ -150,26 +150,26 @@
         }
         .summary-table .label {
             text-align: right;
-            color: #555;
+            color: #000;
         }
         .summary-table .value {
             text-align: right;
             font-weight: bold;
-            color: #222;
+            color: #000;
         }
         .summary-table .final {
             font-size: 13px;
-            border-top: 1px solid #333;
+            border-top: 1px solid #000;
             padding-top: 6px;
             margin-top: 3px;
-            color: #1a1a1a;
+            color: #000;
         }
         .footer {
             margin-top: 20px;
             padding-top: 12px;
             text-align: center;
             font-size: 11px;
-            color: #333;
+            color: #000;
             letter-spacing: 0.3px;
             line-height: 1.6;
         }
@@ -261,7 +261,7 @@
     <div class="top-bar">
         <div class="left"><?php echo e($businessName); ?></div>
     </div>
-    <hr style="border:0;border-top:1.5px solid #bbb;margin:0 0 12px 0;">
+    <hr style="border:0;border-top:1px solid #000;margin:0 0 12px 0;">
 
     <!-- Second Section: Invoice Details (left) and Customer Info (right) -->
     <table class="header-table">
@@ -345,12 +345,12 @@
                                 <strong><?php echo e(strtoupper($payment->payment_number ?? 'N/A')); ?>:</strong>
                                 ₹<?php echo e($paymentAmount); ?>
 
-                                <span style="color:#888;">- <?php echo e($paymentDate); ?> - <?php echo e($paymentMethod); ?> - <?php echo e($paymentType); ?></span>
+                                <span style="color:#000;">- <?php echo e($paymentDate); ?> - <?php echo e($paymentMethod); ?> - <?php echo e($paymentType); ?></span>
                             </li>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </ul>
                 <?php else: ?>
-                    <div style="color:#888;">No payment info available.</div>
+                    <div style="color:#000;">No payment info available.</div>
                 <?php endif; ?>
             </td>
             <td style="width:50%;vertical-align:top;">
@@ -387,27 +387,22 @@
 
     <div class="footer">
         <div class="footer-name"><?php echo e($businessName); ?></div>
-        <?php if($businessAddress): ?>
-            <div><?php echo e($businessAddress); ?></div>
-        <?php endif; ?>
-        <?php if($branchName): ?>
-            <div>Branch: <?php echo e($branchName); ?><?php if($branchCode): ?> (<?php echo e($branchCode); ?>)<?php endif; ?></div>
-        <?php endif; ?>
         <div class="footer-contact">
-            <?php if($businessEmail && $businessPhone): ?>
-                <?php echo e($businessEmail); ?> • <?php echo e($businessPhone); ?>
+            <?php
+                $footerParts = [];
+                if($businessAddress) {
+                    $footerParts[] = $businessAddress;
+                }
+                if($businessPhone) {
+                    $footerParts[] = $businessPhone;
+                }
+                if($businessWebsite) {
+                    $footerParts[] = $businessWebsite;
+                }
+            ?>
+            <?php echo e(implode(' | ', $footerParts)); ?>
 
-            <?php elseif($businessEmail): ?>
-                <?php echo e($businessEmail); ?>
-
-            <?php elseif($businessPhone): ?>
-                <?php echo e($businessPhone); ?>
-
-            <?php endif; ?>
         </div>
-        <?php if($businessWebsite): ?>
-            <div><?php echo e($businessWebsite); ?></div>
-        <?php endif; ?>
         <div class="footer-text"><?php echo e($footerText); ?></div>
     </div>
 </body>

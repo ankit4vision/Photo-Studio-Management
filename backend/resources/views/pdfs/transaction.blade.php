@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>INVOICE #{{ $order->order_number ?? $order->id }}</title>
+    <title>PAYMENT RECEIPT #{{ $payment->payment_number ?? $payment->id }}</title>
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
@@ -130,15 +130,6 @@
             vertical-align: top;
             padding: 0 6px 0 0;
         }
-        .payment-list {
-            font-size: 12px;
-            margin: 6px 0 0 0;
-            padding-left: 14px;
-        }
-        .payment-list li {
-            margin-bottom: 4px;
-            line-height: 1.5;
-        }
         .summary-table {
             width: 100%;
             margin-top: 6px;
@@ -195,22 +186,16 @@
 <body>
     @php
         $exportedAt = \Carbon\Carbon::parse($exportDate ?? now());
-        $invoicePrefix = trim($settings['invoice_prefix'] ?? 'INV');
-        $orderNumber = $order->order_number ?? $order->id;
-        $invoiceNumber = $invoiceNumber ?? ($invoicePrefix !== '' ? $invoicePrefix . $orderNumber : $orderNumber);
         
-        // Invoice Generated date & time
-        $invoiceGeneratedDate = $exportedAt->format('d M Y');
-        $invoiceGeneratedTime = $exportedAt->format('h:i A');
+        // Receipt Generated date & time
+        $receiptGeneratedDate = $exportedAt->format('d M Y');
+        $receiptGeneratedTime = $exportedAt->format('h:i A');
         
-        // Order date
-        $orderDate = optional($order->order_date)->format('d M Y') ?? 'N/A';
+        // Payment date
+        $paymentDate = optional($payment->payment_date)->format('d M Y') ?? 'N/A';
         
-        // Order created on
-        $orderCreatedOn = optional($order->created_at)->format('d M Y, h:i A') ?? 'N/A';
-        
-        // Order last updated on
-        $orderUpdatedOn = optional($order->updated_at)->format('d M Y, h:i A') ?? 'N/A';
+        // Payment created on
+        $paymentCreatedOn = optional($payment->created_at)->format('d M Y, h:i A') ?? 'N/A';
 
         $businessName = $settings['invoice_business_name']
             ?? $settings['business_name']
@@ -230,8 +215,11 @@
         $footerText = $settings['invoice_footer_text']
             ?? 'Thank you for your business!';
 
-        $customer = $order->customer;
-        $customerName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
+        $customer = $payment->customer;
+        $customerName = trim(implode(' ', array_filter([
+            $customer->first_name ?? null,
+            $customer->last_name ?? null,
+        ]))) ?: 'Walk-in';
         $customerCode = $customer->customer_code ?? 'N/A';
         $customerPhone = $customer->phone ?? $customer->mobile ?? 'N/A';
         $customerEmail = $customer->email ?? null;
@@ -246,15 +234,23 @@
             $customerAddress = '-';
         }
 
-        $branch = $order->branch;
+        $order = $payment->order;
+        $orderNumber = $order->order_number ?? 'N/A';
+        $orderDate = optional($order->order_date)->format('d M Y') ?? 'N/A';
+        $orderTotal = $order->total_amount ?? 0;
+        $orderPaid = $order->paid_amount ?? 0;
+        $orderDue = $order->remaining_amount ?? 0;
+
+        $branch = $payment->branch;
         $branchName = $branch->branch_name ?? 'N/A';
         $branchCode = $branch->branch_code ?? null;
 
-        $discountAmount = $order->discount ?? $order->flat_discount ?? 0;
-        $subtotal = $order->subtotal ?? 0;
-        $totalAmount = $order->total_amount ?? 0;
-        $paidAmount = $order->paid_amount ?? 0;
-        $remainingAmount = $order->remaining_amount ?? 0;
+        // Payment details
+        $paymentNumber = $payment->payment_number ?? 'N/A';
+        $paymentType = \Illuminate\Support\Str::title($payment->payment_type ?? 'N/A');
+        $paymentMethod = \Illuminate\Support\Str::title(str_replace('_', ' ', $payment->payment_method ?? 'N/A'));
+        $paymentAmount = $payment->amount ?? 0;
+        $paymentRemarks = $payment->remarks ?? null;
     @endphp
 
     <!-- Top Bar: Business Name -->
@@ -263,19 +259,19 @@
     </div>
     <hr style="border:0;border-top:1px solid #000;margin:0 0 12px 0;">
 
-    <!-- Second Section: Invoice Details (left) and Customer Info (right) -->
+    <!-- Second Section: Receipt Details (left) and Customer Info (right) -->
     <table class="header-table">
         <tr>
             <td class="company-cell">
-                <div class="company-name" style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px;">INVOICE</div>
+                <div class="company-name" style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px;">PAYMENT RECEIPT</div>
                 <div class="company-meta" style="margin-top: 4px;">
-                    <div><strong>Invoice #:</strong> {{ $invoiceNumber }}</div>
-                    <div><strong>Invoice Generated:</strong> {{ $invoiceGeneratedDate }}, {{ $invoiceGeneratedTime }}</div>
-                    <div><strong>Order Date:</strong> {{ $orderDate }}</div>
+                    <div><strong>Receipt #:</strong> {{ $paymentNumber }}</div>
+                    <div><strong>Receipt Generated:</strong> {{ $receiptGeneratedDate }}, {{ $receiptGeneratedTime }}</div>
+                    <div><strong>Payment Date:</strong> {{ $paymentDate }}</div>
                 </div>
             </td>
             <td class="info-cell">
-                <div class="company-name">{{ $customerName ?: 'Walk-in' }}</div>
+                <div class="company-name">{{ $customerName }}</div>
                 <div class="company-meta">Code: {{ $customerCode }}</div>
                 <div class="company-meta">Phone: {{ $customerPhone }}</div>
                 @if($customerEmail)
@@ -288,8 +284,59 @@
         </tr>
     </table>
 
-    <!-- Packages List -->
-    <div class="section-title">Packages</div>
+    <!-- Payment Details -->
+    <div class="section-title">Payment Information</div>
+    <table class="products-table">
+        <thead>
+            <tr>
+                <th class="text-start">Payment Details</th>
+                <th class="text-end">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="text-start">
+                    <div><strong>Payment Number:</strong> {{ $paymentNumber }}</div>
+                    <div><strong>Payment Type:</strong> {{ $paymentType }}</div>
+                    <div><strong>Payment Method:</strong> {{ $paymentMethod }}</div>
+                    <div><strong>Payment Date:</strong> {{ $paymentDate }}</div>
+                    @if($paymentRemarks)
+                        <div style="margin-top: 4px;"><strong>Remarks:</strong> {{ $paymentRemarks }}</div>
+                    @endif
+                </td>
+                <td class="text-end" style="vertical-align: top;">
+                    <div style="font-size: 16px; font-weight: bold; margin-top: 4px;">₹{{ number_format($paymentAmount, 2) }}</div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Order Reference -->
+    <div class="section-title">Order Reference</div>
+    <table class="products-table">
+        <thead>
+            <tr>
+                <th class="text-start">Order Number</th>
+                <th class="text-center">Order Date</th>
+                <th class="text-end">Order Total</th>
+                <th class="text-end">Paid</th>
+                <th class="text-end">Due</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="text-start">{{ $orderNumber }}</td>
+                <td class="text-center">{{ $orderDate }}</td>
+                <td class="text-end">₹{{ number_format($orderTotal, 2) }}</td>
+                <td class="text-end">₹{{ number_format($orderPaid, 2) }}</td>
+                <td class="text-end">₹{{ number_format($orderDue, 2) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    @if($order->items && $order->items->count() > 0)
+    <!-- Order Items -->
+    <div class="section-title">Order Items</div>
     <table class="products-table">
         <thead>
             <tr>
@@ -301,12 +348,8 @@
             </tr>
         </thead>
         <tbody>
-            @php $totalQty = 0; @endphp
             @foreach($order->items as $idx => $item)
                 @php 
-                    $totalQty += $item->quantity ?? 1;
-                    $lineDiscount = $item->discount ?? 0;
-                    $itemSubtotal = ($item->total_price ?? 0) - $lineDiscount;
                     $productName = $item->package_name ?? 'N/A';
                     if($item->package_type) {
                         $productName .= ' (' . $item->package_type . ')';
@@ -317,66 +360,34 @@
                     <td class="text-start">{{ $productName }}</td>
                     <td class="text-center">{{ $item->quantity ?? 1 }}</td>
                     <td class="text-end">₹{{ number_format($item->unit_price ?? 0, 2) }}</td>
-                    <td class="text-end">₹{{ number_format($itemSubtotal, 2) }}</td>
+                    <td class="text-end">₹{{ number_format($item->total_price ?? 0, 2) }}</td>
                 </tr>
             @endforeach
         </tbody>
     </table>
-    <div class="totals-row">
-        <strong>Total Items:</strong> {{ count($order->items) }} &nbsp; | &nbsp; <strong>Total Qty:</strong> {{ $totalQty }}
-    </div>
+    @endif
 
-    <!-- Bottom: Two Columns (Table) -->
+    <!-- Bottom: Summary -->
     <table class="bottom-table">
         <tr>
-            <td style="width:50%;vertical-align:top;">
-                <div class="section-title">Payment Breakdown</div>
-                @if($order->payments && $order->payments->count() > 0)
-                    <ul class="payment-list">
-                        @foreach($order->payments as $payment)
-                            @php
-                                $paymentDate = optional($payment->payment_date)->format('d M Y') ?? 'N/A';
-                                $paymentMethod = \Illuminate\Support\Str::title(str_replace('_', ' ', $payment->payment_method ?? 'N/A'));
-                                $paymentType = \Illuminate\Support\Str::title($payment->payment_type ?? 'N/A');
-                                $paymentAmount = number_format($payment->amount ?? 0, 2);
-                            @endphp
-                            <li>
-                                <strong>{{ strtoupper($payment->payment_number ?? 'N/A') }}:</strong>
-                                ₹{{ $paymentAmount }}
-                                <span style="color:#000;">- {{ $paymentDate }} - {{ $paymentMethod }} - {{ $paymentType }}</span>
-                            </li>
-                        @endforeach
-                    </ul>
-                @else
-                    <div style="color:#000;">No payment info available.</div>
-                @endif
-            </td>
-            <td style="width:50%;vertical-align:top;">
-                <div class="section-title" style="text-align:right;">SUMMARY</div>
+            <td style="width:100%;vertical-align:top;">
+                <div class="section-title" style="text-align:right;">PAYMENT SUMMARY</div>
                 <table class="summary-table">
                     <tr>
-                        <td class="label">Subtotal:</td>
-                        <td class="value">₹{{ number_format($subtotal, 2) }}</td>
+                        <td class="label">Payment Amount:</td>
+                        <td class="value">₹{{ number_format($paymentAmount, 2) }}</td>
                     </tr>
                     <tr>
-                        <td class="label">Flat Discount:</td>
-                        <td class="value">₹{{ number_format($discountAmount, 2) }}</td>
+                        <td class="label">Payment Type:</td>
+                        <td class="value">{{ $paymentType }}</td>
                     </tr>
                     <tr>
-                        <td class="label">Grand Total:</td>
-                        <td class="value">₹{{ number_format($totalAmount, 2) }}</td>
+                        <td class="label">Payment Method:</td>
+                        <td class="value">{{ $paymentMethod }}</td>
                     </tr>
                     <tr class="final">
-                        <td class="label">Final Payable:</td>
-                        <td class="value">₹{{ number_format($totalAmount, 2) }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Paid:</td>
-                        <td class="value">₹{{ number_format($paidAmount, 2) }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Due:</td>
-                        <td class="value">₹{{ number_format($remainingAmount, 2) }}</td>
+                        <td class="label">Total Amount:</td>
+                        <td class="value">₹{{ number_format($paymentAmount, 2) }}</td>
                     </tr>
                 </table>
             </td>

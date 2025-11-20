@@ -369,11 +369,22 @@ class OrderController extends Controller
         $orderNumber = $order->order_number ?? $order->id;
         $invoiceNumber = $invoicePrefix !== '' ? $invoicePrefix . $orderNumber : $orderNumber;
 
-        $customerName = trim(implode(' ', array_filter([
-            $order->customer->first_name ?? null,
-            $order->customer->last_name ?? null,
-        ]))) ?: ($order->customer->name ?? 'Customer');
-        $customerSlug = Str::slug($customerName, '') ?: 'Customer';
+        // Get customer name safely
+        $customer = $order->customer;
+        $customerName = 'Customer';
+        if ($customer) {
+            $firstName = $customer->first_name ?? '';
+            $lastName = $customer->last_name ?? '';
+            $fullName = trim($firstName . ' ' . $lastName);
+            $customerName = !empty($fullName) ? $fullName : 'Customer';
+        }
+        
+        // Sanitize customer name for filename
+        $customerNameSafe = preg_replace('/[^a-zA-Z0-9_\- ]/', '', $customerName);
+        $customerNameSafe = str_replace(' ', '_', trim($customerNameSafe)) ?: 'Customer';
+        
+        // Get order ID
+        $orderId = $order->id ?? 'Unknown';
 
         $data = [
             'order' => $order,
@@ -382,7 +393,7 @@ class OrderController extends Controller
             'invoiceNumber' => $invoiceNumber,
         ];
 
-        $filename = "{$invoiceNumber}_{$customerSlug}.pdf";
+        $filename = "Order_{$orderId}_{$customerNameSafe}.pdf";
 
         return $pdfService->download('pdfs.order_invoice', $data, $filename);
     }

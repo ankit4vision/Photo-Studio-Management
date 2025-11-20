@@ -9,6 +9,7 @@ use App\Http\Requests\CustomerUpdateRequest;
 use App\Http\Resources\CustomerResource;
 use App\Models\Customer;
 use App\Models\Setting;
+use App\Services\PdfExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -224,6 +225,60 @@ class CustomerController extends Controller
                 'success' => true,
                 'message' => 'Customer statistics are calculated in real-time. No manual recalculation required.',
             ]);
+    }
+
+    /**
+     * Export customer history report as PDF.
+     */
+    public function exportPdf(Customer $customer, PdfExportService $pdfService)
+    {
+        $customer->load([
+            'branch',
+            'orders' => function ($query) {
+                $query->orderBy('order_date', 'desc')
+                    ->orderBy('created_at', 'desc');
+            },
+            'orders.items.package',
+            'orders.payments' => function ($query) {
+                $query->orderBy('payment_date', 'desc');
+            },
+            'payments' => function ($query) {
+                $query->orderBy('payment_date', 'desc');
+            },
+        ]);
+
+        // Get business & invoice settings for PDF branding
+        $settings = Setting::businessInfo([
+            'invoice_business_name',
+            'invoice_business_website',
+            'invoice_business_address',
+            'invoice_contact_phone',
+            'invoice_contact_email',
+            'invoice_footer_text',
+        ]);
+
+        // Get customer name safely
+        $firstName = $customer->first_name ?? '';
+        $lastName = $customer->last_name ?? '';
+        $fullName = trim($firstName . ' ' . $lastName);
+        $customerName = !empty($fullName) ? $fullName : 'Customer';
+        
+        // Sanitize customer name for filename
+        $customerNameSafe = preg_replace('/[^a-zA-Z0-9_\- ]/', '', $customerName);
+        $customerNameSafe = str_replace(' ', '_', trim($customerNameSafe)) ?: 'Customer';
+        
+        // Get customer ID
+        $customerId = $customer->id ?? 'Unknown';
+
+        $data = [
+            'customer' => $customer,
+            'settings' => $settings,
+            'exportDate' => now()->format('Y-m-d H:i:s'),
+        ];
+
+        $filename = "Customer_{$customerId}_{$customerNameSafe}.pdf";
+
+        return $pdfService->download('pdfs.customer', $data, $filename);
     }
 
     protected function customerTotalAmountExpression(): string

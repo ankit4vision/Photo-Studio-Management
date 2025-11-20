@@ -2,125 +2,418 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Transaction Receipt - <?php echo e($payment->payment_number); ?></title>
-    <?php echo $__env->make('pdfs.partials.styles', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+    <title>PAYMENT RECEIPT #<?php echo e($payment->payment_number ?? $payment->id); ?></title>
+    <style>
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            margin: 18px 18px 12px 18px;
+            font-size: 12px;
+            color: #000;
+            line-height: 1.4;
+        }
+        .top-bar {
+            width: 100%;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .top-bar .left {
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        .top-bar .meta-row {
+            margin-bottom: 3px;
+            line-height: 1.5;
+        }
+        .company-name {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        .company-meta {
+            font-size: 12px;
+            color: #000;
+            margin-bottom: 3px;
+            line-height: 1.4;
+        }
+        .header-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 0;
+            margin-bottom: 14px;
+        }
+        .header-table td {
+            vertical-align: top;
+            padding: 0 6px 0 0;
+        }
+        .header-table .company-cell {
+            width: 50%;
+        }
+        .header-table .info-cell {
+            width: 50%;
+            text-align: right;
+        }
+        .info-table {
+            width: 100%;
+            margin-bottom: 6px;
+        }
+        .info-table td {
+            padding: 1px 4px 1px 0;
+            font-size: 12px;
+        }
+        .section-title {
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 8px;
+            margin-top: 14px;
+            letter-spacing: 0.5px;
+            color: #000;
+            text-transform: uppercase;
+        }
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+        }
+        .products-table th {
+            background: transparent;
+            font-weight: bold;
+            font-size: 12px;
+            padding: 6px 4px;
+            border: 1px solid #000;
+        }
+        .products-table th.text-center {
+            text-align: center;
+        }
+        .products-table th.text-start {
+            text-align: left;
+        }
+        .products-table th.text-end {
+            text-align: right;
+        }
+        .products-table td {
+            border: 1px solid #000;
+            padding: 6px 4px;
+            font-size: 12px;
+        }
+        .products-table td.text-center {
+            text-align: center;
+        }
+        .products-table td.text-start {
+            text-align: left;
+        }
+        .products-table td.text-end {
+            text-align: right;
+        }
+        .products-table tr:last-child td {
+            border: 1px solid #000;
+        }
+        .totals-row {
+            font-size: 12px;
+            margin-bottom: 12px;
+            margin-top: 6px;
+            padding: 6px 0;
+        }
+        .totals-row strong {
+            font-weight: 600;
+        }
+        .bottom-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 0;
+            margin-top: 14px;
+        }
+        .bottom-table td {
+            vertical-align: top;
+            padding: 0 6px 0 0;
+        }
+        .summary-table {
+            width: 100%;
+            margin-top: 6px;
+            border-spacing: 0;
+        }
+        .summary-table td {
+            padding: 5px 4px;
+            font-size: 12px;
+        }
+        .summary-table .label {
+            text-align: right;
+            color: #000;
+        }
+        .summary-table .value {
+            text-align: right;
+            font-weight: bold;
+            color: #000;
+        }
+        .summary-table .final {
+            font-size: 13px;
+            border-top: 1px solid #000;
+            padding-top: 6px;
+            margin-top: 3px;
+            color: #000;
+        }
+        .footer {
+            margin-top: 20px;
+            padding-top: 12px;
+            text-align: center;
+            font-size: 11px;
+            color: #000;
+            letter-spacing: 0.3px;
+            line-height: 1.6;
+        }
+        .footer div {
+            margin-bottom: 3px;
+        }
+        .footer .footer-name {
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .footer .footer-contact {
+            margin: 4px 0;
+        }
+        .footer .footer-text {
+            margin-top: 8px;
+            font-style: italic;
+        }
+    </style>
 </head>
 <body>
-    <?php echo $__env->make('pdfs.partials.header', [
-        'settings' => $settings,
-        'title' => 'Payment Receipt',
-        'meta' => [
-            'Payment #' => $payment->payment_number,
-            'Date' => optional($payment->payment_date)->format('Y-m-d'),
-            'Type' => ucfirst($payment->payment_type),
-        ]
-    ], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+    <?php
+        $exportedAt = \Carbon\Carbon::parse($exportDate ?? now());
+        
+        // Receipt Generated date & time
+        $receiptGeneratedDate = $exportedAt->format('d M Y');
+        $receiptGeneratedTime = $exportedAt->format('h:i A');
+        
+        // Payment date
+        $paymentDate = optional($payment->payment_date)->format('d M Y') ?? 'N/A';
+        
+        // Payment created on
+        $paymentCreatedOn = optional($payment->created_at)->format('d M Y, h:i A') ?? 'N/A';
 
-    <div class="pdf-section">
-        <div class="summary-cards">
-            <div class="summary-card">
-                <span class="summary-label">Amount</span>
-                <span class="summary-value">₹<?php echo e(number_format($payment->amount, 2)); ?></span>
-                <span class="summary-foot"><?php echo e(ucfirst($payment->payment_type)); ?> via <?php echo e(ucfirst(str_replace('_', ' ', $payment->payment_method))); ?></span>
-            </div>
-            <div class="summary-card">
-                <span class="summary-label">Payment #</span>
-                <span class="summary-value"><?php echo e($payment->payment_number); ?></span>
-                <span class="summary-foot">Transaction reference</span>
-            </div>
-            <div class="summary-card">
-                <span class="summary-label">Payment Date</span>
-                <span class="summary-value"><?php echo e(optional($payment->payment_date)->format('Y-m-d') ?? 'N/A'); ?></span>
-                <span class="summary-foot">Value date</span>
-            </div>
-        </div>
+        $businessName = $settings['invoice_business_name']
+            ?? $settings['business_name']
+            ?? 'Photo Studio Management';
+        $businessAddress = $settings['invoice_business_address']
+            ?? $settings['business_address']
+            ?? null;
+        $businessPhone = $settings['invoice_contact_phone']
+            ?? $settings['business_phone']
+            ?? null;
+        $businessEmail = $settings['invoice_contact_email']
+            ?? $settings['business_email']
+            ?? null;
+        $businessWebsite = $settings['invoice_business_website']
+            ?? $settings['business_website']
+            ?? null;
+        $footerText = $settings['invoice_footer_text']
+            ?? 'Thank you for your business!';
+
+        $customer = $payment->customer;
+        $customerName = trim(implode(' ', array_filter([
+            $customer->first_name ?? null,
+            $customer->last_name ?? null,
+        ]))) ?: 'Walk-in';
+        $customerCode = $customer->customer_code ?? 'N/A';
+        $customerPhone = $customer->phone ?? $customer->mobile ?? 'N/A';
+        $customerEmail = $customer->email ?? null;
+        $customerAddress = implode(', ', array_filter([
+            $customer->address ?? null,
+            $customer->city ?? null,
+            $customer->state ?? null,
+            $customer->postal_code ?? null,
+            $customer->country ?? null,
+        ]));
+        if(blank($customerAddress)) {
+            $customerAddress = '-';
+        }
+
+        $order = $payment->order;
+        $orderNumber = $order->order_number ?? 'N/A';
+        $orderDate = optional($order->order_date)->format('d M Y') ?? 'N/A';
+        $orderTotal = $order->total_amount ?? 0;
+        $orderPaid = $order->paid_amount ?? 0;
+        $orderDue = $order->remaining_amount ?? 0;
+
+        $branch = $payment->branch;
+        $branchName = $branch->branch_name ?? 'N/A';
+        $branchCode = $branch->branch_code ?? null;
+
+        // Payment details
+        $paymentNumber = $payment->payment_number ?? 'N/A';
+        $paymentType = \Illuminate\Support\Str::title($payment->payment_type ?? 'N/A');
+        $paymentMethod = \Illuminate\Support\Str::title(str_replace('_', ' ', $payment->payment_method ?? 'N/A'));
+        $paymentAmount = $payment->amount ?? 0;
+        $paymentRemarks = $payment->remarks ?? null;
+    ?>
+
+    <!-- Top Bar: Business Name -->
+    <div class="top-bar">
+        <div class="left"><?php echo e($businessName); ?></div>
     </div>
+    <hr style="border:0;border-top:1px solid #000;margin:0 0 12px 0;">
 
-    <div class="pdf-section">
-        <div class="section-heading">
-            <div class="section-title">Transaction Details</div>
-            <div class="section-subtitle">Audit-ready reference</div>
-        </div>
-        <table class="info-table">
+    <!-- Second Section: Receipt Details (left) and Customer Info (right) -->
+    <table class="header-table">
+        <tr>
+            <td class="company-cell">
+                <div class="company-name" style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px;">PAYMENT RECEIPT</div>
+                <div class="company-meta" style="margin-top: 4px;">
+                    <div><strong>Receipt #:</strong> <?php echo e($paymentNumber); ?></div>
+                    <div><strong>Receipt Generated:</strong> <?php echo e($receiptGeneratedDate); ?>, <?php echo e($receiptGeneratedTime); ?></div>
+                    <div><strong>Payment Date:</strong> <?php echo e($paymentDate); ?></div>
+                </div>
+            </td>
+            <td class="info-cell">
+                <div class="company-name"><?php echo e($customerName); ?></div>
+                <div class="company-meta">Code: <?php echo e($customerCode); ?></div>
+                <div class="company-meta">Phone: <?php echo e($customerPhone); ?></div>
+                <?php if($customerEmail): ?>
+                    <div class="company-meta">Email: <?php echo e($customerEmail); ?></div>
+                <?php endif; ?>
+                <?php if($customerAddress && $customerAddress !== '-'): ?>
+                    <div class="company-meta">Address: <?php echo e($customerAddress); ?></div>
+                <?php endif; ?>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Payment Details -->
+    <div class="section-title">Payment Information</div>
+    <table class="products-table">
+        <thead>
             <tr>
-                <th>Payment Number</th>
-                <td><?php echo e($payment->payment_number); ?></td>
+                <th class="text-start">Payment Details</th>
+                <th class="text-end">Amount</th>
             </tr>
+        </thead>
+        <tbody>
             <tr>
-                <th>Payment Date</th>
-                <td><?php echo e(optional($payment->payment_date)->format('Y-m-d') ?? 'N/A'); ?></td>
+                <td class="text-start">
+                    <div><strong>Payment Number:</strong> <?php echo e($paymentNumber); ?></div>
+                    <div><strong>Payment Type:</strong> <?php echo e($paymentType); ?></div>
+                    <div><strong>Payment Method:</strong> <?php echo e($paymentMethod); ?></div>
+                    <div><strong>Payment Date:</strong> <?php echo e($paymentDate); ?></div>
+                    <?php if($paymentRemarks): ?>
+                        <div style="margin-top: 4px;"><strong>Remarks:</strong> <?php echo e($paymentRemarks); ?></div>
+                    <?php endif; ?>
+                </td>
+                <td class="text-end" style="vertical-align: top;">
+                    <div style="font-size: 16px; font-weight: bold; margin-top: 4px;">₹<?php echo e(number_format($paymentAmount, 2)); ?></div>
+                </td>
             </tr>
+        </tbody>
+    </table>
+
+    <!-- Order Reference -->
+    <div class="section-title">Order Reference</div>
+    <table class="products-table">
+        <thead>
             <tr>
-                <th>Payment Type</th>
-                <td><?php echo e(ucfirst($payment->payment_type)); ?></td>
+                <th class="text-start">Order Number</th>
+                <th class="text-center">Order Date</th>
+                <th class="text-end">Order Total</th>
+                <th class="text-end">Paid</th>
+                <th class="text-end">Due</th>
             </tr>
+        </thead>
+        <tbody>
             <tr>
-                <th>Payment Method</th>
-                <td><?php echo e(ucfirst(str_replace('_', ' ', $payment->payment_method))); ?></td>
+                <td class="text-start"><?php echo e($orderNumber); ?></td>
+                <td class="text-center"><?php echo e($orderDate); ?></td>
+                <td class="text-end">₹<?php echo e(number_format($orderTotal, 2)); ?></td>
+                <td class="text-end">₹<?php echo e(number_format($orderPaid, 2)); ?></td>
+                <td class="text-end">₹<?php echo e(number_format($orderDue, 2)); ?></td>
             </tr>
-            <?php if($payment->remarks): ?>
+        </tbody>
+    </table>
+
+    <?php if($order->items && $order->items->count() > 0): ?>
+    <!-- Order Items -->
+    <div class="section-title">Order Items</div>
+    <table class="products-table">
+        <thead>
+            <tr>
+                <th class="text-center">#</th>
+                <th class="text-start">Items</th>
+                <th class="text-center">Qty</th>
+                <th class="text-end">Price</th>
+                <th class="text-end">Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php $__currentLoopData = $order->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $idx => $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <?php 
+                    $productName = $item->package_name ?? 'N/A';
+                    if($item->package_type) {
+                        $productName .= ' (' . $item->package_type . ')';
+                    }
+                ?>
                 <tr>
-                    <th>Remarks</th>
-                    <td><?php echo e($payment->remarks); ?></td>
+                    <td class="text-center"><?php echo e($idx + 1); ?></td>
+                    <td class="text-start"><?php echo e($productName); ?></td>
+                    <td class="text-center"><?php echo e($item->quantity ?? 1); ?></td>
+                    <td class="text-end">₹<?php echo e(number_format($item->unit_price ?? 0, 2)); ?></td>
+                    <td class="text-end">₹<?php echo e(number_format($item->total_price ?? 0, 2)); ?></td>
                 </tr>
-            <?php endif; ?>
-        </table>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </tbody>
+    </table>
+    <?php endif; ?>
+
+    <!-- Bottom: Summary -->
+    <table class="bottom-table">
+        <tr>
+            <td style="width:100%;vertical-align:top;">
+                <div class="section-title" style="text-align:right;">PAYMENT SUMMARY</div>
+                <table class="summary-table">
+                    <tr>
+                        <td class="label">Payment Amount:</td>
+                        <td class="value">₹<?php echo e(number_format($paymentAmount, 2)); ?></td>
+                    </tr>
+                    <tr>
+                        <td class="label">Payment Type:</td>
+                        <td class="value"><?php echo e($paymentType); ?></td>
+                    </tr>
+                    <tr>
+                        <td class="label">Payment Method:</td>
+                        <td class="value"><?php echo e($paymentMethod); ?></td>
+                    </tr>
+                    <tr class="final">
+                        <td class="label">Total Amount:</td>
+                        <td class="value">₹<?php echo e(number_format($paymentAmount, 2)); ?></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <div class="footer">
+        <div class="footer-name"><?php echo e($businessName); ?></div>
+        <div class="footer-contact">
+            <?php
+                $footerParts = [];
+                if($businessAddress) {
+                    $footerParts[] = $businessAddress;
+                }
+                if($businessPhone) {
+                    $footerParts[] = $businessPhone;
+                }
+                if($businessWebsite) {
+                    $footerParts[] = $businessWebsite;
+                }
+            ?>
+            <?php echo e(implode(' | ', $footerParts)); ?>
+
+        </div>
+        <div class="footer-text"><?php echo e($footerText); ?></div>
     </div>
-
-    <?php if($payment->order): ?>
-        <div class="pdf-section">
-            <div class="section-title">Order Information</div>
-            <table class="data-table">
-                <tbody>
-                    <tr>
-                        <th>Order Number</th>
-                        <td><?php echo e($payment->order->order_number); ?></td>
-                        <th>Order Date</th>
-                        <td><?php echo e(optional($payment->order->order_date)->format('Y-m-d')); ?></td>
-                    </tr>
-                    <tr>
-                        <th>Total Amount</th>
-                        <td>₹<?php echo e(number_format($payment->order->total_amount, 2)); ?></td>
-                        <th>Payment Status</th>
-                        <td><?php echo e(ucfirst($payment->order->payment_status)); ?></td>
-                    </tr>
-                    <tr>
-                        <th>Paid Amount</th>
-                        <td>₹<?php echo e(number_format($payment->order->paid_amount, 2)); ?></td>
-                        <th>Remaining</th>
-                        <td>₹<?php echo e(number_format($payment->order->remaining_amount, 2)); ?></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    <?php endif; ?>
-
-    <?php if($payment->customer): ?>
-        <div class="pdf-section">
-            <div class="section-title">Customer Information</div>
-            <div class="section-card">
-                <strong><?php echo e($payment->customer->first_name); ?> <?php echo e($payment->customer->last_name); ?></strong><br>
-                Code: <?php echo e($payment->customer->customer_code); ?><br>
-                <?php echo e($payment->customer->email ?? 'N/A'); ?><br>
-                <?php echo e($payment->customer->phone ?? $payment->customer->mobile ?? 'N/A'); ?>
-
-            </div>
-        </div>
-    <?php endif; ?>
-
-    <?php if($payment->branch): ?>
-        <div class="pdf-section">
-            <div class="section-title">Branch Information</div>
-            <div class="section-card">
-                <strong><?php echo e($payment->branch->branch_name); ?></strong><br>
-                <?php echo e($payment->branch->address ?? ''); ?><br>
-                <?php echo e($payment->branch->city ?? ''); ?> <?php echo e($payment->branch->state ?? ''); ?>
-
-            </div>
-        </div>
-    <?php endif; ?>
-
-    <?php echo $__env->make('pdfs.partials.footer', ['settings' => $settings, 'exportDate' => $exportDate], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 </body>
 </html>
 
