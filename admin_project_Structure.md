@@ -346,10 +346,10 @@ admin/
   - Customer/Photographer list (server-side pagination, filtering, searching)
   - Customer details modal
   - Create/Edit customer
-  - PDF export
+  - PDF export (Customer History Report with complete order and payment history)
   - Customer statistics (auto-calculated from orders)
   - Derived financial summary (total/paid/remaining) with balance-aware status chips
-- **Status**: ✅ Fully implemented with API integration + Server-side pagination/filtering
+- **Status**: ✅ Fully implemented with API integration + Server-side pagination/filtering + PDF Export
 
 ### 6. **Order Management**
 - **Location**: `src/views/orders/`, `src/services/orderService.js`
@@ -357,7 +357,7 @@ admin/
   - Order list (server-side pagination, filtering, searching)
   - Create/Edit order (multi-package support)
   - Order details modal with integrated payment history (no separate API call needed)
-  - PDF invoice export
+  - PDF invoice export (pure black and white design)
   - Order status tracking with manual status update functionality
   - Payment status management (simplified to Pending/Completed)
   - Record payment from order actions
@@ -365,7 +365,7 @@ admin/
   - Order list now surfaces API errors (no mock fallback)
   - Payment history displays payment numbers in #PAY003 format
   - Clean API responses with camelCase fields only (no duplicate snake_case fields)
-- **Status**: ✅ Fully implemented with API integration + Server-side pagination/filtering
+- **Status**: ✅ Fully implemented with API integration + Server-side pagination/filtering + PDF Export
 
 ### 7. **Payment Management**
 - **Location**: `src/views/payments/`, `src/components/pages/payments/`, `src/services/paymentService.js`
@@ -376,7 +376,8 @@ admin/
   - Auto-updates order payment status
   - Auto-updates customer stats
   - Credit/Debit flows now receive live order & customer financial snapshots from the API so refunds instantly recalculate totals
-- **Status**: ✅ Fully implemented with API integration (real database)
+  - PDF receipt export (pure black and white design)
+- **Status**: ✅ Fully implemented with API integration (real database) + PDF Export
 
 ### 8. **Transaction Management**
 - **Location**: `src/views/transactions/`, `src/services/transactionService.js`, `src/services/paymentService.js`
@@ -388,7 +389,8 @@ admin/
   - Transaction details modal
   - Edit/Delete transactions
   - Transactions list consumes enriched payment payload (order/customer totals + payment type) so remaining amounts flip immediately after any debit
-- **Status**: ✅ Fully implemented - Shows payments from orders module
+  - PDF receipt export (pure black and white design)
+- **Status**: ✅ Fully implemented - Shows payments from orders module + PDF Export
 
 ### 9. **Report Management**
 - **Location**: `src/views/reports/`, `src/services/reportService.js`
@@ -749,10 +751,10 @@ const userService = {
 - Settings Management (Business Info, Invoice, Email Settings with test, App Settings with Web URL, Currency & Regional)
 - Dashboard (live KPI cards, revenue trends with backend analytics endpoints)
 - Customer Management (with PDF export, auto-calculated stats from orders, server-side pagination/filtering)
-- Order Management (multi-package support, customer stats auto-update, server-side pagination/filtering, payment recording)
+- Order Management (multi-package support, customer stats auto-update, server-side pagination/filtering, payment recording, PDF export)
 - Package Management (server-side pagination/filtering)
-- Payment Management (record payments from orders, auto-updates order status and customer stats)
-- Transaction Management (shows payments from orders)
+- Payment Management (record payments from orders, auto-updates order status and customer stats, PDF export)
+- Transaction Management (shows payments from orders, PDF export)
 - Theme System (Dark/Light mode)
 
 ### 🟡 Partially Implemented (UI Complete, API Pending)
@@ -812,7 +814,11 @@ npm run lint
 - ✅ Payment form shows customer name with #CUST code format
 - ✅ Order actions include "Record Payment" functionality
 - ✅ Dashboard cards + revenue chart now powered by `/dashboard/*` APIs with themed UI refresh
-- ✅ Customer/Order/Transaction PDFs export directly from backend storage
+- ✅ Customer/Order/Transaction PDFs export fully implemented with pure black and white design
+- ✅ All PDF exports use consistent design: pure black and white, no background colors, single thin line dividers
+- ✅ All PDF exports use consistent footer format: Business Name | Address | Phone | Website | Footer Text
+- ✅ Standardized PDF filename format: `Order_{OrderID}_{CustomerName}.pdf`, `Customer_{CustomerID}_{CustomerName}.pdf`, `Payment_{PaymentId}_{CustomerName}.pdf`
+- ✅ CORS configuration updated to expose Content-Disposition header for filename extraction
 - ✅ Orders & Customers lists now rely solely on live API responses (no mock fallback), deriving status from outstanding balances and displaying payment type badges inside Order Details
 - ✅ Order Details API now includes payment history (no separate API call needed)
 - ✅ Payment status simplified to Pending/Completed (removed Partial/Refunded from UI)

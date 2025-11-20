@@ -5,7 +5,7 @@ This document lists the **current status** and **required** export functionality
 
 ---
 
-## ✅ Active Exports (1 Module)
+## ✅ Active Exports (3 Modules)
 
 ### 1. **Orders Module**
 **Status:** ✅ Fully Implemented & Enhanced
@@ -22,48 +22,52 @@ This document lists the **current status** and **required** export functionality
     - Business information from invoice settings
   - **Backend:** `OrderController::exportPdf()` ✅
   - **Frontend:** `OrdersList.jsx` - `handleExportOrder()` ✅
-  - **PDF Template:** `resources/views/pdfs/order.blade.php` ✅ (Enhanced with compact, professional design)
+  - **PDF Template:** `resources/views/pdfs/order_invoice.blade.php` ✅
+  - **Filename Format:** `Order_{OrderID}_{CustomerName}.pdf`
+  - **Design:** Pure black and white, no background colors, single thin line dividers
 
 ---
 
-## 🚧 To Be Implemented (2 Modules)
-
 ### 2. **Customer Module**
-**Status:** ❌ Removed - Needs Re-implementation
+**Status:** ✅ Fully Implemented & Enhanced
 
-**Required Export:**
+**Active Export:**
 - **Single Customer History Report PDF** - `/customers/{id}/export-pdf`
   - Customer profile with complete history
-  - **Should Include:**
-    - Customer basic information (name, contact, address, etc.)
-    - Complete order history (all orders with items)
-    - Complete payment/transaction history
-    - Statistics summary (total orders, total amount, paid amount, balance)
+  - **Includes:**
+    - Customer basic information (name, contact, address, DOB, anniversary, status)
+    - Statistics summary (total orders, total amount, paid amount, remaining, wallet balance)
+    - Complete order history table (all orders with financial summary)
+    - Complete payment/transaction history table
     - Branch information
-  - **Backend:** `CustomerController::exportPdf()` ❌ (Removed - needs re-implementation)
-  - **Frontend:** `CustomersList.jsx` - `handleExportSingle()` ✅ (Button exists)
-  - **PDF Template:** `resources/views/pdfs/customer.blade.php` ❌ (Removed - needs creation)
-  - **Route:** `/customers/{customer}/export-pdf` ❌ (Removed - needs re-implementation)
+    - Business information from invoice settings
+  - **Backend:** `CustomerController::exportPdf()` ✅
+  - **Frontend:** `CustomersList.jsx` - `handleExportSingle()` ✅
+  - **PDF Template:** `resources/views/pdfs/customer.blade.php` ✅
+  - **Filename Format:** `Customer_{CustomerID}_{CustomerName}.pdf`
+  - **Design:** Pure black and white, no background colors, single thin line dividers
 
 ---
 
 ### 3. **Payments/Transactions Module**
-**Status:** ❌ Removed - Needs Re-implementation
+**Status:** ✅ Fully Implemented & Enhanced
 
-**Required Export:**
+**Active Export:**
 - **Single Payment Receipt PDF** - `/payments/{id}/export-pdf`
   - Payment/transaction receipt
-  - **Should Include:**
-    - Payment details (payment number, date, amount)
-    - Payment method and type
+  - **Includes:**
+    - Payment details (payment number, date, amount, type, method, remarks)
     - Customer information
-    - Order reference (if applicable)
+    - Order reference with financial summary
+    - Order items table (if available)
+    - Payment summary
     - Branch information
     - Business information from invoice settings
-  - **Backend:** `PaymentController::exportPdf()` ❌ (Removed - needs re-implementation)
-  - **Frontend:** `TransactionsList.jsx` - `handleExportTransaction()` ✅ (Button exists)
-  - **PDF Template:** `resources/views/pdfs/transaction.blade.php` ❌ (Removed - needs creation)
-  - **Route:** `/payments/{payment}/export-pdf` ❌ (Removed - needs re-implementation)
+  - **Backend:** `PaymentController::exportPdf()` ✅
+  - **Frontend:** `TransactionsList.jsx` - `handleExportTransaction()` ✅
+  - **PDF Template:** `resources/views/pdfs/transaction.blade.php` ✅
+  - **Filename Format:** `Payment_{PaymentId}_{CustomerName}.pdf`
+  - **Design:** Pure black and white, no background colors, single thin line dividers
 
 ---
 
@@ -103,21 +107,26 @@ All PDF exports should use:
    - Payment history displayed
    - Invoice settings integrated
    - Professional compact invoice format
+   - Pure black and white design
+   - Filename: `Order_{OrderID}_{CustomerName}.pdf`
 
-2. **Customer Export Re-implementation:**
-   - Create new `exportPdf()` method in `CustomerController`
-   - Ensure all orders are loaded with items and packages
-   - Ensure all payments are loaded with order references
-   - Include comprehensive statistics
-   - Use invoice settings for business info
-   - Create new PDF template with professional design
+2. **Customer Export:** ✅ Complete
+   - Customer information with complete history
+   - All orders loaded with items and packages
+   - All payments loaded with order references
+   - Comprehensive statistics summary
+   - Invoice settings integrated
+   - Professional compact design
+   - Pure black and white design
+   - Filename: `Customer_{CustomerID}_{CustomerName}.pdf`
 
-3. **Payment Export Re-implementation:**
-   - Create new `exportPdf()` method in `PaymentController`
-   - Include all required payment information
-   - Ensure invoice settings are used
-   - Format as professional receipt
-   - Create new PDF template with professional design
+3. **Payment Export:** ✅ Complete
+   - All required payment information included
+   - Invoice settings integrated
+   - Professional receipt format
+   - Order reference with items
+   - Pure black and white design
+   - Filename: `Payment_{PaymentId}_{CustomerName}.pdf`
 
 ### Frontend Implementation
 
@@ -128,54 +137,44 @@ All export buttons are already in place:
 
 ---
 
-## 🎯 Next Steps
+## 🎯 Design Standards
 
-### Priority 1: Customer Export Re-implementation
-1. **Backend:**
-   - Re-implement `CustomerController::exportPdf()` method
-   - Add route `/customers/{customer}/export-pdf`
-   - Load customer with orders, payments, and statistics
-   - Pass invoice settings to template
+All PDF exports follow consistent design standards:
 
-2. **PDF Template:**
-   - Create new `resources/views/pdfs/customer.blade.php`
-   - Design compact, professional layout (similar to order invoice)
-   - Include customer information section
-   - Add order history table
-   - Add payment history table
-   - Include statistics summary cards
-   - Use invoice settings for business info
+### Visual Design
+- **Pure black and white** - No background colors, all text and borders in black (#000)
+- **Single thin line dividers** - All borders and dividers use `1px solid #000`
+- **Professional layout** - Clean, compact design optimized for printing
+- **A4 size** - Print-friendly layout
 
-### Priority 2: Payment Export Re-implementation
-1. **Backend:**
-   - Re-implement `PaymentController::exportPdf()` method
-   - Add route `/payments/{payment}/export-pdf`
-   - Load payment with order, customer, and branch relationships
-   - Pass invoice settings to template
+### Footer Format
+All PDFs use consistent footer format:
+1. **Line 1:** Business Name (bold, uppercase)
+2. **Line 2:** Address | Phone | Website (all on one line, separated by ` | `)
+3. **Line 3:** Footer text (Thank you message)
 
-2. **PDF Template:**
-   - Create new `resources/views/pdfs/transaction.blade.php`
-   - Design compact, professional receipt layout
-   - Include payment details prominently
-   - Show customer and order information
-   - Use invoice settings for business info
+### Filename Format
+- **Order:** `Order_{OrderID}_{CustomerName}.pdf` (e.g., `Order_123_John_Doe.pdf`)
+- **Customer:** `Customer_{CustomerID}_{CustomerName}.pdf` (e.g., `Customer_456_Jane_Smith.pdf`)
+- **Payment:** `Payment_{PaymentId}_{CustomerName}.pdf` (e.g., `Payment_789_Rajesh_Patel.pdf`)
 
-### Priority 3: Testing
-- Test Customer export with various data scenarios
-- Test Payment export with various data scenarios
-- Verify invoice settings are used correctly
-- Check print layout and formatting
-- Ensure consistency with Order export design
+### Technical Implementation
+- **Backend:** All exports use `PdfExportService` with proper Content-Disposition headers
+- **Frontend:** All services extract filename from Content-Disposition header
+- **CORS:** Content-Disposition header exposed in CORS configuration
+- **Settings:** All PDFs use invoice settings for business information
 
 ---
 
 ## 📝 Notes
 
-- **Order Export:** ✅ Fully functional with enhanced compact design
-- **Customer Export:** ❌ Removed for cleanup - needs re-implementation
-- **Payment Export:** ❌ Removed for cleanup - needs re-implementation
+- **Order Export:** ✅ Fully functional with pure black and white design
+- **Customer Export:** ✅ Fully functional with complete history report
+- **Payment Export:** ✅ Fully functional with professional receipt format
+- All exports use consistent pure black and white design with single thin line dividers
+- All exports use consistent footer format with business information
+- All exports use standardized filename format: `{Type}_{ID}_{CustomerName}.pdf`
 - All "export all" functionality has been permanently removed
-- Backend routes for "export all" still exist but are not used
 - Package exports have been completely removed
 - Focus is on single-item detailed exports with professional, compact designs
-- New exports should follow the same design pattern as the enhanced Order invoice
+- All PDFs are optimized for printing with A4 layout

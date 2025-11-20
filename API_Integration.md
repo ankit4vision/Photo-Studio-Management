@@ -1828,6 +1828,35 @@ const handleDeletePackage = async (packageId) => {
 
 ---
 
+### 8. **GET /api/customers/{customer}/export-pdf**
+**Description**: Customer history report PDF export करने के लिए
+
+**Backend Controller**: `CustomerController@exportPdf`
+
+**Response**: PDF file download
+- **Content-Type**: `application/pdf`
+- **Content-Disposition**: `attachment; filename="Customer_{CustomerID}_{CustomerName}.pdf"`
+
+**Permission Required**: `view_customer`
+
+**Frontend Integration**:
+- **Service**: `src/services/customerService.js`
+- **Method**: `customerService.exportCustomerPdf(customerId)`
+- **Used In**:
+  - `src/views/customers/CustomersList.jsx` - Export button in table actions
+
+**PDF Includes**:
+- Customer basic information (name, contact, address, DOB, anniversary, status)
+- Statistics summary (total orders, total amount, paid amount, remaining, wallet balance)
+- Complete order history table
+- Complete payment/transaction history table
+- Branch information
+- Business information from invoice settings
+
+**Filename Format**: `Customer_{CustomerID}_{CustomerName}.pdf`
+
+---
+
 ## 📦 Order Management APIs
 
 ### 1. **GET /api/orders**
@@ -2299,6 +2328,35 @@ const handleDeletePackage = async (packageId) => {
 
 ---
 
+### 10. **GET /api/orders/{order}/export-pdf**
+**Description**: Order invoice PDF export करने के लिए
+
+**Backend Controller**: `OrderController@exportPdf`
+
+**Response**: PDF file download
+- **Content-Type**: `application/pdf`
+- **Content-Disposition**: `attachment; filename="Order_{OrderID}_{CustomerName}.pdf"`
+
+**Permission Required**: `view_order`
+
+**Frontend Integration**:
+- **Service**: `src/services/orderService.js`
+- **Method**: `orderService.exportOrderPdf(orderId)`
+- **Used In**:
+  - `src/views/orders/OrdersList.jsx` - Export button in table actions
+
+**PDF Includes**:
+- Order details (order number, date, status)
+- Customer information
+- Order items (packages, quantities, prices)
+- Order summary (subtotal, discount, total, paid, due)
+- Payment transactions (all payments for this order)
+- Business information from invoice settings
+
+**Filename Format**: `Order_{OrderID}_{CustomerName}.pdf`
+
+---
+
 ## 💳 Payment Management APIs
 
 ### 1. **GET /api/payments**
@@ -2470,6 +2528,36 @@ const handleDeletePackage = async (packageId) => {
 **Backend Controller**: `PaymentController@getByOrder`
 
 **Permission Required**: `view_payment`
+
+---
+
+### 7. **GET /api/payments/{payment}/export-pdf**
+**Description**: Payment receipt PDF export करने के लिए
+
+**Backend Controller**: `PaymentController@exportPdf`
+
+**Response**: PDF file download
+- **Content-Type**: `application/pdf`
+- **Content-Disposition**: `attachment; filename="Payment_{PaymentId}_{CustomerName}.pdf"`
+
+**Permission Required**: `view_payment`
+
+**Frontend Integration**:
+- **Service**: `src/services/paymentService.js`
+- **Method**: `paymentService.exportTransactionPdf(paymentId)`
+- **Used In**:
+  - `src/views/transactions/TransactionsList.jsx` - Export button in table actions
+
+**PDF Includes**:
+- Payment details (payment number, date, amount, type, method, remarks)
+- Customer information
+- Order reference with financial summary
+- Order items table (if available)
+- Payment summary
+- Branch information
+- Business information from invoice settings
+
+**Filename Format**: `Payment_{PaymentId}_{CustomerName}.pdf`
 
 ---
 
@@ -3150,9 +3238,9 @@ const Settings = () => {
 ✅ Permission Management (List, Get)
 ✅ Branch Management (CRUD operations)
 ✅ Package Management (CRUD operations + Server-side pagination/filtering/searching)
-✅ Customer Management (CRUD operations + Status Update + Stats Recalculation + Server-side pagination/filtering/searching)
-✅ Order Management (CRUD operations + Multi-package support + Status/Payment Update + Server-side pagination/filtering/searching)
-✅ Payment Management (CRUD operations + Auto order status update + Customer stats update)
+✅ Customer Management (CRUD operations + Status Update + Stats Recalculation + Server-side pagination/filtering/searching + PDF Export)
+✅ Order Management (CRUD operations + Multi-package support + Status/Payment Update + Server-side pagination/filtering/searching + PDF Export)
+✅ Payment Management (CRUD operations + Auto order status update + Customer stats update + PDF Export)
 ✅ Settings Management (Full CRUD + Email Test + S3 Test + App Settings with Web URL)
 
 ### Frontend Integration Status
@@ -3163,9 +3251,9 @@ const Settings = () => {
 - ✅ **PermissionService** - Fully integrated in RoleForm
 - ✅ **BranchService** - Integrated in BranchesList (with mock fallback)
 - ✅ **PackageService** - Fully integrated in PackagesList, PackageForm (with server-side pagination/filtering)
-- ✅ **CustomerService** - Fully integrated in CustomersList, CustomerForm, CustomerDetailsModal (server-side pagination/filtering, normalized totals, no mock fallback)
-- ✅ **OrderService** - Fully integrated in OrdersList, OrderForm, OrderDetailsModal (server-side pagination/filtering, payment type badges, no mock fallback)
-- ✅ **PaymentService** - Fully integrated in PaymentForm, TransactionsList (real database integration)
+- ✅ **CustomerService** - Fully integrated in CustomersList, CustomerForm, CustomerDetailsModal (server-side pagination/filtering, normalized totals, no mock fallback, PDF Export)
+- ✅ **OrderService** - Fully integrated in OrdersList, OrderForm, OrderDetailsModal (server-side pagination/filtering, payment type badges, no mock fallback, PDF Export)
+- ✅ **PaymentService** - Fully integrated in PaymentForm, TransactionsList (real database integration, PDF Export)
 - ✅ **SettingsService** - Fully integrated in Settings page (Business Info, Invoice, Email Settings with test, App Settings with Web URL, Currency & Regional, S3 Settings)
 
 ### Server-Side Features
@@ -3199,4 +3287,9 @@ const Settings = () => {
 - ✅ Manual order status update functionality added
 - ✅ Payment numbers displayed in #PAY003 format in payment history and transactions
 - ✅ API responses cleaned up - removed duplicate fields, using camelCase only
+- ✅ PDF Export functionality fully implemented for Orders, Customers, and Payments
+- ✅ All PDF exports use pure black and white design with single thin line dividers
+- ✅ Consistent footer format across all PDFs (Business Name | Address | Phone | Website | Footer Text)
+- ✅ Standardized filename format: `Order_{OrderID}_{CustomerName}.pdf`, `Customer_{CustomerID}_{CustomerName}.pdf`, `Payment_{PaymentId}_{CustomerName}.pdf`
+- ✅ CORS configuration updated to expose Content-Disposition header for filename extraction
 

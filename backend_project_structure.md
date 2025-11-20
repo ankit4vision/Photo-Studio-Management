@@ -163,11 +163,15 @@ backend/
 │
 ├── 📁 resources/                    # Views, assets, lang files
 │   └── 📁 views/                    # Blade templates
-│       └── 📁 emails/               # Email templates
-│           ├── generic.blade.php
-│           ├── password_reset.blade.php
-│           ├── test.blade.php        # Test email template
-│           └── welcome.blade.php
+│       ├── 📁 emails/               # Email templates
+│       │   ├── generic.blade.php
+│       │   ├── password_reset.blade.php
+│       │   ├── test.blade.php        # Test email template
+│       │   └── welcome.blade.php
+│       └── 📁 pdfs/                 # PDF export templates
+│           ├── order_invoice.blade.php    # Order invoice PDF template
+│           ├── customer.blade.php         # Customer history report PDF template
+│           └── transaction.blade.php     # Payment receipt PDF template
 │
 ├── 📁 routes/                       # Route definitions
 │   ├── api.php                      # API routes
@@ -309,7 +313,7 @@ backend/
 
 ### 7. **Customer Management Module**
 - **Location**: `app/Http/Controllers/API/CustomerController.php`
-- **Routes**: `/api/customers/*`
+- **Routes**: `/api/customers/*`, `/api/customers/{customer}/export-pdf`
 - **Features**:
   - List customers (paginated, sortable, searchable with server-side filtering)
   - Get customer by ID
@@ -318,13 +322,15 @@ backend/
   - Delete customer (soft delete)
   - Update customer status
   - Recalculate customer statistics from orders
+  - Export customer history report as PDF
 - **Permissions**: `view_customer`, `create_customer`, `edit_customer`, `delete_customer`
 - **Status**: ✅ Fully implemented
 - **Note**: Customer statistics (totalOrders, total_amount, paid_amount, etc.) automatically calculated from orders via model events
+- **PDF Export**: Customer history report with complete order and payment history, pure black and white design
 
 ### 8. **Order Management Module**
 - **Location**: `app/Http/Controllers/API/OrderController.php`
-- **Routes**: `/api/orders/*`
+- **Routes**: `/api/orders/*`, `/api/orders/{order}/export-pdf`
 - **Features**:
   - List orders (paginated, sortable, searchable with server-side filtering)
   - Get order by ID (includes payment history in response)
@@ -335,6 +341,7 @@ backend/
   - Update payment status
   - Get orders by customer
   - Order statistics endpoint (`/api/orders/stats`) with date range filtering
+  - Export order invoice as PDF
 - **Permissions**: `view_order`, `create_order`, `edit_order`, `delete_order`
 - **Status**: ✅ Fully implemented
 - **Note**: 
@@ -342,10 +349,11 @@ backend/
   - Payment status simplified to `pending` or `completed` (calculated from remaining amount)
   - Order details endpoint includes payment history ordered by date (descending)
   - API resources use camelCase only (no duplicate snake_case fields)
+- **PDF Export**: Order invoice with payment transactions, pure black and white design
 
 ### 9. **Payment Management Module**
 - **Location**: `app/Http/Controllers/API/PaymentController.php`
-- **Routes**: `/api/payments/*`
+- **Routes**: `/api/payments/*`, `/api/payments/{payment}/export-pdf`
 - **Features**:
   - List payments (paginated, sortable, searchable)
   - Get payment by ID
@@ -353,6 +361,7 @@ backend/
   - Update payment
   - Delete payment (soft delete)
   - Get payments by order
+  - Export payment receipt as PDF
   - Auto-generates payment_number (#PAY001, #PAY002, etc.)
   - Auto-updates order payment status on create/update/delete
   - Auto-updates customer stats
@@ -362,6 +371,7 @@ backend/
 - **Permissions**: `view_payment`, `create_payment`, `edit_payment`, `delete_payment`
 - **Status**: ✅ Fully implemented
 - **Note**: Payment record होने पर order payment status और customer stats automatically update होते हैं
+- **PDF Export**: Payment receipt with order reference and items, pure black and white design
 
 ### 10. **Dashboard & Analytics Module**
 - **Location**: `app/Http/Controllers/API/DashboardController.php`
@@ -407,7 +417,15 @@ backend/
 - **Features**:
   - Generate PDF documents
   - Export reports to PDF
+  - Order invoice export
+  - Customer history report export
+  - Payment receipt export
 - **Status**: ✅ Fully implemented
+- **PDF Templates**:
+  - `resources/views/pdfs/order_invoice.blade.php` - Order invoice with payment transactions
+  - `resources/views/pdfs/customer.blade.php` - Customer history report with orders and payments
+  - `resources/views/pdfs/transaction.blade.php` - Payment receipt with order reference
+- **Design Standards**: Pure black and white, no background colors, single thin line dividers, consistent footer format
 
 ---
 
@@ -1025,6 +1043,11 @@ php artisan serve
 - ✅ Server-side pagination, filtering, and searching for Packages, Customers, and Orders
 - ✅ Payment model with auto order status update
 - ✅ PaymentController with full CRUD operations
+- ✅ PDF Export functionality fully implemented for Orders, Customers, and Payments
+- ✅ All PDF exports use pure black and white design with single thin line dividers
+- ✅ Consistent footer format across all PDFs: Business Name | Address | Phone | Website | Footer Text
+- ✅ Standardized PDF filename format: `Order_{OrderID}_{CustomerName}.pdf`, `Customer_{CustomerID}_{CustomerName}.pdf`, `Payment_{PaymentId}_{CustomerName}.pdf`
+- ✅ CORS configuration updated to expose Content-Disposition header
 - ✅ Orders & Customers endpoints now treated as critical because frontend removed mock fallbacks—ensure uptime, monitoring, and meaningful error payloads
 - ✅ Order details endpoint (`/api/orders/{id}`) now includes payment history in response
 - ✅ Payment status simplified to `pending` or `completed` (calculated from remaining amount)
