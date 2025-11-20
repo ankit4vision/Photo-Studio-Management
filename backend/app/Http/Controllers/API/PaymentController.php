@@ -8,7 +8,6 @@ use App\Http\Resources\PaymentResource;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Setting;
-use App\Services\PdfExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -303,31 +302,5 @@ class PaymentController extends Controller
         ]);
     }
 
-    /**
-     * Export transaction/payment data to PDF.
-     */
-    public function exportPdf(Payment $payment, PdfExportService $pdfService)
-    {
-        $payment->load([
-            'order' => function ($query) {
-                $query->with(['customer', 'branch', 'items.package']);
-            },
-            'customer',
-            'branch'
-        ]);
-
-        // Get business settings
-        $settings = Setting::businessInfo();
-
-        $data = [
-            'payment' => $payment,
-            'settings' => $settings,
-            'exportDate' => now()->format('Y-m-d H:i:s'),
-        ];
-
-        $filename = 'transaction_' . $payment->payment_number . '_' . date('Y-m-d') . '.pdf';
-
-        return $pdfService->download('pdfs.transaction', $data, $filename);
-    }
 
 }

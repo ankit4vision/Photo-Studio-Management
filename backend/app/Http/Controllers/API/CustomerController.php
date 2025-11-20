@@ -9,7 +9,6 @@ use App\Http\Requests\CustomerUpdateRequest;
 use App\Http\Resources\CustomerResource;
 use App\Models\Customer;
 use App\Models\Setting;
-use App\Services\PdfExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -225,40 +224,6 @@ class CustomerController extends Controller
                 'success' => true,
                 'message' => 'Customer statistics are calculated in real-time. No manual recalculation required.',
             ]);
-    }
-
-    /**
-     * Export customer data to PDF.
-     */
-    public function exportPdf(Customer $customer, PdfExportService $pdfService)
-    {
-        $customer->load([
-            'branch',
-            'orders' => function ($query) {
-                $query->with(['items.package', 'payments'])->orderBy('order_date', 'desc');
-            }
-        ]);
-
-        // Get all payments for this customer
-        $payments = \App\Models\Payment::where('customer_id', $customer->id)
-            ->with(['order', 'branch'])
-            ->orderBy('payment_date', 'desc')
-            ->get();
-
-        // Get business settings
-        $settings = Setting::businessInfo();
-
-        $data = [
-            'customer' => $customer,
-            'orders' => $customer->orders,
-            'payments' => $payments,
-            'settings' => $settings,
-            'exportDate' => now()->format('Y-m-d H:i:s'),
-        ];
-
-        $filename = 'customer_' . $customer->customer_code . '_' . date('Y-m-d') . '.pdf';
-
-        return $pdfService->download('pdfs.customer', $data, $filename);
     }
 
     protected function customerTotalAmountExpression(): string

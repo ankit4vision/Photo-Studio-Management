@@ -79,7 +79,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/customers', [CustomerController::class, 'index'])->middleware('permission:view_customer');
     Route::post('/customers', [CustomerController::class, 'store'])->middleware('permission:create_customer');
     Route::get('/customers/{customer}', [CustomerController::class, 'show'])->middleware('permission:view_customer');
-    Route::get('/customers/{customer}/export-pdf', [CustomerController::class, 'exportPdf'])->middleware('permission:view_customer');
     Route::put('/customers/{customer}', [CustomerController::class, 'update'])->middleware('permission:edit_customer');
     Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])->middleware('permission:delete_customer');
     Route::put('/customers/{customer}/status', [CustomerController::class, 'updateStatus'])->middleware('permission:edit_customer');
@@ -101,7 +100,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/payments', [PaymentController::class, 'index'])->middleware('permission:view_payment');
     Route::post('/payments', [PaymentController::class, 'store'])->middleware('permission:create_payment');
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->middleware('permission:view_payment');
-    Route::get('/payments/{payment}/export-pdf', [PaymentController::class, 'exportPdf'])->middleware('permission:view_payment');
     Route::put('/payments/{payment}', [PaymentController::class, 'update'])->middleware('permission:edit_payment');
     Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->middleware('permission:delete_payment');
     Route::get('/payments/order/{orderId}', [PaymentController::class, 'getByOrder'])->middleware('permission:view_payment');
