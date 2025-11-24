@@ -1,9 +1,6 @@
 /node_modules
 /public/hot
 /public/storage
-/storage/*.key
-/storage/app/cache/*
-!/storage/app/cache/.gitignore
 /vendor
 .env
 .env.backup
@@ -17,4 +14,19 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Storage directory
+/storage/*.key
+/storage/app/cache/*
+!/storage/app/cache/.gitignore
+/storage/app/public/*
+!/storage/app/public/.gitignore
+/storage/framework/cache/*
+!/storage/framework/cache/.gitignore
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+/storage/logs/*
+!/storage/logs/.gitignore
 
