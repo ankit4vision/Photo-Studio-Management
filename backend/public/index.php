@@ -33,6 +33,21 @@ if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php'))
 
 require __DIR__.'/../vendor/autoload.php';
 
+$adminPathPrefix = '/admin';
+
+$requestUri = $_SERVER['REQUEST_URI'] ?? null;
+if ($requestUri && str_starts_with($requestUri, $adminPathPrefix . '/api')) {
+    $_SERVER['REQUEST_URI'] = substr($requestUri, strlen($adminPathPrefix));
+
+    if (!empty($_SERVER['PATH_INFO']) && str_starts_with($_SERVER['PATH_INFO'], $adminPathPrefix)) {
+        $_SERVER['PATH_INFO'] = substr($_SERVER['PATH_INFO'], strlen($adminPathPrefix));
+    }
+
+    if (!empty($_SERVER['ORIG_PATH_INFO']) && str_starts_with($_SERVER['ORIG_PATH_INFO'], $adminPathPrefix)) {
+        $_SERVER['ORIG_PATH_INFO'] = substr($_SERVER['ORIG_PATH_INFO'], strlen($adminPathPrefix));
+    }
+}
+
 /*
 |--------------------------------------------------------------------------
 | Run The Application

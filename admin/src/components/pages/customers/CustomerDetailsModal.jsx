@@ -234,6 +234,20 @@ const CustomerDetailsModal = ({
     }
   ]
 
+  const resolveTransactionType = (transaction) =>
+    transaction?.paymentType ||
+    transaction?.payment_type ||
+    transaction?.type ||
+    transaction?.transaction_type ||
+    ''
+
+  const resolveTransactionOrderNumber = (transaction) =>
+    transaction?.order?.orderNumber ||
+    transaction?.order?.order_number ||
+    transaction?.orderNumber ||
+    transaction?.order_number ||
+    `#${transaction?.order_id || transaction?.orderId || '-'}`.trim()
+
   // Transaction columns
   const transactionColumns = [
     {
@@ -251,8 +265,8 @@ const CustomerDetailsModal = ({
       key: 'type',
       label: 'Type',
       render: (value, transaction) => (
-        <Badge bg={getStatusColor(transaction.payment_type || transaction.type)}>
-          {getStatusText(transaction.payment_type || transaction.type)}
+        <Badge bg={getStatusColor(resolveTransactionType(transaction))}>
+          {getStatusText(resolveTransactionType(transaction) || 'N/A')}
         </Badge>
       )
     },
@@ -262,10 +276,10 @@ const CustomerDetailsModal = ({
       render: (value, transaction) => (
         <div>
           <div className="fw-semibold">
-            {transaction.order?.order_number || transaction.orderNumber || `#${transaction.order_id || '-'}`}
+            {resolveTransactionOrderNumber(transaction)}
           </div>
           <small className="text-muted">
-            Method: {transaction.payment_method || transaction.paymentMethod || 'N/A'}
+            Method: {transaction.paymentMethod || transaction.payment_method || 'N/A'}
           </small>
         </div>
       )
@@ -274,7 +288,7 @@ const CustomerDetailsModal = ({
       key: 'amount',
       label: 'Amount',
       render: (value, transaction) => {
-        const type = (transaction.payment_type || transaction.type || '').toLowerCase()
+        const type = resolveTransactionType(transaction)?.toLowerCase()
         const isCredit = type === 'credit'
         return (
           <div className={`fw-semibold ${isCredit ? 'text-success' : 'text-danger'}`}>

@@ -1,13 +1,20 @@
 const resolveApiBaseUrl = () => {
-  const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-  
-  // If empty or starts with /, use relative URL (same domain)
-  if (!rawBaseUrl || rawBaseUrl === '/' || rawBaseUrl.startsWith('/')) {
+  const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').trim()
+
+  // Default to relative /api during local dev when nothing configured
+  if (!rawBaseUrl || rawBaseUrl === '/') {
     return '/api'
   }
-  
-  const trimmedBaseUrl = rawBaseUrl.replace(/\/$/, '')
-  return trimmedBaseUrl.endsWith('/api') ? trimmedBaseUrl : `${trimmedBaseUrl}/api`
+
+  const normalize = (value) => value.replace(/\/+$/, '')
+
+  if (rawBaseUrl.startsWith('/')) {
+    const relativeBase = normalize(rawBaseUrl)
+    return relativeBase.endsWith('/api') ? relativeBase : `${relativeBase}/api`
+  }
+
+  const absoluteBase = normalize(rawBaseUrl)
+  return absoluteBase.endsWith('/api') ? absoluteBase : `${absoluteBase}/api`
 }
 
 // App Configuration
