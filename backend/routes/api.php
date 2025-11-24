@@ -115,6 +115,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/settings', [SettingController::class, 'index'])->middleware('permission:view_setting');
     // Specific routes must come before parameterized routes
     Route::post('/settings/test-email', [SettingController::class, 'testEmail'])->middleware('permission:edit_setting');
+            Route::post('/settings/upload-logo', [SettingController::class, 'uploadLogo'])->middleware('permission:edit_setting');
+            Route::delete('/settings/delete-logo', [SettingController::class, 'deleteLogo'])->middleware('permission:edit_setting');
     Route::post('/settings/{group}', [SettingController::class, 'updateGroup'])->middleware('permission:edit_setting');
 
     Route::prefix('global-settings')->group(function () {

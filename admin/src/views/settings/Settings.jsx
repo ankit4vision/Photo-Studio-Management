@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Container, Row, Col, Button, Spinner, Form, FormControl, FormSelect, FormText, Alert } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faBuilding, faEnvelope, faGlobe, faSave, faCheckCircle, faFileInvoice, faPaperPlane, faCog } from '@fortawesome/free-solid-svg-icons'
+import { faBuilding, faEnvelope, faGlobe, faSave, faCheckCircle, faFileInvoice, faPaperPlane, faCog, faImage, faUpload, faTimes } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from '../../components'
 import { settingsService } from '../../services/settingsService'
 import { usePermissions } from '../../hooks'
@@ -63,6 +63,9 @@ const Settings = () => {
   const [autoSaved, setAutoSaved] = useState({}) // Track which fields were recently saved
   const [testEmailAddress, setTestEmailAddress] = useState('')
   const [sendingTestEmail, setSendingTestEmail] = useState(false)
+  const [logoPreview, setLogoPreview] = useState(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const fileInputRef = useRef(null)
   
   const isInitialLoadRef = useRef(true) // Track if we're still loading initial data
   
@@ -120,6 +123,24 @@ const Settings = () => {
           const defaultData = settingsService.transformSettingsToForm(null)
           setSettingsData(defaultData)
           isInitialLoadRef.current = false
+        }
+        
+        // Load business logo
+        const logoResponse = await settingsService.getSettingByKey('business_logo', 'Business Information', true)
+        if (logoResponse.success && logoResponse.data && logoResponse.data.value) {
+          const logoPath = logoResponse.data.value
+          // Convert storage path to URL
+          // Storage files are served from Laravel public directory, not API
+          let baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+          // Remove /api suffix if present (storage is not under /api)
+          baseUrl = baseUrl.replace(/\/api\/?$/, '')
+          const logoUrl = logoPath.startsWith('http') 
+            ? logoPath 
+            : `${baseUrl}/storage/${logoPath}`
+          
+          // Add cache busting to prevent browser caching issues
+          const logoUrlWithCache = `${logoUrl}?t=${Date.now()}`
+          setLogoPreview(logoUrlWithCache)
         }
       } catch (err) {
         // If error occurs, use default values
@@ -291,6 +312,72 @@ const Settings = () => {
     setSaving(false)
   }
 
+  // Handle logo upload
+  const handleLogoUpload = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      error('Please upload a valid image file (JPEG, PNG, or WebP)')
+      return
+    }
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      error('Image size must be less than 2MB')
+      return
+    }
+
+    setUploadingLogo(true)
+    try {
+      const result = await settingsService.uploadLogo(file)
+      if (result.success) {
+        success('Logo uploaded successfully')
+        // Use URL from backend response, add cache busting
+        const logoUrl = result.data.url || result.data.path
+        const logoUrlWithCache = logoUrl ? `${logoUrl}?t=${Date.now()}` : null
+        setLogoPreview(logoUrlWithCache)
+      } else {
+        error(result.message || 'Failed to upload logo')
+      }
+    } catch (err) {
+      error('Failed to upload logo')
+      console.error('Logo upload error:', err)
+    } finally {
+      setUploadingLogo(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleRemoveLogo = async () => {
+    if (!canEditSettings) {
+      error('You do not have permission to delete logo.')
+      return
+    }
+
+    try {
+      const result = await settingsService.deleteLogo()
+      if (result.success) {
+        success('Logo deleted successfully')
+        setLogoPreview(null)
+        // Clear the logo from settings data
+        setSettingsData(prev => ({
+          ...prev,
+          businessInfo: { ...prev.businessInfo, business_logo: '' }
+        }))
+      } else {
+        error(result.message || 'Failed to delete logo')
+      }
+    } catch (err) {
+      error('Failed to delete logo. Please try again.')
+      console.error('Logo deletion error:', err)
+    }
+  }
 
   const renderBusinessInfo = () => (
     <div className="mb-5">
@@ -322,6 +409,84 @@ const Settings = () => {
             {errors['businessInfo.company_name'] && (
               <FormText className="text-danger">{errors['businessInfo.company_name']}</FormText>
             )}
+          </Form.Group>
+        </Col>
+      </Row>
+      
+      {/* Logo Upload Section */}
+      <Row>
+        <Col md={12}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              <FontAwesomeIcon icon={faImage} className="me-2" />
+              Business Logo
+            </Form.Label>
+            <div className="d-flex align-items-start gap-3">
+              {logoPreview && (
+                <div className="position-relative" style={{ minWidth: '120px' }}>
+                  <img
+                    src={logoPreview}
+                    alt="Business Logo"
+                    style={{
+                      width: '120px',
+                      height: '120px',
+                      objectFit: 'contain',
+                      border: '2px solid #dee2e6',
+                      borderRadius: '8px',
+                      padding: '8px',
+                      backgroundColor: '#f8f9fa'
+                    }}
+                    onError={() => {
+                      setLogoPreview(null)
+                      error('Failed to load logo image')
+                    }}
+                  />
+                  {!isReadOnly && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      className="position-absolute top-0 end-0"
+                      style={{ transform: 'translate(50%, -50%)' }}
+                      onClick={handleRemoveLogo}
+                      title="Remove logo"
+                    >
+                      <FontAwesomeIcon icon={faTimes} />
+                    </Button>
+                  )}
+                </div>
+              )}
+              <div className="flex-grow-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handleLogoUpload}
+                  disabled={isReadOnly || uploadingLogo}
+                  style={{ display: 'none' }}
+                />
+                <Button
+                  variant="outline-primary"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isReadOnly || uploadingLogo}
+                  className="mb-2"
+                >
+                  {uploadingLogo ? (
+                    <>
+                      <Spinner size="sm" className="me-2" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <FontAwesomeIcon icon={faUpload} className="me-2" />
+                      {logoPreview ? 'Change Logo' : 'Upload Logo'}
+                    </>
+                  )}
+                </Button>
+                <FormText className="d-block text-muted">
+                  Upload your business logo (JPEG, PNG, or WebP, max 2MB). This logo will appear on all PDF exports.
+                </FormText>
+              </div>
+            </div>
           </Form.Group>
         </Col>
       </Row>

@@ -363,6 +363,7 @@ class OrderController extends Controller
             'invoice_contact_email',
             'invoice_footer_text',
             'invoice_prefix',
+            'business_logo',
         ]);
 
         $invoicePrefix = trim($settings['invoice_prefix'] ?? 'INV');

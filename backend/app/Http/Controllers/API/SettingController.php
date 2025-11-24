@@ -117,6 +117,116 @@ class SettingController extends Controller
     }
 
     /**
+     * Upload business logo.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function uploadLogo(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'logo' => 'required|image|mimes:jpeg,jpg,png,webp|max:2048', // 2MB max
+            ]);
+
+            // Delete old logo if exists
+            $oldLogo = Setting::where('key', 'business_logo')
+                ->where('group', 'Business Information')
+                ->first();
+            
+            if ($oldLogo && $oldLogo->value) {
+                $oldPath = storage_path('app/public/' . $oldLogo->value);
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            // Store new logo
+            $file = $request->file('logo');
+            $filename = 'business_logo_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('public/logos', $filename);
+            
+            // Get relative path for storage (without 'public/' prefix)
+            $relativePath = 'logos/' . $filename;
+
+            // Save to settings
+            Setting::set('business_logo', $relativePath, 'Business Information');
+
+            // Return full URL for frontend
+            // Use APP_URL from config, ensure it doesn't have /api suffix for storage files
+            $appUrl = rtrim(config('app.url'), '/');
+            $logoUrl = $appUrl . '/storage/' . $relativePath;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Logo uploaded successfully',
+                'data' => [
+                    'path' => $relativePath,
+                    'url' => $logoUrl,
+                ]
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Logo upload error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload logo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete business logo.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deleteLogo()
+    {
+        try {
+            // Find the logo setting
+            $logoSetting = Setting::where('key', 'business_logo')
+                ->where('group', 'Business Information')
+                ->first();
+            
+            if ($logoSetting && $logoSetting->value) {
+                // Delete the logo file from storage
+                $logoPath = storage_path('app/public/' . $logoSetting->value);
+                if (file_exists($logoPath)) {
+                    @unlink($logoPath);
+                }
+            }
+
+            // Delete the setting from database
+            if ($logoSetting) {
+                $logoSetting->delete();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Logo deleted successfully',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Logo deletion error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete logo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * List all settings with optional section filter.
      */
     public function listAll(Request $request)

@@ -323,6 +323,7 @@ class PaymentController extends Controller
             'invoice_contact_phone',
             'invoice_contact_email',
             'invoice_footer_text',
+            'business_logo',
         ]);
 
         // Get customer name safely

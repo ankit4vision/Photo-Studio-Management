@@ -14,14 +14,26 @@
         .top-bar {
             width: 100%;
             margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        }
+        .top-bar table {
+            width: 100%;
+            border-collapse: collapse;
         }
         .top-bar .left {
             font-size: 20px;
             font-weight: bold;
             letter-spacing: 0.5px;
+            vertical-align: middle;
+        }
+        .logo-img {
+            max-width: 120px;
+            max-height: 80px;
+            object-fit: contain;
+            vertical-align: middle;
+        }
+        .top-bar .logo-right {
+            text-align: right;
+            vertical-align: middle;
         }
         .top-bar .meta-row {
             margin-bottom: 3px;
@@ -229,6 +241,50 @@
             ?? null;
         $footerText = $settings['invoice_footer_text']
             ?? 'Thank you for your business!';
+        
+        // Get logo path and convert to base64 for PDF
+        // IMPORTANT: dompdf requires GD extension to process images (even base64)
+        // If GD is not available, logo will be skipped completely
+        $logoPath = $settings['business_logo'] ?? null;
+        $logoBase64 = null;
+        
+        // Only process logo if GD extension is available
+        if (extension_loaded('gd')) {
+            // Try to load uploaded business logo first
+            if ($logoPath) {
+                $fullPath = storage_path('app/public/' . $logoPath);
+                if (file_exists($fullPath) && is_readable($fullPath)) {
+                    try {
+                        $imageData = file_get_contents($fullPath);
+                        $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+                        $mimeTypes = [
+                            'jpg' => 'image/jpeg',
+                            'jpeg' => 'image/jpeg',
+                            'png' => 'image/png',
+                            'gif' => 'image/gif',
+                            'webp' => 'image/webp',
+                        ];
+                        $mimeType = $mimeTypes[$extension] ?? 'image/png';
+                        $logoBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+                    } catch (\Exception $e) {
+                        \Log::warning('Failed to load business logo for PDF', ['path' => $fullPath, 'error' => $e->getMessage()]);
+                    }
+                }
+            }
+            
+            // If no business logo, use default logo
+            if (!$logoBase64) {
+                $defaultLogoPath = public_path('images/logo-transprant.png');
+                if (file_exists($defaultLogoPath) && is_readable($defaultLogoPath)) {
+                    try {
+                        $imageData = file_get_contents($defaultLogoPath);
+                        $logoBase64 = 'data:image/png;base64,' . base64_encode($imageData);
+                    } catch (\Exception $e) {
+                        \Log::warning('Failed to load default logo for PDF', ['path' => $defaultLogoPath, 'error' => $e->getMessage()]);
+                    }
+                }
+            }
+        }
 
         $customer = $order->customer;
         $customerName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
@@ -257,9 +313,18 @@
         $remainingAmount = $order->remaining_amount ?? 0;
     @endphp
 
-    <!-- Top Bar: Business Name -->
+    <!-- Top Bar: Business Name (left) and Logo (right) -->
     <div class="top-bar">
-        <div class="left">{{ $businessName }}</div>
+        <table>
+            <tr>
+                <td class="left" style="width: 60%;">{{ $businessName }}</td>
+                <td class="logo-right" style="width: 40%; text-align: right;">
+                    @if($logoBase64)
+                        <img src="{{ $logoBase64 }}" alt="{{ $businessName }}" class="logo-img" />
+                    @endif
+                </td>
+            </tr>
+        </table>
     </div>
     <hr style="border:0;border-top:1px solid #000;margin:0 0 12px 0;">
 

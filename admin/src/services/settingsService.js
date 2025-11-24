@@ -581,6 +581,56 @@ class SettingsService {
 
     return formData
   }
+
+  // Upload business logo
+  async uploadLogo(file) {
+    try {
+      const formData = new FormData()
+      formData.append('logo', file)
+
+      const response = await apiClient.post('/settings/upload-logo', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      if (response.data.success) {
+        return {
+          success: true,
+          data: response.data.data,
+          message: response.data.message || 'Logo uploaded successfully',
+        }
+      }
+
+      return {
+        success: false,
+        message: response.data.message || 'Failed to upload logo',
+      }
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
+  // Delete business logo
+  async deleteLogo() {
+    try {
+      const response = await apiClient.delete('/settings/delete-logo')
+      
+      if (response.data.success) {
+        return {
+          success: true,
+          message: response.data.message || 'Logo deleted successfully',
+        }
+      }
+
+      return {
+        success: false,
+        message: response.data.message || 'Failed to delete logo',
+      }
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
 }
 
 // Create and export service instance
