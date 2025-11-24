@@ -29,18 +29,75 @@ const AppSidebar = () => {
   const [businessLogo, setBusinessLogo] = useState(null)
 
   useEffect(() => {
-    const fetchBusinessLogo = async () => {
+    // Get settings from localStorage (set by auth service)
+    const getBusinessLogo = () => {
       try {
-        const response = await settingsService.getSettingByKey('business_logo', 'Business Information', true)
-        if (response.success && response.data && response.data.value) {
-          setBusinessLogo(response.data.value)
+        const settingsStr = localStorage.getItem('app_settings')
+        if (settingsStr) {
+          const settings = JSON.parse(settingsStr)
+          if (settings.business_logo) {
+            setBusinessLogo(settings.business_logo)
+            return
+          }
         }
       } catch (error) {
-        // Silently fail - use default logo
-        console.warn('Failed to fetch business logo:', error)
+        console.warn('Failed to parse app settings:', error)
+      }
+      
+      // If no settings in localStorage, try to fetch from API (fallback)
+      const fetchBusinessLogo = async () => {
+        try {
+          const response = await settingsService.getSettingByKey('business_logo', 'Business Information', true)
+          if (response.success && response.data && response.data.value) {
+            const logoPath = response.data.value
+            // Convert storage path to URL
+            // Storage files are served from Laravel public directory, not API
+            let baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+            // Remove /api suffix if present (storage is not under /api)
+            baseUrl = baseUrl.replace(/\/api\/?$/, '')
+            const logoUrl = logoPath.startsWith('http') 
+              ? logoPath 
+              : `${baseUrl}/storage/${logoPath}`
+            setBusinessLogo(logoUrl)
+          }
+        } catch (error) {
+          // Silently fail - use default logo
+          console.warn('Failed to fetch business logo:', error)
+        }
+      }
+      fetchBusinessLogo()
+    }
+    
+    getBusinessLogo()
+    
+    // Listen for storage changes (cross-tab) and custom events (same-tab)
+    const handleSettingsUpdate = (e) => {
+      try {
+        let settings = null
+        if (e.type === 'storage' && e.key === 'app_settings') {
+          settings = e.newValue ? JSON.parse(e.newValue) : null
+        } else if (e.type === 'settingsUpdated') {
+          // Custom event from Settings page
+          settings = e.detail || null
+        }
+        
+        if (settings && settings.business_logo) {
+          setBusinessLogo(settings.business_logo)
+        } else if (settings && !settings.business_logo) {
+          setBusinessLogo(null)
+        }
+      } catch (error) {
+        console.warn('Failed to parse updated app settings:', error)
       }
     }
-    fetchBusinessLogo()
+    
+    window.addEventListener('storage', handleSettingsUpdate)
+    window.addEventListener('settingsUpdated', handleSettingsUpdate)
+    
+    return () => {
+      window.removeEventListener('storage', handleSettingsUpdate)
+      window.removeEventListener('settingsUpdated', handleSettingsUpdate)
+    }
   }, [])
 
   const filterNavItems = (items = []) => {

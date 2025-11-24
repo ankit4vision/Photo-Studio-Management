@@ -42,11 +42,15 @@ class AuthController extends Controller
 
         $user->load('roles');
 
+        // Get required settings (business logo, company name, etc.)
+        $settings = $this->getRequiredSettings();
+
         return response()->json([
             'token' => $token,
             'user' => $this->formatUserData($user),
             'permissions' => $permissions,
             'permissionsByModule' => $permissionsByModule,
+            'settings' => $settings,
         ]);
     }
 
@@ -92,11 +96,45 @@ class AuthController extends Controller
         $permissions = $user->getAllPermissions();
         $permissionsByModule = $user->getPermissionsByModule();
 
+        // Get required settings (business logo, company name, etc.)
+        $settings = $this->getRequiredSettings();
+
         return response()->json([
             'user' => $this->formatUserData($user),
             'permissions' => $permissions,
             'permissionsByModule' => $permissionsByModule,
+            'settings' => $settings,
         ]);
+    }
+
+    /**
+     * Get required settings for frontend.
+     *
+     * @return array
+     */
+    protected function getRequiredSettings()
+    {
+        $appUrl = rtrim(config('app.url'), '/');
+        
+        // Get business logo
+        $logoPath = Setting::get('business_logo', 'Business Information');
+        $logoUrl = null;
+        if ($logoPath) {
+            $logoUrl = str_starts_with($logoPath, 'http') 
+                ? $logoPath 
+                : $appUrl . '/storage/' . $logoPath;
+        }
+
+        // Get company name
+        $companyName = Setting::get('company_name', 'Business Information') 
+            ?: Setting::get('business_name', 'Business Information')
+            ?: 'Photo Studio Management';
+
+        return [
+            'business_logo' => $logoUrl,
+            'business_logo_path' => $logoPath,
+            'company_name' => $companyName,
+        ];
     }
 
     /**

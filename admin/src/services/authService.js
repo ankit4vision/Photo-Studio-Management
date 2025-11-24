@@ -160,6 +160,7 @@ const storeSession = (token, user) => {
 const clearSession = () => {
   localStorage.removeItem('access_token')
   localStorage.removeItem('user')
+  localStorage.removeItem('app_settings')
 }
 
 const authService = {
@@ -171,7 +172,7 @@ const authService = {
   async login(credentials) {
     try {
       const response = await apiClient.post('/auth/login', credentials)
-      const { token, user, permissions, permissionsByModule } = response.data || {}
+      const { token, user, permissions, permissionsByModule, settings } = response.data || {}
 
       if (!token || !user) {
         return {
@@ -184,11 +185,17 @@ const authService = {
       const normalizedUser = normalizeUser(user, permissions, permissionsByModule)
       storeSession(token, normalizedUser)
 
+      // Store settings in localStorage for easy access
+      if (settings) {
+        localStorage.setItem('app_settings', JSON.stringify(settings))
+      }
+
       return {
         success: true,
         data: {
           token,
           user: normalizedUser,
+          settings: settings || null,
         },
         message: 'Login successful',
       }
@@ -328,7 +335,7 @@ const authService = {
   async fetchCurrentUser() {
     try {
       const response = await apiClient.get('/auth/user')
-      const { user, permissions, permissionsByModule } = response.data || {}
+      const { user, permissions, permissionsByModule, settings } = response.data || {}
 
       if (!user) {
         return {
@@ -341,9 +348,15 @@ const authService = {
       const normalizedUser = normalizeUser(user, permissions, permissionsByModule)
       localStorage.setItem('user', JSON.stringify(normalizedUser))
 
+      // Store settings in localStorage for easy access
+      if (settings) {
+        localStorage.setItem('app_settings', JSON.stringify(settings))
+      }
+
       return {
         success: true,
         data: normalizedUser,
+        settings: settings || null,
       }
     } catch (error) {
       if (error.response?.status === 401) {

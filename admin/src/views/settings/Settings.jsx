@@ -339,6 +339,21 @@ const Settings = () => {
         const logoUrl = result.data.url || result.data.path
         const logoUrlWithCache = logoUrl ? `${logoUrl}?t=${Date.now()}` : null
         setLogoPreview(logoUrlWithCache)
+        
+        // Update localStorage settings for immediate sidebar update
+        try {
+          const settingsStr = localStorage.getItem('app_settings')
+          const settings = settingsStr ? JSON.parse(settingsStr) : {}
+          settings.business_logo = logoUrl
+          settings.business_logo_path = result.data.path
+          localStorage.setItem('app_settings', JSON.stringify(settings))
+          // Dispatch custom event for sidebar to update (same-tab)
+          window.dispatchEvent(new CustomEvent('settingsUpdated', {
+            detail: settings
+          }))
+        } catch (err) {
+          console.warn('Failed to update localStorage settings:', err)
+        }
       } else {
         error(result.message || 'Failed to upload logo')
       }
@@ -370,6 +385,21 @@ const Settings = () => {
           ...prev,
           businessInfo: { ...prev.businessInfo, business_logo: '' }
         }))
+        
+        // Update localStorage settings for immediate sidebar update
+        try {
+          const settingsStr = localStorage.getItem('app_settings')
+          const settings = settingsStr ? JSON.parse(settingsStr) : {}
+          settings.business_logo = null
+          settings.business_logo_path = null
+          localStorage.setItem('app_settings', JSON.stringify(settings))
+          // Dispatch custom event for sidebar to update (same-tab)
+          window.dispatchEvent(new CustomEvent('settingsUpdated', {
+            detail: settings
+          }))
+        } catch (err) {
+          console.warn('Failed to update localStorage settings:', err)
+        }
       } else {
         error(result.message || 'Failed to delete logo')
       }
