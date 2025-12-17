@@ -384,6 +384,7 @@ const OrderForm = forwardRef(({
     )
   }
 
+
   const handleItemChange = (index, field, value) => {
     setFormData(prev => {
       const updatedItems = prev.items.map((item, i) => {
@@ -535,6 +536,7 @@ const OrderForm = forwardRef(({
           col={6}
         />
       </FormRow>
+
 
       {/* Order Items Section */}
       <div className="mt-4">

@@ -209,6 +209,11 @@ class OrderService {
         notes: orderData.notes,
         items: itemsPayload,
       }
+      
+      // Only include links if provided (for backward compatibility)
+      if (orderData.links !== undefined) {
+        backendData.links = orderData.links
+      }
 
       const response = await apiClient.post(API_ENDPOINTS.ORDERS.CREATE, backendData)
       return this.transformItemResponse(response?.data)
@@ -380,6 +385,11 @@ class OrderService {
         discount: orderData.discount ?? orderData.flat_discount,
         status: orderData.status,
         notes: orderData.notes,
+      }
+
+      // Only include links if provided (allows partial updates)
+      if (orderData.links !== undefined) {
+        payload.links = orderData.links
       }
 
       if (orderData.items) {

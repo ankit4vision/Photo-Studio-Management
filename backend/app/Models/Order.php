@@ -29,6 +29,7 @@ class Order extends Model
         'status',
         'notes',
         'timeline',
+        'links',
     ];
 
     /**
@@ -43,6 +44,7 @@ class Order extends Model
         'discount' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'timeline' => 'array',
+        'links' => 'array',
         'deleted_at' => 'datetime',
     ];
 

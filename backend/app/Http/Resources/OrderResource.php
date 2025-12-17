@@ -55,6 +55,7 @@ class OrderResource extends JsonResource
             'payments' => PaymentResource::collection($this->whenLoaded('payments')),
             'notes' => $this->notes,
             'timeline' => $this->timeline,
+            'links' => $this->links ?? [],
             'createdAt' => $this->created_at?->toISOString(),
             'updatedAt' => $this->updated_at?->toISOString(),
         ];

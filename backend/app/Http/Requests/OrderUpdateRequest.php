@@ -37,6 +37,9 @@ class OrderUpdateRequest extends FormRequest
             'items.*.package_id' => ['required_with:items', 'exists:packages,id'],
             'items.*.quantity' => ['required_with:items', 'integer', 'min:1'],
             'items.*.unit_price' => ['required_with:items', 'numeric', 'min:0'],
+            'links' => ['nullable', 'array'],
+            'links.*.title' => ['required_with:links', 'string', 'max:255'],
+            'links.*.url' => ['required_with:links', 'url', 'max:500'],
         ];
     }
 }

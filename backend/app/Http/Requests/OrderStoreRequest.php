@@ -37,6 +37,9 @@ class OrderStoreRequest extends FormRequest
             'items.*.package_id' => ['required', 'exists:packages,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'links' => ['nullable', 'array'],
+            'links.*.title' => ['required_with:links', 'string', 'max:255'],
+            'links.*.url' => ['required_with:links', 'url', 'max:500'],
         ];
     }
 
