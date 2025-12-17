@@ -43,6 +43,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // User Profile (current user) - Must come before /users/{user} route
     Route::get('/users/profile', [UserController::class, 'profile']);
     Route::put('/users/profile', [UserController::class, 'updateProfile']);
+    Route::post('/users/profile/avatar', [UserController::class, 'uploadAvatar']);
+    Route::delete('/users/profile/avatar', [UserController::class, 'deleteAvatar']);
     
     // User Management (by ID) - Must come after /users/profile
     Route::get('/users/{user}', [UserController::class, 'show'])->middleware('permission:view_user');

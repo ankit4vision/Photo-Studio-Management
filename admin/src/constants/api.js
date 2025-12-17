@@ -27,6 +27,8 @@ export const API_ENDPOINTS = {
     SEARCH: '/users/search',
     GET_PROFILE: '/users/profile',
     UPDATE_PROFILE: '/users/profile',
+    UPLOAD_AVATAR: '/users/profile/avatar',
+    DELETE_AVATAR: '/users/profile/avatar',
     CHANGE_STATUS: (id) => `/users/${id}/status`,
     RESET_PASSWORD: (id) => `/users/${id}/reset-password`,
   },

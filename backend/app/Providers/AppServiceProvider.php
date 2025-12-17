@@ -26,6 +26,8 @@ class AppServiceProvider extends ServiceProvider
         // Ensure storage directories exist
         $directories = [
             storage_path('app/public'),
+            storage_path('app/public/avatars'),
+            storage_path('app/public/logos'),
             storage_path('framework/cache'),
             storage_path('framework/sessions'),
             storage_path('framework/views'),

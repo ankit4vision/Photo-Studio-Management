@@ -31,11 +31,60 @@ class UserController extends Controller
         $userData['created_at'] = $user->created_at;
         $userData['updated_at'] = $user->updated_at;
         
-        // Avatar field - set to null (upload functionality removed)
-        $userData['avatar_url'] = null;
-        $userData['avatar'] = null;
+        // Handle avatar URL
+        $avatarPath = $userData['avatar'] ?? null;
+        $avatarUrl = null;
+        
+        if ($avatarPath) {
+            // Generate storage URL with correct backend path
+            $avatarUrl = $this->getStorageUrl($avatarPath);
+        }
+        
+        $userData['avatar_url'] = $avatarUrl;
+        $userData['avatar'] = $avatarPath; // Keep relative path
         
         return $userData;
+    }
+
+    /**
+     * Generate storage URL with correct backend path.
+     * Handles subdirectory installations like /admin/api
+     *
+     * @param string $relativePath Relative path from storage/app/public (e.g., 'avatars/file.png')
+     * @return string Full URL to the storage file
+     */
+    protected function getStorageUrl(string $relativePath): string
+    {
+        $appUrl = rtrim(config('app.url'), '/');
+        
+        // Extract domain from APP_URL
+        $parsedUrl = parse_url($appUrl);
+        $domain = ($parsedUrl['scheme'] ?? 'https') . '://' . ($parsedUrl['host'] ?? 'lvclicks.in');
+        
+        // Check if APP_URL includes /api
+        if (str_contains($appUrl, '/api')) {
+            return $appUrl . '/storage/' . $relativePath;
+        }
+        
+        // If APP_URL ends with /admin, add /api before /storage
+        if (str_ends_with($appUrl, '/admin')) {
+            return $domain . '/admin/api/storage/' . $relativePath;
+        }
+        
+        // If APP_URL contains /admin but doesn't end with it, check path
+        if (str_contains($appUrl, '/admin')) {
+            // Extract path from APP_URL
+            $path = $parsedUrl['path'] ?? '';
+            // If path is /admin, add /api
+            if ($path === '/admin') {
+                return $domain . '/admin/api/storage/' . $relativePath;
+            }
+            // Otherwise use APP_URL as is
+            return $appUrl . '/storage/' . $relativePath;
+        }
+        
+        // Default: append /storage/ to APP_URL
+        return $appUrl . '/storage/' . $relativePath;
     }
 
     /**
@@ -238,7 +287,7 @@ class UserController extends Controller
             'gender' => 'nullable|string|in:male,female,other,prefer-not-to-say',
         ]);
 
-        // Avatar upload functionality removed
+        // Avatar upload is handled separately via uploadAvatar endpoint
         if ($request->has('avatar')) {
             unset($validated['avatar']);
         }
@@ -268,6 +317,117 @@ class UserController extends Controller
             'data' => $this->formatUserData($user),
             'message' => 'Profile updated successfully',
         ]);
+    }
+
+    /**
+     * Upload profile avatar.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function uploadAvatar(Request $request)
+    {
+        try {
+            $user = $request->user();
+            
+            $validated = $request->validate([
+                'avatar' => 'required|image|mimes:jpeg,jpg,png,webp|max:2048', // 2MB max
+            ]);
+
+            // Delete old avatar if exists
+            if ($user->avatar) {
+                $oldPath = storage_path('app/public/' . $user->avatar);
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            // Store new avatar
+            $file = $request->file('avatar');
+            $filename = 'avatar_user_' . $user->id . '_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('public/avatars', $filename);
+            
+            // Get relative path for storage (without 'public/' prefix)
+            $relativePath = 'avatars/' . $filename;
+
+            // Update user avatar
+            $user->avatar = $relativePath;
+            $user->save();
+
+            // Generate storage URL with correct backend path
+            $avatarUrl = $this->getStorageUrl($relativePath);
+
+            // Reload user to get fresh data
+            $user->refresh();
+            $user->load('roles');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Avatar uploaded successfully',
+                'data' => $this->formatUserData($user),
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Avatar upload error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload avatar: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete profile avatar.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deleteAvatar(Request $request)
+    {
+        try {
+            $user = $request->user();
+            
+            if ($user->avatar) {
+                // Delete the avatar file from storage
+                $avatarPath = storage_path('app/public/' . $user->avatar);
+                if (file_exists($avatarPath)) {
+                    @unlink($avatarPath);
+                }
+            }
+
+            // Remove avatar from user
+            $user->avatar = null;
+            $user->save();
+
+            // Reload user to get fresh data
+            $user->refresh();
+            $user->load('roles');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Avatar deleted successfully',
+                'data' => $this->formatUserData($user),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Avatar deletion error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete avatar: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

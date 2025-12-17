@@ -119,6 +119,56 @@ const Profile = () => {
     }
   }
 
+  // Handle avatar upload
+  const handleAvatarUpload = async (file) => {
+    try {
+      const response = await profileService.uploadAvatar(file)
+      
+      if (response.success) {
+        setProfileData(response.data)
+        success(response.message || 'Profile picture uploaded successfully')
+        
+        // Update auth context with new user data
+        if (updateUser) {
+          updateUser(response.data)
+        }
+        return response
+      } else {
+        error(response.message || 'Failed to upload profile picture')
+        return response
+      }
+    } catch (err) {
+      console.error('Error uploading avatar:', err)
+      error('Failed to upload profile picture')
+      return { success: false, message: 'Failed to upload profile picture' }
+    }
+  }
+
+  // Handle avatar delete
+  const handleAvatarDelete = async () => {
+    try {
+      setSaving(true)
+      const response = await profileService.deleteAvatar()
+      
+      if (response.success) {
+        setProfileData(response.data)
+        success(response.message || 'Profile picture removed successfully')
+        
+        // Update auth context with new user data
+        if (updateUser) {
+          updateUser(response.data)
+        }
+      } else {
+        error(response.message || 'Failed to remove profile picture')
+      }
+    } catch (err) {
+      console.error('Error deleting avatar:', err)
+      error('Failed to remove profile picture')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleChangePassword = () => {
     setShowChangePasswordModal(true)
   }
@@ -240,6 +290,8 @@ const Profile = () => {
                   <ProfilePictureSection
                     avatar={profileData.avatar}
                     loading={saving}
+                    onAvatarUpload={handleAvatarUpload}
+                    onAvatarDelete={handleAvatarDelete}
                   />
                 </CCol>
 

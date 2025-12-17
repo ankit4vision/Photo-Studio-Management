@@ -134,6 +134,59 @@ class ProfileService {
     }
   }
 
+  // Upload profile avatar
+  async uploadAvatar(file) {
+    try {
+      const formData = new FormData()
+      formData.append('avatar', file)
+
+      const response = await apiClient.post(API_ENDPOINTS.USERS.UPLOAD_AVATAR, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      if (response.data.success) {
+        return {
+          success: true,
+          data: this.normalizeProfileData(response.data.data),
+          message: response.data.message || 'Avatar uploaded successfully',
+        }
+      }
+
+      return {
+        success: false,
+        message: response.data.message || 'Failed to upload avatar',
+      }
+    } catch (error) {
+      console.error('Error uploading avatar:', error)
+      return handleApiError(error)
+    }
+  }
+
+  // Delete profile avatar
+  async deleteAvatar() {
+    try {
+      const response = await apiClient.delete(API_ENDPOINTS.USERS.DELETE_AVATAR)
+
+      if (response.data.success) {
+        return {
+          success: true,
+          data: this.normalizeProfileData(response.data.data),
+          message: response.data.message || 'Avatar deleted successfully',
+        }
+      }
+
+      return {
+        success: false,
+        message: response.data.message || 'Failed to delete avatar',
+      }
+    } catch (error) {
+      console.error('Error deleting avatar:', error)
+      return handleApiError(error)
+    }
+  }
+
   // Change user password
   async changePassword(passwordData) {
     try {
