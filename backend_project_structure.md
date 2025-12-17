@@ -342,6 +342,7 @@ backend/
   - Get orders by customer
   - Order statistics endpoint (`/api/orders/stats`) with date range filtering
   - Export order invoice as PDF
+  - **Important Links Management** - Store and manage dynamic links array (title + URL) per order
 - **Permissions**: `view_order`, `create_order`, `edit_order`, `delete_order`
 - **Status**: ✅ Fully implemented
 - **Note**: 
@@ -349,6 +350,7 @@ backend/
   - Payment status simplified to `pending` or `completed` (calculated from remaining amount)
   - Order details endpoint includes payment history ordered by date (descending)
   - API resources use camelCase only (no duplicate snake_case fields)
+  - Links stored as JSON array in `links` column, validated with title (string, max 255) and url (valid URL, max 500)
 - **PDF Export**: Order invoice with payment transactions, pure black and white design
 
 ### 9. **Payment Management Module**
@@ -889,7 +891,7 @@ public function test_user_can_login()
 - **branches** - Branch locations
 - **packages** - Package definitions (package_name, package_type, default_price, description, status)
 - **customers** - Customer accounts (with stats: total_orders, total_amount, paid_amount, remaining_amount, customer_code)
-- **orders** - Order records (with customer_id, branch_id, status, payment_status, amounts)
+- **orders** - Order records (with customer_id, branch_id, status, payment_status, amounts, **links** JSON column for important links)
 - **order_items** - Order items (many packages per order: order_id, package_id, quantity, unit_price, total_price)
 - **payments** - Payment records (payment_number, order_id, customer_id, payment_type, amount, payment_method)
 - **settings** - System settings (including email settings: host, port, username, password, from_address, from_name; App Settings: web_url)
@@ -1033,8 +1035,8 @@ php artisan serve
 
 ---
 
-**Last Updated**: November 2025
-**Version**: 1.1.1
+**Last Updated**: December 2025
+**Version**: 1.2.0
 
 ## 🔄 Recent Updates
 - ✅ Payment Management module fully implemented
@@ -1056,3 +1058,4 @@ php artisan serve
 - ✅ Payment numbers auto-generated in #PAY001 format
 - ✅ All upload-related code removed (S3Service, FileUploadService, UploadController, upload routes)
 - ✅ Avatar/image fields removed from API responses (UserController, AuthController, CustomerResource, OrderResource)
+- ✅ **Important Links Management** - Added `links` JSON column to orders table, Order model updated with fillable and casts, OrderResource includes links array, validation added to OrderStoreRequest and OrderUpdateRequest

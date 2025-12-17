@@ -1925,6 +1925,18 @@ const handleDeletePackage = async (packageId) => {
           "totalPrice": 50000
         }
       ],
+      "links": [
+        {
+          "id": 1234567890,
+          "title": "Photo Share Link",
+          "url": "https://example.com/photos"
+        },
+        {
+          "id": 1234567891,
+          "title": "Video Link",
+          "url": "https://example.com/video"
+        }
+      ],
       "createdAt": "2024-01-20T10:30:00.000Z",
       "updatedAt": "2024-01-20T10:30:00.000Z"
     }
@@ -1950,8 +1962,9 @@ const handleDeletePackage = async (packageId) => {
 - **Used In**:
   - `src/views/orders/OrdersList.jsx` - Orders list page में
 
-**Latest UI Behavior (Nov 2025)**:
+**Latest UI Behavior (Dec 2025)**:
 - Orders list अब backend response पर पूरी तरह निर्भर करता है; किसी भी API failure पर toast error और खाली state दिखाई जाती है (no mock fallback)
+- Links can be managed from Order Details page (not from Add/Edit form)
 
 **Note**: Order create/update/delete होने पर customer stats automatically update होते हैं
 
@@ -2020,6 +2033,18 @@ const handleDeletePackage = async (packageId) => {
         "remarks": "Partial payment received"
       }
     ],
+    "links": [
+      {
+        "id": 1234567890,
+        "title": "Photo Share Link",
+        "url": "https://example.com/photos"
+      },
+      {
+        "id": 1234567891,
+        "title": "Video Link",
+        "url": "https://example.com/video"
+      }
+    ],
     "notes": "Order notes",
     "createdAt": "2024-01-20T10:30:00.000Z",
     "updatedAt": "2024-01-20T10:30:00.000Z"
@@ -2037,12 +2062,13 @@ const handleDeletePackage = async (packageId) => {
   - `src/components/pages/orders/OrderForm.jsx` - Edit order form में
   - `src/components/pages/orders/OrderDetailsModal.jsx` - Order details modal में
 
-**Latest UI Behavior (Nov 2025)**:
+**Latest UI Behavior (Dec 2025)**:
 - Order Details modal payments तालिका अब backend से आने वाले `payment_type` (credit/debit) को badges और color-coded amounts के साथ दिखाती है
 - Payment history included in order response (no separate API call needed)
 - Payment numbers displayed in #PAY003 format
 - API response uses camelCase only (no duplicate snake_case fields)
 - Payment status simplified to `pending` or `completed`
+- **Important Links CRUD** - Links section moved to left column for better visibility, full CRUD operations (add/edit/delete) with custom titles and URLs
 
 ---
 
@@ -2075,9 +2101,17 @@ const handleDeletePackage = async (packageId) => {
       "quantity": 2,
       "unit_price": 8000
     }
+  ],
+  "links": [
+    {
+      "title": "Photo Share Link",
+      "url": "https://example.com/photos"
+    }
   ]
 }
 ```
+
+**Note**: `links` field is optional. Links can be managed from Order Details page after order creation.
 
 **Response**:
 ```json
@@ -2126,9 +2160,21 @@ const handleDeletePackage = async (packageId) => {
       "quantity": 1,
       "unit_price": 50000
     }
+  ],
+  "links": [
+    {
+      "title": "Photo Share Link",
+      "url": "https://example.com/photos"
+    },
+    {
+      "title": "Video Link",
+      "url": "https://example.com/video"
+    }
   ]
 }
 ```
+
+**Note**: `links` field is optional. Can be updated independently from Order Details page. Each link should have `title` (string, max 255) and `url` (valid URL, max 500).
 
 **Response**:
 ```json
@@ -3239,7 +3285,7 @@ const Settings = () => {
 ✅ Branch Management (CRUD operations)
 ✅ Package Management (CRUD operations + Server-side pagination/filtering/searching)
 ✅ Customer Management (CRUD operations + Status Update + Stats Recalculation + Server-side pagination/filtering/searching + PDF Export)
-✅ Order Management (CRUD operations + Multi-package support + Status/Payment Update + Server-side pagination/filtering/searching + PDF Export)
+✅ Order Management (CRUD operations + Multi-package support + Status/Payment Update + Server-side pagination/filtering/searching + PDF Export + **Important Links CRUD**)
 ✅ Payment Management (CRUD operations + Auto order status update + Customer stats update + PDF Export)
 ✅ Settings Management (Full CRUD + Email Test + S3 Test + App Settings with Web URL)
 
@@ -3252,7 +3298,7 @@ const Settings = () => {
 - ✅ **BranchService** - Integrated in BranchesList (with mock fallback)
 - ✅ **PackageService** - Fully integrated in PackagesList, PackageForm (with server-side pagination/filtering)
 - ✅ **CustomerService** - Fully integrated in CustomersList, CustomerForm, CustomerDetailsModal (server-side pagination/filtering, normalized totals, no mock fallback, PDF Export)
-- ✅ **OrderService** - Fully integrated in OrdersList, OrderForm, OrderDetailsModal (server-side pagination/filtering, payment type badges, no mock fallback, PDF Export)
+- ✅ **OrderService** - Fully integrated in OrdersList, OrderForm, OrderDetailsModal (server-side pagination/filtering, payment type badges, no mock fallback, PDF Export, **Links CRUD**)
 - ✅ **PaymentService** - Fully integrated in PaymentForm, TransactionsList (real database integration, PDF Export)
 - ✅ **SettingsService** - Fully integrated in Settings page (Business Info, Invoice, Email Settings with test, App Settings with Web URL, Currency & Regional, S3 Settings)
 
@@ -3270,8 +3316,8 @@ const Settings = () => {
 
 ---
 
-**Last Updated**: November 2025
-**Version**: 1.1.1
+**Last Updated**: December 2025
+**Version**: 1.2.0
 
 ## 🔄 Recent Updates
 - ✅ Payment Management APIs fully implemented
@@ -3292,4 +3338,5 @@ const Settings = () => {
 - ✅ Consistent footer format across all PDFs (Business Name | Address | Phone | Website | Footer Text)
 - ✅ Standardized filename format: `Order_{OrderID}_{CustomerName}.pdf`, `Customer_{CustomerID}_{CustomerName}.pdf`, `Payment_{PaymentId}_{CustomerName}.pdf`
 - ✅ CORS configuration updated to expose Content-Disposition header for filename extraction
+- ✅ **Important Links CRUD** - Dynamic links management (add/edit/delete) with custom titles and URLs, managed from Order Details page, stored as JSON array in orders table
 

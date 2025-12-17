@@ -357,6 +357,7 @@ admin/
   - Order list (server-side pagination, filtering, searching)
   - Create/Edit order (multi-package support)
   - Order details modal with integrated payment history (no separate API call needed)
+  - **Important Links CRUD** - Add/Edit/Delete links with custom titles and URLs (managed from Order Details page)
   - PDF invoice export (pure black and white design)
   - Order status tracking with manual status update functionality
   - Payment status management (simplified to Pending/Completed)
@@ -365,7 +366,7 @@ admin/
   - Order list now surfaces API errors (no mock fallback)
   - Payment history displays payment numbers in #PAY003 format
   - Clean API responses with camelCase fields only (no duplicate snake_case fields)
-- **Status**: ✅ Fully implemented with API integration + Server-side pagination/filtering + PDF Export
+- **Status**: ✅ Fully implemented with API integration + Server-side pagination/filtering + PDF Export + Links CRUD
 
 ### 7. **Payment Management**
 - **Location**: `src/views/payments/`, `src/components/pages/payments/`, `src/services/paymentService.js`
@@ -751,7 +752,7 @@ const userService = {
 - Settings Management (Business Info, Invoice, Email Settings with test, App Settings with Web URL, Currency & Regional)
 - Dashboard (live KPI cards, revenue trends with backend analytics endpoints)
 - Customer Management (with PDF export, auto-calculated stats from orders, server-side pagination/filtering)
-- Order Management (multi-package support, customer stats auto-update, server-side pagination/filtering, payment recording, PDF export)
+- Order Management (multi-package support, customer stats auto-update, server-side pagination/filtering, payment recording, PDF export, **Important Links CRUD**)
 - Package Management (server-side pagination/filtering)
 - Payment Management (record payments from orders, auto-updates order status and customer stats, PDF export)
 - Transaction Management (shows payments from orders, PDF export)
@@ -804,8 +805,8 @@ npm run lint
 
 ---
 
-**Last Updated**: November 2025
-**Version**: 1.1.1
+**Last Updated**: December 2025
+**Version**: 1.2.0
 
 ## 🔄 Recent Updates
 - ✅ Payment Management fully implemented with real database integration
@@ -827,3 +828,4 @@ npm run lint
 - ✅ API responses cleaned up - removed duplicate fields, using camelCase only
 - ✅ All upload-related code removed (uploadService, ImageUploadWithUpload, S3 settings, avatar uploads)
 - ✅ Avatar/image fields removed from API responses and frontend components
+- ✅ **Important Links CRUD** - Dynamic links management (add/edit/delete) with custom titles and URLs, managed from Order Details page

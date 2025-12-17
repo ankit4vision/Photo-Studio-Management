@@ -189,6 +189,7 @@ Customer orders for photo studio services.
 | `payment_method` | varchar(255) | NULLABLE | Payment method: 'cash', 'upi', 'card', 'bank_transfer' |
 | `notes` | text | NULLABLE | Order notes |
 | `timeline` | json | NULLABLE | Order status timeline |
+| `links` | json | NULLABLE | Important links array (title + URL pairs) |
 | `created_at` | timestamp | NULLABLE | Creation timestamp |
 | `updated_at` | timestamp | NULLABLE | Last update timestamp |
 | `deleted_at` | timestamp | NULLABLE | Soft delete timestamp |
@@ -213,6 +214,8 @@ Customer orders for photo studio services.
 - `remaining_amount` is calculated: `total_amount - paid_amount`
 - `payment_status` should be auto-updated based on `paid_amount` vs `total_amount`
 - `subtotal` should be calculated from `order_items`
+- `links` stores JSON array of link objects: `[{"id": 1234567890, "title": "Photo Share Link", "url": "https://..."}]`
+- Links can be managed via Order Details page (CRUD operations)
 
 ---
 
@@ -748,6 +751,9 @@ branches
 - `add_remaining_amount_to_orders_table` (2025_11_15_090237)
 - `remove_balance_amount_from_orders_table` (2025_11_15_090423)
 
+### Order Links Feature (2025-12-17)
+- `add_links_to_orders_table` (2025_12_17_144453) - Adds JSON `links` column for storing important links array
+
 ### Settings Enhancements (2025-11-15)
 - `add_business_contact_to_settings` (2025_11_15_094629)
 - `add_business_website_to_settings` (2025_11_15_095341)
@@ -766,6 +772,6 @@ branches
 
 ---
 
-*Last Updated: 2025-01-XX*  
-*Database Version: 1.0*
+*Last Updated: December 2025*  
+*Database Version: 1.1*
 
