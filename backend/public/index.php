@@ -36,6 +36,40 @@ require __DIR__.'/../vendor/autoload.php';
 $adminPathPrefix = '/admin';
 
 $requestUri = $_SERVER['REQUEST_URI'] ?? null;
+
+// Handle storage files directly (bypass Laravel routing)
+// This works without symlinks - serves directly from storage/app/public
+if ($requestUri && str_starts_with($requestUri, $adminPathPrefix . '/api/storage/')) {
+    // Extract the storage path (remove /admin/api/storage/)
+    $storagePath = substr($requestUri, strlen($adminPathPrefix . '/api/storage/'));
+    
+    // Build the full file path - point directly to storage/app/public (no symlink needed)
+    $filePath = __DIR__ . '/../storage/app/public/' . $storagePath;
+    
+    // Check if file exists
+    if (file_exists($filePath) && is_file($filePath)) {
+        // Get MIME type
+        $mimeType = mime_content_type($filePath) ?: 'application/octet-stream';
+        
+        // Set headers
+        header('Content-Type: ' . $mimeType);
+        header('Content-Length: ' . filesize($filePath));
+        header('Cache-Control: public, max-age=31536000'); // Cache for 1 year
+        header('Access-Control-Allow-Origin: *'); // Allow CORS if needed
+        
+        // Output file
+        readfile($filePath);
+        exit;
+    } else {
+        // File not found
+        http_response_code(404);
+        header('Content-Type: text/plain');
+        echo 'File not found: ' . htmlspecialchars($storagePath);
+        exit;
+    }
+}
+
+// Process API routes through Laravel (strip /admin prefix)
 if ($requestUri && str_starts_with($requestUri, $adminPathPrefix . '/api')) {
     $_SERVER['REQUEST_URI'] = substr($requestUri, strlen($adminPathPrefix));
 

@@ -8,6 +8,25 @@ use Illuminate\Http\Response;
 class PdfExportService
 {
     /**
+     * Ensure required storage directories exist.
+     *
+     * @return void
+     */
+    protected function ensureDirectoriesExist()
+    {
+        $directories = [
+            storage_path('framework/views'),
+            storage_path('framework/cache'),
+        ];
+
+        foreach ($directories as $directory) {
+            if (!file_exists($directory)) {
+                @mkdir($directory, 0755, true);
+            }
+        }
+    }
+
+    /**
      * Generate PDF and return download response.
      *
      * @param string $view
@@ -17,6 +36,9 @@ class PdfExportService
      */
     public function export($view, $data = [], $filename = 'document.pdf')
     {
+        // Ensure required directories exist before generating PDF
+        $this->ensureDirectoriesExist();
+        
         $pdf = Pdf::loadView($view, $data);
         return $pdf->download($filename);
     }
@@ -44,6 +66,9 @@ class PdfExportService
      */
     public function stream($view, $data = [], $filename = 'document.pdf')
     {
+        // Ensure required directories exist before generating PDF
+        $this->ensureDirectoriesExist();
+        
         $pdf = Pdf::loadView($view, $data);
         return $pdf->stream($filename);
     }
@@ -57,6 +82,9 @@ class PdfExportService
      */
     public function raw($view, $data = [])
     {
+        // Ensure required directories exist before generating PDF
+        $this->ensureDirectoriesExist();
+        
         $pdf = Pdf::loadView($view, $data);
         return $pdf->output();
     }

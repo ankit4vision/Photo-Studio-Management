@@ -51,13 +51,28 @@ const AppSidebar = () => {
           if (response.success && response.data && response.data.value) {
             const logoPath = response.data.value
             // Convert storage path to URL
-            // Storage files are served from Laravel public directory, not API
-            let baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-            // Remove /api suffix if present (storage is not under /api)
-            baseUrl = baseUrl.replace(/\/api\/?$/, '')
-            const logoUrl = logoPath.startsWith('http') 
-              ? logoPath 
-              : `${baseUrl}/storage/${logoPath}`
+            let logoUrl
+            if (logoPath.startsWith('http')) {
+              // Already a full URL, use it as is
+              logoUrl = logoPath
+            } else {
+              // Construct URL from API base URL
+              let baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+              // Remove trailing slash if present
+              baseUrl = baseUrl.replace(/\/+$/, '')
+              // For subdirectory installations (/admin/api), storage is at /admin/api/storage/
+              // If baseUrl includes /admin/api, use it as is
+              if (baseUrl.includes('/admin/api')) {
+                logoUrl = `${baseUrl}/storage/${logoPath}`
+              } else if (baseUrl.includes('/admin')) {
+                // If baseUrl is /admin, add /api/storage
+                logoUrl = `${baseUrl}/api/storage/${logoPath}`
+              } else {
+                // For root installations, remove /api if present and add /storage
+                baseUrl = baseUrl.replace(/\/api\/?$/, '')
+                logoUrl = `${baseUrl}/storage/${logoPath}`
+              }
+            }
             setBusinessLogo(logoUrl)
           }
         } catch (error) {
