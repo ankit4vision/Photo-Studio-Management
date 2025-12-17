@@ -7,6 +7,7 @@ import { useToast } from '../../components'
 import { useAuth } from '../../context/AuthContext'
 import { ThemeToggle } from '../../components'
 import logoImg from '../../assets/logo/logo-transprant.png'
+import bgLoginImg from '../../assets/bg_login.jpg'
 import '../../styles/auth.css'
 
 const Login = () => {
@@ -140,103 +141,134 @@ const Login = () => {
         <ThemeToggle />
       </div>
       
-      <Container>
-        <Row className="justify-content-center">
-          <Col md={6} lg={5} xl={4}>
-            {/* Logo/Brand Section */}
-            <div className="text-center mb-4">
-              <div className="d-inline-flex align-items-center justify-content-center mb-3 p-3" 
-                   style={{ boxShadow: '0 4px 20px rgba(34, 197, 94, 0.15)' }}>
-                <img src={logoImg} alt="Photo Studio Management App Logo" style={{ width: '120px', height: 'auto' }} />
+      <Container fluid className="h-100 p-0">
+        <Row className="g-0 h-100">
+          {/* Left Side - Photography Image */}
+          <Col lg={6} className="d-none d-lg-flex login-image-section">
+            <div className="login-image-wrapper">
+              <img 
+                src={bgLoginImg} 
+                alt="Professional Photography" 
+                className="login-image"
+              />
+              <div className="login-image-overlay">
+                <div className="login-image-content">
+                  <img src={logoImg} alt="Photo Studio Management App Logo" className="login-image-logo" />
+                  <h2 className="login-image-title">Photo Studio Management</h2>
+                  <p className="login-image-subtitle">Capture Moments, Manage Excellence</p>
+                </div>
               </div>
-              <h2 className="text-success fw-bold mb-1">Photo Studio Management App</h2>
-              <p className="text-muted mb-0">Professional Photo Studio Management System</p>
             </div>
+          </Col>
 
-            <div className="auth-card">
-              <div className="text-center mb-4">
-                <h3 className="mb-2">Welcome Back</h3>
-                <p className="text-muted">Sign in to your account</p>
+          {/* Right Side - Login Form */}
+          <Col lg={6} className="d-flex align-items-center justify-content-center login-form-section">
+            <div className="login-form-container">
+              {/* Logo/Brand Section - Mobile Only */}
+              <div className="text-center mb-4 d-lg-none">
+                <div className="d-inline-flex align-items-center justify-content-center mb-3 p-3" 
+                     style={{ boxShadow: '0 4px 20px rgba(34, 197, 94, 0.15)' }}>
+                  <img src={logoImg} alt="Photo Studio Management App Logo" style={{ width: '100px', height: 'auto' }} />
+                </div>
+                <h2 className="text-success fw-bold mb-1">Photo Studio Management</h2>
+                <p className="text-muted mb-0">Professional Photo Studio Management System</p>
               </div>
-              <Form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <div className="position-relative">
-                    <FontAwesomeIcon icon={faEnvelope} className="auth-input-icon" />
-                    <FormControl
-                      type="email"
-                      name="email"
-                      placeholder="Email address"
-                      value={formData.email}
-                      onChange={handleChange}
-                      isInvalid={!!errors.email}
-                      className={`auth-input ${errors.email ? 'is-invalid' : ''}`}
-                    />
+
+              {/* Logo/Brand Section - Desktop Only */}
+              <div className="text-center mb-4 d-none d-lg-block">
+                <div className="d-inline-flex align-items-center justify-content-center mb-3 p-3" 
+                     style={{ boxShadow: '0 4px 20px rgba(34, 197, 94, 0.15)' }}>
+                  <img src={logoImg} alt="Photo Studio Management App Logo" style={{ width: '120px', height: 'auto' }} />
+                </div>
+                <h2 className="text-success fw-bold mb-1">Photo Studio Management</h2>
+                <p className="text-muted mb-0">Professional Photo Studio Management System</p>
+              </div>
+
+              <div className="auth-card">
+                <div className="text-center mb-4">
+                  <h3 className="mb-2">Welcome Back</h3>
+                  <p className="text-muted">Sign in to your account</p>
+                </div>
+                <Form onSubmit={handleSubmit}>
+                  <div className="mb-3">
+                    <div className="position-relative">
+                      <FontAwesomeIcon icon={faEnvelope} className="auth-input-icon" />
+                      <FormControl
+                        type="email"
+                        name="email"
+                        placeholder="Email address"
+                        value={formData.email}
+                        onChange={handleChange}
+                        isInvalid={!!errors.email}
+                        className={`auth-input ${errors.email ? 'is-invalid' : ''}`}
+                      />
+                    </div>
+                    {errors.email && (
+                      <div className="invalid-feedback d-block">{errors.email}</div>
+                    )}
                   </div>
-                  {errors.email && (
-                    <div className="invalid-feedback d-block">{errors.email}</div>
-                  )}
-                </div>
 
-                <div className="mb-3">
-                  <div className="position-relative">
-                    <FontAwesomeIcon icon={faLock} className="auth-input-icon" />
-                    <FormControl
-                      type="password"
-                      name="password"
-                      placeholder="Password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      isInvalid={!!errors.password}
-                      className={`auth-input ${errors.password ? 'is-invalid' : ''}`}
-                    />
+                  <div className="mb-3">
+                    <div className="position-relative">
+                      <FontAwesomeIcon icon={faLock} className="auth-input-icon" />
+                      <FormControl
+                        type="password"
+                        name="password"
+                        placeholder="Password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        isInvalid={!!errors.password}
+                        className={`auth-input ${errors.password ? 'is-invalid' : ''}`}
+                      />
+                    </div>
+                    {errors.password && (
+                      <div className="invalid-feedback d-block">{errors.password}</div>
+                    )}
                   </div>
-                  {errors.password && (
-                    <div className="invalid-feedback d-block">{errors.password}</div>
-                  )}
-                </div>
 
-                <div className="mb-4 d-flex justify-content-between align-items-center">
-                  <FormCheck
-                    type="checkbox"
-                    name="remember"
-                    label="Remember me"
-                    checked={formData.remember}
-                    onChange={handleChange}
-                    className="fw-medium"
-                  />
-                  <Link to="/forgot-password" className="text-decoration-none text-success fw-medium">
-                    Forgot password?
-                  </Link>
-                </div>
+                  <div className="mb-4 d-flex justify-content-between align-items-center">
+                    <FormCheck
+                      type="checkbox"
+                      name="remember"
+                      label="Remember me"
+                      checked={formData.remember}
+                      onChange={handleChange}
+                      className="fw-medium"
+                    />
+                    <Link to="/forgot-password" className="text-decoration-none text-success fw-medium">
+                      Forgot password?
+                    </Link>
+                  </div>
 
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="auth-button w-100"
-                  variant="success"
-                >
-                  {loading ? 'Signing In...' : 'Sign In'}
-                </Button>
-              </Form>
-            </div>
-
-            {/* Demo Credentials */}
-            <div className="demo-credentials">
-              <div className="d-flex align-items-center mb-3">
-                <FontAwesomeIcon icon={faInfoCircle} className="me-2 text-muted" />
-                <h6 className="demo-credentials-title mb-0">Demo Credentials</h6>
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="auth-button w-100"
+                    variant="success"
+                  >
+                    {loading ? 'Signing In...' : 'Sign In'}
+                  </Button>
+                </Form>
               </div>
-              <div className="demo-credential-item">
-                <span className="demo-credential-label">Admin:</span>
-                <code className="demo-credential-value">admin@example.com / admin123</code>
-              </div>
-            </div>
 
-            {/* Footer */}
-            <div className="text-center mt-4">
-              <p className="text-muted small mb-0">
-                © 2025 Photo Studio Management App. All rights reserved.
-              </p>
+              {/* Demo Credentials */}
+              <div className="demo-credentials">
+                <div className="d-flex align-items-center mb-3">
+                  <FontAwesomeIcon icon={faInfoCircle} className="me-2 text-muted" />
+                  <h6 className="demo-credentials-title mb-0">Demo Credentials</h6>
+                </div>
+                <div className="demo-credential-item">
+                  <span className="demo-credential-label">Admin:</span>
+                  <code className="demo-credential-value">admin@example.com / admin123</code>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="text-center mt-4">
+                <p className="text-muted small mb-0">
+                  © 2025 Photo Studio Management App. All rights reserved.
+                </p>
+              </div>
             </div>
           </Col>
         </Row>
