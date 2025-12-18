@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Container, Row, Col, Button, FormControl, FormSelect, Badge, Card } from 'react-bootstrap'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { Container, Row, Col, Button, FormControl, FormSelect, Badge, Card, Form, InputGroup } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
   faTrash, 
@@ -10,11 +10,10 @@ import {
   faRefresh,
   faFilter,
 } from '@fortawesome/free-solid-svg-icons'
-import { Table, Modal, FormModal } from '../../components'
+import { Table, Modal, FormModal, useToast } from '../../components'
 import FinancialCategoryForm from '../../components/pages/financial/FinancialCategoryForm'
 import financialCategoryService from '../../services/financialCategoryService'
-import { useToast } from '../../components/common/ToastProvider'
-import { usePermissions } from '../../hooks'
+import { usePermissions, useDebounce } from '../../hooks'
 import { PERMISSIONS } from '../../constants/permissions'
 
 const FinancialCategoriesList = () => {
@@ -39,12 +38,7 @@ const FinancialCategoriesList = () => {
   const [statusFilter, setStatusFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
-  const [paginationMeta, setPaginationMeta] = useState({
-    total: 0,
-    totalPages: 1,
-    hasNext: false,
-    hasPrev: false
-  })
+  const [meta, setMeta] = useState(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState(null)
   
@@ -59,18 +53,16 @@ const FinancialCategoriesList = () => {
   const addFormRef = useRef()
   const editFormRef = useRef()
 
-  // Load categories when filters, search, or pagination changes
-  useEffect(() => {
-    loadCategories()
-  }, [currentPage, pageSize, searchTerm, typeFilter, statusFilter])
+  const debouncedSearch = useDebounce(searchTerm, 400)
 
-  const loadCategories = async () => {
+  const fetchCategoriesWithParams = useCallback(async () => {
+    setLoading(true)
+    const searchValue = (debouncedSearch || '').trim()
     try {
-      setLoading(true)
       const params = {
         page: currentPage,
         limit: pageSize,
-        search: searchTerm || undefined,
+        search: searchValue || undefined,
         type: typeFilter !== 'all' ? typeFilter : undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         sort_by: 'created_at',
@@ -80,26 +72,25 @@ const FinancialCategoriesList = () => {
       const response = await financialCategoryService.getCategories(params)
       if (response && response.success) {
         setCategories(response.data || [])
-        if (response.meta) {
-          setPaginationMeta({
-            total: response.meta.total || 0,
-            totalPages: response.meta.totalPages || 1,
-            hasNext: response.meta.hasNext || false,
-            hasPrev: response.meta.hasPrev || false,
-          })
-        }
+        setMeta(response.meta || null)
       } else {
         showError(response.message || 'Failed to load categories')
         setCategories([])
+        setMeta(null)
       }
     } catch (err) {
       console.error('Error loading categories:', err)
       showError('An error occurred while loading categories')
       setCategories([])
+      setMeta(null)
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, pageSize, debouncedSearch, typeFilter, statusFilter, showError])
+
+  useEffect(() => {
+    fetchCategoriesWithParams()
+  }, [fetchCategoriesWithParams])
 
   const getTypeBadge = (type) => {
     if (type === 'income') {
@@ -141,7 +132,7 @@ const FinancialCategoriesList = () => {
         success('Category deleted successfully')
         setShowDeleteModal(false)
         setCategoryToDelete(null)
-        loadCategories()
+        await fetchCategoriesWithParams()
       } else {
         showError(response.message || 'Failed to delete category')
       }
@@ -169,7 +160,7 @@ const FinancialCategoriesList = () => {
       if (response.success) {
         success('Category created successfully')
         setShowAddModal(false)
-        loadCategories()
+        await fetchCategoriesWithParams()
       } else {
         showError(response.message || 'Failed to create category')
       }
@@ -196,7 +187,7 @@ const FinancialCategoriesList = () => {
         success('Category updated successfully')
         setShowEditModal(false)
         setCategoryToEdit(null)
-        loadCategories()
+        await fetchCategoriesWithParams()
       } else {
         showError(response.message || 'Failed to update category')
       }
@@ -251,13 +242,14 @@ const FinancialCategoriesList = () => {
       key: 'actions',
       label: 'Actions',
       render: (value, category) => (
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-1 align-items-center" style={{ flexWrap: 'nowrap' }}>
           {canEditCategory && (
             <Button
               variant="outline-primary"
               size="sm"
               onClick={() => handleEditCategory(category)}
-              title="Edit"
+              title="Edit Category"
+              style={{ minWidth: '32px', padding: '4px 8px' }}
             >
               <FontAwesomeIcon icon={faEdit} />
             </Button>
@@ -267,7 +259,8 @@ const FinancialCategoriesList = () => {
               variant="outline-danger"
               size="sm"
               onClick={() => handleDeleteCategory(category)}
-              title="Delete"
+              title="Delete Category"
+              style={{ minWidth: '32px', padding: '4px 8px' }}
             >
               <FontAwesomeIcon icon={faTrash} />
             </Button>
@@ -277,95 +270,194 @@ const FinancialCategoriesList = () => {
     }
   ]
 
+  const categorySummary = useMemo(() => {
+    const visibleCategories = categories || []
+    const income = visibleCategories.filter((cat) => cat.type === 'income').length
+    const expense = visibleCategories.filter((cat) => cat.type === 'expense').length
+    const active = visibleCategories.filter((cat) => cat.status === 'active').length
+    const inactive = visibleCategories.filter((cat) => cat.status === 'inactive').length
+
+    return {
+      total: meta?.total ?? visibleCategories.length,
+      income,
+      expense,
+      active,
+      inactive,
+    }
+  }, [categories, meta])
+
 
   return (
-    <Container fluid>
-      <Row>
+    <Container fluid className="px-0 px-xl-3">
+      <Row className="g-4">
         <Col xs={12}>
           <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
             <div className="d-flex align-items-center">
-              <FontAwesomeIcon icon={faTag} className="me-3 text-dark fs-4" />
+              <FontAwesomeIcon icon={faTag} className="me-3 text-primary fs-4" />
               <h2 className="mb-0 text-dark">Financial Categories</h2>
             </div>
-            <div className="ms-auto">
-              {canCreateCategory && (
-                <Button variant="primary" onClick={handleAddCategory}>
+            {canCreateCategory && (
+              <div className="ms-auto">
+                <Button variant="primary" onClick={handleAddCategory} className="text-white">
                   <FontAwesomeIcon icon={faPlus} className="me-2" />
                   Add Category
                 </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="bg-white rounded-3 shadow-sm p-4 mb-4">
-            <div className="mb-3">
-              <div className="d-flex align-items-center mb-3 pb-2 border-bottom">
-                <FontAwesomeIcon icon={faFilter} className="me-2 text-primary" />
-                <h5 className="mb-0 text-primary">Filters</h5>
               </div>
-              <Row className="g-3">
-                <Col md={3}>
-                  <FormSelect
-                    value={typeFilter}
-                    onChange={(e) => setTypeFilter(e.target.value)}
-                    className="border-2"
-                  >
-                    <option value="all">All Types</option>
-                    <option value="income">Income</option>
-                    <option value="expense">Expense</option>
-                  </FormSelect>
-                </Col>
-                <Col md={3}>
-                  <FormSelect
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="border-2"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </FormSelect>
-                </Col>
-                <Col md={4}>
-                  <FormControl
-                    placeholder="Search categories..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="border-2"
-                  />
-                </Col>
-                <Col md={2}>
-                  <div className="d-flex gap-2">
-                    <Button variant="outline-secondary" onClick={handleResetFilters}>
-                      <FontAwesomeIcon icon={faFilter} className="me-2" />
-                      Reset
-                    </Button>
-                    <Button variant="outline-primary" onClick={loadCategories}>
-                      <FontAwesomeIcon icon={faRefresh} className="me-2" />
-                      Refresh
-                    </Button>
-                  </div>
-                </Col>
-              </Row>
-            </div>
+            )}
           </div>
 
-          {/* Categories Table */}
-          <div className="bg-white rounded-3 shadow-sm p-4">
-            <Table
-              data={categories}
-              columns={columns}
-              loading={loading}
-              currentPage={currentPage}
-              pageSize={pageSize}
-              totalItems={paginationMeta.total}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
-              pagination={true}
-              serverSide={true}
-            />
-          </div>
+          <Row className="mb-4 g-3">
+            <Col md={3} sm={12}>
+              <Card className="bg-gradient-primary text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <div className="d-flex align-items-center">
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{categorySummary.total}</h4>
+                      <p className="mb-0 opacity-75">Total Categories</p>
+                    </div>
+                    <FontAwesomeIcon icon={faTag} className="fs-1 opacity-50" />
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3} sm={6}>
+              <Card className="bg-gradient-success text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <div className="d-flex align-items-center">
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{categorySummary.active}</h4>
+                      <p className="mb-0 opacity-75">Active Categories</p>
+                    </div>
+                    <FontAwesomeIcon icon={faFilter} className="fs-1 opacity-50" />
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3} sm={6}>
+              <Card className="bg-gradient-info text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <div className="d-flex align-items-center">
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{categorySummary.income}</h4>
+                      <p className="mb-0 opacity-75">Income Categories</p>
+                    </div>
+                    <FontAwesomeIcon icon={faTag} className="fs-1 opacity-50" />
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3} sm={6}>
+              <Card className="bg-gradient-warning text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
+                  <div className="d-flex align-items-center">
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{categorySummary.expense}</h4>
+                      <p className="mb-0 opacity-75">Expense Categories</p>
+                    </div>
+                    <FontAwesomeIcon icon={faTag} className="fs-1 opacity-50" />
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
+          <Card className="shadow-sm">
+            <Card.Body>
+              <Form className="mb-4">
+                <Row className="g-3 align-items-end">
+                  <Col md={4} sm={12}>
+                    <Form.Label className="fw-semibold text-muted">Search</Form.Label>
+                    <InputGroup>
+                      <InputGroup.Text className="bg-white border-2 text-muted">
+                        <FontAwesomeIcon icon={faSearch} />
+                      </InputGroup.Text>
+                      <FormControl
+                        placeholder="Search categories..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value)
+                          setCurrentPage(1)
+                        }}
+                        className="border-2"
+                      />
+                    </InputGroup>
+                  </Col>
+                  <Col md={3} sm={6}>
+                    <Form.Label className="fw-semibold text-muted">Type</Form.Label>
+                    <FormSelect
+                      value={typeFilter}
+                      onChange={(e) => {
+                        setTypeFilter(e.target.value)
+                        setCurrentPage(1)
+                      }}
+                      className="border-2"
+                    >
+                      <option value="all">All Types</option>
+                      <option value="income">Income</option>
+                      <option value="expense">Expense</option>
+                    </FormSelect>
+                  </Col>
+                  <Col md={3} sm={6}>
+                    <Form.Label className="fw-semibold text-muted">Status</Form.Label>
+                    <FormSelect
+                      value={statusFilter}
+                      onChange={(e) => {
+                        setStatusFilter(e.target.value)
+                        setCurrentPage(1)
+                      }}
+                      className="border-2"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </FormSelect>
+                  </Col>
+                  <Col md={2} sm={6}>
+                    <Form.Label className="fw-semibold text-muted">Actions</Form.Label>
+                    <div className="d-flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline-secondary"
+                        className="border-2"
+                        onClick={() => {
+                          setSearchTerm('')
+                          setTypeFilter('all')
+                          setStatusFilter('all')
+                          setCurrentPage(1)
+                        }}
+                      >
+                        Clear
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline-primary"
+                        className="border-2"
+                        disabled={loading}
+                        onClick={fetchCategoriesWithParams}
+                      >
+                        <FontAwesomeIcon icon={faRefresh} className="me-1" /> Refresh
+                      </Button>
+                    </div>
+                  </Col>
+                </Row>
+              </Form>
+
+              <Table
+                data={categories}
+                columns={columns}
+                loading={loading}
+                hover
+                pagination={true}
+                serverSide={true}
+                meta={meta}
+                onPageChange={(page) => setCurrentPage(page)}
+                onPageSizeChange={(size) => {
+                  setPageSize(size)
+                  setCurrentPage(1)
+                }}
+              />
+            </Card.Body>
+          </Card>
         </Col>
       </Row>
 

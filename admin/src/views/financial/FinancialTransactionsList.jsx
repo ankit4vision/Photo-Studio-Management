@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Container, Row, Col, Button, FormControl, FormSelect, Badge, Card } from 'react-bootstrap'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { Container, Row, Col, Button, FormControl, FormSelect, Badge, Card, Form, InputGroup } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
   faTrash, 
@@ -15,12 +15,13 @@ import {
   faArrowUp,
   faArrowDown,
   faChartLine,
+  faList,
 } from '@fortawesome/free-solid-svg-icons'
 import { Table, Modal, FormModal, useToast } from '../../components'
 import FinancialTransactionForm from '../../components/pages/financial/FinancialTransactionForm'
 import FinancialTransactionDetailsModal from '../../components/pages/financial/FinancialTransactionDetailsModal'
 import financialService from '../../services/financialService'
-import { usePermissions } from '../../hooks'
+import { usePermissions, useDebounce } from '../../hooks'
 import { PERMISSIONS } from '../../constants/permissions'
 
 const FinancialTransactionsList = () => {
@@ -48,12 +49,7 @@ const FinancialTransactionsList = () => {
   const [endDate, setEndDate] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
-  const [paginationMeta, setPaginationMeta] = useState({
-    total: 0,
-    totalPages: 1,
-    hasNext: false,
-    hasPrev: false
-  })
+  const [meta, setMeta] = useState(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [transactionToDelete, setTransactionToDelete] = useState(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
@@ -70,19 +66,16 @@ const FinancialTransactionsList = () => {
   const addFormRef = useRef()
   const editFormRef = useRef()
 
-  // Load transactions when filters, search, or pagination changes
-  useEffect(() => {
-    loadTransactions()
-    loadStats()
-  }, [currentPage, pageSize, searchTerm, typeFilter, categoryFilter, startDate, endDate])
+  const debouncedSearch = useDebounce(searchTerm, 400)
 
-  const loadTransactions = async () => {
+  const fetchTransactionsWithParams = useCallback(async () => {
+    setLoading(true)
+    const searchValue = (debouncedSearch || '').trim()
     try {
-      setLoading(true)
       const params = {
         page: currentPage,
         limit: pageSize,
-        search: searchTerm || undefined,
+        search: searchValue || undefined,
         transaction_type: typeFilter !== 'all' ? typeFilter : undefined,
         category_id: categoryFilter || undefined,
         start_date: startDate || undefined,
@@ -94,26 +87,26 @@ const FinancialTransactionsList = () => {
       const response = await financialService.getTransactions(params)
       if (response && response.success) {
         setTransactions(response.data || [])
-        if (response.meta) {
-          setPaginationMeta({
-            total: response.meta.total || 0,
-            totalPages: response.meta.totalPages || 1,
-            hasNext: response.meta.hasNext || false,
-            hasPrev: response.meta.hasPrev || false,
-          })
-        }
+        setMeta(response.meta || null)
       } else {
         showError(response.message || 'Failed to load transactions')
         setTransactions([])
+        setMeta(null)
       }
     } catch (err) {
       console.error('Error loading transactions:', err)
       showError('An error occurred while loading transactions')
       setTransactions([])
+      setMeta(null)
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, pageSize, debouncedSearch, typeFilter, categoryFilter, startDate, endDate, showError])
+
+  useEffect(() => {
+    fetchTransactionsWithParams()
+    loadStats()
+  }, [fetchTransactionsWithParams])
 
   const loadStats = async () => {
     try {
@@ -175,7 +168,7 @@ const FinancialTransactionsList = () => {
         success('Transaction deleted successfully')
         setShowDeleteModal(false)
         setTransactionToDelete(null)
-        loadTransactions()
+        await fetchTransactionsWithParams()
         loadStats()
       } else {
         showError(response.message || 'Failed to delete transaction')
@@ -204,7 +197,7 @@ const FinancialTransactionsList = () => {
       if (response.success) {
         success('Transaction created successfully')
         setShowAddModal(false)
-        loadTransactions()
+        await fetchTransactionsWithParams()
         loadStats()
       } else {
         showError(response.message || 'Failed to create transaction')
@@ -232,7 +225,7 @@ const FinancialTransactionsList = () => {
         success('Transaction updated successfully')
         setShowEditModal(false)
         setTransactionToEdit(null)
-        loadTransactions()
+        await fetchTransactionsWithParams()
         loadStats()
       } else {
         showError(response.message || 'Failed to update transaction')
@@ -317,12 +310,13 @@ const FinancialTransactionsList = () => {
       key: 'actions',
       label: 'Actions',
       render: (value, transaction) => (
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-1 align-items-center" style={{ flexWrap: 'nowrap' }}>
           <Button
             variant="outline-info"
             size="sm"
             onClick={() => handleViewDetails(transaction)}
             title="View Details"
+            style={{ minWidth: '32px', padding: '4px 8px' }}
           >
             <FontAwesomeIcon icon={faEye} />
           </Button>
@@ -331,7 +325,8 @@ const FinancialTransactionsList = () => {
               variant="outline-primary"
               size="sm"
               onClick={() => handleEditTransaction(transaction)}
-              title="Edit"
+              title="Edit Transaction"
+              style={{ minWidth: '32px', padding: '4px 8px' }}
             >
               <FontAwesomeIcon icon={faEdit} />
             </Button>
@@ -341,7 +336,8 @@ const FinancialTransactionsList = () => {
               variant="outline-danger"
               size="sm"
               onClick={() => handleDeleteTransaction(transaction)}
-              title="Delete"
+              title="Delete Transaction"
+              style={{ minWidth: '32px', padding: '4px 8px' }}
             >
               <FontAwesomeIcon icon={faTrash} />
             </Button>
@@ -351,163 +347,185 @@ const FinancialTransactionsList = () => {
     }
   ]
 
+  const transactionSummary = useMemo(() => {
+    return {
+      totalIncome: stats.totalIncome || stats.total_income || 0,
+      totalExpenses: stats.totalExpenses || stats.total_expenses || 0,
+      total: meta?.total ?? transactions.length,
+    }
+  }, [stats, meta, transactions])
+
 
   return (
-    <Container fluid>
-      <Row>
+    <Container fluid className="px-0 px-xl-3">
+      <Row className="g-4">
         <Col xs={12}>
           <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
             <div className="d-flex align-items-center">
-              <FontAwesomeIcon icon={faChartLine} className="me-3 text-dark fs-4" />
+              <FontAwesomeIcon icon={faChartLine} className="me-3 text-primary fs-4" />
               <h2 className="mb-0 text-dark">Financial Transactions</h2>
             </div>
-            <div className="ms-auto">
-              {canCreateTransaction && (
-                <Button variant="primary" onClick={handleAddTransaction}>
+            {canCreateTransaction && (
+              <div className="ms-auto">
+                <Button variant="primary" onClick={handleAddTransaction} className="text-white">
                   <FontAwesomeIcon icon={faPlus} className="me-2" />
                   Add Transaction
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Statistics Cards */}
-          <Row className="mb-4">
-            <Col md={3}>
-              <Card className="border-0 shadow-sm">
-                <Card.Body>
+          <Row className="mb-4 g-3">
+            <Col md={4} sm={12}>
+              <Card className="bg-gradient-success text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
-                    <div className="flex-shrink-0">
-                      <div className="bg-success bg-opacity-10 rounded-circle p-3">
-                        <FontAwesomeIcon icon={faArrowUp} className="text-success fs-4" />
-                      </div>
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{formatCurrency(transactionSummary.totalIncome)}</h4>
+                      <p className="mb-0 opacity-75">Total Income</p>
                     </div>
-                    <div className="flex-grow-1 ms-3">
-                      <div className="text-muted small">Total Income</div>
-                      <div className="h4 mb-0 text-success fw-bold">
-                        {formatCurrency(stats.totalIncome || stats.total_income || 0)}
-                      </div>
-                    </div>
+                    <FontAwesomeIcon icon={faArrowUp} className="fs-1 opacity-50" />
                   </div>
                 </Card.Body>
               </Card>
             </Col>
-            <Col md={3}>
-              <Card className="border-0 shadow-sm">
-                <Card.Body>
+            <Col md={4} sm={6}>
+              <Card className="bg-danger text-white border-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)' }}>
+                <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
-                    <div className="flex-shrink-0">
-                      <div className="bg-danger bg-opacity-10 rounded-circle p-3">
-                        <FontAwesomeIcon icon={faArrowDown} className="text-danger fs-4" />
-                      </div>
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{formatCurrency(transactionSummary.totalExpenses)}</h4>
+                      <p className="mb-0 opacity-75">Total Expenses</p>
                     </div>
-                    <div className="flex-grow-1 ms-3">
-                      <div className="text-muted small">Total Expenses</div>
-                      <div className="h4 mb-0 text-danger fw-bold">
-                        {formatCurrency(stats.totalExpenses || stats.total_expenses || 0)}
-                      </div>
-                    </div>
+                    <FontAwesomeIcon icon={faArrowDown} className="fs-1 opacity-50" />
                   </div>
                 </Card.Body>
               </Card>
             </Col>
-            <Col md={3}>
-              <Card className="border-0 shadow-sm">
-                <Card.Body>
+            <Col md={4} sm={6}>
+              <Card className="bg-gradient-primary text-white border-0 shadow-sm">
+                <Card.Body className="p-4">
                   <div className="d-flex align-items-center">
-                    <div className="flex-shrink-0">
-                      <div className="bg-primary bg-opacity-10 rounded-circle p-3">
-                        <FontAwesomeIcon icon={faRupeeSign} className="text-primary fs-4" />
-                      </div>
+                    <div className="flex-grow-1">
+                      <h4 className="mb-0">{transactionSummary.total}</h4>
+                      <p className="mb-0 opacity-75">Total Records</p>
                     </div>
-                    <div className="flex-grow-1 ms-3">
-                      <div className="text-muted small">Net Profit/Loss</div>
-                      <div className={`h4 mb-0 fw-bold ${(stats.netProfit || stats.net_profit || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
-                        {formatCurrency(stats.netProfit || stats.net_profit || 0)}
-                      </div>
-                    </div>
+                    <FontAwesomeIcon icon={faList} className="fs-1 opacity-50" />
                   </div>
                 </Card.Body>
               </Card>
             </Col>
           </Row>
 
-          {/* Filters */}
-          <div className="bg-white rounded-3 shadow-sm p-4 mb-4">
-            <div className="mb-3">
-              <div className="d-flex align-items-center mb-3 pb-2 border-bottom">
-                <FontAwesomeIcon icon={faFilter} className="me-2 text-primary" />
-                <h5 className="mb-0 text-primary">Filters</h5>
-              </div>
-              <Row className="g-3">
-                <Col md={2}>
-                  <FormSelect
-                    value={typeFilter}
-                    onChange={(e) => setTypeFilter(e.target.value)}
-                    className="border-2"
-                  >
-                    <option value="all">All Types</option>
-                    <option value="income">Income</option>
-                    <option value="expense">Expense</option>
-                  </FormSelect>
-                </Col>
-                <Col md={2}>
-                  <FormControl
-                    type="date"
-                    placeholder="Start Date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="border-2"
-                  />
-                </Col>
-                <Col md={2}>
-                  <FormControl
-                    type="date"
-                    placeholder="End Date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="border-2"
-                  />
-                </Col>
-                <Col md={3}>
-                  <FormControl
-                    placeholder="Search transactions..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="border-2"
-                  />
-                </Col>
-                <Col md={3}>
-                  <div className="d-flex gap-2">
-                    <Button variant="outline-secondary" onClick={handleResetFilters}>
-                      <FontAwesomeIcon icon={faFilter} className="me-2" />
-                      Reset
-                    </Button>
-                    <Button variant="outline-primary" onClick={loadTransactions}>
-                      <FontAwesomeIcon icon={faRefresh} className="me-2" />
-                      Refresh
-                    </Button>
-                  </div>
-                </Col>
-              </Row>
-            </div>
-          </div>
+          <Card className="shadow-sm">
+            <Card.Body>
+              <Form className="mb-4">
+                <Row className="g-3 align-items-end">
+                  <Col md={3} sm={12}>
+                    <Form.Label className="fw-semibold text-muted">Search</Form.Label>
+                    <InputGroup>
+                      <InputGroup.Text className="bg-white border-2 text-muted">
+                        <FontAwesomeIcon icon={faSearch} />
+                      </InputGroup.Text>
+                      <FormControl
+                        placeholder="Search transactions..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value)
+                          setCurrentPage(1)
+                        }}
+                        className="border-2"
+                      />
+                    </InputGroup>
+                  </Col>
+                  <Col md={2} sm={6}>
+                    <Form.Label className="fw-semibold text-muted">Type</Form.Label>
+                    <FormSelect
+                      value={typeFilter}
+                      onChange={(e) => {
+                        setTypeFilter(e.target.value)
+                        setCurrentPage(1)
+                      }}
+                      className="border-2"
+                    >
+                      <option value="all">All Types</option>
+                      <option value="income">Income</option>
+                      <option value="expense">Expense</option>
+                    </FormSelect>
+                  </Col>
+                  <Col md={2} sm={6}>
+                    <Form.Label className="fw-semibold text-muted">Start Date</Form.Label>
+                    <FormControl
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => {
+                        setStartDate(e.target.value)
+                        setCurrentPage(1)
+                      }}
+                      className="border-2"
+                    />
+                  </Col>
+                  <Col md={2} sm={6}>
+                    <Form.Label className="fw-semibold text-muted">End Date</Form.Label>
+                    <FormControl
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => {
+                        setEndDate(e.target.value)
+                        setCurrentPage(1)
+                      }}
+                      className="border-2"
+                    />
+                  </Col>
+                  <Col md={3} sm={6}>
+                    <Form.Label className="fw-semibold text-muted">Actions</Form.Label>
+                    <div className="d-flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline-secondary"
+                        className="border-2"
+                        onClick={() => {
+                          setSearchTerm('')
+                          setTypeFilter('all')
+                          setCategoryFilter('')
+                          setStartDate('')
+                          setEndDate('')
+                          setCurrentPage(1)
+                        }}
+                      >
+                        Clear
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline-primary"
+                        className="border-2"
+                        disabled={loading}
+                        onClick={fetchTransactionsWithParams}
+                      >
+                        <FontAwesomeIcon icon={faRefresh} className="me-1" /> Refresh
+                      </Button>
+                    </div>
+                  </Col>
+                </Row>
+              </Form>
 
-          {/* Transactions Table */}
-          <div className="bg-white rounded-3 shadow-sm p-4">
-            <Table
-              data={transactions}
-              columns={columns}
-              loading={loading}
-              currentPage={currentPage}
-              pageSize={pageSize}
-              totalItems={paginationMeta.total}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
-              pagination={true}
-              serverSide={true}
-            />
-          </div>
+              <Table
+                data={transactions}
+                columns={columns}
+                loading={loading}
+                hover
+                pagination={true}
+                serverSide={true}
+                meta={meta}
+                onPageChange={(page) => setCurrentPage(page)}
+                onPageSizeChange={(size) => {
+                  setPageSize(size)
+                  setCurrentPage(1)
+                }}
+              />
+            </Card.Body>
+          </Card>
         </Col>
       </Row>
 
