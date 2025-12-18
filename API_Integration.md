@@ -2607,6 +2607,441 @@ const handleDeletePackage = async (packageId) => {
 
 ---
 
+## 💰 Financial Management APIs
+
+### Financial Transactions APIs
+
+### 1. **GET /api/financial-transactions**
+**Description**: Financial transactions की list fetch करने के लिए (paginated, filterable, searchable)
+
+**Backend Controller**: `FinancialTransactionController@index`
+
+**Query Parameters**:
+- `page` - Page number
+- `limit` - Items per page
+- `search` - Search term (transaction number, description)
+- `transaction_type` - Filter by type: 'income', 'expense'
+- `category_id` - Filter by category ID
+- `start_date` - Filter by start date (YYYY-MM-DD)
+- `end_date` - Filter by end date (YYYY-MM-DD)
+- `sort_by` - Sort column
+- `sort_direction` - Sort direction
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "transactionNumber": "#INC001",
+      "transactionType": "income",
+      "transactionDate": "2025-12-18",
+      "categoryId": 1,
+      "category": {
+        "id": 1,
+        "name": "Photography Services",
+        "type": "income"
+      },
+      "amount": 5000.00,
+      "description": "Wedding photography",
+      "createdById": 1,
+      "createdBy": {
+        "id": 1,
+        "firstName": "John",
+        "lastName": "Doe"
+      },
+      "createdAt": "2025-12-18T07:38:53.000000Z",
+      "updatedAt": "2025-12-18T07:38:53.000000Z"
+    }
+  ],
+  "meta": {
+    "total": 100,
+    "page": 1,
+    "limit": 25,
+    "totalPages": 4,
+    "hasNext": true,
+    "hasPrev": false
+  }
+}
+```
+
+**Permission Required**: `view_financial_transaction`
+
+**Frontend Integration**:
+- **Service**: `src/services/financialService.js`
+- **Method**: `financialService.getTransactions(params)`
+- **Used In**:
+  - `src/views/financial/FinancialTransactionsList.jsx` - Transactions list page में
+
+---
+
+### 2. **GET /api/financial-transactions/{transaction}**
+**Description**: Specific transaction की details fetch करने के लिए
+
+**Backend Controller**: `FinancialTransactionController@show`
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "transactionNumber": "#INC001",
+    "transactionType": "income",
+    "transactionDate": "2025-12-18",
+    "categoryId": 1,
+    "category": {...},
+    "amount": 5000.00,
+    "description": "Wedding photography",
+    "createdBy": {...},
+    "createdAt": "2025-12-18T07:38:53.000000Z"
+  }
+}
+```
+
+**Permission Required**: `view_financial_transaction`
+
+**Frontend Integration**:
+- **Service**: `src/services/financialService.js`
+- **Method**: `financialService.getTransactionById(id)`
+- **Used In**:
+  - `src/views/financial/FinancialTransactionsList.jsx` - Transaction details modal में
+
+---
+
+### 3. **POST /api/financial-transactions**
+**Description**: New financial transaction create करने के लिए
+
+**Backend Controller**: `FinancialTransactionController@store`
+
+**Request Body**:
+```json
+{
+  "transaction_type": "income",
+  "transaction_date": "2025-12-18",
+  "category_id": 1,
+  "amount": 5000.00,
+  "description": "Wedding photography"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "transactionNumber": "#INC001",
+    "transactionType": "income",
+    "transactionDate": "2025-12-18",
+    "categoryId": 1,
+    "amount": 5000.00,
+    "description": "Wedding photography",
+    "createdById": 1,
+    "createdAt": "2025-12-18T07:38:53.000000Z"
+  },
+  "message": "Financial transaction created successfully."
+}
+```
+
+**Permission Required**: `create_financial_transaction`
+
+**Frontend Integration**:
+- **Service**: `src/services/financialService.js`
+- **Method**: `financialService.createTransaction(transactionData)`
+- **Used In**:
+  - `src/components/pages/financial/FinancialTransactionForm.jsx` - Create transaction form में
+
+**Notes**:
+- Transaction number automatically generate होता है (#INC001, #EXP001 format में)
+- `created_by` automatically current user से set होता है
+
+---
+
+### 4. **PUT /api/financial-transactions/{transaction}**
+**Description**: Existing transaction update करने के लिए
+
+**Backend Controller**: `FinancialTransactionController@update`
+
+**Request Body**:
+```json
+{
+  "transaction_date": "2025-12-19",
+  "category_id": 2,
+  "amount": 6000.00,
+  "description": "Updated description"
+}
+```
+
+**Note**: `transaction_type` cannot be changed after creation
+
+**Permission Required**: `edit_financial_transaction`
+
+**Frontend Integration**:
+- **Service**: `src/services/financialService.js`
+- **Method**: `financialService.updateTransaction(id, transactionData)`
+- **Used In**:
+  - `src/components/pages/financial/FinancialTransactionForm.jsx` - Edit transaction form में
+
+---
+
+### 5. **DELETE /api/financial-transactions/{transaction}**
+**Description**: Transaction delete करने के लिए
+
+**Backend Controller**: `FinancialTransactionController@destroy`
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Financial transaction deleted successfully."
+}
+```
+
+**Permission Required**: `delete_financial_transaction`
+
+**Frontend Integration**:
+- **Service**: `src/services/financialService.js`
+- **Method**: `financialService.deleteTransaction(id)`
+- **Used In**:
+  - `src/views/financial/FinancialTransactionsList.jsx` - Delete transaction button पर
+
+---
+
+### 6. **GET /api/financial-transactions/stats**
+**Description**: Financial statistics fetch करने के लिए
+
+**Backend Controller**: `FinancialTransactionController@stats`
+
+**Query Parameters**:
+- `start_date` - Start date for statistics (optional)
+- `end_date` - End date for statistics (optional)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "totalIncome": 50000.00,
+    "totalExpenses": 20000.00,
+    "netProfit": 30000.00,
+    "incomeByCategory": [
+      {
+        "categoryId": 1,
+        "categoryName": "Photography Services",
+        "total": 30000.00
+      }
+    ],
+    "expensesByCategory": [
+      {
+        "categoryId": 5,
+        "categoryName": "Equipment",
+        "total": 15000.00
+      }
+    ],
+    "monthlyTrends": [
+      {
+        "month": "2025-12",
+        "income": 50000.00,
+        "expenses": 20000.00
+      }
+    ]
+  }
+}
+```
+
+**Permission Required**: `view_financial_transaction`
+
+**Frontend Integration**:
+- **Service**: `src/services/financialService.js`
+- **Method**: `financialService.getStats(params)`
+- **Used In**:
+  - `src/views/financial/FinancialTransactionsList.jsx` - Statistics cards में
+
+---
+
+### Financial Categories APIs
+
+### 7. **GET /api/financial-categories**
+**Description**: Financial categories की list fetch करने के लिए (paginated, filterable, searchable)
+
+**Backend Controller**: `FinancialCategoryController@index`
+
+**Query Parameters**:
+- `page` - Page number
+- `limit` - Items per page
+- `search` - Search term (category name, description)
+- `type` - Filter by type: 'income', 'expense'
+- `status` - Filter by status: 'active', 'inactive'
+- `sort_by` - Sort column
+- `sort_direction` - Sort direction
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "type": "income",
+      "name": "Photography Services",
+      "description": "Income from photography services",
+      "status": "active",
+      "createdAt": "2025-12-18T07:38:53.000000Z",
+      "updatedAt": "2025-12-18T07:38:53.000000Z"
+    }
+  ],
+  "meta": {
+    "total": 20,
+    "page": 1,
+    "limit": 25,
+    "totalPages": 1,
+    "hasNext": false,
+    "hasPrev": false
+  }
+}
+```
+
+**Permission Required**: `view_financial_category`
+
+**Frontend Integration**:
+- **Service**: `src/services/financialCategoryService.js`
+- **Method**: `financialCategoryService.getCategories(params)`
+- **Used In**:
+  - `src/views/financial/FinancialCategoriesList.jsx` - Categories list page में
+  - `src/components/pages/financial/FinancialTransactionForm.jsx` - Category dropdown में
+
+---
+
+### 8. **GET /api/financial-categories/{category}**
+**Description**: Specific category की details fetch करने के लिए
+
+**Backend Controller**: `FinancialCategoryController@show`
+
+**Permission Required**: `view_financial_category`
+
+**Frontend Integration**:
+- **Service**: `src/services/financialCategoryService.js`
+- **Method**: `financialCategoryService.getCategoryById(id)`
+
+---
+
+### 9. **POST /api/financial-categories**
+**Description**: New financial category create करने के लिए
+
+**Backend Controller**: `FinancialCategoryController@store`
+
+**Request Body**:
+```json
+{
+  "type": "income",
+  "name": "Photography Services",
+  "description": "Income from photography services",
+  "status": "active"
+}
+```
+
+**Validation Rules**:
+- `type` - Required, enum: 'income', 'expense'
+- `name` - Required, unique per type
+- `description` - Optional
+- `status` - Required, enum: 'active', 'inactive'
+
+**Permission Required**: `create_financial_category`
+
+**Frontend Integration**:
+- **Service**: `src/services/financialCategoryService.js`
+- **Method**: `financialCategoryService.createCategory(categoryData)`
+- **Used In**:
+  - `src/components/pages/financial/FinancialCategoryForm.jsx` - Create category form में
+
+---
+
+### 10. **PUT /api/financial-categories/{category}**
+**Description**: Existing category update करने के लिए
+
+**Backend Controller**: `FinancialCategoryController@update`
+
+**Request Body**:
+```json
+{
+  "name": "Updated Category Name",
+  "description": "Updated description",
+  "status": "active"
+}
+```
+
+**Note**: `type` cannot be changed after creation
+
+**Permission Required**: `edit_financial_category`
+
+**Frontend Integration**:
+- **Service**: `src/services/financialCategoryService.js`
+- **Method**: `financialCategoryService.updateCategory(id, categoryData)`
+- **Used In**:
+  - `src/components/pages/financial/FinancialCategoryForm.jsx` - Edit category form में
+
+---
+
+### 11. **DELETE /api/financial-categories/{category}**
+**Description**: Category delete करने के लिए
+
+**Backend Controller**: `FinancialCategoryController@destroy`
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Financial category deleted successfully."
+}
+```
+
+**Note**: Category cannot be deleted if it has associated transactions
+
+**Permission Required**: `delete_financial_category`
+
+**Frontend Integration**:
+- **Service**: `src/services/financialCategoryService.js`
+- **Method**: `financialCategoryService.deleteCategory(id)`
+- **Used In**:
+  - `src/views/financial/FinancialCategoriesList.jsx` - Delete category button पर
+
+---
+
+### 12. **GET /api/financial-categories/by-type/{type}**
+**Description**: Categories को type के basis पर fetch करने के लिए
+
+**Backend Controller**: `FinancialCategoryController@getByType`
+
+**Path Parameter**:
+- `type` - 'income' or 'expense'
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "type": "income",
+      "name": "Photography Services",
+      "status": "active"
+    }
+  ]
+}
+```
+
+**Permission Required**: `view_financial_category`
+
+**Frontend Integration**:
+- **Service**: `src/services/financialCategoryService.js`
+- **Method**: `financialCategoryService.getCategoriesByType(type)`
+- **Used In**:
+  - `src/components/pages/financial/FinancialTransactionForm.jsx` - Category dropdown में type change पर
+
+---
+
 ## ⚙️ Settings Management APIs
 
 ### 1. **GET /api/global-settings/**
@@ -3287,6 +3722,7 @@ const Settings = () => {
 ✅ Customer Management (CRUD operations + Status Update + Stats Recalculation + Server-side pagination/filtering/searching + PDF Export)
 ✅ Order Management (CRUD operations + Multi-package support + Status/Payment Update + Server-side pagination/filtering/searching + PDF Export + **Important Links CRUD**)
 ✅ Payment Management (CRUD operations + Auto order status update + Customer stats update + PDF Export)
+✅ Financial Management (Transactions CRUD + Categories CRUD + Statistics + Server-side pagination/filtering/searching)
 ✅ Settings Management (Full CRUD + Email Test + S3 Test + App Settings with Web URL)
 
 ### Frontend Integration Status
@@ -3294,6 +3730,8 @@ const Settings = () => {
 - ✅ **UserService** - Fully integrated in UsersList, UserForm
 - ✅ **ProfileService** - Fully integrated in Profile page (PersonalInfo, Address, Avatar, Change Password)
 - ✅ **RoleService** - Fully integrated in RolesList, RoleForm
+- ✅ **FinancialService** - Fully integrated in FinancialTransactionsList, FinancialTransactionForm
+- ✅ **FinancialCategoryService** - Fully integrated in FinancialCategoriesList, FinancialCategoryForm
 - ✅ **PermissionService** - Fully integrated in RoleForm
 - ✅ **BranchService** - Integrated in BranchesList (with mock fallback)
 - ✅ **PackageService** - Fully integrated in PackagesList, PackageForm (with server-side pagination/filtering)

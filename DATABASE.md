@@ -294,9 +294,77 @@ Payment transactions for orders.
 
 ---
 
+### 8. `financial_categories`
+Financial categories for income and expense transactions.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | bigint unsigned | PRIMARY KEY, AUTO_INCREMENT | Unique identifier |
+| `type` | enum | NOT NULL | Category type: 'income', 'expense' |
+| `name` | varchar(255) | NOT NULL | Category name |
+| `description` | text | NULLABLE | Category description |
+| `status` | enum | DEFAULT 'active' | Status: 'active', 'inactive' |
+| `created_at` | timestamp | NULLABLE | Creation timestamp |
+| `updated_at` | timestamp | NULLABLE | Last update timestamp |
+| `deleted_at` | timestamp | NULLABLE | Soft delete timestamp |
+
+**Indexes:**
+- PRIMARY KEY (`id`)
+- UNIQUE (`type`, `name`)
+- INDEX (`type`)
+- INDEX (`status`)
+- INDEX (`created_at`)
+
+**Soft Deletes:** Yes
+
+**Notes:**
+- Unique constraint on `(type, name)` ensures no duplicate category names per type
+- Categories cannot be deleted if they have associated transactions
+
+---
+
+### 9. `financial_transactions`
+Financial transactions for income and expenses.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | bigint unsigned | PRIMARY KEY, AUTO_INCREMENT | Unique identifier |
+| `transaction_number` | varchar(255) | UNIQUE, NOT NULL | Transaction number (e.g., #INC001, #EXP001) |
+| `transaction_type` | enum | NOT NULL | Transaction type: 'income', 'expense' |
+| `transaction_date` | date | NOT NULL | Transaction date |
+| `category_id` | bigint unsigned | FOREIGN KEY, NOT NULL | Category reference |
+| `amount` | decimal(12,2) | NOT NULL | Transaction amount |
+| `description` | text | NULLABLE | Transaction description/notes |
+| `created_by` | bigint unsigned | FOREIGN KEY, NULLABLE | User who created the transaction |
+| `created_at` | timestamp | NULLABLE | Creation timestamp |
+| `updated_at` | timestamp | NULLABLE | Last update timestamp |
+| `deleted_at` | timestamp | NULLABLE | Soft delete timestamp |
+
+**Foreign Keys:**
+- `category_id` → `financial_categories.id` (ON DELETE RESTRICT)
+- `created_by` → `users.id` (ON DELETE SET NULL)
+
+**Indexes:**
+- PRIMARY KEY (`id`)
+- UNIQUE (`transaction_number`)
+- INDEX (`transaction_type`)
+- INDEX (`transaction_date`)
+- INDEX (`category_id`)
+- INDEX (`created_by`)
+- INDEX (`created_at`)
+
+**Soft Deletes:** Yes
+
+**Notes:**
+- Transaction number is auto-generated (e.g., #INC001 for income, #EXP001 for expense)
+- Transaction type cannot be changed after creation
+- Category must match transaction type (income category for income transaction, expense category for expense transaction)
+
+---
+
 ## Authentication & Authorization
 
-### 8. `roles`
+### 10. `roles`
 User roles for access control.
 
 | Column | Type | Constraints | Description |
@@ -319,7 +387,7 @@ User roles for access control.
 
 ---
 
-### 9. `permissions`
+### 11. `permissions`
 System permissions for role-based access control.
 
 | Column | Type | Constraints | Description |
@@ -345,7 +413,7 @@ System permissions for role-based access control.
 
 ---
 
-### 10. `user_role`
+### 12. `user_role`
 Pivot table for user-role many-to-many relationship.
 
 | Column | Type | Constraints | Description |
@@ -366,7 +434,7 @@ Pivot table for user-role many-to-many relationship.
 
 ---
 
-### 11. `role_permission`
+### 13. `role_permission`
 Pivot table for role-permission many-to-many relationship.
 
 | Column | Type | Constraints | Description |
@@ -389,7 +457,7 @@ Pivot table for role-permission many-to-many relationship.
 
 ## System Tables
 
-### 12. `settings`
+### 14. `settings`
 System configuration settings (key-value store).
 
 | Column | Type | Constraints | Description |
@@ -414,7 +482,7 @@ System configuration settings (key-value store).
 
 ---
 
-### 13. `emails`
+### 15. `emails`
 Email log/audit trail.
 
 | Column | Type | Constraints | Description |
@@ -442,7 +510,7 @@ Email log/audit trail.
 
 ---
 
-### 14. `password_resets`
+### 16. `password_resets`
 Laravel password reset tokens (legacy table).
 
 | Column | Type | Constraints | Description |
@@ -459,7 +527,7 @@ Laravel password reset tokens (legacy table).
 
 ---
 
-### 15. `failed_jobs`
+### 17. `failed_jobs`
 Laravel failed queue jobs.
 
 | Column | Type | Constraints | Description |
@@ -478,7 +546,7 @@ Laravel failed queue jobs.
 
 ---
 
-### 16. `personal_access_tokens`
+### 18. `personal_access_tokens`
 Laravel Sanctum authentication tokens.
 
 | Column | Type | Constraints | Description |
@@ -521,6 +589,12 @@ branches
   │     └── payments (one-to-many)
   ├── orders (one-to-many)
   └── payments (one-to-many)
+
+financial_categories
+  └── financial_transactions (one-to-many)
+
+users
+  └── financial_transactions (one-to-many, created_by)
 ```
 
 ### Detailed Relationships
@@ -567,6 +641,14 @@ branches
     - A branch can have many payments
     - A payment belongs to one branch (nullable)
 
+11. **FinancialCategory ↔ FinancialTransaction** (One-to-Many)
+    - A category can have many transactions
+    - A transaction belongs to one category
+
+12. **User ↔ FinancialTransaction** (One-to-Many)
+    - A user can create many transactions
+    - A transaction is created by one user (nullable)
+
 ---
 
 ## Indexes
@@ -604,6 +686,8 @@ branches
 | `payments` | `order_id` | `orders.id` | RESTRICT | Cannot delete order with payments |
 | `payments` | `customer_id` | `customers.id` | RESTRICT | Cannot delete customer with payments |
 | `payments` | `branch_id` | `branches.id` | SET NULL | Branch deletion doesn't delete payments |
+| `financial_transactions` | `category_id` | `financial_categories.id` | RESTRICT | Cannot delete category with transactions |
+| `financial_transactions` | `created_by` | `users.id` | SET NULL | User deletion doesn't delete transactions |
 | `user_role` | `user_id` | `users.id` | CASCADE | User deletion removes role assignments |
 | `user_role` | `role_id` | `roles.id` | CASCADE | Role deletion removes user assignments |
 | `role_permission` | `role_id` | `roles.id` | CASCADE | Role deletion removes permissions |
@@ -758,16 +842,20 @@ branches
 - `add_business_contact_to_settings` (2025_11_15_094629)
 - `add_business_website_to_settings` (2025_11_15_095341)
 
+### Financial Management (2025-12-18)
+- `create_financial_categories_table` (2025_12_18_073853) - Creates financial categories table for income/expense categories
+- `create_financial_transactions_table` (2025_12_18_073853) - Creates financial transactions table for income/expense tracking
+
 ---
 
 ## Summary Statistics
 
-- **Total Tables:** 16
-- **Core Business Tables:** 7 (users, branches, customers, packages, orders, order_items, payments)
+- **Total Tables:** 18
+- **Core Business Tables:** 9 (users, branches, customers, packages, orders, order_items, payments, financial_categories, financial_transactions)
 - **Auth/Authorization Tables:** 4 (roles, permissions, user_role, role_permission)
 - **System Tables:** 5 (settings, emails, password_resets, failed_jobs, personal_access_tokens)
-- **Tables with Soft Deletes:** 5 (branches, customers, packages, orders, payments)
-- **Tables with Foreign Keys:** 10
+- **Tables with Soft Deletes:** 7 (branches, customers, packages, orders, payments, financial_categories, financial_transactions)
+- **Tables with Foreign Keys:** 12
 - **Pivot Tables:** 2 (user_role, role_permission)
 
 ---

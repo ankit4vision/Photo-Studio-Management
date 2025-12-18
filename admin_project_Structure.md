@@ -120,6 +120,10 @@ admin/
 │   │   │   ├── 📁 transactions/      # Transaction management
 │   │   │   │   ├── TransactionDetailsModal.jsx
 │   │   │   │   └── TransactionForm.jsx
+│   │   │   ├── 📁 financial/         # Financial management
+│   │   │   │   ├── FinancialTransactionForm.jsx
+│   │   │   │   ├── FinancialTransactionDetailsModal.jsx
+│   │   │   │   └── FinancialCategoryForm.jsx
 │   │   │   └── 📁 users/            # User management
 │   │   │       ├── 📁 __tests__/     # User component tests
 │   │   │       │   └── ProfileForm.test.js
@@ -182,6 +186,8 @@ admin/
 │   │   ├── branchService.js          # Branch API
 │   │   ├── dashboardService.js       # Dashboard analytics (summary, trend, activities)
 │   │   ├── customerService.js        # Customer API
+│   │   ├── financialService.js      # Financial transactions API
+│   │   ├── financialCategoryService.js # Financial categories API
 │   │   ├── orderService.js           # Order API
 │   │   ├── packageService.js         # Package API
 │   │   ├── paymentService.js        # Payment API
@@ -229,6 +235,9 @@ admin/
 │   │   ├── 📁 transactions/          # Transaction management views
 │   │   │   ├── TransactionFormView.jsx
 │   │   │   └── TransactionsList.jsx
+│   │   ├── 📁 financial/             # Financial management views
+│   │   │   ├── FinancialTransactionsList.jsx
+│   │   │   └── FinancialCategoriesList.jsx
 │   │   └── 📁 users/                 # User management views
 │   │       ├── Profile.jsx
 │   │       └── UsersList.jsx
@@ -422,7 +431,24 @@ admin/
   - Permission management
 - **Status**: ✅ Fully implemented with API integration
 
-### 12. **Settings Management**
+### 12. **Financial Management**
+- **Location**: `src/views/financial/`, `src/services/financialService.js`, `src/services/financialCategoryService.js`
+- **Features**:
+  - Financial Transactions list (income & expense)
+  - Create/Edit/Delete financial transactions
+  - Transaction details modal
+  - Financial Categories list (unified for income & expense)
+  - Create/Edit/Delete financial categories
+  - Statistics cards (Total Income, Total Expenses, Total Records)
+  - Server-side pagination, filtering, and searching
+  - Date range filtering
+  - Transaction type filtering (income/expense)
+  - Category filtering
+  - Auto-generated transaction numbers (#INC001, #EXP001)
+  - Transaction type cannot be changed after creation
+- **Status**: ✅ Fully implemented with API integration + Server-side pagination/filtering
+
+### 13. **Settings Management**
 - **Location**: `src/views/settings/`, `src/services/settingsService.js`
 - **Features**:
   - System settings

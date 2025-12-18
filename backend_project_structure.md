@@ -49,6 +49,8 @@ backend/
 │   │   │   │   ├── BranchController.php
 │   │   │   │   ├── CustomerController.php
 │   │   │   │   ├── DashboardController.php
+│   │   │   │   ├── FinancialCategoryController.php
+│   │   │   │   ├── FinancialTransactionController.php
 │   │   │   │   ├── OrderController.php
 │   │   │   │   ├── PackageController.php
 │   │   │   │   ├── PaymentController.php
@@ -77,6 +79,10 @@ backend/
 │   │   │   ├── BranchUpdateRequest.php
 │   │   │   ├── CustomerStoreRequest.php
 │   │   │   ├── CustomerUpdateRequest.php
+│   │   │   ├── FinancialCategoryStoreRequest.php
+│   │   │   ├── FinancialCategoryUpdateRequest.php
+│   │   │   ├── FinancialTransactionStoreRequest.php
+│   │   │   ├── FinancialTransactionUpdateRequest.php
 │   │   │   ├── OrderStoreRequest.php
 │   │   │   ├── OrderUpdateRequest.php
 │   │   │   ├── PackageStoreRequest.php
@@ -84,6 +90,8 @@ backend/
 │   │   └── 📁 Resources/            # API resources
 │   │       ├── BranchResource.php
 │   │       ├── CustomerResource.php
+│   │       ├── FinancialCategoryResource.php
+│   │       ├── FinancialTransactionResource.php
 │   │       ├── OrderItemResource.php
 │   │       ├── OrderResource.php
 │   │       ├── PackageResource.php
@@ -95,6 +103,8 @@ backend/
 │   ├── 📁 Models/                   # Eloquent models
 │   │   ├── Branch.php               # Branch model
 │   │   ├── Customer.php             # Customer model (with stats auto-calculation)
+│   │   ├── FinancialCategory.php    # Financial category model
+│   │   ├── FinancialTransaction.php # Financial transaction model
 │   │   ├── Order.php                # Order model (with payment recalculation)
 │   │   ├── OrderItem.php            # OrderItem model
 │   │   ├── Package.php              # Package model
@@ -149,7 +159,9 @@ backend/
 │   │   ├── 2025_11_17_083320_create_settings_table.php
 │   │   ├── 2025_11_17_083332_create_emails_table.php
 │   │   ├── 2025_11_17_083347_create_password_reset_tokens_table.php
-│   │   └── 2025_11_17_083400_create_failed_jobs_table.php
+│   │   ├── 2025_11_17_083400_create_failed_jobs_table.php
+│   │   ├── 2025_12_18_073853_create_financial_categories_table.php
+│   │   └── 2025_12_18_073853_create_financial_transactions_table.php
 │   └── 📁 seeders/                  # Database seeders
 │       ├── BranchSeeder.php
 │       ├── DatabaseSeeder.php
@@ -375,7 +387,50 @@ backend/
 - **Note**: Payment record होने पर order payment status और customer stats automatically update होते हैं
 - **PDF Export**: Payment receipt with order reference and items, pure black and white design
 
-### 10. **Dashboard & Analytics Module**
+### 10. **Financial Management Module**
+- **Location**: 
+  - `app/Http/Controllers/API/FinancialTransactionController.php`
+  - `app/Http/Controllers/API/FinancialCategoryController.php`
+- **Routes**: 
+  - `/api/financial-transactions/*`, `/api/financial-transactions/stats`
+  - `/api/financial-categories/*`, `/api/financial-categories/by-type/{type}`
+- **Features**:
+  - **Financial Transactions**:
+    - List transactions (paginated, sortable, searchable with server-side filtering)
+    - Get transaction by ID
+    - Create transaction (auto-generates transaction_number: #INC001, #EXP001)
+    - Update transaction (transaction_type cannot be changed)
+    - Delete transaction (soft delete)
+    - Statistics endpoint with income/expenses totals, net profit, category breakdown, monthly trends
+  - **Financial Categories**:
+    - List categories (paginated, sortable, searchable with server-side filtering)
+    - Get category by ID
+    - Create category (unique name per type)
+    - Update category (type cannot be changed)
+    - Delete category (cannot delete if has transactions)
+    - Get categories by type (income/expense)
+- **Models**:
+  - `FinancialTransaction` - With relationships to `FinancialCategory` and `User` (createdBy)
+  - `FinancialCategory` - With relationship to `FinancialTransaction`
+- **Request Validation**:
+  - `FinancialTransactionStoreRequest` - Validates transaction creation (type, date, category match, amount)
+  - `FinancialTransactionUpdateRequest` - Validates transaction update (type cannot change)
+  - `FinancialCategoryStoreRequest` - Validates category creation (unique name per type)
+  - `FinancialCategoryUpdateRequest` - Validates category update (type cannot change)
+- **API Resources**:
+  - `FinancialTransactionResource` - camelCase response with category and createdBy relationships
+  - `FinancialCategoryResource` - camelCase response
+- **Permissions**: 
+  - `view_financial_transaction`, `create_financial_transaction`, `edit_financial_transaction`, `delete_financial_transaction`
+  - `view_financial_category`, `create_financial_category`, `edit_financial_category`, `delete_financial_category`
+- **Status**: ✅ Fully implemented
+- **Note**: 
+  - Transaction type is immutable after creation
+  - Category must match transaction type (validated in requests)
+  - Transaction number auto-generated based on type
+  - Statistics endpoint supports date range filtering
+
+### 11. **Dashboard & Analytics Module**
 - **Location**: `app/Http/Controllers/API/DashboardController.php`
 - **Routes**: `/api/dashboard/summary`, `/api/dashboard/revenue-trend`, `/api/dashboard/recent-activities`
 - **Features**:
@@ -386,7 +441,7 @@ backend/
 - **Status**: ✅ Fully implemented
 - **Consumers**: Admin Dashboard KPI cards, revenue chart, and live updates panel
 
-### 11. **Settings Management Module**
+### 12. **Settings Management Module**
 - **Location**: `app/Http/Controllers/API/SettingController.php`
 - **Routes**: `/api/settings/*`, `/api/global-settings/*`
 - **Features**:
@@ -1039,6 +1094,14 @@ php artisan serve
 **Version**: 1.2.0
 
 ## 🔄 Recent Updates
+- ✅ Financial Management module fully implemented
+- ✅ Financial categories and transactions tables migrations created
+- ✅ Financial permissions added and seeded
+- ✅ FinancialTransactionController and FinancialCategoryController with full CRUD operations
+- ✅ Financial statistics endpoint with income/expenses breakdown
+- ✅ Server-side pagination, filtering, and searching for Financial Transactions and Categories
+- ✅ Transaction type immutability after creation
+- ✅ Category validation (must match transaction type)
 - ✅ Payment Management module fully implemented
 - ✅ Payments table migration created and run
 - ✅ Payment permissions added and seeded
