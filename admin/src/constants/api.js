@@ -189,6 +189,27 @@ export const API_ENDPOINTS = {
     EXPORT_PDF: (id) => `/payments/${id}/export-pdf`,
   },
 
+  // Financial Management
+  FINANCIAL_TRANSACTIONS: {
+    BASE: '/financial-transactions',
+    LIST: '/financial-transactions',
+    CREATE: '/financial-transactions',
+    GET_BY_ID: (id) => `/financial-transactions/${id}`,
+    UPDATE: (id) => `/financial-transactions/${id}`,
+    DELETE: (id) => `/financial-transactions/${id}`,
+    STATS: '/financial-transactions/stats',
+    EXPORT_PDF: '/financial-transactions/export-pdf',
+  },
+
+  FINANCIAL_CATEGORIES: {
+    BASE: '/financial-categories',
+    LIST: '/financial-categories',
+    CREATE: '/financial-categories',
+    GET_BY_ID: (id) => `/financial-categories/${id}`,
+    UPDATE: (id) => `/financial-categories/${id}`,
+    DELETE: (id) => `/financial-categories/${id}`,
+  },
+
   // Reports
   REPORTS: {
     BASE: '/reports',

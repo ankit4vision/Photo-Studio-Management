@@ -33,6 +33,10 @@ const TransactionFormView = React.lazy(() => import('../../views/transactions/Tr
 const PaymentsList = React.lazy(() => import('../../views/payments/PaymentsList'))
 const PaymentFormView = React.lazy(() => import('../../views/payments/PaymentFormView'))
 
+// Financial Management Components
+const FinancialTransactionsList = React.lazy(() => import('../../views/financial/FinancialTransactionsList'))
+const FinancialCategoriesList = React.lazy(() => import('../../views/financial/FinancialCategoriesList'))
+
 // Report Components
 const SalesReport = React.lazy(() => import('../../views/reports/SalesReport'))
 const LedgerReport = React.lazy(() => import('../../views/reports/LedgerReport'))
@@ -178,6 +182,27 @@ const AppContent = () => {
                 <PaymentFormView />
               </PermissionRoute>
             }
+          />
+          
+          {/* Financial Management Routes */}
+          {/* TODO: Add PermissionRoute back when backend permissions are created and assigned */}
+          <Route
+            path="/financial/transactions"
+            element={<FinancialTransactionsList />}
+            // element={
+            //   <PermissionRoute requiredPermission={PERMISSIONS.FINANCIAL_TRANSACTION_READ} showAccessDenied>
+            //     <FinancialTransactionsList />
+            //   </PermissionRoute>
+            // }
+          />
+          <Route
+            path="/financial/categories"
+            element={<FinancialCategoriesList />}
+            // element={
+            //   <PermissionRoute requiredPermission={PERMISSIONS.FINANCIAL_CATEGORY_READ} showAccessDenied>
+            //     <FinancialCategoriesList />
+            //   </PermissionRoute>
+            // }
           />
           
           {/* Report Routes */}

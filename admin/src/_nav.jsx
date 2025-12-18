@@ -13,6 +13,8 @@ import {
   cilCreditCard,
   cilBuilding,
   cilLockLocked,
+  cilDollar,
+  cilListRich,
 } from '@coreui/icons'
 import { CNavItem, CNavTitle } from '@coreui/react'
 import { PERMISSIONS } from './constants/permissions'
@@ -79,6 +81,22 @@ const _nav = [
     icon: <CIcon icon={cilCreditCard} customClassName="nav-icon" />,
     permission: PERMISSIONS.PAYMENT_READ,
     disabled: true,
+  },
+  {
+    component: CNavItem,
+    name: 'Income & Expenses',
+    to: '/financial/transactions',
+    icon: <CIcon icon={cilDollar} customClassName="nav-icon" />,
+    // TODO: Uncomment when backend permissions are created and assigned
+    // permission: PERMISSIONS.FINANCIAL_TRANSACTION_READ,
+  },
+  {
+    component: CNavItem,
+    name: 'Financial Categories',
+    to: '/financial/categories',
+    icon: <CIcon icon={cilListRich} customClassName="nav-icon" />,
+    // TODO: Uncomment when backend permissions are created and assigned
+    // permission: PERMISSIONS.FINANCIAL_CATEGORY_READ,
   },
   {
     component: CNavTitle,

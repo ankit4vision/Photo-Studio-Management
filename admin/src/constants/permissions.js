@@ -44,6 +44,20 @@ export const PERMISSIONS = {
   PAYMENT_DELETE: 'payment:delete',
   PAYMENT_MANAGE: 'payment:manage',
 
+  // Financial Transaction Management
+  FINANCIAL_TRANSACTION_READ: 'view_financial_transaction',
+  FINANCIAL_TRANSACTION_WRITE: 'create_financial_transaction',
+  FINANCIAL_TRANSACTION_EDIT: 'edit_financial_transaction',
+  FINANCIAL_TRANSACTION_DELETE: 'delete_financial_transaction',
+  FINANCIAL_TRANSACTION_MANAGE: 'view_financial_transaction',
+
+  // Financial Category Management
+  FINANCIAL_CATEGORY_READ: 'view_financial_category',
+  FINANCIAL_CATEGORY_WRITE: 'create_financial_category',
+  FINANCIAL_CATEGORY_EDIT: 'edit_financial_category',
+  FINANCIAL_CATEGORY_DELETE: 'delete_financial_category',
+  FINANCIAL_CATEGORY_MANAGE: 'view_financial_category',
+
   // Transaction Management (alias for payment)
   TRANSACTION_READ: 'transaction:read',
   TRANSACTION_WRITE: 'transaction:write',
@@ -160,6 +174,16 @@ export const PERMISSION_GROUPS = {
   PROFILE: [
     PERMISSIONS.PROFILE_READ,
     PERMISSIONS.PROFILE_WRITE,
+  ],
+  FINANCIAL_MANAGEMENT: [
+    PERMISSIONS.FINANCIAL_TRANSACTION_READ,
+    PERMISSIONS.FINANCIAL_TRANSACTION_WRITE,
+    PERMISSIONS.FINANCIAL_TRANSACTION_EDIT,
+    PERMISSIONS.FINANCIAL_TRANSACTION_DELETE,
+    PERMISSIONS.FINANCIAL_CATEGORY_READ,
+    PERMISSIONS.FINANCIAL_CATEGORY_WRITE,
+    PERMISSIONS.FINANCIAL_CATEGORY_EDIT,
+    PERMISSIONS.FINANCIAL_CATEGORY_DELETE,
   ],
   ADMIN: [
     PERMISSIONS.ADMIN_ACCESS,
