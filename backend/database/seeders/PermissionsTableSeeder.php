@@ -66,6 +66,18 @@ class PermissionsTableSeeder extends Seeder
 
             // Dashboard
             ['name' => 'view_dashboard', 'description' => 'View dashboard analytics', 'module' => 'dashboard', 'submodule' => 'overview', 'type' => 'read'],
+
+            // Financial Transaction Management
+            ['name' => 'view_financial_transaction', 'description' => 'View financial transactions', 'module' => 'financial', 'submodule' => 'transactions', 'type' => 'read'],
+            ['name' => 'create_financial_transaction', 'description' => 'Create financial transactions', 'module' => 'financial', 'submodule' => 'transactions', 'type' => 'write'],
+            ['name' => 'edit_financial_transaction', 'description' => 'Edit financial transactions', 'module' => 'financial', 'submodule' => 'transactions', 'type' => 'write'],
+            ['name' => 'delete_financial_transaction', 'description' => 'Delete financial transactions', 'module' => 'financial', 'submodule' => 'transactions', 'type' => 'delete'],
+
+            // Financial Category Management
+            ['name' => 'view_financial_category', 'description' => 'View financial categories', 'module' => 'financial', 'submodule' => 'categories', 'type' => 'read'],
+            ['name' => 'create_financial_category', 'description' => 'Create financial categories', 'module' => 'financial', 'submodule' => 'categories', 'type' => 'write'],
+            ['name' => 'edit_financial_category', 'description' => 'Edit financial categories', 'module' => 'financial', 'submodule' => 'categories', 'type' => 'write'],
+            ['name' => 'delete_financial_category', 'description' => 'Delete financial categories', 'module' => 'financial', 'submodule' => 'categories', 'type' => 'delete'],
         ];
 
         foreach ($permissions as $permission) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react'
+import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react'
 import { FormRow, TextField, SelectField } from '../../common/FormFields'
 import { Form, Col } from 'react-bootstrap'
 import PropTypes from 'prop-types'
@@ -22,6 +22,7 @@ const FinancialTransactionForm = forwardRef(({
   const [errors, setErrors] = useState({})
   const [categories, setCategories] = useState([])
   const [loadingCategories, setLoadingCategories] = useState(false)
+  const previousTransactionTypeRef = useRef(null)
 
   // Load transaction data for edit mode
   useEffect(() => {
@@ -30,31 +31,54 @@ const FinancialTransactionForm = forwardRef(({
       const categoryId = transactionData.categoryId || transactionData.category_id || ''
       const date = transactionData.transactionDate || transactionData.transaction_date || ''
       
-      setFormData({
-        transaction_type: type,
-        transaction_date: date ? new Date(date).toISOString().split('T')[0] : '',
-        category_id: categoryId ? String(categoryId) : '',
-        amount: transactionData.amount ? String(transactionData.amount) : '',
-        description: transactionData.description || ''
-      })
-
-      // Load categories for the transaction type
+      // Set the previous type to the current type to prevent reset on initial load
+      previousTransactionTypeRef.current = type
+      
+      // First load categories, then set form data
       if (type) {
-        loadCategories(type)
+        loadCategories(type).then(() => {
+          setFormData({
+            transaction_type: type,
+            transaction_date: date ? new Date(date).toISOString().split('T')[0] : '',
+            category_id: categoryId ? String(categoryId) : '',
+            amount: transactionData.amount ? String(transactionData.amount) : '',
+            description: transactionData.description || ''
+          })
+        })
+      } else {
+        setFormData({
+          transaction_type: type,
+          transaction_date: date ? new Date(date).toISOString().split('T')[0] : '',
+          category_id: categoryId ? String(categoryId) : '',
+          amount: transactionData.amount ? String(transactionData.amount) : '',
+          description: transactionData.description || ''
+        })
       }
+    } else {
+      previousTransactionTypeRef.current = null
     }
   }, [mode, transactionData])
 
   // Load categories when transaction type changes
   useEffect(() => {
     if (formData.transaction_type) {
+      const previousType = previousTransactionTypeRef.current
+      const typeChanged = previousType !== null && previousType !== formData.transaction_type
+      
       loadCategories(formData.transaction_type)
-      // Reset category when type changes
-      setFormData(prev => ({ ...prev, category_id: '' }))
+      
+      // Reset category when type changes (only if it actually changed, not on initial load)
+      if (mode === 'create' || (mode === 'edit' && typeChanged)) {
+        setFormData(prev => ({ ...prev, category_id: '' }))
+      }
+      
+      // Update previous type
+      previousTransactionTypeRef.current = formData.transaction_type
     } else {
       setCategories([])
+      previousTransactionTypeRef.current = null
     }
-  }, [formData.transaction_type])
+  }, [formData.transaction_type, mode])
 
   const loadCategories = async (type) => {
     try {
@@ -62,10 +86,13 @@ const FinancialTransactionForm = forwardRef(({
       const response = await financialCategoryService.getCategoriesByType(type)
       if (response && response.success) {
         setCategories(response.data || [])
+        return response.data || []
       }
+      return []
     } catch (err) {
       console.error('Error loading categories:', err)
       setCategories([])
+      return []
     } finally {
       setLoadingCategories(false)
     }
@@ -130,7 +157,8 @@ const FinancialTransactionForm = forwardRef(({
     }
 
     const submitData = {
-      transaction_type: formData.transaction_type,
+      // Only include transaction_type in create mode (backend doesn't allow changing it in update)
+      ...(mode === 'create' && { transaction_type: formData.transaction_type }),
       transaction_date: formData.transaction_date,
       category_id: parseInt(formData.category_id),
       amount: parseFloat(formData.amount),
@@ -174,10 +202,11 @@ const FinancialTransactionForm = forwardRef(({
           onChange={(e) => handleChange('transaction_type', e.target.value)}
           options={transactionTypeOptions}
           required
+          disabled={mode === 'edit'}
           col={6}
           invalid={!!errors.transaction_type}
           feedback={errors.transaction_type}
-          helpText="Select whether this is an income or expense"
+          helpText={mode === 'edit' ? 'Transaction type cannot be changed' : 'Select whether this is an income or expense'}
         />
         <TextField
           id="transaction_date"

@@ -47,7 +47,7 @@ const FinancialTransactionsList = () => {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(25)
   const [paginationMeta, setPaginationMeta] = useState({
     total: 0,
     totalPages: 1,
@@ -513,8 +513,8 @@ const FinancialTransactionsList = () => {
 
       {/* Add Transaction Modal */}
       <FormModal
-        show={showAddModal}
-        onHide={() => setShowAddModal(false)}
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
         title="Add Financial Transaction"
         onConfirm={handleAddTransactionSubmit}
         confirmText="Create"
@@ -532,8 +532,8 @@ const FinancialTransactionsList = () => {
 
       {/* Edit Transaction Modal */}
       <FormModal
-        show={showEditModal}
-        onHide={() => {
+        visible={showEditModal}
+        onClose={() => {
           setShowEditModal(false)
           setTransactionToEdit(null)
         }}

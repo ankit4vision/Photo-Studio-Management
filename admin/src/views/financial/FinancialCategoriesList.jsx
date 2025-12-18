@@ -38,7 +38,7 @@ const FinancialCategoriesList = () => {
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(25)
   const [paginationMeta, setPaginationMeta] = useState({
     total: 0,
     totalPages: 1,
@@ -371,8 +371,8 @@ const FinancialCategoriesList = () => {
 
       {/* Add Category Modal */}
       <FormModal
-        show={showAddModal}
-        onHide={() => setShowAddModal(false)}
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
         title="Add Financial Category"
         onConfirm={handleAddCategorySubmit}
         confirmText="Create"
@@ -390,8 +390,8 @@ const FinancialCategoriesList = () => {
 
       {/* Edit Category Modal */}
       <FormModal
-        show={showEditModal}
-        onHide={() => {
+        visible={showEditModal}
+        onClose={() => {
           setShowEditModal(false)
           setCategoryToEdit(null)
         }}

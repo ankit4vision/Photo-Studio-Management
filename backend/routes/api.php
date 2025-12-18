@@ -12,6 +12,8 @@ use App\Http\Controllers\API\CustomerController;
 use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\DashboardController;
+use App\Http\Controllers\API\FinancialCategoryController;
+use App\Http\Controllers\API\FinancialTransactionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -107,6 +109,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/payments/{payment}', [PaymentController::class, 'update'])->middleware('permission:edit_payment');
     Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->middleware('permission:delete_payment');
     Route::get('/payments/order/{orderId}', [PaymentController::class, 'getByOrder'])->middleware('permission:view_payment');
+
+    // Financial Category Management
+    // TODO: Re-enable permission middleware after assigning permissions to roles
+    Route::get('/financial-categories', [FinancialCategoryController::class, 'index']); // ->middleware('permission:view_financial_category');
+    Route::post('/financial-categories', [FinancialCategoryController::class, 'store']); // ->middleware('permission:create_financial_category');
+    Route::get('/financial-categories/{category}', [FinancialCategoryController::class, 'show']); // ->middleware('permission:view_financial_category');
+    Route::put('/financial-categories/{category}', [FinancialCategoryController::class, 'update']); // ->middleware('permission:edit_financial_category');
+    Route::delete('/financial-categories/{category}', [FinancialCategoryController::class, 'destroy']); // ->middleware('permission:delete_financial_category');
+
+    // Financial Transaction Management
+    // TODO: Re-enable permission middleware after assigning permissions to roles
+    // IMPORTANT: /stats route must come BEFORE /{transaction} route to avoid route model binding conflict
+    Route::get('/financial-transactions/stats', [FinancialTransactionController::class, 'stats']); // ->middleware('permission:view_financial_transaction');
+    Route::get('/financial-transactions', [FinancialTransactionController::class, 'index']); // ->middleware('permission:view_financial_transaction');
+    Route::post('/financial-transactions', [FinancialTransactionController::class, 'store']); // ->middleware('permission:create_financial_transaction');
+    Route::get('/financial-transactions/{transaction}', [FinancialTransactionController::class, 'show']); // ->middleware('permission:view_financial_transaction');
+    Route::put('/financial-transactions/{transaction}', [FinancialTransactionController::class, 'update']); // ->middleware('permission:edit_financial_transaction');
+    Route::delete('/financial-transactions/{transaction}', [FinancialTransactionController::class, 'destroy']); // ->middleware('permission:delete_financial_transaction');
 
     // Dashboard
     Route::get('/dashboard/summary', [DashboardController::class, 'summary'])->middleware('permission:view_dashboard');
