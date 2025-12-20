@@ -133,6 +133,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/summary', [DashboardController::class, 'summary'])->middleware('permission:view_dashboard');
     Route::get('/dashboard/revenue-trend', [DashboardController::class, 'revenueTrend'])->middleware('permission:view_dashboard');
     Route::get('/dashboard/recent-activities', [DashboardController::class, 'recentActivities'])->middleware('permission:view_dashboard');
+    Route::get('/dashboard/orders-summary', [DashboardController::class, 'ordersSummary'])->middleware('permission:view_dashboard');
+    Route::get('/dashboard/customers-summary', [DashboardController::class, 'customersSummary'])->middleware('permission:view_dashboard');
+    Route::get('/dashboard/financial-summary', [DashboardController::class, 'financialSummary'])->middleware('permission:view_dashboard');
+    Route::get('/dashboard/top-paid-customers', [DashboardController::class, 'topPaidCustomers'])->middleware('permission:view_dashboard');
+    Route::get('/dashboard/upcoming-events', [DashboardController::class, 'upcomingEvents'])->middleware('permission:view_dashboard');
+    Route::get('/dashboard/upcoming-orders', [DashboardController::class, 'upcomingOrders'])->middleware('permission:view_dashboard');
+    Route::get('/dashboard/company-health-chart', [DashboardController::class, 'companyHealthChart'])->middleware('permission:view_dashboard');
+    Route::get('/dashboard/last-transactions', [DashboardController::class, 'lastTransactions'])->middleware('permission:view_dashboard');
 
     // Reports
     Route::get('/reports/company-health', [ReportController::class, 'companyHealth'])->middleware('permission:view_dashboard');

@@ -518,7 +518,7 @@ const OrderForm = forwardRef(({
       <FormRow>
         <TextField
           id="order_date"
-          label="Order Date"
+          label="Order Date (Event Date)"
           type="date"
           value={formData.order_date}
           onChange={(e) => handleChange('order_date', e.target.value)}
@@ -529,7 +529,7 @@ const OrderForm = forwardRef(({
         />
         <TextField
           id="due_date"
-          label="Due Date"
+          label="Due Date (Final Delivery Date)"
           type="date"
           value={formData.due_date}
           onChange={(e) => handleChange('due_date', e.target.value)}

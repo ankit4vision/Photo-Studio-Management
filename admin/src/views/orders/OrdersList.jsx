@@ -646,9 +646,16 @@ const OrdersList = () => {
         return (
           <div>
             <div className="fw-bold">#{orderId}</div>
-            <small className="text-muted">{formatDate(order.orderDate || order.order_date)}</small>
           </div>
         )
+      }
+    },
+    {
+      key: 'orderDate',
+      label: 'Order Date (Event Date)',
+      render: (value, order) => {
+        if (!order) return <div>N/A</div>
+        return formatDate(order.orderDate || order.order_date)
       }
     },
     {
