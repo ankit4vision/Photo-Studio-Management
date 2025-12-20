@@ -42,10 +42,8 @@ const routesConfig = [
   { path: '/payments/:id', name: 'Payment Details' },
   
   // Report Routes
-  { path: '/reports/sales', name: 'Sales Report' },
-  { path: '/reports/ledger', name: 'Ledger Report' },
-  { path: '/reports/branch', name: 'Branch Report' },
-  { path: '/reports/staff', name: 'Staff Report' },
+  { path: '/reports/company-health', name: 'Company Health Report' },
+  { path: '/reports/customer-payment-status', name: 'Customer Payment Status Report' },
   
   // Account Routes
   { path: '/profile', name: 'Profile' },

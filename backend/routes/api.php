@@ -14,6 +14,7 @@ use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\FinancialCategoryController;
 use App\Http\Controllers\API\FinancialTransactionController;
+use App\Http\Controllers\API\ReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -132,6 +133,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/summary', [DashboardController::class, 'summary'])->middleware('permission:view_dashboard');
     Route::get('/dashboard/revenue-trend', [DashboardController::class, 'revenueTrend'])->middleware('permission:view_dashboard');
     Route::get('/dashboard/recent-activities', [DashboardController::class, 'recentActivities'])->middleware('permission:view_dashboard');
+
+    // Reports
+    Route::get('/reports/company-health', [ReportController::class, 'companyHealth'])->middleware('permission:view_dashboard');
+    Route::get('/reports/company-health/export-pdf', [ReportController::class, 'exportPdf'])->middleware('permission:view_dashboard');
+    Route::get('/reports/customer-payment-status', [ReportController::class, 'customerPaymentStatus'])->middleware('permission:view_customer');
 
     // Settings
     Route::get('/settings', [SettingController::class, 'index'])->middleware('permission:view_setting');

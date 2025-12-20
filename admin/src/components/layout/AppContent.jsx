@@ -38,10 +38,8 @@ const FinancialTransactionsList = React.lazy(() => import('../../views/financial
 const FinancialCategoriesList = React.lazy(() => import('../../views/financial/FinancialCategoriesList'))
 
 // Report Components
-const SalesReport = React.lazy(() => import('../../views/reports/SalesReport'))
-const LedgerReport = React.lazy(() => import('../../views/reports/LedgerReport'))
-const BranchReport = React.lazy(() => import('../../views/reports/BranchReport'))
-const StaffReport = React.lazy(() => import('../../views/reports/StaffReport'))
+const CompanyHealthReport = React.lazy(() => import('../../views/reports/CompanyHealthReport'))
+const CustomerPaymentStatusReport = React.lazy(() => import('../../views/reports/CustomerPaymentStatusReport'))
 
 import PermissionRoute from './PermissionRoute'
 import { PERMISSIONS } from '../../constants/permissions'
@@ -206,10 +204,8 @@ const AppContent = () => {
           />
           
           {/* Report Routes */}
-          <Route path="/reports/sales" element={<SalesReport />} />
-          <Route path="/reports/ledger" element={<LedgerReport />} />
-          <Route path="/reports/branch" element={<BranchReport />} />
-          <Route path="/reports/staff" element={<StaffReport />} />
+          <Route path="/reports/company-health" element={<CompanyHealthReport />} />
+          <Route path="/reports/customer-payment-status" element={<CustomerPaymentStatusReport />} />
           
           {/* Default redirect */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
