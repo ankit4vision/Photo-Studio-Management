@@ -363,7 +363,7 @@ const FinancialTransactionsList = () => {
           <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
             <div className="d-flex align-items-center">
               <FontAwesomeIcon icon={faChartLine} className="me-3 text-primary fs-4" />
-              <h2 className="mb-0 text-dark">Financial Transactions</h2>
+              <h2 className="mb-0 text-dark">Income & Expenses <span className="text-muted">(Financial Transactions)</span></h2>
             </div>
             {canCreateTransaction && (
               <div className="ms-auto">

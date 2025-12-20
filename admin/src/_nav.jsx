@@ -10,7 +10,6 @@ import {
   cilCog,
   cilBarChart,
   cilWallet,
-  cilCreditCard,
   cilBuilding,
   cilLockLocked,
   cilDollar,
@@ -33,21 +32,7 @@ const _nav = [
   },
   {
     component: CNavTitle,
-    name: 'Management',
-  },
-  {
-    component: CNavItem,
-    name: 'Branches',
-    to: '/branches',
-    icon: <CIcon icon={cilBuilding} customClassName="nav-icon" />,
-    permission: PERMISSIONS.BRANCH_READ,
-  },
-  {
-    component: CNavItem,
-    name: 'Packages',
-    to: '/packages',
-    icon: <CIcon icon={cilTag} customClassName="nav-icon" />,
-    permission: PERMISSIONS.PACKAGE_READ,
+    name: 'Customer & Orders',
   },
   {
     component: CNavItem,
@@ -64,10 +49,6 @@ const _nav = [
     permission: PERMISSIONS.ORDER_READ,
   },
   {
-    component: CNavTitle,
-    name: 'Financial',
-  },
-  {
     component: CNavItem,
     name: 'Transactions',
     to: '/transactions',
@@ -75,12 +56,8 @@ const _nav = [
     permission: PERMISSIONS.PAYMENT_READ,
   },
   {
-    component: CNavItem,
-    name: 'Payments',
-    to: '/payments',
-    icon: <CIcon icon={cilCreditCard} customClassName="nav-icon" />,
-    permission: PERMISSIONS.PAYMENT_READ,
-    disabled: true,
+    component: CNavTitle,
+    name: 'Financial',
   },
   {
     component: CNavItem,
@@ -107,6 +84,24 @@ const _nav = [
     name: 'Company Health',
     to: '/reports/company-health',
     icon: <CIcon icon={cilBarChart} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavTitle,
+    name: 'Masters',
+  },
+  {
+    component: CNavItem,
+    name: 'Branches',
+    to: '/branches',
+    icon: <CIcon icon={cilBuilding} customClassName="nav-icon" />,
+    permission: PERMISSIONS.BRANCH_READ,
+  },
+  {
+    component: CNavItem,
+    name: 'Packages',
+    to: '/packages',
+    icon: <CIcon icon={cilTag} customClassName="nav-icon" />,
+    permission: PERMISSIONS.PACKAGE_READ,
   },
   {
     component: CNavTitle,
