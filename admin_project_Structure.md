@@ -322,9 +322,12 @@ admin/
 ### 2. **Dashboard Module**
 - **Location**: `src/views/dashboard/`
 - **Features**:
-  - KPI statistics cards powered by `/dashboard/summary`
-  - Revenue trend chart (7/30/90 day quick filters) from `/dashboard/revenue-trend`
-  - Live updates placeholder section for real-time widgets
+  - **KPI Cards**: Total Orders and Total Customers with period comparison (from `/dashboard/summary`)
+  - **Orders Summary Cards**: 4 cards showing Total Orders, Pending, Processing, Completed (from `/dashboard/orders-summary`)
+  - **Upcoming Orders Widget**: Shows orders with upcoming event dates (order_date >= today) from `/dashboard/upcoming-orders`
+  - **Upcoming Customer Events Widget**: Shows birthdays and anniversaries in next 30 days (from `/dashboard/upcoming-events`)
+  - **Last Transactions Widget**: Combined payments and financial transactions (from `/dashboard/last-transactions`)
+  - **Company Health Chart**: Multi-line chart showing Orders Revenue, Income, Expenses, and Company Profit over time (from `/dashboard/company-health-chart`)
   - Date-range filtering + manual refresh
 - **Status**: ✅ Fully implemented with API integration
 
@@ -361,10 +364,13 @@ admin/
 - **Location**: `src/views/orders/`, `src/services/orderService.js`
 - **Features**:
   - Order list (server-side pagination, filtering, searching)
+  - **Order Date (Event Date)** column in listing - shows when the photo shoot/event happens
   - Create/Edit order (multi-package support)
+  - **Notes field** - Add/edit notes in order form, displayed in Order Details and PDF export
+  - Order form labels: "Order Date (Event Date)" and "Due Date (Final Delivery Date)"
   - Order details modal with integrated payment history (no separate API call needed)
   - **Important Links CRUD** - Add/Edit/Delete links with custom titles and URLs (managed from Order Details page)
-  - PDF invoice export (pure black and white design)
+  - PDF invoice export (pure black and white design) - includes notes section
   - Order status tracking with manual status update functionality
   - Payment status management (simplified to Pending/Completed)
   - Record payment from order actions
@@ -372,7 +378,7 @@ admin/
   - Order list now surfaces API errors (no mock fallback)
   - Payment history displays payment numbers in #PAY003 format
   - Clean API responses with camelCase fields only (no duplicate snake_case fields)
-- **Status**: ✅ Fully implemented with API integration + Server-side pagination/filtering + PDF Export + Links CRUD
+- **Status**: ✅ Fully implemented with API integration + Server-side pagination/filtering + PDF Export + Links CRUD + Notes field
 
 ### 7. **Payment Management**
 - **Location**: `src/views/payments/`, `src/components/pages/payments/`, `src/services/paymentService.js`

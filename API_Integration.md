@@ -360,6 +360,181 @@ const handleForgotPassword = async (email) => {
 
 ---
 
+### 4. **GET /api/dashboard/orders-summary**
+**Description**: Selected date range के लिए order status counts (total, pending, processing, completed) देता है।
+
+**Backend Controller**: `DashboardController@ordersSummary`
+
+**Permissions Required**: `view_dashboard`
+
+**Query Parameters**:
+- `start_date` - ISO date (optional, default: end_date से 90 दिन पहले)
+- `end_date` - ISO date (optional, default: आज)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "totalOrders": 215,
+    "pendingOrders": 45,
+    "processingOrders": 120,
+    "completedOrders": 50
+  }
+}
+```
+
+**Frontend Integration**:
+- **Service**: `dashboardService.getOrdersSummary({ startDate, endDate })`
+- **Used In**: `Dashboard.jsx` (Orders Summary Cards)
+
+---
+
+### 5. **GET /api/dashboard/upcoming-orders**
+**Description**: Upcoming event dates (order_date >= today) वाले orders की list देता है।
+
+**Backend Controller**: `DashboardController@upcomingOrders`
+
+**Permissions Required**: `view_dashboard`
+
+**Query Parameters**:
+- `limit` - Number of orders to return (default: 10, max: 50)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 123,
+      "orderNumber": "#ORD001",
+      "customerName": "John Doe",
+      "customerCode": "#CUST001",
+      "orderDate": "2025-02-15",
+      "status": "processing",
+      "totalAmount": 5000,
+      "remainingAmount": 2000
+    }
+  ]
+}
+```
+
+**Frontend Integration**:
+- **Service**: `dashboardService.getUpcomingOrders({ limit })`
+- **Used In**: `Dashboard.jsx` (Upcoming Orders widget)
+
+---
+
+### 6. **GET /api/dashboard/upcoming-events**
+**Description**: Next 30 days में आने वाले customer events (birthdays और anniversaries) की list देता है।
+
+**Backend Controller**: `DashboardController@upcomingEvents`
+
+**Permissions Required**: `view_dashboard`
+
+**Query Parameters**:
+- `days` - Number of days to look ahead (default: 30, max: 90)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "customerId": 12,
+      "customerCode": "#CUST012",
+      "customerName": "Jane Smith",
+      "eventType": "birthday",
+      "eventDate": "2025-02-20",
+      "daysUntil": 5
+    }
+  ]
+}
+```
+
+**Frontend Integration**:
+- **Service**: `dashboardService.getUpcomingEvents({ days })`
+- **Used In**: `Dashboard.jsx` (Upcoming Customer Events widget)
+
+---
+
+### 7. **GET /api/dashboard/last-transactions**
+**Description**: Last N transactions (payments + financial transactions) combined list देता है।
+
+**Backend Controller**: `DashboardController@lastTransactions`
+
+**Permissions Required**: `view_dashboard`
+
+**Query Parameters**:
+- `limit` - Number of transactions to return (default: 10, max: 50)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "type": "payment",
+      "reference": "#PAY001",
+      "orderNumber": "#ORD001",
+      "customerId": 12,
+      "customerName": "John Doe",
+      "customerCode": "#CUST012",
+      "transactionDate": "2025-02-10",
+      "amount": 5000,
+      "paymentType": "credit",
+      "paymentMethod": "cash",
+      "description": "Payment for order"
+    }
+  ]
+}
+```
+
+**Frontend Integration**:
+- **Service**: `dashboardService.getLastTransactions({ limit })`
+- **Used In**: `Dashboard.jsx` (Last Transactions widget)
+
+---
+
+### 8. **GET /api/dashboard/company-health-chart**
+**Description**: Company health data (orders revenue, income, expenses, profit) monthly aggregation देता है।
+
+**Backend Controller**: `DashboardController@companyHealthChart`
+
+**Permissions Required**: `view_dashboard`
+
+**Query Parameters**:
+- `months` - Number of months to include (default: 12, max: 24)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "months": 12,
+    "start": "2024-03-01",
+    "end": "2025-02-28",
+    "points": [
+      {
+        "month": "2024-03",
+        "monthLabel": "Mar 2024",
+        "ordersRevenue": 50000,
+        "income": 10000,
+        "expenses": 30000,
+        "companyProfit": 30000
+      }
+    ]
+  }
+}
+```
+
+**Frontend Integration**:
+- **Service**: `dashboardService.getCompanyHealthChart({ months })`
+- **Used In**: `Dashboard.jsx` (Company Health Chart)
+
+---
+
 ## 👥 User Management APIs
 
 ### 1. **GET /api/users**

@@ -21,6 +21,7 @@ const OrderForm = forwardRef(({
     order_date: new Date().toISOString().split('T')[0],
     due_date: '',
     flat_discount: 0,
+    notes: '',
     items: []
   })
   const [packages, setPackages] = useState([])
@@ -65,6 +66,7 @@ const OrderForm = forwardRef(({
         order_date: orderData.order_date ? orderData.order_date.split('T')[0] : new Date().toISOString().split('T')[0],
         due_date: orderData.due_date ? orderData.due_date.split('T')[0] : '',
         flat_discount: orderData.flat_discount || 0,
+        notes: orderData.notes || '',
         items: items
       })
       // Sync selectedPackageIds with items
@@ -449,6 +451,7 @@ const OrderForm = forwardRef(({
       order_date: formData.order_date,
       due_date: formData.due_date || null,
       flat_discount: parseFloat(formData.flat_discount) || 0,
+      notes: formData.notes || null,
       total_amount: calculateTotal(),
       items: formData.items
     }
@@ -537,6 +540,25 @@ const OrderForm = forwardRef(({
         />
       </FormRow>
 
+      <FormRow>
+        <Col md={12}>
+          <Form.Label className="fw-semibold">Notes</Form.Label>
+          <Form.Control
+            as="textarea"
+            rows={3}
+            id="notes"
+            value={formData.notes}
+            onChange={(e) => handleChange('notes', e.target.value)}
+            placeholder="Add any notes or special instructions for this order..."
+            className={errors.notes ? 'is-invalid' : ''}
+          />
+          {errors.notes && (
+            <Form.Control.Feedback type="invalid">
+              {errors.notes}
+            </Form.Control.Feedback>
+          )}
+        </Col>
+      </FormRow>
 
       {/* Order Items Section */}
       <div className="mt-4">

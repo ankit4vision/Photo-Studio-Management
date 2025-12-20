@@ -643,6 +643,24 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                           )}
                         </Card.Body>
                       </Card>
+
+                      {/* Order Notes */}
+                      {(order?.notes || order?.Notes) && (
+                        <Card className="mb-4">
+                          <Card.Header>
+                            <h5 className="mb-0">
+                              <FontAwesomeIcon icon={faInfoCircle} className="me-2 text-info" />
+                              Notes
+                            </h5>
+                          </Card.Header>
+                          <Card.Body>
+                            <div className="text-muted small mb-2">Order Notes</div>
+                            <div className="fw-normal" style={{ whiteSpace: 'pre-wrap' }}>
+                              {order.notes || order.Notes || 'No notes available'}
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      )}
                     </Col>
                   </Row>
                 </div>

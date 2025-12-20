@@ -75,11 +75,23 @@ class AuthController extends Controller
      */
     protected function formatUserData(User $user)
     {
-        $userData = $user->toArray();
+        // Get raw attributes to avoid accessor interference
+        $userData = $user->getAttributes();
+        $userData['roles'] = $user->roles->toArray();
+        $userData['created_at'] = $user->created_at;
+        $userData['updated_at'] = $user->updated_at;
         
-        // Avatar field - set to null (upload functionality removed)
-        $userData['avatar_url'] = null;
-        $userData['avatar'] = null;
+        // Handle avatar URL
+        $avatarPath = $userData['avatar'] ?? null;
+        $avatarUrl = null;
+        
+        if ($avatarPath) {
+            // Generate storage URL with correct backend path
+            $avatarUrl = $this->getStorageUrl($avatarPath);
+        }
+        
+        $userData['avatar_url'] = $avatarUrl;
+        $userData['avatar'] = $avatarPath; // Keep relative path
         
         return $userData;
     }

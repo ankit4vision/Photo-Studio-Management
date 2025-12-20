@@ -355,8 +355,13 @@ backend/
   - Update payment status
   - Get orders by customer
   - Order statistics endpoint (`/api/orders/stats`) with date range filtering
-  - Export order invoice as PDF
+  - Export order invoice as PDF (includes notes section)
   - **Important Links Management** - Store and manage dynamic links array (title + URL) per order
+  - **Notes Field** - Store order notes/special instructions (displayed in form, details view, and PDF export)
+- **Date Fields Semantics**:
+  - `order_date` = **Event Date** (when the photo shoot/event happens)
+  - `due_date` = **Final Delivery Date** (reminder/follow-up date for delivery or next action)
+  - `created_at` = System timestamp (when order was booked/created in system)
 - **Permissions**: `view_order`, `create_order`, `edit_order`, `delete_order`
 - **Status**: ✅ Fully implemented
 - **Note**: 
@@ -365,7 +370,8 @@ backend/
   - Order details endpoint includes payment history ordered by date (descending)
   - API resources use camelCase only (no duplicate snake_case fields)
   - Links stored as JSON array in `links` column, validated with title (string, max 255) and url (valid URL, max 500)
-- **PDF Export**: Order invoice with payment transactions, pure black and white design
+  - Notes field (text) available in create/update forms, displayed in order details modal and PDF export
+- **PDF Export**: Order invoice with payment transactions and notes, pure black and white design
 
 ### 9. **Payment Management Module**
 - **Location**: `app/Http/Controllers/API/PaymentController.php`
@@ -434,14 +440,25 @@ backend/
 
 ### 11. **Dashboard & Analytics Module**
 - **Location**: `app/Http/Controllers/API/DashboardController.php`
-- **Routes**: `/api/dashboard/summary`, `/api/dashboard/revenue-trend`, `/api/dashboard/recent-activities`
+- **Routes**: 
+  - `/api/dashboard/summary` - KPI totals (orders, customers) with period comparison
+  - `/api/dashboard/orders-summary` - Order status counts (total, pending, processing, completed)
+  - `/api/dashboard/upcoming-orders` - Orders with upcoming event dates (order_date >= today)
+  - `/api/dashboard/upcoming-events` - Customer birthdays and anniversaries (next 30 days)
+  - `/api/dashboard/last-transactions` - Combined payments and financial transactions
+  - `/api/dashboard/company-health-chart` - Monthly aggregation (orders revenue, income, expenses, profit)
+  - `/api/dashboard/recent-activities` - Recent orders, payments, and customer events
 - **Features**:
-  - Aggregated KPI summary (revenue, orders, customers) with previous-period deltas
-  - Revenue trend grouping (7/30/90 day ranges) using payments data
+  - Aggregated KPI summary (orders, customers) with previous-period deltas
+  - Orders summary by status (pending, processing, completed)
+  - Upcoming orders by event date (order_date)
+  - Upcoming customer events (birthdays, anniversaries) for gift preparation
+  - Last transactions (payments + financial transactions combined)
+  - Company health chart with multi-line visualization (orders revenue, income, expenses, profit)
   - Recent activities feed combining latest orders, payments, and customer events
 - **Permissions**: `view_dashboard`
 - **Status**: ✅ Fully implemented
-- **Consumers**: Admin Dashboard KPI cards, revenue chart, and live updates panel
+- **Consumers**: Admin Dashboard widgets (KPI cards, summary cards, upcoming orders, events, transactions, company health chart)
 
 ### 12. **Report Management Module**
 - **Location**: `app/Http/Controllers/API/ReportController.php`

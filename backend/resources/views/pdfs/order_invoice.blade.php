@@ -448,6 +448,13 @@
         </tr>
     </table>
 
+    @if($order->notes)
+        <div class="section-title" style="margin-top: 12px;">Notes</div>
+        <div style="background: #f8f9fa; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px; margin-bottom: 12px; font-size: 11px; line-height: 1.5; color: #000;">
+            {{ $order->notes }}
+        </div>
+    @endif
+
     <div class="footer">
         <div class="footer-name">{{ $businessName }}</div>
         <div class="footer-contact">

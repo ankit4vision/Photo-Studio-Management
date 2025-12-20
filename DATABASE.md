@@ -177,8 +177,8 @@ Customer orders for photo studio services.
 | `order_number` | varchar(255) | UNIQUE, NOT NULL | Order number (e.g., #ORD001) |
 | `customer_id` | bigint unsigned | FOREIGN KEY, NOT NULL | Customer reference |
 | `branch_id` | bigint unsigned | FOREIGN KEY, NULLABLE | Branch reference |
-| `order_date` | date | NOT NULL | Order date |
-| `due_date` | date | NULLABLE | Due/completion date |
+| `order_date` | date | NOT NULL | Event date (when photo shoot/event happens) |
+| `due_date` | date | NULLABLE | Final delivery date (reminder/follow-up date) |
 | `subtotal` | decimal(12,2) | DEFAULT 0 | Subtotal (sum of items) |
 | `discount` | decimal(12,2) | DEFAULT 0 | Discount amount |
 | `total_amount` | decimal(12,2) | NOT NULL | Total amount (subtotal - discount) |
@@ -214,6 +214,9 @@ Customer orders for photo studio services.
 - `remaining_amount` is calculated: `total_amount - paid_amount`
 - `payment_status` should be auto-updated based on `paid_amount` vs `total_amount`
 - `subtotal` should be calculated from `order_items`
+- `order_date` represents the **Event Date** (when the photo shoot/event happens)
+- `due_date` represents the **Final Delivery Date** (reminder/follow-up date for delivery or next action)
+- `notes` field stores order notes/special instructions (displayed in form, details view, and PDF export)
 - `links` stores JSON array of link objects: `[{"id": 1234567890, "title": "Photo Share Link", "url": "https://..."}]`
 - Links can be managed via Order Details page (CRUD operations)
 
