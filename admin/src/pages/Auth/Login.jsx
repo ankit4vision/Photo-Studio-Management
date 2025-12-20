@@ -7,7 +7,7 @@ import { useToast } from '../../components'
 import { useAuth } from '../../context/AuthContext'
 import { ThemeToggle } from '../../components'
 import logoImg from '../../assets/logo/logo-transprant.png'
-import bgLoginImg from '../../assets/bg_login.jpg'
+import bgLoginImg from '../../assets/bg_login.avif'
 import '../../styles/auth.css'
 
 const Login = () => {
@@ -167,20 +167,20 @@ const Login = () => {
               {/* Logo/Brand Section - Mobile Only */}
               <div className="text-center mb-4 d-lg-none">
                 <div className="d-inline-flex align-items-center justify-content-center mb-3 p-3" 
-                     style={{ boxShadow: '0 4px 20px rgba(34, 197, 94, 0.15)' }}>
+                     style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)' }}>
                   <img src={logoImg} alt="Photo Studio Management App Logo" style={{ width: '100px', height: 'auto' }} />
                 </div>
-                <h2 className="text-success fw-bold mb-1">Photo Studio Management</h2>
+                <h2 className="text-dark fw-bold mb-1">Photo Studio Management</h2>
                 <p className="text-muted mb-0">Professional Photo Studio Management System</p>
               </div>
 
               {/* Logo/Brand Section - Desktop Only */}
               <div className="text-center mb-4 d-none d-lg-block">
                 <div className="d-inline-flex align-items-center justify-content-center mb-3 p-3" 
-                     style={{ boxShadow: '0 4px 20px rgba(34, 197, 94, 0.15)' }}>
+                     style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)' }}>
                   <img src={logoImg} alt="Photo Studio Management App Logo" style={{ width: '120px', height: 'auto' }} />
                 </div>
-                <h2 className="text-success fw-bold mb-1">Photo Studio Management</h2>
+                <h2 className="text-dark fw-bold mb-1">Photo Studio Management</h2>
                 <p className="text-muted mb-0">Professional Photo Studio Management System</p>
               </div>
 
@@ -235,7 +235,7 @@ const Login = () => {
                       onChange={handleChange}
                       className="fw-medium"
                     />
-                    <Link to="/forgot-password" className="text-decoration-none text-success fw-medium">
+                    <Link to="/forgot-password" className="text-decoration-none text-primary fw-medium">
                       Forgot password?
                     </Link>
                   </div>
@@ -244,7 +244,7 @@ const Login = () => {
                     type="submit"
                     disabled={loading}
                     className="auth-button w-100"
-                    variant="success"
+                    variant="primary"
                   >
                     {loading ? 'Signing In...' : 'Sign In'}
                   </Button>
