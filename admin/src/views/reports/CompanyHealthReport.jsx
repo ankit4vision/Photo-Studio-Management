@@ -208,6 +208,21 @@ const CompanyHealthReport = () => {
             </div>
           </div>
 
+          {/* About This Report - Moved to Top */}
+          <Card className="shadow-sm mb-4">
+            <Card.Body className="p-3">
+              <div className="d-flex align-items-start">
+                <FontAwesomeIcon icon={faInfoCircle} className="text-primary me-3 mt-1" />
+                <div className="flex-grow-1">
+                  <h6 className="mb-2 text-dark fw-bold">About This Report</h6>
+                  <p className="mb-0 text-muted small" style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                    The <strong>Company Health Report</strong> provides a comprehensive financial overview combining order transactions and income/expense records. It includes order summaries, customer details, financial transactions, and key performance indicators to help you assess your business's financial health and make informed decisions.
+                  </p>
+                </div>
+              </div>
+            </Card.Body>
+          </Card>
+
           {/* Filters */}
           <Card className="shadow-sm mb-4">
             <Card.Body>
@@ -276,16 +291,23 @@ const CompanyHealthReport = () => {
           {reportData && (
             <>
               {/* Section 1: Order Summary */}
-              <div className="mb-4">
-                <div className="mb-3">
-                  <h4 className="text-dark fw-bold mb-2">
-                    <FontAwesomeIcon icon={faShoppingCart} className="me-2 text-primary" />
-                    Order Summary
-                  </h4>
-                  <p className="text-muted mb-3">
-                    Overview of all orders, payments, and customer transactions within the selected date range.
-                  </p>
-                </div>
+              <div className="mb-5" style={{ backgroundColor: '#e7f1ff', padding: '20px', borderRadius: '8px', border: '1px solid #b3d9ff' }}>
+                <Card className="shadow-sm mb-4" style={{ 
+                  borderLeft: '4px solid #0d6efd',
+                  backgroundColor: '#ffffff'
+                }}>
+                  <Card.Body className="p-4">
+                    <div className="mb-3">
+                      <h4 className="text-dark fw-bold mb-2">
+                        <FontAwesomeIcon icon={faShoppingCart} className="me-2 text-primary" />
+                        Order Summary
+                      </h4>
+                      <p className="text-muted mb-0">
+                        Overview of all orders, payments, and customer transactions within the selected date range.
+                      </p>
+                    </div>
+                  </Card.Body>
+                </Card>
 
                 {/* Summary Cards */}
                 <Row className="mb-4 g-3">
@@ -440,17 +462,24 @@ const CompanyHealthReport = () => {
                 )}
               </div>
 
-              {/* Section 2: Income & Expense */}
-              <div className="mb-4">
-                <div className="mb-3">
-                  <h4 className="text-dark fw-bold mb-2">
-                    <FontAwesomeIcon icon={faChartLine} className="me-2 text-primary" />
-                    Income & Expense
-                  </h4>
-                  <p className="text-muted mb-3">
-                    Extra financial income/expense module which is outside of orders, 3rd party transactions.
-                  </p>
-                </div>
+              {/* Section 2: Income & Expense Summary */}
+              <div className="mb-5" style={{ backgroundColor: '#d1f2eb', padding: '20px', borderRadius: '8px', border: '1px solid #81e6d9' }}>
+                <Card className="shadow-sm mb-4" style={{ 
+                  borderLeft: '4px solid #198754',
+                  backgroundColor: '#ffffff'
+                }}>
+                  <Card.Body className="p-4">
+                    <div className="mb-3">
+                      <h4 className="text-dark fw-bold mb-2">
+                        <FontAwesomeIcon icon={faChartLine} className="me-2 text-success" />
+                        Income & Expense Summary
+                      </h4>
+                      <p className="text-muted mb-0">
+                        Extra financial income/expense module which is outside of orders, 3rd party transactions.
+                      </p>
+                    </div>
+                  </Card.Body>
+                </Card>
 
                 {/* Summary Cards */}
                 <Row className="mb-4 g-3">
@@ -717,16 +746,39 @@ const CompanyHealthReport = () => {
 
               {/* Section 3: Financial Overview */}
               {financialOverview && (
-                <div className="mb-4">
-                  <div className="mb-3">
-                    <h4 className="text-dark fw-bold mb-2">
-                      <FontAwesomeIcon icon={faDollarSign} className="me-2 text-primary" />
-                      Financial Overview
-                    </h4>
-                    <p className="text-muted mb-3">
-                      Comprehensive financial health indicators combining orders and income/expense transactions.
-                    </p>
-                  </div>
+                <div className="mb-4" style={{ backgroundColor: '#fff3cd', padding: '20px', borderRadius: '8px', border: '1px solid #ffd700' }}>
+                  <Card className="shadow-lg mb-4" style={{ 
+                    background: 'linear-gradient(135deg, #fff9e6 0%, #ffffff 100%)',
+                    border: '3px solid #ffc107',
+                    borderRadius: '12px'
+                  }}>
+                    <Card.Body className="p-4">
+                      <div className="mb-4">
+                        <div className="d-flex align-items-center mb-2">
+                          <div style={{
+                            width: '48px',
+                            height: '48px',
+                            borderRadius: '12px',
+                            background: 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginRight: '12px'
+                          }}>
+                            <FontAwesomeIcon icon={faDollarSign} className="text-white fs-5" />
+                          </div>
+                          <div>
+                            <h4 className="text-dark fw-bold mb-1">
+                              Financial Overview
+                            </h4>
+                            <p className="text-muted mb-0 small">
+                              Comprehensive financial health indicators combining orders and income/expense transactions.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </Card.Body>
+                  </Card>
 
                   <Row className="g-3">
                     <Col md={3} sm={6}>
@@ -740,7 +792,7 @@ const CompanyHealthReport = () => {
                                   placement="top"
                                   overlay={
                                     <Tooltip id="tooltip-incoming">
-                                      <strong>Calculation:</strong> Orders: Total Paid Amounts + Income & Expense: Total Income
+                                      <strong>Calculation:</strong> Orders: Total Paid Amounts + Income & Expense Summary: Total Income
                                     </Tooltip>
                                   }
                                 >
@@ -758,29 +810,31 @@ const CompanyHealthReport = () => {
                       </Card>
                     </Col>
                     <Col md={3} sm={6}>
-                      <Card className="bg-gradient-danger text-white border-0 shadow-sm h-100">
+                      <Card className="text-white border-0 shadow-sm h-100" style={{ 
+                        background: 'linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%)'
+                      }}>
                         <Card.Body className="p-4">
                           <div className="d-flex align-items-start justify-content-between">
                             <div className="flex-grow-1">
                               <div className="d-flex align-items-center mb-2">
-                                <h4 className="mb-0 me-2">{formatCurrency(financialOverview.expenseFlow)}</h4>
+                                <h4 className="mb-0 me-2 text-white">{formatCurrency(financialOverview.expenseFlow)}</h4>
                                 <OverlayTrigger
                                   placement="top"
                                   overlay={
                                     <Tooltip id="tooltip-expense-flow">
-                                      <strong>Calculation:</strong> Income & Expense: Total Expense
+                                      <strong>Calculation:</strong> Income & Expense Summary: Total Expense
                                     </Tooltip>
                                   }
                                 >
-                                  <FontAwesomeIcon icon={faQuestionCircle} className="opacity-75" style={{ fontSize: '14px', cursor: 'help' }} />
+                                  <FontAwesomeIcon icon={faQuestionCircle} className="opacity-75 text-white" style={{ fontSize: '14px', cursor: 'help' }} />
                                 </OverlayTrigger>
                               </div>
-                              <p className="mb-1 opacity-75 small fw-semibold">Expense Flow</p>
-                              <p className="mb-0 opacity-60" style={{ fontSize: '11px' }}>
+                              <p className="mb-1 opacity-75 small fw-semibold text-white">Expense Flow</p>
+                              <p className="mb-0 opacity-60 text-white" style={{ fontSize: '11px' }}>
                                 Total Expenses
                               </p>
                             </div>
-                            <FontAwesomeIcon icon={faArrowDown} className="fs-1 opacity-50" />
+                            <FontAwesomeIcon icon={faArrowDown} className="fs-1 opacity-50 text-white" />
                           </div>
                         </Card.Body>
                       </Card>
@@ -857,21 +911,6 @@ const CompanyHealthReport = () => {
               </Card.Body>
             </Card>
           )}
-
-          {/* About This Report - Moved to Bottom */}
-          <Card className="shadow-sm mt-4">
-            <Card.Body className="p-3">
-              <div className="d-flex align-items-start">
-                <FontAwesomeIcon icon={faInfoCircle} className="text-primary me-3 mt-1" />
-                <div className="flex-grow-1">
-                  <h6 className="mb-2 text-dark fw-bold">About This Report</h6>
-                  <p className="mb-0 text-muted small" style={{ fontSize: '13px', lineHeight: '1.6' }}>
-                    The <strong>Company Health Report</strong> provides a comprehensive financial overview combining order transactions and income/expense records. It includes order summaries, customer details, financial transactions, and key performance indicators to help you assess your business's financial health and make informed decisions.
-                  </p>
-                </div>
-              </div>
-            </Card.Body>
-          </Card>
         </Col>
       </Row>
     </Container>

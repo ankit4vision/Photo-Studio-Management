@@ -3041,6 +3041,201 @@ const handleDeletePackage = async (packageId) => {
 
 ---
 
+## 📊 Report Management APIs
+
+### 1. **GET /api/reports/company-health**
+**Description**: Company health report data fetch करने के लिए (orders, payments, income, expenses summary)
+
+**Backend Controller**: `ReportController@companyHealth`
+
+**Permissions Required**: `view_dashboard`
+
+**Query Parameters**:
+- `start_date` - Start date (ISO date format, optional, default: current year Jan 1st)
+- `end_date` - End date (ISO date format, optional, default: current year Dec 31st)
+- `branch_id` - Filter by branch (optional)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "dateRange": {
+      "start": "2025-01-01",
+      "end": "2025-12-31"
+    },
+    "branchName": "Main Branch",
+    "financialSummary": {
+      "totalOrders": 150,
+      "totalRevenue": 1250000.00,
+      "netPayments": 1000000.00,
+      "outstandingAmount": 250000.00
+    },
+    "allCustomers": [
+      {
+        "customerId": 1,
+        "customerCode": "#CUST001",
+        "name": "Rajesh Patel",
+        "email": "rajesh@example.com",
+        "phone": "+91 98765 43210",
+        "branchName": "Main Branch",
+        "totalOrderAmount": 50000.00,
+        "paidAmount": 30000.00,
+        "remainingAmount": 20000.00
+      }
+    ],
+    "incomeExpenses": {
+      "totalRecords": 50,
+      "totalIncome": 200000.00,
+      "totalExpenses": 75000.00,
+      "netProfit": 125000.00,
+      "incomeByCategory": [
+        {
+          "category": "Photography Services",
+          "amount": 150000.00
+        }
+      ],
+      "expensesByCategory": [
+        {
+          "category": "Equipment",
+          "amount": 50000.00
+        }
+      ]
+    },
+    "incomeRecords": [
+      {
+        "id": 1,
+        "date": "2025-12-18",
+        "category": "Photography Services",
+        "description": "Wedding photography",
+        "amount": 5000.00
+      }
+    ],
+    "expenseRecords": [
+      {
+        "id": 1,
+        "date": "2025-12-18",
+        "category": "Equipment",
+        "description": "Camera purchase",
+        "amount": 25000.00
+      }
+    ],
+    "financialOverview": {
+      "incomingFlow": 1200000.00,
+      "expenseFlow": 75000.00,
+      "companyProfit": 1125000.00,
+      "outstanding": 250000.00
+    }
+  }
+}
+```
+
+**Frontend Integration**:
+- **Service**: `src/services/reportService.js`
+- **Method**: `reportService.getCompanyHealthReport(params)`
+- **Used In**:
+  - `src/views/reports/CompanyHealthReport.jsx` - Company Health Report page
+
+**Calculation Details**:
+- **Total Revenue**: Sum of all order `total_amount` within date range
+- **Net Payments**: Sum of all payment `amount` where `payment_type = 'credit'` minus sum where `payment_type = 'debit'` for orders within date range
+- **Outstanding Amount**: `totalRevenue - netPayments`
+- **Incoming Flow**: `netPayments + totalIncome` (from financial transactions)
+- **Expense Flow**: `totalExpenses` (from financial transactions)
+- **Company Profit**: `incomingFlow - expenseFlow`
+- **Outstanding**: `outstandingAmount` (from orders)
+
+---
+
+### 2. **GET /api/reports/company-health/export-pdf**
+**Description**: Company Health Report PDF export करने के लिए
+
+**Backend Controller**: `ReportController@exportPdf`
+
+**Permissions Required**: `view_dashboard`
+
+**Query Parameters**:
+- `start_date` - Start date (ISO date format, optional)
+- `end_date` - End date (ISO date format, optional)
+- `branch_id` - Filter by branch (optional)
+
+**Response**: PDF file download
+- **Content-Type**: `application/pdf`
+- **Content-Disposition**: `attachment; filename="Company_Health_Report_{DateRange}.pdf"`
+
+**Frontend Integration**:
+- **Service**: `src/services/reportService.js`
+- **Method**: `reportService.exportCompanyHealthReportPdf(params)`
+- **Used In**:
+  - `src/views/reports/CompanyHealthReport.jsx` - Export PDF button
+
+**PDF Includes**:
+- Company information (logo, business name, address, contact)
+- Report info (date range, generated date, branch)
+- Order Summary section (summary cards, all customers table)
+- Income & Expense Summary section (summary cards, category breakdowns, income/expense records)
+- Financial Overview section (incoming flow, expense flow, company profit, outstanding)
+- Colorful design with light backgrounds and colored borders
+
+---
+
+### 3. **GET /api/reports/customer-payment-status**
+**Description**: Customer payment status report data fetch करने के लिए
+
+**Backend Controller**: `ReportController@customerPaymentStatus`
+
+**Permissions Required**: `view_customer`
+
+**Query Parameters**:
+- `start_date` - Start date (ISO date format, optional, default: current year Jan 1st)
+- `end_date` - End date (ISO date format, optional, default: current year Dec 31st)
+- `branch_id` - Filter by branch (optional)
+- `payment_status` - Filter by payment status: 'all', 'paid', 'pending', 'partial' (optional)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "dateRange": {
+      "start": "2025-01-01",
+      "end": "2025-12-31"
+    },
+    "branchName": "Main Branch",
+    "summary": {
+      "totalCustomers": 100,
+      "paidCustomers": 60,
+      "pendingCustomers": 30,
+      "partialCustomers": 10,
+      "totalOutstanding": 250000.00
+    },
+    "customers": [
+      {
+        "customerId": 1,
+        "customerCode": "#CUST001",
+        "name": "Rajesh Patel",
+        "email": "rajesh@example.com",
+        "phone": "+91 98765 43210",
+        "branchName": "Main Branch",
+        "totalOrders": 5,
+        "totalAmount": 125000.00,
+        "paidAmount": 100000.00,
+        "remainingAmount": 25000.00,
+        "paymentStatus": "partial"
+      }
+    ]
+  }
+}
+```
+
+**Frontend Integration**:
+- **Service**: `src/services/reportService.js`
+- **Method**: `reportService.getCustomerPaymentStatusReport(params)`
+- **Used In**:
+  - `src/views/reports/CustomerPaymentStatusReport.jsx` - Customer Payment Status Report page
+
+---
+
 ## ⚙️ Settings Management APIs
 
 ### 1. **GET /api/global-settings/**
@@ -3722,6 +3917,7 @@ const Settings = () => {
 ✅ Order Management (CRUD operations + Multi-package support + Status/Payment Update + Server-side pagination/filtering/searching + PDF Export + **Important Links CRUD**)
 ✅ Payment Management (CRUD operations + Auto order status update + Customer stats update + PDF Export)
 ✅ Financial Management (Transactions CRUD + Categories CRUD + Statistics + Server-side pagination/filtering/searching)
+✅ Report Management (Company Health Report + Customer Payment Status Report + PDF Export)
 ✅ Settings Management (Full CRUD + Email Test + S3 Test + App Settings with Web URL)
 
 ### Frontend Integration Status
@@ -3737,6 +3933,7 @@ const Settings = () => {
 - ✅ **CustomerService** - Fully integrated in CustomersList, CustomerForm, CustomerDetailsModal (server-side pagination/filtering, normalized totals, no mock fallback, PDF Export)
 - ✅ **OrderService** - Fully integrated in OrdersList, OrderForm, OrderDetailsModal (server-side pagination/filtering, payment type badges, no mock fallback, PDF Export, **Links CRUD**)
 - ✅ **PaymentService** - Fully integrated in PaymentForm, TransactionsList (real database integration, PDF Export)
+- ✅ **ReportService** - Fully integrated in CompanyHealthReport, CustomerPaymentStatusReport (with PDF export)
 - ✅ **SettingsService** - Fully integrated in Settings page (Business Info, Invoice, Email Settings with test, App Settings with Web URL, Currency & Regional, S3 Settings)
 
 ### Server-Side Features
@@ -3777,4 +3974,5 @@ const Settings = () => {
 - ✅ CORS configuration updated to expose Content-Disposition header for filename extraction
 - ✅ **Important Links CRUD** - Dynamic links management (add/edit/delete) with custom titles and URLs, managed from Order Details page, stored as JSON array in orders table
 - ✅ Branch Management fully implemented with API integration (server-side pagination, filtering, searching)
+- ✅ **Report Management Module** - Company Health Report and Customer Payment Status Report fully implemented with date range filtering, branch filtering, and PDF export
 

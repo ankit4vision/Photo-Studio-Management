@@ -55,6 +55,7 @@ backend/
 │   │   │   │   ├── PackageController.php
 │   │   │   │   ├── PaymentController.php
 │   │   │   │   ├── PermissionController.php
+│   │   │   │   ├── ReportController.php
 │   │   │   │   ├── RoleController.php
 │   │   │   │   ├── SettingController.php
 │   │   │   │   └── UserController.php
@@ -181,6 +182,7 @@ backend/
 │       │   ├── test.blade.php        # Test email template
 │       │   └── welcome.blade.php
 │       └── 📁 pdfs/                 # PDF export templates
+│           ├── company_health.blade.php   # Company Health Report PDF template
 │           ├── order_invoice.blade.php    # Order invoice PDF template
 │           ├── customer.blade.php         # Customer history report PDF template
 │           └── transaction.blade.php     # Payment receipt PDF template
@@ -441,7 +443,39 @@ backend/
 - **Status**: ✅ Fully implemented
 - **Consumers**: Admin Dashboard KPI cards, revenue chart, and live updates panel
 
-### 12. **Settings Management Module**
+### 12. **Report Management Module**
+- **Location**: `app/Http/Controllers/API/ReportController.php`
+- **Routes**: 
+  - `/api/reports/company-health` (GET)
+  - `/api/reports/company-health/export-pdf` (GET)
+  - `/api/reports/customer-payment-status` (GET)
+- **Features**:
+  - **Company Health Report**:
+    - Order Summary (total orders, order amount, paid amounts, remaining amounts)
+    - All customers list with financial summary
+    - Income & Expense Summary (total records, total income, total expenses, net profit)
+    - Income by category breakdown with records
+    - Expenses by category breakdown with records
+    - Financial Overview (incoming flow, expense flow, company profit, outstanding)
+    - Date range filtering (default: current year Jan 1st to Dec 31st)
+    - Branch filtering
+    - PDF export with colorful design
+  - **Customer Payment Status Report**:
+    - Customer payment details
+    - Outstanding balances
+    - Payment status filtering (all, paid, pending, partial)
+    - Date range filtering (default: current year Jan 1st to Dec 31st)
+    - Branch filtering
+- **Permissions**: 
+  - `view_dashboard` (for Company Health Report)
+  - `view_customer` (for Customer Payment Status Report)
+- **Status**: ✅ Fully implemented
+- **Note**: 
+  - All calculations performed on backend
+  - Company Health Report PDF includes colorful design with light backgrounds and colored borders
+  - PDF template: `resources/views/pdfs/company_health.blade.php`
+
+### 13. **Settings Management Module**
 - **Location**: `app/Http/Controllers/API/SettingController.php`
 - **Routes**: `/api/settings/*`, `/api/global-settings/*`
 - **Features**:
@@ -457,7 +491,7 @@ backend/
 - **Permissions**: `view_setting`, `edit_setting`
 - **Status**: ✅ Fully implemented
 
-### 12. **Email Service**
+### 14. **Email Service**
 - **Location**: `app/Services/EmailService.php`
 - **Features**:
   - Send generic emails
@@ -469,7 +503,7 @@ backend/
   - Email template rendering (Blade templates)
 - **Status**: ✅ Fully implemented
 
-### 13. **PDF Export Service**
+### 15. **PDF Export Service**
 - **Location**: `app/Services/PdfExportService.php`
 - **Features**:
   - Generate PDF documents
@@ -477,12 +511,17 @@ backend/
   - Order invoice export
   - Customer history report export
   - Payment receipt export
+  - Company Health Report export
 - **Status**: ✅ Fully implemented
 - **PDF Templates**:
   - `resources/views/pdfs/order_invoice.blade.php` - Order invoice with payment transactions
   - `resources/views/pdfs/customer.blade.php` - Customer history report with orders and payments
   - `resources/views/pdfs/transaction.blade.php` - Payment receipt with order reference
-- **Design Standards**: Pure black and white, no background colors, single thin line dividers, consistent footer format
+  - `resources/views/pdfs/company_health.blade.php` - Company Health Report with colorful design
+- **Design Standards**: 
+  - Order/Customer/Payment PDFs: Pure black and white, no background colors, single thin line dividers
+  - Company Health Report PDF: Colorful design with light backgrounds, colored borders (1px solid), and colored text
+  - Consistent footer format across all PDFs
 
 ---
 
@@ -1122,3 +1161,4 @@ php artisan serve
 - ✅ All upload-related code removed (S3Service, FileUploadService, UploadController, upload routes)
 - ✅ Avatar/image fields removed from API responses (UserController, AuthController, CustomerResource, OrderResource)
 - ✅ **Important Links Management** - Added `links` JSON column to orders table, Order model updated with fillable and casts, OrderResource includes links array, validation added to OrderStoreRequest and OrderUpdateRequest
+- ✅ **Report Management Module** - Company Health Report and Customer Payment Status Report fully implemented with date range filtering, branch filtering, comprehensive financial calculations, and PDF export with colorful design

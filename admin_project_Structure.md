@@ -224,10 +224,8 @@ admin/
 │   │   │   ├── PaymentFormView.jsx
 │   │   │   └── PaymentsList.jsx
 │   │   ├── 📁 reports/               # Report views
-│   │   │   ├── BranchReport.jsx
-│   │   │   ├── LedgerReport.jsx
-│   │   │   ├── SalesReport.jsx
-│   │   │   └── StaffReport.jsx
+│   │   │   ├── CompanyHealthReport.jsx
+│   │   │   └── CustomerPaymentStatusReport.jsx
 │   │   ├── 📁 roles/                 # Role management views
 │   │   │   └── RolesList.jsx
 │   │   ├── 📁 settings/              # Settings views
@@ -405,11 +403,12 @@ admin/
 ### 9. **Report Management**
 - **Location**: `src/views/reports/`, `src/services/reportService.js`
 - **Features**:
-  - Sales report
-  - Ledger report
-  - Branch report
-  - Staff report
-- **Status**: 🔴 Placeholder, needs implementation
+  - Company Health Report (overall orders, payments, income, expenses with financial overview)
+  - Customer Payment Status Report (customer payment details, outstanding balances)
+  - Date range filtering
+  - Branch filtering
+  - PDF export for Company Health Report
+- **Status**: ✅ Fully implemented with API integration + PDF Export
 
 ### 10. **User Management**
 - **Location**: `src/views/users/`, `src/services/userService.js`, `src/services/profileService.js`
@@ -782,13 +781,14 @@ const userService = {
 - Package Management (server-side pagination/filtering)
 - Payment Management (record payments from orders, auto-updates order status and customer stats, PDF export)
 - Transaction Management (shows payments from orders, PDF export)
+- Report Management (Company Health Report, Customer Payment Status Report with PDF export)
 - Theme System (Dark/Light mode)
 
 ### 🟡 Partially Implemented (UI Complete, API Pending)
 - None (all modules fully implemented)
 
 ### 🔴 Needs Implementation
-- Report Management (Sales, Ledger, Branch, Staff)
+- None (all modules fully implemented)
 
 ---
 
@@ -856,3 +856,4 @@ npm run lint
 - ✅ All upload-related code removed (uploadService, ImageUploadWithUpload, S3 settings, avatar uploads)
 - ✅ Avatar/image fields removed from API responses and frontend components
 - ✅ **Important Links CRUD** - Dynamic links management (add/edit/delete) with custom titles and URLs, managed from Order Details page
+- ✅ **Report Management Module** - Company Health Report and Customer Payment Status Report fully implemented with date range filtering, branch filtering, and PDF export
