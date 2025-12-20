@@ -224,8 +224,7 @@ admin/
 │   │   │   ├── PaymentFormView.jsx
 │   │   │   └── PaymentsList.jsx
 │   │   ├── 📁 reports/               # Report views
-│   │   │   ├── CompanyHealthReport.jsx
-│   │   │   └── CustomerPaymentStatusReport.jsx
+│   │   │   └── CompanyHealthReport.jsx
 │   │   ├── 📁 roles/                 # Role management views
 │   │   │   └── RolesList.jsx
 │   │   ├── 📁 settings/              # Settings views
@@ -404,7 +403,6 @@ admin/
 - **Location**: `src/views/reports/`, `src/services/reportService.js`
 - **Features**:
   - Company Health Report (overall orders, payments, income, expenses with financial overview)
-  - Customer Payment Status Report (customer payment details, outstanding balances)
   - Date range filtering
   - Branch filtering
   - PDF export for Company Health Report
@@ -856,4 +854,4 @@ npm run lint
 - ✅ All upload-related code removed (uploadService, ImageUploadWithUpload, S3 settings, avatar uploads)
 - ✅ Avatar/image fields removed from API responses and frontend components
 - ✅ **Important Links CRUD** - Dynamic links management (add/edit/delete) with custom titles and URLs, managed from Order Details page
-- ✅ **Report Management Module** - Company Health Report and Customer Payment Status Report fully implemented with date range filtering, branch filtering, and PDF export
+- ✅ **Report Management Module** - Company Health Report fully implemented with date range filtering, branch filtering, and PDF export

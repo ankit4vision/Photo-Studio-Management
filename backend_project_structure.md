@@ -448,7 +448,6 @@ backend/
 - **Routes**: 
   - `/api/reports/company-health` (GET)
   - `/api/reports/company-health/export-pdf` (GET)
-  - `/api/reports/customer-payment-status` (GET)
 - **Features**:
   - **Company Health Report**:
     - Order Summary (total orders, order amount, paid amounts, remaining amounts)
@@ -460,15 +459,8 @@ backend/
     - Date range filtering (default: current year Jan 1st to Dec 31st)
     - Branch filtering
     - PDF export with colorful design
-  - **Customer Payment Status Report**:
-    - Customer payment details
-    - Outstanding balances
-    - Payment status filtering (all, paid, pending, partial)
-    - Date range filtering (default: current year Jan 1st to Dec 31st)
-    - Branch filtering
 - **Permissions**: 
   - `view_dashboard` (for Company Health Report)
-  - `view_customer` (for Customer Payment Status Report)
 - **Status**: ✅ Fully implemented
 - **Note**: 
   - All calculations performed on backend
@@ -1161,4 +1153,4 @@ php artisan serve
 - ✅ All upload-related code removed (S3Service, FileUploadService, UploadController, upload routes)
 - ✅ Avatar/image fields removed from API responses (UserController, AuthController, CustomerResource, OrderResource)
 - ✅ **Important Links Management** - Added `links` JSON column to orders table, Order model updated with fillable and casts, OrderResource includes links array, validation added to OrderStoreRequest and OrderUpdateRequest
-- ✅ **Report Management Module** - Company Health Report and Customer Payment Status Report fully implemented with date range filtering, branch filtering, comprehensive financial calculations, and PDF export with colorful design
+- ✅ **Report Management Module** - Company Health Report fully implemented with date range filtering, branch filtering, comprehensive financial calculations, and PDF export with colorful design

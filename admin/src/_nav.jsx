@@ -109,12 +109,6 @@ const _nav = [
     icon: <CIcon icon={cilBarChart} customClassName="nav-icon" />,
   },
   {
-    component: CNavItem,
-    name: 'Customer Payment Status',
-    to: '/reports/customer-payment-status',
-    icon: <CIcon icon={cilBarChart} customClassName="nav-icon" />,
-  },
-  {
     component: CNavTitle,
     name: 'System',
   },

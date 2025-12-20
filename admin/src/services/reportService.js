@@ -22,27 +22,6 @@ class ReportService {
     }
   }
 
-  /**
-   * Get Customer Payment Status Report
-   * @param {Object} params - Report parameters
-   * @param {string} params.start_date - Start date (YYYY-MM-DD)
-   * @param {string} params.end_date - End date (YYYY-MM-DD)
-   * @param {number} params.branch_id - Optional branch ID filter
-   * @param {string} params.payment_status - Payment status filter: 'all', 'fully_paid', 'partially_paid', 'unpaid'
-   * @param {string} params.search - Search term for customer name, email, phone, or code
-   */
-  async getCustomerPaymentStatusReport(params = {}) {
-    try {
-      const response = await apiClient.get('/reports/customer-payment-status', { params })
-      return {
-        success: true,
-        data: response.data?.data || response.data,
-      }
-    } catch (error) {
-      return handleApiError(error)
-    }
-  }
-
   // Legacy methods (kept for backward compatibility)
   async getSalesReport(params = {}) {
     // Redirect to company health report
@@ -50,8 +29,8 @@ class ReportService {
   }
 
   async getLedgerReport(params = {}) {
-    // Redirect to customer payment status report
-    return this.getCustomerPaymentStatusReport(params)
+    // Redirect to company health report
+    return this.getCompanyHealthReport(params)
   }
 
   async getBranchReport(params = {}) {

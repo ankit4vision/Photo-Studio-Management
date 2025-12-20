@@ -43,7 +43,6 @@ const routesConfig = [
   
   // Report Routes
   { path: '/reports/company-health', name: 'Company Health Report' },
-  { path: '/reports/customer-payment-status', name: 'Customer Payment Status Report' },
   
   // Account Routes
   { path: '/profile', name: 'Profile' },

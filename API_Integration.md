@@ -3179,63 +3179,6 @@ const handleDeletePackage = async (packageId) => {
 
 ---
 
-### 3. **GET /api/reports/customer-payment-status**
-**Description**: Customer payment status report data fetch करने के लिए
-
-**Backend Controller**: `ReportController@customerPaymentStatus`
-
-**Permissions Required**: `view_customer`
-
-**Query Parameters**:
-- `start_date` - Start date (ISO date format, optional, default: current year Jan 1st)
-- `end_date` - End date (ISO date format, optional, default: current year Dec 31st)
-- `branch_id` - Filter by branch (optional)
-- `payment_status` - Filter by payment status: 'all', 'paid', 'pending', 'partial' (optional)
-
-**Response**:
-```json
-{
-  "success": true,
-  "data": {
-    "dateRange": {
-      "start": "2025-01-01",
-      "end": "2025-12-31"
-    },
-    "branchName": "Main Branch",
-    "summary": {
-      "totalCustomers": 100,
-      "paidCustomers": 60,
-      "pendingCustomers": 30,
-      "partialCustomers": 10,
-      "totalOutstanding": 250000.00
-    },
-    "customers": [
-      {
-        "customerId": 1,
-        "customerCode": "#CUST001",
-        "name": "Rajesh Patel",
-        "email": "rajesh@example.com",
-        "phone": "+91 98765 43210",
-        "branchName": "Main Branch",
-        "totalOrders": 5,
-        "totalAmount": 125000.00,
-        "paidAmount": 100000.00,
-        "remainingAmount": 25000.00,
-        "paymentStatus": "partial"
-      }
-    ]
-  }
-}
-```
-
-**Frontend Integration**:
-- **Service**: `src/services/reportService.js`
-- **Method**: `reportService.getCustomerPaymentStatusReport(params)`
-- **Used In**:
-  - `src/views/reports/CustomerPaymentStatusReport.jsx` - Customer Payment Status Report page
-
----
-
 ## ⚙️ Settings Management APIs
 
 ### 1. **GET /api/global-settings/**
@@ -3917,7 +3860,7 @@ const Settings = () => {
 ✅ Order Management (CRUD operations + Multi-package support + Status/Payment Update + Server-side pagination/filtering/searching + PDF Export + **Important Links CRUD**)
 ✅ Payment Management (CRUD operations + Auto order status update + Customer stats update + PDF Export)
 ✅ Financial Management (Transactions CRUD + Categories CRUD + Statistics + Server-side pagination/filtering/searching)
-✅ Report Management (Company Health Report + Customer Payment Status Report + PDF Export)
+✅ Report Management (Company Health Report + PDF Export)
 ✅ Settings Management (Full CRUD + Email Test + S3 Test + App Settings with Web URL)
 
 ### Frontend Integration Status
@@ -3933,7 +3876,7 @@ const Settings = () => {
 - ✅ **CustomerService** - Fully integrated in CustomersList, CustomerForm, CustomerDetailsModal (server-side pagination/filtering, normalized totals, no mock fallback, PDF Export)
 - ✅ **OrderService** - Fully integrated in OrdersList, OrderForm, OrderDetailsModal (server-side pagination/filtering, payment type badges, no mock fallback, PDF Export, **Links CRUD**)
 - ✅ **PaymentService** - Fully integrated in PaymentForm, TransactionsList (real database integration, PDF Export)
-- ✅ **ReportService** - Fully integrated in CompanyHealthReport, CustomerPaymentStatusReport (with PDF export)
+- ✅ **ReportService** - Fully integrated in CompanyHealthReport (with PDF export)
 - ✅ **SettingsService** - Fully integrated in Settings page (Business Info, Invoice, Email Settings with test, App Settings with Web URL, Currency & Regional, S3 Settings)
 
 ### Server-Side Features
@@ -3974,5 +3917,5 @@ const Settings = () => {
 - ✅ CORS configuration updated to expose Content-Disposition header for filename extraction
 - ✅ **Important Links CRUD** - Dynamic links management (add/edit/delete) with custom titles and URLs, managed from Order Details page, stored as JSON array in orders table
 - ✅ Branch Management fully implemented with API integration (server-side pagination, filtering, searching)
-- ✅ **Report Management Module** - Company Health Report and Customer Payment Status Report fully implemented with date range filtering, branch filtering, and PDF export
+- ✅ **Report Management Module** - Company Health Report fully implemented with date range filtering, branch filtering, and PDF export
 
