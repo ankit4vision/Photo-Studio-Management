@@ -142,6 +142,7 @@ admin/
 │   │
 │   ├── 📁 constants/                 # Application constants
 │   │   ├── api.js                    # API endpoint constants
+│   │   ├── app.js                    # App-wide static constants (app name, footer, brand info)
 │   │   ├── permissions.js            # Permission constants & helpers
 │   │   └── README.md
 │   │
@@ -317,6 +318,8 @@ admin/
   - Change password (for authenticated users)
   - Token refresh
   - Logout
+  - Clean login UI (demo credentials removed)
+  - Footer with brand information and dynamic copyright year
 - **Status**: ✅ Fully implemented with API integration
 
 ### 2. **Dashboard Module**
@@ -464,6 +467,18 @@ admin/
   - S3 storage configuration
   - Global settings management
 - **Status**: ✅ Fully implemented with API integration
+
+### 14. **App Constants**
+- **Location**: `src/constants/app.js`
+- **Features**:
+  - Centralized static content management
+  - Application name, subtitle, tagline
+  - Dynamic copyright year range (2024-{currentYear})
+  - Footer text with brand information
+  - Brand name and URL (Codexaa Software Solution)
+  - Logo alt text
+- **Usage**: Import constants in components for consistent branding
+- **Status**: ✅ Fully implemented
 
 ---
 
@@ -743,8 +758,10 @@ const userService = {
 
 #### 2. **Permission System**
 - **Permission constants** in `constants/permissions.js`
+- **App constants** in `constants/app.js` (app name, footer, brand info)
 - **Permission checks** in components and routes
 - **Backend permission mapping** via `authService`
+- **All pages protected** with proper permission checks (Reports, Financial Transactions, Financial Categories)
 
 ### Code Quality Rules
 
@@ -861,3 +878,7 @@ npm run lint
 - ✅ Avatar/image fields removed from API responses and frontend components
 - ✅ **Important Links CRUD** - Dynamic links management (add/edit/delete) with custom titles and URLs, managed from Order Details page
 - ✅ **Report Management Module** - Company Health Report fully implemented with date range filtering, branch filtering, and PDF export
+- ✅ **Permissions System** - All pages now have proper permission checks (Reports, Financial Transactions, Financial Categories)
+- ✅ **App Constants** - Centralized constants file (`constants/app.js`) for app name, footer text, brand information
+- ✅ **Footer Updates** - Dynamic copyright year range (2024-2025), brand link (Codexaa Software Solution), consistent across all pages
+- ✅ **Authentication Pages** - Removed demo credentials section, updated with brand footer

@@ -166,6 +166,7 @@ backend/
 │   └── 📁 seeders/                  # Database seeders
 │       ├── BranchSeeder.php
 │       ├── DatabaseSeeder.php
+│       ├── FinancialCategorySeeder.php
 │       ├── PermissionsTableSeeder.php
 │       ├── RolePermissionSeeder.php
 │       ├── RolesTableSeeder.php
@@ -712,6 +713,16 @@ Schema::create('users', function (Blueprint $table) {
 2. **Use factories** for test data
 3. **Call from DatabaseSeeder**
 
+**Available Seeders:**
+- **RolesTableSeeder** - Creates 4 roles: `admin`, `branch-manager`, `manager`, `staff`
+- **PermissionsTableSeeder** - Creates all system permissions (users, roles, branches, packages, customers, orders, payments, dashboard, reports, financial)
+- **RolePermissionSeeder** - Assigns permissions to roles (branch-manager, manager, staff)
+- **UserSeeder** - Creates 2 default users:
+  - `admin@example.com` / `password` (admin role)
+  - `manager@example.com` / `password` (manager role)
+- **BranchSeeder** - Creates sample branches (Lunawada, Vadodara)
+- **FinancialCategorySeeder** - Creates 5 income and 5 expense categories
+
 ---
 
 ## 🌐 API Development
@@ -1171,3 +1182,5 @@ php artisan serve
 - ✅ Avatar/image fields removed from API responses (UserController, AuthController, CustomerResource, OrderResource)
 - ✅ **Important Links Management** - Added `links` JSON column to orders table, Order model updated with fillable and casts, OrderResource includes links array, validation added to OrderStoreRequest and OrderUpdateRequest
 - ✅ **Report Management Module** - Company Health Report fully implemented with date range filtering, branch filtering, comprehensive financial calculations, and PDF export with colorful design
+- ✅ **Permissions System** - Added `view_report` permission for reports module, all pages now have proper permission protection
+- ✅ **Database Seeders** - Updated roles (admin, branch-manager, manager, staff), added default users (admin@example.com, manager@example.com), reduced financial categories to 5 income + 5 expense

@@ -3223,7 +3223,7 @@ const handleDeletePackage = async (packageId) => {
 
 **Backend Controller**: `ReportController@companyHealth`
 
-**Permissions Required**: `view_dashboard`
+**Permissions Required**: `view_report`
 
 **Query Parameters**:
 - `start_date` - Start date (ISO date format, optional, default: current year Jan 1st)
@@ -3327,7 +3327,7 @@ const handleDeletePackage = async (packageId) => {
 
 **Backend Controller**: `ReportController@exportPdf`
 
-**Permissions Required**: `view_dashboard`
+**Permissions Required**: `view_report`
 
 **Query Parameters**:
 - `start_date` - Start date (ISO date format, optional)
@@ -4069,6 +4069,11 @@ const Settings = () => {
 ---
 
 **Last Updated**: December 2025
+
+## 🔄 Recent Updates
+- ✅ **Permissions System** - Added `view_report` permission for reports module, all pages now have proper permission protection
+- ✅ **Report API Permissions** - Updated report endpoints to use `view_report` permission instead of `view_dashboard`
+- ✅ **Financial Permissions** - All financial transaction and category endpoints have proper permission checks
 **Version**: 1.2.0
 
 ## 🔄 Recent Updates
@@ -4093,4 +4098,6 @@ const Settings = () => {
 - ✅ **Important Links CRUD** - Dynamic links management (add/edit/delete) with custom titles and URLs, managed from Order Details page, stored as JSON array in orders table
 - ✅ Branch Management fully implemented with API integration (server-side pagination, filtering, searching)
 - ✅ **Report Management Module** - Company Health Report fully implemented with date range filtering, branch filtering, and PDF export
+- ✅ **Permissions System** - Added `view_report` permission for reports module, updated report endpoints to use `view_report` instead of `view_dashboard`
+- ✅ **Financial Permissions** - All financial transaction and category endpoints have proper permission checks (`view_financial_transaction`, `create_financial_transaction`, `edit_financial_transaction`, `delete_financial_transaction`, `view_financial_category`, etc.)
 
