@@ -64,16 +64,14 @@ const _nav = [
     name: 'Income & Expenses',
     to: '/financial/transactions',
     icon: <CIcon icon={cilDollar} customClassName="nav-icon" />,
-    // TODO: Uncomment when backend permissions are created and assigned
-    // permission: PERMISSIONS.FINANCIAL_TRANSACTION_READ,
+    permission: PERMISSIONS.FINANCIAL_TRANSACTION_READ,
   },
   {
     component: CNavItem,
     name: 'Financial Categories',
     to: '/financial/categories',
     icon: <CIcon icon={cilListRich} customClassName="nav-icon" />,
-    // TODO: Uncomment when backend permissions are created and assigned
-    // permission: PERMISSIONS.FINANCIAL_CATEGORY_READ,
+    permission: PERMISSIONS.FINANCIAL_CATEGORY_READ,
   },
   {
     component: CNavTitle,
@@ -84,6 +82,7 @@ const _nav = [
     name: 'Company Health',
     to: '/reports/company-health',
     icon: <CIcon icon={cilBarChart} customClassName="nav-icon" />,
+    permission: PERMISSIONS.REPORT_READ,
   },
   {
     component: CNavTitle,

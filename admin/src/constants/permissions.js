@@ -57,6 +57,10 @@ export const PERMISSIONS = {
   FINANCIAL_CATEGORY_EDIT: 'edit_financial_category',
   FINANCIAL_CATEGORY_DELETE: 'delete_financial_category',
   FINANCIAL_CATEGORY_MANAGE: 'view_financial_category',
+  
+  // Report Management
+  REPORT_READ: 'report:read',
+  REPORT_EXPORT: 'report:read', // Export uses same permission as view
 
   // Transaction Management (alias for payment)
   TRANSACTION_READ: 'transaction:read',
@@ -232,6 +236,9 @@ export const getRoutePermissions = () => {
     '/roles/edit/:id': [PERMISSIONS.ROLE_WRITE],
     '/roles/delete/:id': [PERMISSIONS.ROLE_DELETE],
     '/reports': [PERMISSIONS.REPORT_READ],
+    '/reports/company-health': [PERMISSIONS.REPORT_READ],
+    '/financial/transactions': [PERMISSIONS.FINANCIAL_TRANSACTION_READ],
+    '/financial/categories': [PERMISSIONS.FINANCIAL_CATEGORY_READ],
     '/settings': [PERMISSIONS.SETTINGS_READ],
     '/profile': [PERMISSIONS.PROFILE_READ],
     '/admin': [PERMISSIONS.ADMIN_ACCESS],

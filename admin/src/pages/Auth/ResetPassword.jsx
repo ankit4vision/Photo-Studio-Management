@@ -6,6 +6,7 @@ import { faLock, faCheckCircle, faArrowLeft } from '@fortawesome/free-solid-svg-
 import { useToast } from '../../components'
 import { Button } from '../../components'
 import { ThemeToggle } from '../../components'
+import { APP_NAME, APP_SUBTITLE, FOOTER_TEXT, BRAND_NAME, BRAND_URL } from '../../constants/app'
 import '../../styles/auth.css'
 
 const ResetPassword = () => {
@@ -144,8 +145,8 @@ const ResetPassword = () => {
                    style={{ width: '80px', height: '80px' }}>
                 <FontAwesomeIcon icon={faLock} size="2x" className="text-primary" />
               </div>
-              <h2 className="text-dark fw-bold mb-1">Photo Studio Management App</h2>
-              <p className="text-muted mb-0">Secure Admin Dashboard</p>
+              <h2 className="text-dark fw-bold mb-1">{APP_NAME}</h2>
+              <p className="text-muted mb-0">{APP_SUBTITLE}</p>
             </div>
 
             <div className="auth-card">
@@ -221,7 +222,15 @@ const ResetPassword = () => {
             {/* Footer */}
             <div className="text-center mt-4">
               <p className="text-muted small mb-0">
-                © 2025 Photo Studio Management App. All rights reserved.
+                {FOOTER_TEXT()} | Powered by{' '}
+                <a 
+                  href={BRAND_URL} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-decoration-none text-primary fw-medium"
+                >
+                  {BRAND_NAME}
+                </a>
               </p>
             </div>
           </Col>

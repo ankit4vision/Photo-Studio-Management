@@ -2,10 +2,11 @@ import React, { useState } from 'react'
 import { Container, Row, Col, Form, FormControl, FormCheck, Button } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faLock, faUser, faEnvelope, faInfoCircle } from '@fortawesome/free-solid-svg-icons'
+import { faLock, faUser, faEnvelope } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from '../../components'
 import { useAuth } from '../../context/AuthContext'
 import { ThemeToggle } from '../../components'
+import { APP_NAME, APP_SUBTITLE, APP_TAGLINE, FOOTER_TEXT, LOGO_ALT_TEXT, BRAND_NAME, BRAND_URL } from '../../constants/app'
 import logoImg from '../../assets/logo/logo-transprant.png'
 import bgLoginImg from '../../assets/bg_login.avif'
 import '../../styles/auth.css'
@@ -153,9 +154,9 @@ const Login = () => {
               />
               <div className="login-image-overlay">
                 <div className="login-image-content">
-                  <img src={logoImg} alt="Photo Studio Management App Logo" className="login-image-logo" />
-                  <h2 className="login-image-title">Photo Studio Management</h2>
-                  <p className="login-image-subtitle">Capture Moments, Manage Excellence</p>
+                  <img src={logoImg} alt={LOGO_ALT_TEXT} className="login-image-logo" />
+                  <h2 className="login-image-title">{APP_NAME}</h2>
+                  <p className="login-image-subtitle">{APP_TAGLINE}</p>
                 </div>
               </div>
             </div>
@@ -168,20 +169,20 @@ const Login = () => {
               <div className="text-center mb-4 d-lg-none">
                 <div className="d-inline-flex align-items-center justify-content-center mb-3 p-3" 
                      style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)' }}>
-                  <img src={logoImg} alt="Photo Studio Management App Logo" style={{ width: '100px', height: 'auto' }} />
+                  <img src={logoImg} alt={LOGO_ALT_TEXT} style={{ width: '100px', height: 'auto' }} />
                 </div>
-                <h2 className="text-dark fw-bold mb-1">Photo Studio Management</h2>
-                <p className="text-muted mb-0">Professional Photo Studio Management System</p>
+                <h2 className="text-dark fw-bold mb-1">{APP_NAME}</h2>
+                <p className="text-muted mb-0">{APP_SUBTITLE}</p>
               </div>
 
               {/* Logo/Brand Section - Desktop Only */}
               <div className="text-center mb-4 d-none d-lg-block">
                 <div className="d-inline-flex align-items-center justify-content-center mb-3 p-3" 
                      style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)' }}>
-                  <img src={logoImg} alt="Photo Studio Management App Logo" style={{ width: '120px', height: 'auto' }} />
+                  <img src={logoImg} alt={LOGO_ALT_TEXT} style={{ width: '120px', height: 'auto' }} />
                 </div>
-                <h2 className="text-dark fw-bold mb-1">Photo Studio Management</h2>
-                <p className="text-muted mb-0">Professional Photo Studio Management System</p>
+                <h2 className="text-dark fw-bold mb-1">{APP_NAME}</h2>
+                <p className="text-muted mb-0">{APP_SUBTITLE}</p>
               </div>
 
               <div className="auth-card">
@@ -251,22 +252,18 @@ const Login = () => {
                 </Form>
               </div>
 
-              {/* Demo Credentials */}
-              <div className="demo-credentials">
-                <div className="d-flex align-items-center mb-3">
-                  <FontAwesomeIcon icon={faInfoCircle} className="me-2 text-muted" />
-                  <h6 className="demo-credentials-title mb-0">Demo Credentials</h6>
-                </div>
-                <div className="demo-credential-item">
-                  <span className="demo-credential-label">Admin:</span>
-                  <code className="demo-credential-value">admin@example.com / admin123</code>
-                </div>
-              </div>
-
               {/* Footer */}
               <div className="text-center mt-4">
                 <p className="text-muted small mb-0">
-                  © 2025 Photo Studio Management App. All rights reserved.
+                  {FOOTER_TEXT()} | Powered by{' '}
+                  <a 
+                    href={BRAND_URL} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-decoration-none text-primary fw-medium"
+                  >
+                    {BRAND_NAME}
+                  </a>
                 </p>
               </div>
             </div>

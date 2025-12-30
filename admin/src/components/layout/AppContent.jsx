@@ -182,28 +182,32 @@ const AppContent = () => {
           />
           
           {/* Financial Management Routes */}
-          {/* TODO: Add PermissionRoute back when backend permissions are created and assigned */}
           <Route
             path="/financial/transactions"
-            element={<FinancialTransactionsList />}
-            // element={
-            //   <PermissionRoute requiredPermission={PERMISSIONS.FINANCIAL_TRANSACTION_READ} showAccessDenied>
-            //     <FinancialTransactionsList />
-            //   </PermissionRoute>
-            // }
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.FINANCIAL_TRANSACTION_READ} showAccessDenied>
+                <FinancialTransactionsList />
+              </PermissionRoute>
+            }
           />
           <Route
             path="/financial/categories"
-            element={<FinancialCategoriesList />}
-            // element={
-            //   <PermissionRoute requiredPermission={PERMISSIONS.FINANCIAL_CATEGORY_READ} showAccessDenied>
-            //     <FinancialCategoriesList />
-            //   </PermissionRoute>
-            // }
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.FINANCIAL_CATEGORY_READ} showAccessDenied>
+                <FinancialCategoriesList />
+              </PermissionRoute>
+            }
           />
           
           {/* Report Routes */}
-          <Route path="/reports/company-health" element={<CompanyHealthReport />} />
+          <Route
+            path="/reports/company-health"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.REPORT_READ} showAccessDenied>
+                <CompanyHealthReport />
+              </PermissionRoute>
+            }
+          />
           
           {/* Default redirect */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />

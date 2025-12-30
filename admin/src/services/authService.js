@@ -52,6 +52,21 @@ const PERMISSION_ALIAS_MAP = {
   
   // Dashboard
   view_dashboard: ['dashboard:read'],
+  
+  // Report Management
+  view_report: ['report:read'],
+  
+  // Financial Transaction Management
+  view_financial_transaction: ['view_financial_transaction'],
+  create_financial_transaction: ['create_financial_transaction', 'view_financial_transaction'],
+  edit_financial_transaction: ['edit_financial_transaction', 'view_financial_transaction'],
+  delete_financial_transaction: ['delete_financial_transaction', 'view_financial_transaction'],
+  
+  // Financial Category Management
+  view_financial_category: ['view_financial_category'],
+  create_financial_category: ['create_financial_category', 'view_financial_category'],
+  edit_financial_category: ['edit_financial_category', 'view_financial_category'],
+  delete_financial_category: ['delete_financial_category', 'view_financial_category'],
 }
 
 const startCase = (value = '') =>

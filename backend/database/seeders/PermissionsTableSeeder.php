@@ -67,6 +67,9 @@ class PermissionsTableSeeder extends Seeder
             // Dashboard
             ['name' => 'view_dashboard', 'description' => 'View dashboard analytics', 'module' => 'dashboard', 'submodule' => 'overview', 'type' => 'read'],
 
+            // Report Management
+            ['name' => 'view_report', 'description' => 'View reports', 'module' => 'reports', 'submodule' => 'management', 'type' => 'read'],
+
             // Financial Transaction Management
             ['name' => 'view_financial_transaction', 'description' => 'View financial transactions', 'module' => 'financial', 'submodule' => 'transactions', 'type' => 'read'],
             ['name' => 'create_financial_transaction', 'description' => 'Create financial transactions', 'module' => 'financial', 'submodule' => 'transactions', 'type' => 'write'],

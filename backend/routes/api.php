@@ -143,8 +143,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/last-transactions', [DashboardController::class, 'lastTransactions'])->middleware('permission:view_dashboard');
 
     // Reports
-    Route::get('/reports/company-health', [ReportController::class, 'companyHealth'])->middleware('permission:view_dashboard');
-    Route::get('/reports/company-health/export-pdf', [ReportController::class, 'exportPdf'])->middleware('permission:view_dashboard');
+    Route::get('/reports/company-health', [ReportController::class, 'companyHealth'])->middleware('permission:view_report');
+    Route::get('/reports/company-health/export-pdf', [ReportController::class, 'exportPdf'])->middleware('permission:view_report');
 
     // Settings
     Route::get('/settings', [SettingController::class, 'index'])->middleware('permission:view_setting');
