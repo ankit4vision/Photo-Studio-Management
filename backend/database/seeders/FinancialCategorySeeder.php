@@ -15,7 +15,7 @@ class FinancialCategorySeeder extends Seeder
     public function run()
     {
         $categories = [
-            // Income Categories
+            // Income Categories (5 records)
             [
                 'type' => 'income',
                 'name' => 'Photography Services',
@@ -46,38 +46,8 @@ class FinancialCategorySeeder extends Seeder
                 'description' => 'Revenue from additional services (retouching, editing, framing, etc.)',
                 'status' => 'active',
             ],
-            [
-                'type' => 'income',
-                'name' => 'Consultation Fees',
-                'description' => 'Revenue from consultation and booking fees',
-                'status' => 'active',
-            ],
-            [
-                'type' => 'income',
-                'name' => 'Retouching Services',
-                'description' => 'Revenue from photo retouching and editing services',
-                'status' => 'active',
-            ],
-            [
-                'type' => 'income',
-                'name' => 'Event Coverage',
-                'description' => 'Revenue from event photography and videography coverage',
-                'status' => 'active',
-            ],
-            [
-                'type' => 'income',
-                'name' => 'Package Sales',
-                'description' => 'Revenue from photography/videography packages',
-                'status' => 'active',
-            ],
-            [
-                'type' => 'income',
-                'name' => 'Other Income',
-                'description' => 'Other miscellaneous income sources',
-                'status' => 'active',
-            ],
 
-            // Expense Categories
+            // Expense Categories (5 records)
             [
                 'type' => 'expense',
                 'name' => 'Equipment Purchase',
@@ -106,66 +76,6 @@ class FinancialCategorySeeder extends Seeder
                 'type' => 'expense',
                 'name' => 'Marketing & Advertising',
                 'description' => 'Expenses for marketing campaigns, social media ads, print ads, etc.',
-                'status' => 'active',
-            ],
-            [
-                'type' => 'expense',
-                'name' => 'Staff Salaries',
-                'description' => 'Salaries and wages for employees',
-                'status' => 'active',
-            ],
-            [
-                'type' => 'expense',
-                'name' => 'Transportation',
-                'description' => 'Travel expenses for on-location shoots (fuel, vehicle maintenance, etc.)',
-                'status' => 'active',
-            ],
-            [
-                'type' => 'expense',
-                'name' => 'Supplies & Materials',
-                'description' => 'Expenses for photo paper, albums, frames, props, and other supplies',
-                'status' => 'active',
-            ],
-            [
-                'type' => 'expense',
-                'name' => 'Software Subscriptions',
-                'description' => 'Expenses for photo editing software, cloud storage, and other subscriptions',
-                'status' => 'active',
-            ],
-            [
-                'type' => 'expense',
-                'name' => 'Insurance',
-                'description' => 'Business insurance, equipment insurance, liability insurance',
-                'status' => 'active',
-            ],
-            [
-                'type' => 'expense',
-                'name' => 'Professional Services',
-                'description' => 'Expenses for legal, accounting, consulting, and other professional services',
-                'status' => 'active',
-            ],
-            [
-                'type' => 'expense',
-                'name' => 'Office Supplies',
-                'description' => 'Expenses for office supplies and stationery',
-                'status' => 'active',
-            ],
-            [
-                'type' => 'expense',
-                'name' => 'Training & Education',
-                'description' => 'Expenses for workshops, courses, and professional development',
-                'status' => 'active',
-            ],
-            [
-                'type' => 'expense',
-                'name' => 'Bank Charges',
-                'description' => 'Bank fees, transaction charges, and other banking expenses',
-                'status' => 'active',
-            ],
-            [
-                'type' => 'expense',
-                'name' => 'Miscellaneous',
-                'description' => 'Other miscellaneous business expenses',
                 'status' => 'active',
             ],
         ];

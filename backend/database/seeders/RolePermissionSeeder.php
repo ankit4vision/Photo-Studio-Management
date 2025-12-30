@@ -15,11 +15,27 @@ class RolePermissionSeeder extends Seeder
      */
     public function run()
     {
-        $roles = Role::whereIn('name', ['manager', 'staff'])->get()->keyBy('name');
+        $roles = Role::whereIn('name', ['branch-manager', 'manager', 'staff'])->get()->keyBy('name');
 
         if ($roles->isEmpty()) {
             return;
         }
+
+        $branchManagerPermissionNames = [
+            'view_dashboard',
+            'view_branch',
+            'view_customer',
+            'create_customer',
+            'edit_customer',
+            'view_order',
+            'create_order',
+            'edit_order',
+            'view_payment',
+            'create_payment',
+            'edit_payment',
+            'view_package',
+            'view_report',
+        ];
 
         $managerPermissionNames = [
             'view_user',
@@ -32,12 +48,25 @@ class RolePermissionSeeder extends Seeder
             'create_branch',
             'edit_branch',
             'delete_branch',
+            'view_customer',
+            'view_order',
+            'view_payment',
+            'view_package',
+            'view_report',
         ];
 
         $staffPermissionNames = [
             'view_dashboard',
             'view_branch',
+            'view_customer',
+            'view_order',
+            'view_payment',
         ];
+
+        if ($branchManager = $roles->get('branch-manager')) {
+            $branchManagerPermissions = Permission::whereIn('name', $branchManagerPermissionNames)->pluck('id');
+            $branchManager->permissions()->syncWithoutDetaching($branchManagerPermissions);
+        }
 
         if ($manager = $roles->get('manager')) {
             $managerPermissions = Permission::whereIn('name', $managerPermissionNames)->pluck('id');

@@ -17,7 +17,9 @@ class UserSeeder extends Seeder
     public function run()
     {
         $adminRole = Role::where('name', 'admin')->first();
+        $managerRole = Role::where('name', 'manager')->first();
 
+        // Admin User
         $admin = User::updateOrCreate(
             ['email' => 'admin@example.com'],
             [
@@ -30,6 +32,21 @@ class UserSeeder extends Seeder
 
         if ($adminRole) {
             $admin->roles()->syncWithoutDetaching([$adminRole->id]);
+        }
+
+        // Manager User
+        $manager = User::updateOrCreate(
+            ['email' => 'manager@example.com'],
+            [
+                'first_name' => 'Manager',
+                'last_name' => 'User',
+                'password' => Hash::make('password'),
+                'status' => 'active',
+            ]
+        );
+
+        if ($managerRole) {
+            $manager->roles()->syncWithoutDetaching([$managerRole->id]);
         }
     }
 }
