@@ -25,7 +25,19 @@ class PackageStoreRequest extends FormRequest
     {
         return [
             'package_name' => ['required', 'string', 'max:255'],
-            'package_type' => ['required', 'string', 'in:Album,PhotoShoot,Editing,Video'],
+            'package_type' => [
+                'required',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) {
+                    $exists = \App\Models\PackageType::where('name', $value)
+                        ->where('status', 'active')
+                        ->exists();
+                    if (!$exists) {
+                        $fail('The selected package type is invalid or inactive.');
+                    }
+                },
+            ],
             'default_price' => ['required', 'numeric', 'min:0'],
             'description' => ['nullable', 'string', 'max:1000'],
             'status' => ['nullable', 'in:active,inactive'],

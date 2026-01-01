@@ -274,14 +274,39 @@ class PackageService {
     }
   }
 
-  // Get package types
-  getPackageTypes() {
-    return [
-      { value: 'Album', label: 'Album' },
-      { value: 'PhotoShoot', label: 'PhotoShoot' },
-      { value: 'Editing', label: 'Editing' },
-      { value: 'Video', label: 'Video' },
-    ]
+  // Get package types from API
+  async getPackageTypes() {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.PACKAGE_TYPES.LIST)
+      
+      if (response.data && response.data.success) {
+        // Transform API response to match expected format
+        return response.data.data.map(type => ({
+          value: type.name || type.value,
+          label: type.name || type.label,
+          id: type.id,
+          description: type.description,
+          status: type.status,
+        }))
+      }
+      
+      // Fallback to default types if API fails
+      return [
+        { value: 'Album', label: 'Album' },
+        { value: 'PhotoShoot', label: 'PhotoShoot' },
+        { value: 'Editing', label: 'Editing' },
+        { value: 'Video', label: 'Video' },
+      ]
+    } catch (error) {
+      console.error('Error fetching package types:', error)
+      // Fallback to default types on error
+      return [
+        { value: 'Album', label: 'Album' },
+        { value: 'PhotoShoot', label: 'PhotoShoot' },
+        { value: 'Editing', label: 'Editing' },
+        { value: 'Video', label: 'Video' },
+      ]
+    }
   }
 
   // Validate package data

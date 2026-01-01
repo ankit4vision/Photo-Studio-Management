@@ -15,6 +15,7 @@ use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\FinancialCategoryController;
 use App\Http\Controllers\API\FinancialTransactionController;
 use App\Http\Controllers\API\ReportController;
+use App\Http\Controllers\API\PackageTypeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -72,6 +73,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/branches/{branch}', [BranchController::class, 'show'])->middleware('permission:view_branch');
     Route::put('/branches/{branch}', [BranchController::class, 'update'])->middleware('permission:edit_branch');
     Route::delete('/branches/{branch}', [BranchController::class, 'destroy'])->middleware('permission:delete_branch');
+
+    // Package Type Management (Master Data)
+    Route::get('/package-types', [PackageTypeController::class, 'index'])->middleware('permission:view_package');
 
     // Package Management
     Route::get('/packages', [PackageController::class, 'index'])->middleware('permission:view_package');

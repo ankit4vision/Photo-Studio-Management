@@ -51,6 +51,8 @@ const PackagesList = () => {
   })
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [packageToDelete, setPackageToDelete] = useState(null)
+  const [packageTypes, setPackageTypes] = useState([])
+  const [loadingTypes, setLoadingTypes] = useState(true)
   
   // Add/Edit Modal States
   const [showAddModal, setShowAddModal] = useState(false)
@@ -62,6 +64,23 @@ const PackagesList = () => {
   // Refs for form components
   const addFormRef = useRef()
   const editFormRef = useRef()
+
+  // Load package types from API
+  useEffect(() => {
+    const loadPackageTypes = async () => {
+      try {
+        setLoadingTypes(true)
+        const types = await packageService.getPackageTypes()
+        setPackageTypes(types)
+      } catch (error) {
+        console.error('Error loading package types:', error)
+        setPackageTypes([])
+      } finally {
+        setLoadingTypes(false)
+      }
+    }
+    loadPackageTypes()
+  }, [])
 
   // Load packages when filters, search, or pagination changes
   useEffect(() => {
@@ -241,8 +260,6 @@ const PackagesList = () => {
       setEditLoading(false)
     }
   }
-
-  const packageTypes = packageService.getPackageTypes()
 
   const sortableColumns = ['package', 'price']
 

@@ -19,8 +19,26 @@ const PackageForm = forwardRef(({
     status: 'active'
   })
   const [errors, setErrors] = useState({})
+  const [packageTypes, setPackageTypes] = useState([])
+  const [loadingTypes, setLoadingTypes] = useState(true)
 
-  const packageTypes = packageService.getPackageTypes()
+  // Load package types from API
+  useEffect(() => {
+    const loadPackageTypes = async () => {
+      try {
+        setLoadingTypes(true)
+        const types = await packageService.getPackageTypes()
+        setPackageTypes(types)
+      } catch (error) {
+        console.error('Error loading package types:', error)
+        // Fallback to empty array, will use default from service
+        setPackageTypes([])
+      } finally {
+        setLoadingTypes(false)
+      }
+    }
+    loadPackageTypes()
+  }, [])
 
   // Load package data for edit mode
   useEffect(() => {
@@ -114,11 +132,15 @@ const PackageForm = forwardRef(({
           label="Package Type"
           value={formData.package_type}
           onChange={(e) => handleChange('package_type', e.target.value)}
-          options={[{ value: '', label: 'Select Package Type' }, ...packageTypes]}
+          options={[
+            { value: '', label: loadingTypes ? 'Loading...' : 'Select Package Type' },
+            ...packageTypes
+          ]}
           required
           col={6}
           invalid={!!errors.package_type}
           feedback={errors.package_type}
+          disabled={loadingTypes}
         />
       </FormRow>
 

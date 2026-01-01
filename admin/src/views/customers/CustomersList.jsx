@@ -197,15 +197,29 @@ const CustomersList = () => {
 
   const loadStats = async () => {
     try {
-      // Use current customers state for stats
-      const allCustomers = customers.length > 0 ? customers : photographersData
-      const totalCustomers = allCustomers.length
-      const activeCustomers = allCustomers.filter(p => p.status === 'active').length
-      const newThisMonth = allCustomers.filter(p => {
-        const joinedDate = p.joinedDate || p.createdAt || p.created_at
+      // Use paginationMeta.total for total customers (from API)
+      // This gives us the actual total count, not just current page
+      const totalCustomers = paginationMeta.total || 0
+      
+      // Only calculate stats if we have customers
+      if (totalCustomers === 0) {
+        setStats({
+          totalCustomers: 0,
+          activeCustomers: 0,
+          newThisMonth: 0
+        })
+        return
+      }
+      
+      // Calculate active customers and new this month from current page data
+      // Note: For accurate stats across all pages, we should ideally use an API endpoint
+      // For now, we'll use the current page data as an approximation
+      const activeCustomers = customers.filter(c => c.status === 'active').length
+      const now = new Date()
+      const newThisMonth = customers.filter(c => {
+        const joinedDate = c.created_at || c.createdAt || c.joinedDate
         if (!joinedDate) return false
         const joinDate = new Date(joinedDate)
-        const now = new Date()
         return joinDate.getMonth() === now.getMonth() && joinDate.getFullYear() === now.getFullYear()
       }).length
       
@@ -216,15 +230,19 @@ const CustomersList = () => {
       })
     } catch (err) {
       console.error('Error loading stats:', err)
+      // Set stats to 0 on error
+      setStats({
+        totalCustomers: 0,
+        activeCustomers: 0,
+        newThisMonth: 0
+      })
     }
   }
 
-  // Update stats when customers change
+  // Update stats when customers or paginationMeta changes
   useEffect(() => {
-    if (customers.length > 0) {
-      loadStats()
-    }
-  }, [customers])
+    loadStats()
+  }, [customers, paginationMeta.total])
 
   // Handle filter changes - reset to page 1
   const handleFilterChange = (filterType, value) => {
@@ -772,48 +790,50 @@ const CustomersList = () => {
             </div>
           </div>
 
-          {/* Statistics Cards */}
-          <Row className="mb-4">
-            <Col md={3}>
-              <Card className="bg-gradient-primary text-white border-0 shadow-sm">
-                <Card.Body className="p-4">
-                  <div className="d-flex align-items-center">
-                    <div className="flex-grow-1">
-                      <h4 className="mb-0">{stats.totalCustomers}</h4>
-                      <p className="mb-0 opacity-75">Total Customers</p>
+          {/* Statistics Cards - Only show when there are customers */}
+          {paginationMeta.total > 0 && (
+            <Row className="mb-4">
+              <Col md={3}>
+                <Card className="bg-gradient-primary text-white border-0 shadow-sm">
+                  <Card.Body className="p-4">
+                    <div className="d-flex align-items-center">
+                      <div className="flex-grow-1">
+                        <h4 className="mb-0">{stats.totalCustomers}</h4>
+                        <p className="mb-0 opacity-75">Total Customers</p>
+                      </div>
+                      <FontAwesomeIcon icon={faUsers} className="fs-1 opacity-50" />
                     </div>
-                    <FontAwesomeIcon icon={faUsers} className="fs-1 opacity-50" />
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={3}>
-              <Card className="bg-gradient-success text-white border-0 shadow-sm">
-                <Card.Body className="p-4">
-                  <div className="d-flex align-items-center">
-                    <div className="flex-grow-1">
-                      <h4 className="mb-0">{stats.activeCustomers}</h4>
-                      <p className="mb-0 opacity-75">Active Customers</p>
+                  </Card.Body>
+                </Card>
+              </Col>
+              <Col md={3}>
+                <Card className="bg-gradient-success text-white border-0 shadow-sm">
+                  <Card.Body className="p-4">
+                    <div className="d-flex align-items-center">
+                      <div className="flex-grow-1">
+                        <h4 className="mb-0">{stats.activeCustomers}</h4>
+                        <p className="mb-0 opacity-75">Active Customers</p>
+                      </div>
+                      <FontAwesomeIcon icon={faUser} className="fs-1 opacity-50" />
                     </div>
-                    <FontAwesomeIcon icon={faUser} className="fs-1 opacity-50" />
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={3}>
-              <Card className="bg-gradient-info text-white border-0 shadow-sm">
-                <Card.Body className="p-4">
-                  <div className="d-flex align-items-center">
-                    <div className="flex-grow-1">
-                      <h4 className="mb-0">{stats.newThisMonth}</h4>
-                      <p className="mb-0 opacity-75">New This Month</p>
+                  </Card.Body>
+                </Card>
+              </Col>
+              <Col md={3}>
+                <Card className="bg-gradient-info text-white border-0 shadow-sm">
+                  <Card.Body className="p-4">
+                    <div className="d-flex align-items-center">
+                      <div className="flex-grow-1">
+                        <h4 className="mb-0">{stats.newThisMonth}</h4>
+                        <p className="mb-0 opacity-75">New This Month</p>
+                      </div>
+                      <FontAwesomeIcon icon={faUser} className="fs-1 opacity-50" />
                     </div>
-                    <FontAwesomeIcon icon={faUser} className="fs-1 opacity-50" />
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+          )}
 
           {/* Main Content Container */}
           <div className="bg-white rounded-3 shadow-sm p-4">

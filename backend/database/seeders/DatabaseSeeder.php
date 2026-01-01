@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             PermissionsTableSeeder::class,
             RolePermissionSeeder::class,
             BranchSeeder::class,
+            PackageTypeSeeder::class,
             FinancialCategorySeeder::class,
             UserSeeder::class,
         ]);

@@ -143,6 +143,12 @@ export const API_ENDPOINTS = {
     DELETE: (id) => `/packages/${id}`,
   },
 
+  // Package Types (Master Data)
+  PACKAGE_TYPES: {
+    BASE: '/package-types',
+    LIST: '/package-types',
+  },
+
   // Order Management
   ORDERS: {
     BASE: '/orders',
