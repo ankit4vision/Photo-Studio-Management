@@ -369,6 +369,12 @@ const CustomerDetailsModal = ({
           </div>
             <div className="flex-grow-1">
           <h4 className="mb-1">{customerName}</h4>
+              {customer.job_code || customer.jobCode ? (
+                <p className="mb-1">
+                  <span className="fw-bold text-primary">Job Code: </span>
+                  <span className="fw-semibold">{customer.job_code || customer.jobCode}</span>
+                </p>
+              ) : null}
               <p className="text-muted mb-2">Customer ID: {customer.photographerId || customer.customerId || customer.id || 'N/A'}</p>
               <Badge bg={getStatusColor(customer.status)} className="px-3 py-2">
                 {getStatusText(customer.status)}
@@ -436,6 +442,17 @@ const CustomerDetailsModal = ({
                   Personal Information
                 </h5>
                 <Row className="g-3">
+                  {(customer.job_code || customer.jobCode) && (
+                    <Col md={6}>
+                      <div className="d-flex align-items-center">
+                        <FontAwesomeIcon icon={faBriefcase} className="me-3 text-primary" />
+                        <div>
+                          <div className="fw-semibold text-muted small">Job Code</div>
+                          <div className="fw-bold text-primary">{customer.job_code || customer.jobCode}</div>
+                        </div>
+                      </div>
+                    </Col>
+                  )}
           <Col md={6}>
                     <div className="d-flex align-items-center">
                       <FontAwesomeIcon icon={faPhone} className="me-3 text-primary" />

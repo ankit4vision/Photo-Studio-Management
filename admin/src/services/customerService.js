@@ -282,6 +282,7 @@ class CustomerService {
       // Transform frontend format to backend format
       const nameParts = this.normalizeName(customerData)
       const backendData = {
+        job_code: customerData.job_code || customerData.jobCode || null,
         first_name: nameParts.firstName,
         last_name: nameParts.lastName,
         email: customerData.email,
@@ -374,6 +375,7 @@ class CustomerService {
       // Transform frontend format to backend format
       const nameParts = this.normalizeName(customerData)
       const backendData = {
+        job_code: customerData.job_code || customerData.jobCode || null,
         first_name: nameParts.firstName,
         last_name: nameParts.lastName,
         email: customerData.email,

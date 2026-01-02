@@ -155,6 +155,8 @@ const CustomersList = () => {
           joinedDate: customer.joinedDate || customer.createdAt || customer.created_at,
           created_at: customer.created_at || customer.createdAt || customer.joinedDate,
           photographerId: customer.photographerId || customer.customerId || customer.customer_code || `#${customer.id}`,
+          job_code: customer.job_code || customer.jobCode || '',
+          jobCode: customer.jobCode || customer.job_code || '',
           total_earnings: financials.total,
           total_amount: financials.total,
           totalSpent: financials.total,
@@ -396,6 +398,22 @@ const CustomersList = () => {
 
   const columns = useMemo(() => [
     {
+      key: 'job_code',
+      label: 'Job Code',
+      render: (value, photographer, index) => {
+        const jobCode = photographer.job_code || photographer.jobCode || ''
+        return (
+          <div style={{ width: '90px', flexShrink: 0 }}>
+            {jobCode ? (
+              <div className="fw-bold text-primary" style={{ fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{jobCode}</div>
+            ) : (
+              <span className="text-muted" style={{ fontSize: '12px' }}>—</span>
+            )}
+          </div>
+        )
+      }
+    },
+    {
       key: 'customer',
       label: 'Customer',
       render: (value, photographer, index) => {
@@ -403,7 +421,7 @@ const CustomersList = () => {
         const branchIndicator = getBranchIndicator(photographer)
         const displayName = branchIndicator ? `${photographerName} (${branchIndicator})` : photographerName
         return (
-          <div className="d-flex align-items-center" style={{ minWidth: '140px' }}>
+          <div className="d-flex align-items-center" style={{ width: '180px', flexShrink: 0 }}>
             <div 
               className="d-flex align-items-center justify-content-center rounded-circle me-2"
               style={{ 
@@ -418,9 +436,9 @@ const CustomersList = () => {
             >
               {getInitials(photographer)}
             </div>
-            <div style={{ minWidth: 0 }}>
-              <div className="fw-semibold text-dark" style={{ fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</div>
-              <small className="text-muted" style={{ fontSize: '11px' }}>{photographer.photographerId || photographer.customerId || `#${photographer.id}` || 'N/A'}</small>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div className="fw-semibold text-dark" style={{ fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</div>
+              <small className="text-muted" style={{ fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{photographer.photographerId || photographer.customerId || `#${photographer.id}` || 'N/A'}</small>
             </div>
           </div>
         )
@@ -430,32 +448,37 @@ const CustomersList = () => {
       key: 'contact',
       label: 'Contact',
       render: (value, photographer, index) => (
-        <div style={{ minWidth: '130px' }}>
-          <div className="fw-semibold text-dark" style={{ fontSize: '13px' }}>{photographer.mobile || photographer.phone || 'N/A'}</div>
+        <div style={{ width: '150px', flexShrink: 0 }}>
+          <div className="fw-semibold text-dark" style={{ fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{photographer.mobile || photographer.phone || 'N/A'}</div>
           <small className="text-muted" style={{ fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{photographer.email || 'No email'}</small>
         </div>
       )
     },
     {
-      key: 'total_amount',
-      label: 'Total Amount',
+      key: 'financials',
+      label: 'Financials',
       render: (value, photographer, index) => {
-        const { total } = getCustomerFinancials(photographer)
+        const { total, paid, remaining } = getCustomerFinancials(photographer)
         return (
-          <div className="fw-semibold text-primary" style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '110px' }}>
-            {formatCurrency(total)}
-          </div>
-        )
-      }
-    },
-    {
-      key: 'paid_amount',
-      label: 'Paid Amount',
-      render: (value, photographer, index) => {
-        const { paid } = getCustomerFinancials(photographer)
-        return (
-          <div className="fw-semibold text-primary" style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '110px' }}>
-            {formatCurrency(paid)}
+          <div style={{ width: '140px', flexShrink: 0 }}>
+            <div className="d-flex justify-content-between align-items-center mb-1">
+              <small className="text-muted" style={{ fontSize: '11px' }}>Total:</small>
+              <div className="fw-semibold text-primary" style={{ fontSize: '14px', whiteSpace: 'nowrap' }}>
+                {formatCurrency(total)}
+              </div>
+            </div>
+            <div className="d-flex justify-content-between align-items-center mb-1">
+              <small className="text-muted" style={{ fontSize: '11px' }}>Paid:</small>
+              <div className="fw-semibold text-primary" style={{ fontSize: '14px', whiteSpace: 'nowrap' }}>
+                {formatCurrency(paid)}
+              </div>
+            </div>
+            <div className="d-flex justify-content-between align-items-center">
+              <small className="text-muted" style={{ fontSize: '11px' }}>Remaining:</small>
+              <div className={`fw-semibold ${remaining > 0 ? 'text-danger' : 'text-success'}`} style={{ fontSize: '14px', whiteSpace: 'nowrap' }}>
+                {formatCurrency(remaining)}
+              </div>
+            </div>
           </div>
         )
       }
@@ -468,18 +491,6 @@ const CustomersList = () => {
           {photographer.total_orders || photographer.totalOrders || photographer.total_services || 0}
         </Badge>
       )
-    },
-    {
-      key: 'remaining_amount',
-      label: 'Remaining',
-      render: (value, photographer, index) => {
-        const { remaining } = getCustomerFinancials(photographer)
-        return (
-          <div className={`fw-semibold ${remaining > 0 ? 'text-danger' : 'text-success'}`} style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '110px' }}>
-            {formatCurrency(remaining)}
-          </div>
-        )
-      }
     },
     {
       key: 'status',
@@ -500,7 +511,7 @@ const CustomersList = () => {
       key: 'joined',
       label: 'Joined',
       render: (value, customer, index) => (
-        <div className="text-muted" style={{ fontSize: '13px', whiteSpace: 'nowrap', minWidth: '100px' }}>
+        <div className="text-muted" style={{ fontSize: '12px', whiteSpace: 'nowrap', width: '100px', flexShrink: 0 }}>
           {formatDate(customer.joinedDate || customer.createdAt || customer.created_at)}
         </div>
       )
@@ -509,7 +520,7 @@ const CustomersList = () => {
       key: 'actions',
       label: 'Actions',
       render: (value, photographer, index) => (
-        <div className="d-flex gap-1 align-items-center" style={{ flexWrap: 'nowrap', minWidth: '110px', justifyContent: 'flex-start' }}>
+        <div className="d-flex gap-1 align-items-center" style={{ flexWrap: 'nowrap', width: '140px', flexShrink: 0, justifyContent: 'flex-start' }}>
           <Button
             variant="outline-info"
             size="sm"
@@ -518,9 +529,9 @@ const CustomersList = () => {
               handleViewCustomer(photographer)
             }}
             title="View Customer"
-            style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
+            style={{ minWidth: '30px', padding: '4px 6px', flexShrink: 0 }}
           >
-            <FontAwesomeIcon icon={faEye} />
+            <FontAwesomeIcon icon={faEye} style={{ fontSize: '12px' }} />
           </Button>
           {canEditCustomer && (
             <Button
@@ -531,9 +542,9 @@ const CustomersList = () => {
                 handleEditCustomer(photographer)
               }}
               title="Edit Customer"
-              style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
+              style={{ minWidth: '30px', padding: '4px 6px', flexShrink: 0 }}
             >
-              <FontAwesomeIcon icon={faEdit} />
+              <FontAwesomeIcon icon={faEdit} style={{ fontSize: '12px' }} />
             </Button>
           )}
           <Button
@@ -544,9 +555,9 @@ const CustomersList = () => {
               handleExportSingle(photographer)
             }}
             title="Export Customer PDF"
-            style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
+            style={{ minWidth: '30px', padding: '4px 6px', flexShrink: 0 }}
           >
-            <FontAwesomeIcon icon={faFilePdf} />
+            <FontAwesomeIcon icon={faFilePdf} style={{ fontSize: '12px' }} />
           </Button>
           {canDeleteCustomer && (
             <Button
@@ -557,9 +568,9 @@ const CustomersList = () => {
                 handleDeleteCustomer(photographer)
               }}
               title="Delete Customer"
-              style={{ minWidth: '32px', padding: '4px 8px', flexShrink: 0 }}
+              style={{ minWidth: '30px', padding: '4px 6px', flexShrink: 0 }}
             >
-              <FontAwesomeIcon icon={faTrash} />
+              <FontAwesomeIcon icon={faTrash} style={{ fontSize: '12px' }} />
             </Button>
           )}
         </div>
@@ -836,7 +847,7 @@ const CustomersList = () => {
           )}
 
           {/* Main Content Container */}
-          <div className="bg-white rounded-3 shadow-sm p-4">
+          <div className="bg-white rounded-3 shadow-sm p-4" style={{ overflowX: 'hidden' }}>
             {/* Search and Filter Section */}
             <div className="mb-4">
               <Row className="g-3">
@@ -848,7 +859,7 @@ const CustomersList = () => {
                       style={{ zIndex: 10 }}
                     />
                     <FormControl
-                      placeholder="Search by name, email, phone, or ID..."
+                      placeholder="Search by name, email, phone, job code, or ID..."
                       value={searchTerm}
                       onChange={handleSearch}
                       className="border-2 ps-5"
@@ -940,14 +951,7 @@ const CustomersList = () => {
             </div>
 
             {/* Table */}
-            <div 
-              style={{ 
-                width: '100%',
-                overflowX: 'auto',
-                overflowY: 'visible',
-                WebkitOverflowScrolling: 'touch'
-              }}
-            >
+            <div style={{ width: '100%', overflow: 'hidden' }}>
               <Table
                 data={customers}
                 columns={columns}
@@ -963,6 +967,8 @@ const CustomersList = () => {
                 sortable={true}
                 totalItems={paginationMeta.total}
                 emptyMessage="No customers found"
+                className="table-sm"
+                style={{ width: '100%', marginBottom: 0, tableLayout: 'fixed' }}
               />
             </div>
           </div>

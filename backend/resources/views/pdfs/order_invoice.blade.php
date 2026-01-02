@@ -289,6 +289,7 @@
         $customer = $order->customer;
         $customerName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
         $customerCode = $customer->customer_code ?? 'N/A';
+        $customerJobCode = $customer->job_code ?? null;
         $customerPhone = $customer->phone ?? $customer->mobile ?? 'N/A';
         $customerEmail = $customer->email ?? null;
         $customerAddress = implode(', ', array_filter([
@@ -341,6 +342,9 @@
             </td>
             <td class="info-cell">
                 <div class="company-name">{{ $customerName ?: 'Walk-in' }}</div>
+                @if($customerJobCode)
+                    <div class="company-meta">Job Code: {{ $customerJobCode }}</div>
+                @endif
                 <div class="company-meta">Code: {{ $customerCode }}</div>
                 <div class="company-meta">Phone: {{ $customerPhone }}</div>
                 @if($customerEmail)

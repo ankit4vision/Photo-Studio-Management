@@ -28,6 +28,8 @@ class OrderResource extends JsonResource
                     'phone' => $this->customer->phone ?? $this->customer->mobile,
                     'mobile' => $this->customer->mobile,
                     'customerCode' => $this->customer->customer_code,
+                    'jobCode' => $this->customer->job_code,
+                    'job_code' => $this->customer->job_code,
                 ];
             }),
             'branchId' => $this->branch_id,

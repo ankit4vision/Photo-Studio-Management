@@ -12,6 +12,7 @@ const CustomerForm = forwardRef(({
   loading = false 
 }, ref) => {
   const [formData, setFormData] = useState({
+    job_code: '',
     first_name: '',
     last_name: '',
     phone: '',
@@ -43,6 +44,7 @@ const CustomerForm = forwardRef(({
       const country = customerData.country ?? customerData.address?.country ?? ''
 
       setFormData({
+        job_code: customerData.job_code || customerData.jobCode || '',
         first_name: customerData.first_name || customerData.firstName || '',
         last_name: customerData.last_name || customerData.lastName || '',
         phone: customerData.phone || '',
@@ -109,6 +111,7 @@ const CustomerForm = forwardRef(({
     }
 
     const submitData = {
+      job_code: formData.job_code.trim() || null,
       first_name: formData.first_name.trim(),
       last_name: formData.last_name.trim() || null,
       phone: formData.phone.trim() || formData.mobile.trim(),
@@ -149,6 +152,29 @@ const CustomerForm = forwardRef(({
 
   return (
     <div>
+      <FormRow>
+        <TextField
+          id="job_code"
+          label="Job Code"
+          value={formData.job_code}
+          onChange={(e) => handleChange('job_code', e.target.value)}
+          placeholder="Enter job code (optional)"
+          col={6}
+          labelClassName="fw-bold"
+        />
+        <SelectField
+          id="branch_id"
+          label="Branch"
+          value={formData.branch_id}
+          onChange={(e) => handleChange('branch_id', e.target.value)}
+          options={branchOptions}
+          required
+          col={6}
+          invalid={!!errors.branch_id}
+          feedback={errors.branch_id}
+        />
+      </FormRow>
+
       <FormRow>
         <TextField
           id="first_name"
@@ -204,17 +230,6 @@ const CustomerForm = forwardRef(({
           col={6}
           invalid={!!errors.email}
           feedback={errors.email}
-        />
-        <SelectField
-          id="branch_id"
-          label="Branch"
-          value={formData.branch_id}
-          onChange={(e) => handleChange('branch_id', e.target.value)}
-          options={branchOptions}
-          required
-          col={6}
-          invalid={!!errors.branch_id}
-          feedback={errors.branch_id}
         />
       </FormRow>
 

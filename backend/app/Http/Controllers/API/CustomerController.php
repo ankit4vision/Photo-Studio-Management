@@ -31,7 +31,8 @@ class CustomerController extends Controller
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
                     ->orWhere('mobile', 'like', "%{$search}%")
-                    ->orWhere('customer_code', 'like', "%{$search}%");
+                    ->orWhere('customer_code', 'like', "%{$search}%")
+                    ->orWhere('job_code', 'like', "%{$search}%");
             });
         }
 
@@ -133,6 +134,11 @@ class CustomerController extends Controller
             $data['customer_code'] = '#CUST' . str_pad($nextId, 3, '0', STR_PAD_LEFT);
         }
 
+        // Ensure job_code is included (even if null)
+        if (!isset($data['job_code'])) {
+            $data['job_code'] = $request->input('job_code', null);
+        }
+
         // Convert empty strings to null
         $data = array_map(function ($value) {
             return $value === '' ? null : $value;
@@ -169,6 +175,11 @@ class CustomerController extends Controller
     public function update(CustomerUpdateRequest $request, Customer $customer)
     {
         $data = $request->validated();
+
+        // Ensure job_code is included (even if null) for update
+        if (!isset($data['job_code']) && $request->has('job_code')) {
+            $data['job_code'] = $request->input('job_code', null);
+        }
 
         // Convert empty strings to null
         $data = array_map(function ($value) {

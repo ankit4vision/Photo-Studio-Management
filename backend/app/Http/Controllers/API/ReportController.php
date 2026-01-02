@@ -211,6 +211,8 @@ class ReportController extends Controller
                 return [
                     'id' => $customer->id,
                     'customerCode' => $customer->customer_code,
+                    'jobCode' => $customer->job_code,
+                    'job_code' => $customer->job_code,
                     'name' => trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? '')),
                     'email' => $customer->email,
                     'phone' => $customer->phone,
@@ -435,6 +437,8 @@ class ReportController extends Controller
                 return [
                     'id' => $customer->id,
                     'customerCode' => $customer->customer_code,
+                    'jobCode' => $customer->job_code,
+                    'job_code' => $customer->job_code,
                     'name' => trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? '')),
                     'email' => $customer->email,
                     'phone' => $customer->phone,

@@ -666,10 +666,14 @@ const OrdersList = () => {
         const customerName = order.customer 
           ? (order.customer.name || `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim() || 'Unknown')
           : 'Unknown'
+        const jobCode = order.customer?.jobCode || order.customer?.job_code || null
         return (
           <div>
             <div className="fw-bold">{customerName}</div>
-            <small className="text-muted">{order.customer?.mobile || order.customer?.phone || order.customer?.email || 'N/A'}</small>
+            {jobCode && (
+              <small className="text-primary fw-bold" style={{ fontSize: '11px' }}>Job Code: {jobCode}</small>
+            )}
+            <small className="text-muted d-block">{order.customer?.mobile || order.customer?.phone || order.customer?.email || 'N/A'}</small>
           </div>
         )
       }

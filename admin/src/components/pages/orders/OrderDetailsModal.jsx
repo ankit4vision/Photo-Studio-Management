@@ -261,6 +261,11 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                     </div>
                     <div>
                       <h5 className="mb-1">{customerName}</h5>
+                      {(order?.customer?.jobCode || order?.customer?.job_code) && (
+                        <p className="text-primary mb-1 small fw-bold">
+                          Job Code: {order?.customer?.jobCode || order?.customer?.job_code}
+                        </p>
+                      )}
                       <p className="text-muted mb-0 small">
                         {order?.customer?.mobile || order?.customer?.phone || order?.customer?.email || 'N/A'}
                       </p>
@@ -629,6 +634,12 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, order
                             <div className="text-muted small">Name</div>
                             <div className="fw-semibold">{customerName}</div>
                           </div>
+                          {(order?.customer?.jobCode || order?.customer?.job_code) && (
+                            <div className="mb-2">
+                              <div className="text-muted small">Job Code</div>
+                              <div className="fw-semibold text-primary">{order?.customer?.jobCode || order?.customer?.job_code}</div>
+                            </div>
+                          )}
                           <div className="mb-2">
                             <div className="text-muted small">Contact</div>
                             <div className="fw-semibold">

@@ -426,6 +426,7 @@ const CompanyHealthReport = () => {
                           <thead>
                             <tr>
                               <th>Customer Code</th>
+                              <th>Job Code</th>
                               <th>Name</th>
                               <th>Email</th>
                               <th>Phone</th>
@@ -439,6 +440,13 @@ const CompanyHealthReport = () => {
                             {reportData.allCustomers.map((customer) => (
                               <tr key={customer.id}>
                                 <td>{customer.customerCode}</td>
+                                <td>
+                                  {customer.jobCode || customer.job_code ? (
+                                    <span className="text-primary fw-bold">{customer.jobCode || customer.job_code}</span>
+                                  ) : (
+                                    <span className="text-muted">-</span>
+                                  )}
+                                </td>
                                 <td>{customer.name}</td>
                                 <td>{customer.email || '-'}</td>
                                 <td>{customer.phone || '-'}</td>

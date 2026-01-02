@@ -245,6 +245,7 @@
         <thead>
             <tr>
                 <th style="background-color: #e7f1ff; border: 1px solid #0d6efd; color: #0d6efd !important;">Code</th>
+                <th style="background-color: #e7f1ff; border: 1px solid #0d6efd; color: #0d6efd !important;">Job Code</th>
                 <th style="background-color: #e7f1ff; border: 1px solid #0d6efd; color: #0d6efd !important;">Name</th>
                 <th style="background-color: #e7f1ff; border: 1px solid #0d6efd; color: #0d6efd !important;">Email</th>
                 <th style="background-color: #e7f1ff; border: 1px solid #0d6efd; color: #0d6efd !important;">Phone</th>
@@ -258,6 +259,7 @@
             @foreach($allCustomers as $customer)
             <tr>
                 <td style="color: #000 !important; border: 1px solid #0d6efd;"><strong>{{ $customer['customerCode'] }}</strong></td>
+                <td style="color: #0d6efd !important; font-weight: bold; border: 1px solid #0d6efd;">{{ $customer['jobCode'] ?? $customer['job_code'] ?? '-' }}</td>
                 <td style="color: #000 !important; border: 1px solid #0d6efd;">{{ $customer['name'] }}</td>
                 <td style="color: #000 !important; border: 1px solid #0d6efd;">{{ $customer['email'] ?: '-' }}</td>
                 <td style="color: #000 !important; border: 1px solid #0d6efd;">{{ $customer['phone'] ?: '-' }}</td>

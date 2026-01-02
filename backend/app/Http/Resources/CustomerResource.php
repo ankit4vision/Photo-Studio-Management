@@ -18,6 +18,8 @@ class CustomerResource extends JsonResource
             'id' => $this->id,
             'customerId' => $this->customer_code ?? '#CUST' . str_pad($this->id, 3, '0', STR_PAD_LEFT),
             'customer_code' => $this->customer_code,
+            'job_code' => $this->job_code,
+            'jobCode' => $this->job_code,
             'name' => trim($this->first_name . ' ' . ($this->last_name ?? '')),
             'firstName' => $this->first_name,
             'lastName' => $this->last_name,

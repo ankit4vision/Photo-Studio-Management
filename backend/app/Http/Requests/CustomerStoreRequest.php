@@ -24,6 +24,7 @@ class CustomerStoreRequest extends FormRequest
     public function rules()
     {
         return [
+            'job_code' => ['nullable', 'string', 'max:255'],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
