@@ -26,7 +26,7 @@
 - 🗄️ MySQL database with migrations
 - 📧 Email service integration
 - 📄 PDF export service
-- ☁️ AWS S3 file storage integration
+- 📤 File upload service (avatars, business logos) with custom storage handler
 - 🔒 Permission-based route protection
 - 📦 Standardized pagination and sorting
 
@@ -173,7 +173,8 @@ backend/
 │       └── UserSeeder.php
 │
 ├── 📁 public/                       # Public web root
-│   └── index.php                    # Application entry point
+│   ├── index.php                    # Application entry point (includes custom storage file handler)
+│   └── .htaccess                    # Apache rewrite rules
 │
 ├── 📁 resources/                    # Views, assets, lang files
 │   └── 📁 views/                    # Blade templates
@@ -532,6 +533,28 @@ backend/
   - Order/Customer/Payment PDFs: Pure black and white, no background colors, single thin line dividers
   - Company Health Report PDF: Colorful design with light backgrounds, colored borders (1px solid), and colored text
   - Consistent footer format across all PDFs
+
+### 16. **File Storage & Upload Service**
+- **Location**: 
+  - `app/Http/Controllers/API/UserController.php` - Avatar upload/delete
+  - `app/Http/Controllers/API/SettingController.php` - Business logo upload/delete
+  - `public/index.php` - Custom storage file handler (serves files directly without symlink)
+- **Features**:
+  - User avatar upload (Profile page)
+  - Business logo upload (Settings page)
+  - File validation (JPEG, PNG, WebP, max 2MB)
+  - Automatic old file cleanup on upload
+  - Custom storage serving via `public/index.php` (no symlink required)
+  - Direct file serving from `storage/app/public/` directory
+- **Storage Paths**:
+  - Avatars: `storage/app/public/avatars/avatar_user_{userId}_{timestamp}_{uniqid}.{ext}`
+  - Logos: `storage/app/public/logos/business_logo_{timestamp}_{uniqid}.{ext}`
+- **URL Generation**:
+  - Files accessible at: `/admin/api/storage/{path}`
+  - Custom handler in `public/index.php` intercepts requests and serves files directly
+  - Works on shared hosting where symlinks might be restricted
+- **Status**: ✅ Fully implemented
+- **Note**: Storage files are served via custom handler in `public/index.php` that bypasses Laravel routing for better performance and compatibility with shared hosting
 
 ---
 
@@ -1094,7 +1117,8 @@ php artisan serve
 - ✅ Convert empty strings to null for nullable fields
 - ✅ Use database settings with fallback to .env
 - ✅ Provide user-friendly error messages
-- ✅ All upload-related code removed (S3, file uploads, avatars)
+- ✅ File uploads implemented for avatars and business logos (local storage, no S3)
+- ✅ Custom storage file handler in `public/index.php` (no symlink required)
 
 ### ❌ Don'ts
 - ❌ Don't put business logic in controllers
@@ -1178,8 +1202,10 @@ php artisan serve
 - ✅ Order statistics endpoint (`/api/orders/stats`) added with date range filtering
 - ✅ API resources cleaned up - removed duplicate fields, using camelCase only
 - ✅ Payment numbers auto-generated in #PAY001 format
-- ✅ All upload-related code removed (S3Service, FileUploadService, UploadController, upload routes)
-- ✅ Avatar/image fields removed from API responses (UserController, AuthController, CustomerResource, OrderResource)
+- ✅ **File Upload Service** - Avatar and business logo upload implemented with local storage (no S3)
+- ✅ **Custom Storage Handler** - `public/index.php` serves storage files directly without symlink (works on shared hosting)
+- ✅ Avatar upload endpoints: `POST /api/users/profile/avatar`, `DELETE /api/users/profile/avatar`
+- ✅ Logo upload endpoints: `POST /api/settings/upload-logo`, `DELETE /api/settings/delete-logo`
 - ✅ **Important Links Management** - Added `links` JSON column to orders table, Order model updated with fillable and casts, OrderResource includes links array, validation added to OrderStoreRequest and OrderUpdateRequest
 - ✅ **Report Management Module** - Company Health Report fully implemented with date range filtering, branch filtering, comprehensive financial calculations, and PDF export with colorful design
 - ✅ **Permissions System** - Added `view_report` permission for reports module, all pages now have proper permission protection

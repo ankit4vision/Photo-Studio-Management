@@ -77,6 +77,8 @@ Upload all these folders/files from `backend/` to `public_html/admin/api/`:
 - ⚠️ Cache files in `storage/framework/cache/` will be regenerated automatically
 - ⚠️ Session files can be cleared (users will need to re-login)
 
+**📌 Important:** Storage files are served directly via a custom handler in `public/index.php` that intercepts `/admin/api/storage/*` requests and serves files from `storage/app/public/`. **No symlink is required** - this works on shared hosting where symlinks might be restricted.
+
 ### Deployment Steps
 
 1. **Upload the entire `backend/` folder** to `public_html/admin/api/` (excluding `vendor/`, `tests/`, `.env`)
@@ -90,8 +92,8 @@ Upload all these folders/files from `backend/` to `public_html/admin/api/`:
    # Generate application key
    php artisan key:generate
    
-   # Create storage symlink (if not exists)
-   php artisan storage:link
+   # Note: Storage symlink NOT needed - files are served directly via custom handler in public/index.php
+   # The custom implementation intercepts /admin/api/storage/* requests and serves files from storage/app/public/
    
    # Run migrations (if database is empty)
    php artisan migrate --force
@@ -202,7 +204,7 @@ Decide what the main domain should show:
 - [ ] `https://lvclicks.in/admin` loads without console errors.
 - [ ] Login from the admin UI succeeds (no CORS errors since same domain).
 - [ ] API routes work correctly (test `/api/auth/login`, `/api/dashboard/summary`, etc.).
-- [ ] Storage (uploads/avatars) works (permissions OK).
+- [ ] Storage (uploads/avatars/logos) works - files accessible at `/admin/api/storage/*` (permissions OK, custom handler in `index.php` serves files directly).
 - [ ] Cron/queue jobs configured if needed (`php artisan schedule:run` via Hostinger cron).
 - [ ] Backups enabled for database + files.
 
@@ -214,7 +216,7 @@ Decide what the main domain should show:
 | API returns 404                         | Verify `.htaccess` in `public_html/admin/` routes `/api/*` to `api/public/index.php`. |
 | React routes return 404 (refresh)      | Confirm `.htaccess` in admin root rewrites non-API routes to `index.html`. |
 | CORS errors (shouldn't happen)          | If you see CORS errors, check that `VITE_API_BASE_URL=/admin/` in frontend `.env.production`. |
-| File upload errors                      | Storage/`public` symlink and permissions (`cd admin/api && php artisan storage:link`). |
+| File upload errors                      | Check storage permissions (`chmod -R 755 storage`) and ensure `storage/app/public/avatars/` and `storage/app/public/logos/` directories exist. Storage files are served via custom handler in `public/index.php` (no symlink needed). |
 | Database connection refused             | Validate credentials in `admin/api/.env`, DB host `localhost`, user privileges. |
 | API not accessible                      | Verify folder structure: `public_html/admin/api/public/index.php` exists. |
 

@@ -73,7 +73,7 @@ admin/
 │   │   │   ├── FormFields.jsx         # Form input components
 │   │   │   ├── FormModal.jsx          # Modal wrapper for forms
 │   │   │   ├── GlobalSpinner.jsx     # Global loading spinner
-│   │   │   ├── ImageUpload.jsx        # Image display/preview component (upload removed)
+│   │   │   ├── ImageUpload.jsx        # Image display/preview component
 │   │   │   ├── Modal.jsx              # Reusable modal component
 │   │   │   ├── ScrollToTop.jsx       # Scroll to top component
 │   │   │   ├── StepIndicator.jsx     # Multi-step form progress
@@ -130,7 +130,7 @@ admin/
 │   │   │       ├── AddressSection.jsx      # Address information section (with state, zipCode)
 │   │   │       ├── PersonalInfoSection.jsx # Personal info section (with dateOfBirth, gender)
 │   │   │       ├── ProfileForm.jsx
-│   │   │       ├── ProfilePictureSection.jsx # Avatar display section (upload removed)
+│   │   │       ├── ProfilePictureSection.jsx # Avatar upload/display section
 │   │   │       └── UserForm.jsx
 │   │   │
 │   │   ├── index.jsx                 # Component exports
@@ -423,6 +423,7 @@ admin/
   - User list
   - Create/Edit user
   - User profile (with personal info, address)
+  - Profile picture upload/delete (JPEG, PNG, WebP, max 2MB)
   - Delete user
   - User status management
   - Change password
@@ -464,7 +465,7 @@ admin/
   - Test email functionality
   - App Settings (Web URL)
   - Currency & Regional Settings
-  - S3 storage configuration
+  - Business logo upload/delete (JPEG, PNG, WebP, max 2MB)
   - Global settings management
 - **Status**: ✅ Fully implemented with API integration
 
@@ -829,7 +830,7 @@ const userService = {
 - **FormModal** - Modal wrapper for forms
 - **ThemeToggle** - Theme switching component
 - **ToastProvider** - Global notification system
-- **ImageUpload** - Image display/preview component (upload functionality removed)
+- **ImageUpload** - Image display/preview component
 - **StepIndicator** - Multi-step form progress
 
 ### Development Commands
@@ -874,8 +875,10 @@ npm run lint
 - ✅ Manual order status update functionality added
 - ✅ Payment numbers displayed in #PAY003 format in payment history and transactions
 - ✅ API responses cleaned up - removed duplicate fields, using camelCase only
-- ✅ All upload-related code removed (uploadService, ImageUploadWithUpload, S3 settings, avatar uploads)
-- ✅ Avatar/image fields removed from API responses and frontend components
+- ✅ **File Upload Service** - Avatar and business logo upload implemented (local storage, no S3)
+- ✅ Avatar upload/delete functionality in Profile page
+- ✅ Business logo upload/delete functionality in Settings page
+- ✅ Custom storage file serving (no symlink required, works on shared hosting)
 - ✅ **Important Links CRUD** - Dynamic links management (add/edit/delete) with custom titles and URLs, managed from Order Details page
 - ✅ **Report Management Module** - Company Health Report fully implemented with date range filtering, branch filtering, and PDF export
 - ✅ **Permissions System** - All pages now have proper permission checks (Reports, Financial Transactions, Financial Categories)

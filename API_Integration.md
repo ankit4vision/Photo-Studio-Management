@@ -821,8 +821,8 @@ const handleDeleteUser = async (userId) => {
     "bio": "User bio",
     "date_of_birth": "1990-01-01",
     "gender": "male",
-    "avatar": "avatars/user_1_1234567890.jpeg",
-    "avatar_url": "http://localhost:8000/storage/avatars/user_1_1234567890.jpeg"
+    "avatar": "avatars/avatar_user_1_1234567890_abc123.jpg",
+    "avatar_url": "http://localhost:8000/admin/api/storage/avatars/avatar_user_1_1234567890_abc123.jpg"
   }
 }
 ```
@@ -855,7 +855,7 @@ const handleDeleteUser = async (userId) => {
   "bio": "User bio",
   "date_of_birth": "1990-01-01",
   "gender": "male",
-  "avatar": "data:image/jpeg;base64,..."
+  "avatar": "avatars/avatar_user_1_1234567890_abc123.jpg"
 }
 ```
 
@@ -875,9 +875,9 @@ const handleDeleteUser = async (userId) => {
   - `src/views/users/Profile.jsx` - Profile update करने के लिए
   - `src/components/pages/users/PersonalInfoSection.jsx` - Personal info save
   - `src/components/pages/users/AddressSection.jsx` - Address save
-  - `src/components/pages/users/ProfilePictureSection.jsx` - Avatar upload
+  - `src/components/pages/users/ProfilePictureSection.jsx` - Avatar upload component
 
-**Note**: Avatar base64 format में send होता है, backend automatically local storage में save करता है
+**Note**: Avatar file upload via `multipart/form-data`. Backend stores file in `storage/app/public/avatars/` and returns full URL. Files are served via custom handler in `public/index.php` (no symlink required).
 
 ---
 
@@ -3715,6 +3715,132 @@ const handleSaveSettings = async (section, settingsData) => {
 
 ---
 
+### 11. **POST /api/settings/upload-logo**
+**Description**: Business logo upload करने के लिए
+
+**Backend Controller**: `SettingController@uploadLogo`
+
+**Request**: `multipart/form-data`
+- `logo` - Image file (required, JPEG/PNG/WebP, max 2MB)
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Logo uploaded successfully",
+  "data": {
+    "path": "logos/business_logo_1234567890_abc123.jpg",
+    "url": "https://lvclicks.in/admin/api/storage/logos/business_logo_1234567890_abc123.jpg"
+  }
+}
+```
+
+**Permission Required**: `edit_setting`
+
+**Frontend Integration**:
+- **Service**: `src/services/settingsService.js`
+- **Method**: `settingsService.uploadLogo(file)`
+- **Used In**:
+  - `src/views/settings/Settings.jsx` - Business Information section में logo upload
+
+**Note**: 
+- Old logo automatically deleted before uploading new one
+- Logo stored in `storage/app/public/logos/`
+- Files served via custom handler at `/admin/api/storage/logos/*` (no symlink required)
+- Logo URL stored in settings table (key: `business_logo`)
+
+---
+
+### 12. **DELETE /api/settings/delete-logo**
+**Description**: Business logo delete करने के लिए
+
+**Backend Controller**: `SettingController@deleteLogo`
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Logo deleted successfully"
+}
+```
+
+**Permission Required**: `edit_setting`
+
+**Frontend Integration**:
+- **Service**: `src/services/settingsService.js`
+- **Method**: `settingsService.deleteLogo()`
+- **Used In**:
+  - `src/views/settings/Settings.jsx` - Business Information section में logo delete
+
+---
+
+### 13. **POST /api/users/profile/avatar**
+**Description**: User profile avatar upload करने के लिए
+
+**Backend Controller**: `UserController@uploadAvatar`
+
+**Request**: `multipart/form-data`
+- `avatar` - Image file (required, JPEG/PNG/WebP, max 2MB)
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Avatar uploaded successfully",
+  "data": {
+    "id": 1,
+    "firstName": "John",
+    "lastName": "Doe",
+    "avatar": "avatars/avatar_user_1_1234567890_abc123.jpg",
+    "avatar_url": "https://lvclicks.in/admin/api/storage/avatars/avatar_user_1_1234567890_abc123.jpg"
+  }
+}
+```
+
+**Permission Required**: Authenticated user (own profile only)
+
+**Frontend Integration**:
+- **Service**: `src/services/profileService.js`
+- **Method**: `profileService.uploadAvatar(file)`
+- **Used In**:
+  - `src/components/pages/users/ProfilePictureSection.jsx` - Profile picture upload
+
+**Note**: 
+- Old avatar automatically deleted before uploading new one
+- Avatar stored in `storage/app/public/avatars/`
+- Files served via custom handler at `/admin/api/storage/avatars/*` (no symlink required)
+- Filename format: `avatar_user_{userId}_{timestamp}_{uniqid}.{ext}`
+
+---
+
+### 14. **DELETE /api/users/profile/avatar**
+**Description**: User profile avatar delete करने के लिए
+
+**Backend Controller**: `UserController@deleteAvatar`
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Avatar deleted successfully",
+  "data": {
+    "id": 1,
+    "avatar": null,
+    "avatar_url": null
+  }
+}
+```
+
+**Permission Required**: Authenticated user (own profile only)
+
+**Frontend Integration**:
+- **Service**: `src/services/profileService.js`
+- **Method**: `profileService.deleteAvatar()`
+- **Used In**:
+  - `src/components/pages/users/ProfilePictureSection.jsx` - Profile picture delete
+
+---
+
 ## 📱 App Settings
 
 ### App Settings Section
@@ -4036,12 +4162,13 @@ const Settings = () => {
 ✅ Payment Management (CRUD operations + Auto order status update + Customer stats update + PDF Export)
 ✅ Financial Management (Transactions CRUD + Categories CRUD + Statistics + Server-side pagination/filtering/searching)
 ✅ Report Management (Company Health Report + PDF Export)
-✅ Settings Management (Full CRUD + Email Test + S3 Test + App Settings with Web URL)
+✅ Settings Management (Full CRUD + Email Test + Logo Upload/Delete + App Settings with Web URL)
 
 ### Frontend Integration Status
 - ✅ **AuthService** - Fully integrated in Login, AuthContext, PrivateRoute, ForgotPassword, ResetPassword
 - ✅ **UserService** - Fully integrated in UsersList, UserForm
-- ✅ **ProfileService** - Fully integrated in Profile page (PersonalInfo, Address, Avatar, Change Password)
+- ✅ **ProfileService** - Fully integrated in Profile page (PersonalInfo, Address, Avatar Upload/Delete, Change Password)
+- ✅ **SettingsService** - Business logo upload/delete functionality integrated
 - ✅ **RoleService** - Fully integrated in RolesList, RoleForm
 - ✅ **FinancialService** - Fully integrated in FinancialTransactionsList, FinancialTransactionForm
 - ✅ **FinancialCategoryService** - Fully integrated in FinancialCategoriesList, FinancialCategoryForm

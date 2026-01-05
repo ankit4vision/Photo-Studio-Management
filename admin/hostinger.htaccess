@@ -5,7 +5,8 @@
   # Route /admin/uploads/* → Laravel public/uploads
   RewriteRule ^uploads/(.*)$ api/public/uploads/$1 [L]
 
-  # Route /admin/storage/* → Laravel storage symlink
+  # Route /admin/storage/* → Laravel public/index.php (custom handler serves files directly from storage/app/public)
+  # Note: Actual storage requests come via /admin/api/storage/* and are handled by custom handler in index.php
   RewriteRule ^storage/(.*)$ api/public/storage/$1 [L]
 
   # Route /admin/api/* → Laravel backend, preserving path info for Laravel router
