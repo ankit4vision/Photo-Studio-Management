@@ -27,7 +27,8 @@ export const API_ENDPOINTS = {
     SEARCH: '/users/search',
     GET_PROFILE: '/users/profile',
     UPDATE_PROFILE: '/users/profile',
-    UPLOAD_AVATAR: '/users/avatar',
+    UPLOAD_AVATAR: '/users/profile/avatar',
+    DELETE_AVATAR: '/users/profile/avatar',
     CHANGE_STATUS: (id) => `/users/${id}/status`,
     RESET_PASSWORD: (id) => `/users/${id}/reset-password`,
   },
@@ -88,16 +89,6 @@ export const API_ENDPOINTS = {
     RESTORE: '/settings/restore',
   },
 
-  // File Management
-  FILES: {
-    BASE: '/files',
-    UPLOAD: '/files/upload',
-    DOWNLOAD: (id) => `/files/${id}/download`,
-    DELETE: (id) => `/files/${id}`,
-    LIST: '/files',
-    GET_BY_ID: (id) => `/files/${id}`,
-  },
-
   // Audit Logs
   AUDIT: {
     BASE: '/audit',
@@ -125,7 +116,10 @@ export const API_ENDPOINTS = {
     GET_BY_ID: (id) => `/customers/${id}`,
     UPDATE: (id) => `/customers/${id}`,
     DELETE: (id) => `/customers/${id}`,
+    UPDATE_STATUS: (id) => `/customers/${id}/status`,
+    RECALCULATE_STATS: (id) => `/customers/${id}/recalculate-stats`,
     WALLET: (id) => `/customers/${id}/wallet`,
+    EXPORT_PDF: (id) => `/customers/${id}/export-pdf`,
     LEDGER: (id) => `/customers/${id}/ledger`,
   },
 
@@ -149,6 +143,12 @@ export const API_ENDPOINTS = {
     DELETE: (id) => `/packages/${id}`,
   },
 
+  // Package Types (Master Data)
+  PACKAGE_TYPES: {
+    BASE: '/package-types',
+    LIST: '/package-types',
+  },
+
   // Order Management
   ORDERS: {
     BASE: '/orders',
@@ -161,6 +161,7 @@ export const API_ENDPOINTS = {
     BULK_DELETE: '/orders/bulk-delete',
     SEARCH: '/orders/search',
     EXPORT: '/orders/export',
+    EXPORT_PDF: (id) => `/orders/${id}/export-pdf`,
     STATS: '/orders/stats',
     ANALYTICS: '/orders/analytics',
     UPDATE_STATUS: (id) => `/orders/${id}/status`,
@@ -191,6 +192,28 @@ export const API_ENDPOINTS = {
     CREATE: '/payments',
     GET_BY_ORDER: (orderId) => `/payments/order/${orderId}`,
     GET_BY_ID: (id) => `/payments/${id}`,
+    EXPORT_PDF: (id) => `/payments/${id}/export-pdf`,
+  },
+
+  // Financial Management
+  FINANCIAL_TRANSACTIONS: {
+    BASE: '/financial-transactions',
+    LIST: '/financial-transactions',
+    CREATE: '/financial-transactions',
+    GET_BY_ID: (id) => `/financial-transactions/${id}`,
+    UPDATE: (id) => `/financial-transactions/${id}`,
+    DELETE: (id) => `/financial-transactions/${id}`,
+    STATS: '/financial-transactions/stats',
+    EXPORT_PDF: '/financial-transactions/export-pdf',
+  },
+
+  FINANCIAL_CATEGORIES: {
+    BASE: '/financial-categories',
+    LIST: '/financial-categories',
+    CREATE: '/financial-categories',
+    GET_BY_ID: (id) => `/financial-categories/${id}`,
+    UPDATE: (id) => `/financial-categories/${id}`,
+    DELETE: (id) => `/financial-categories/${id}`,
   },
 
   // Reports
@@ -245,22 +268,10 @@ export const REQUEST_CONFIG = {
   RETRY_DELAY: 1000, // 1 second
 }
 
-// File Upload Configuration
-export const FILE_UPLOAD_CONFIG = {
-  MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
-  ALLOWED_TYPES: {
-    IMAGES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-    DOCUMENTS: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-    SPREADSHEETS: ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
-  },
-  MAX_FILES: 5,
-}
-
 export default {
   API_ENDPOINTS,
   HTTP_METHODS,
   API_STATUS,
   API_ERRORS,
   REQUEST_CONFIG,
-  FILE_UPLOAD_CONFIG,
 }

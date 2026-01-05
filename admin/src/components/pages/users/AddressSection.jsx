@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, Button, Spinner } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faLocationPin, faPencil, faSave, faX } from '@fortawesome/free-solid-svg-icons'
@@ -21,6 +21,19 @@ const AddressSection = ({
   })
   const [errors, setErrors] = useState({})
 
+  // Sync formData with addressData prop when it changes (but not when editing)
+  useEffect(() => {
+    if (!isEditing && addressData) {
+      setFormData({
+        address: addressData.address || '',
+        city: addressData.city || '',
+        state: addressData.state || '',
+        zipCode: addressData.zipCode || '',
+        country: addressData.country || '',
+      })
+    }
+  }, [addressData, isEditing])
+
   const handleEditClick = () => {
     setIsEditing(true)
     setErrors({})
@@ -28,13 +41,13 @@ const AddressSection = ({
 
   const handleCancelEdit = () => {
     setIsEditing(false)
+    // Reset to original addressData values
     setFormData({
-      address: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: '',
-      ...addressData
+      address: addressData.address || '',
+      city: addressData.city || '',
+      state: addressData.state || '',
+      zipCode: addressData.zipCode || '',
+      country: addressData.country || '',
     })
     setErrors({})
   }
@@ -50,9 +63,22 @@ const AddressSection = ({
   const validateForm = () => {
     const newErrors = {}
 
-    // ZIP code validation (optional but if provided, should be valid)
-    if (formData.zipCode && !/^\d{5}(-\d{4})?$/.test(formData.zipCode)) {
-      newErrors.zipCode = 'Please enter a valid ZIP code'
+    // ZIP/Postal code validation (optional but if provided, should be valid)
+    // Accept various international formats:
+    // - US: 12345 or 12345-6789
+    // - India: 6 digits (110001)
+    // - UK: Various formats (SW1A 1AA, M1 1AA, etc.)
+    // - Canada: A1A 1A1
+    // - General: Alphanumeric with spaces, hyphens, and reasonable length
+    if (formData.zipCode && formData.zipCode.trim()) {
+      const zipCode = formData.zipCode.trim()
+      // Allow alphanumeric with spaces and hyphens, length between 2-15 characters
+      // This covers most international postal code formats
+      if (zipCode.length < 2 || zipCode.length > 15) {
+        newErrors.zipCode = 'ZIP/Postal code must be between 2-15 characters'
+      } else if (!/^[A-Za-z0-9\s\-]+$/.test(zipCode)) {
+        newErrors.zipCode = 'ZIP/Postal code can only contain letters, numbers, spaces, and hyphens'
+      }
     }
 
     setErrors(newErrors)

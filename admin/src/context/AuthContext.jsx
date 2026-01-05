@@ -1,10 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react'
 import PropTypes from 'prop-types'
-import apiService from '../api'
 import authService from '../services/authService'
-
-// Auth Context
-const AuthContext = createContext()
 
 // Auth Actions
 const AUTH_ACTIONS = {
@@ -64,7 +60,12 @@ const authReducer = (state, action) => {
     case AUTH_ACTIONS.UPDATE_USER:
       return {
         ...state,
-        user: { ...state.user, ...action.payload },
+        user: { 
+          ...state.user, 
+          ...action.payload,
+          // Ensure avatar is properly updated
+          avatar: action.payload.avatar !== undefined ? action.payload.avatar : state.user?.avatar
+        },
       }
     case AUTH_ACTIONS.SET_LOADING:
       return {
@@ -85,32 +86,79 @@ const initialState = {
   error: null,
 }
 
+// Default context value (used when context is accessed outside provider)
+const defaultContextValue = {
+  ...initialState,
+  login: async () => {
+    throw new Error('login function called outside AuthProvider')
+  },
+  logout: async () => {
+    throw new Error('logout function called outside AuthProvider')
+  },
+  updateUser: () => {
+    throw new Error('updateUser function called outside AuthProvider')
+  },
+  hasPermission: () => false,
+  hasRole: () => false,
+  hasAnyRole: () => false,
+  hasAllPermissions: () => false,
+}
+
+// Auth Context with default value
+const AuthContext = createContext(defaultContextValue)
+
 // Auth Provider Component
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
 
   // Load user from localStorage on mount
   useEffect(() => {
-    const loadUserFromStorage = () => {
-      const token = localStorage.getItem('access_token')
-      const user = localStorage.getItem('user')
+    const initializeAuth = async () => {
+      const token = authService.getToken()
+      const storedUser = authService.getStoredUser()
 
-      if (token && user) {
-        try {
-          const userData = JSON.parse(user)
+      // Load stored user immediately for faster initial render
+      if (token && storedUser) {
+        dispatch({
+          type: AUTH_ACTIONS.LOAD_USER,
+          payload: { user: storedUser, token },
+        })
+      }
+
+      if (!token) {
+        return
+      }
+
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true })
+
+      try {
+        // Always fetch fresh user data from API to ensure avatar is up to date
+        const response = await authService.fetchCurrentUser()
+        if (response.success && response.data) {
+          // Debug log
+          if (import.meta.env.DEV) {
+            console.log('[AuthContext] Fresh user data loaded:', {
+              user: response.data,
+              avatar: response.data.avatar
+            })
+          }
+          
           dispatch({
             type: AUTH_ACTIONS.LOAD_USER,
-            payload: { user: userData, token },
+            payload: { user: response.data, token: authService.getToken() },
           })
-        } catch (error) {
-          console.error('Error parsing user data:', error)
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('user')
+        } else if (response.status === 401) {
+          dispatch({ type: AUTH_ACTIONS.LOGOUT })
         }
+      } catch (error) {
+        console.error('[AuthContext] Error fetching user:', error)
+        // Don't logout on error, keep using stored user
+      } finally {
+        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false })
       }
     }
 
-    loadUserFromStorage()
+    initializeAuth()
   }, [])
 
   // Login function
@@ -118,47 +166,20 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: AUTH_ACTIONS.LOGIN_START })
     
     try {
-      // Use real API authentication
-      const response = await authService.login({
-        email: credentials.email,
-        password: credentials.password,
-      })
+      const response = await authService.login(credentials)
 
       if (response.success && response.data) {
         const { user, token } = response.data
 
-        // Map API user response to app user structure
-        const mappedUser = {
-          id: user.user_id,
-          email: user.email,
-          phone: user.phone,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          role: user.user_type === 'admin' ? 'admin' : 'user',
-          permissions: user.user_type === 'admin' 
-            ? ['user:read', 'user:write', 'user:delete', 'role:read', 'role:write', 'role:delete', 'dashboard:read', 'dashboard:write']
-            : ['dashboard:read'],
-          avatar: user.profile_image_url || `https://ui-avatars.com/api/?name=${user.first_name}+${user.last_name}&background=22c55e&color=ffffff&size=40`,
-          isActive: user.is_active,
-          isVerified: user.is_verified,
-          emailVerified: user.email_verified,
-          phoneVerified: user.phone_verified,
-          dateOfBirth: user.date_of_birth,
-          gender: user.gender,
-          createdAt: user.created_at,
-          updatedAt: user.updated_at,
-          lastLogin: user.last_login,
-        }
-
         dispatch({
           type: AUTH_ACTIONS.LOGIN_SUCCESS,
-          payload: { user: mappedUser, token },
+          payload: { user, token },
         })
 
-        return { success: true, user: mappedUser }
-      } else {
-        throw new Error(response.message || 'Login failed')
+        return { success: true, user }
       }
+
+      throw new Error(response.message || 'Login failed')
     } catch (error) {
       const errorMessage = error.response?.data?.detail || error.message || 'Login failed'
       dispatch({
@@ -177,15 +198,29 @@ export const AuthProvider = ({ children }) => {
       console.warn('Logout API call failed:', error)
       // Even if logout fails, clear local storage and dispatch logout
     } finally {
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('user')
       dispatch({ type: AUTH_ACTIONS.LOGOUT })
     }
   }
 
   // Update user function
   const updateUser = (userData) => {
-    const updatedUser = { ...state.user, ...userData }
+    const updatedUser = { 
+      ...state.user, 
+      ...userData,
+      // Explicitly set avatar if provided
+      avatar: userData.avatar !== undefined ? userData.avatar : (state.user?.avatar || null)
+    }
+    
+    // Debug log
+    if (import.meta.env.DEV) {
+      console.log('[AuthContext] updateUser called:', {
+        userData,
+        currentUser: state.user,
+        updatedUser,
+        avatar: updatedUser.avatar
+      })
+    }
+    
     localStorage.setItem('user', JSON.stringify(updatedUser))
     dispatch({
       type: AUTH_ACTIONS.UPDATE_USER,
@@ -214,7 +249,7 @@ export const AuthProvider = ({ children }) => {
   // Check if user has all permissions
   const hasAllPermissions = (permissions) => {
     if (!state.user || !state.user.permissions) return false
-    return permissions.every(permission => state.user.permissions.includes(permission))
+    return permissions.every((permission) => state.user.permissions.includes(permission))
   }
 
   const value = {
@@ -242,9 +277,14 @@ AuthProvider.propTypes = {
 // Custom hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext)
+  
+  // With default value provided to createContext, context should never be null/undefined
+  // If context is somehow null/undefined, that indicates a serious issue
   if (!context) {
+    console.error('[useAuth] Context is null/undefined. This should not happen with default value.')
     throw new Error('useAuth must be used within an AuthProvider')
   }
+  
   return context
 }
 

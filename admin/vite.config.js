@@ -10,8 +10,10 @@ export default defineConfig(({ command, mode }) => {
   
   return {
     base: './',
+    root: process.cwd(),
     build: {
       outDir: 'dist',
+      emptyOutDir: true,
       sourcemap: env.VITE_BUILD_SOURCEMAP === 'true',
       minify: env.VITE_BUILD_MINIFY === 'true' ? 'esbuild' : false,
       rollupOptions: {
@@ -68,7 +70,7 @@ export default defineConfig(({ command, mode }) => {
       proxy: {
         // Proxy API requests to backend
         '/api': {
-          target: env.VITE_API_BASE_URL || 'http://localhost:3001',
+          target: env.VITE_API_BASE_URL || 'http://localhost:8000',
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/api/, '/api'),

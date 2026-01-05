@@ -15,10 +15,14 @@ const FormModal = ({
   submitIcon,
   size = 'lg',
   children,
-  onConfirm, // Extract but don't use
-  confirmText, // Extract but don't use
+  onConfirm, // For compatibility - use if provided, otherwise use onSubmit
+  confirmText, // For compatibility - use if provided, otherwise use submitText
   ...props
 }) => {
+  // Use onConfirm if provided, otherwise fall back to onSubmit
+  const handleSubmit = onConfirm || onSubmit
+  const displaySubmitText = confirmText || submitText
+
   return (
     <Modal show={visible} onHide={onClose} size={size}>
       <Modal.Header>
@@ -41,7 +45,7 @@ const FormModal = ({
         <button 
           type="button" 
           className="btn btn-primary" 
-          onClick={onSubmit}
+          onClick={handleSubmit}
           disabled={loading}
         >
           {loading ? (
@@ -52,7 +56,7 @@ const FormModal = ({
           ) : (
             <>
               {submitIcon && <FontAwesomeIcon icon={submitIcon} className="me-1" />}
-              {submitText}
+              {displaySubmitText}
             </>
           )}
         </button>
@@ -65,7 +69,7 @@ FormModal.propTypes = {
   visible: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
-  onSubmit: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func, // Optional if onConfirm is provided
   submitText: PropTypes.string,
   cancelText: PropTypes.string,
   loading: PropTypes.bool,
@@ -73,8 +77,8 @@ FormModal.propTypes = {
   submitIcon: PropTypes.object,
   size: PropTypes.string,
   children: PropTypes.node,
-  onConfirm: PropTypes.func, // For compatibility
-  confirmText: PropTypes.string // For compatibility
+  onConfirm: PropTypes.func, // For compatibility - use if provided, otherwise use onSubmit
+  confirmText: PropTypes.string // For compatibility - use if provided, otherwise use submitText
 }
 
 export default FormModal

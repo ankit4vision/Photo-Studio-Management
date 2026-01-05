@@ -1,6 +1,6 @@
-# NZ Grocery Admin - React Admin Dashboard
+# Photo Studio Management App - React Admin Dashboard
 
-A modern React admin dashboard built with Vite, CoreUI, and React Bootstrap for managing the NZ Grocery Store.
+A modern React admin dashboard built with Vite, CoreUI, and React Bootstrap for managing Photo Studio operations.
 
 ## 🚀 Quick Start
 
@@ -104,7 +104,6 @@ admin/
 │   │   │   │   └── NotificationFormModal.jsx
 │   │   │   ├── customers/
 │   │   │   │   ├── CustomerDetailsModal.jsx
-│   │   │   │   ├── SuspendCustomerModal.jsx
 │   │   │   │   └── README.md
 │   │   │   ├── inventory/
 │   │   │   │   ├── InventoryHistoryModal.jsx

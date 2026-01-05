@@ -1,13 +1,13 @@
-/* NZ Grocery Admin Theme - Green & Blue Design */
+/* Photo Studio Management App Theme - Purple & Violet Design */
 
 :root,
 html,
 body,
 html[data-coreui-theme="light"],
 body[data-coreui-theme="light"] {
-  /* Primary Green Theme - Matching POS Design */
-  --cui-primary: #22c55e !important; /* Fresh green - matches design */
-  --cui-primary-rgb: 34, 197, 94 !important;
+  /* Primary Purple/Violet Theme - Creative & Artistic */
+  --cui-primary: #8b5cf6 !important; /* Vibrant violet - creative & artistic */
+  --cui-primary-rgb: 139, 92, 246 !important;
   --cui-secondary: #6b7280 !important; /* Neutral gray */
   --cui-success: #10b981 !important; /* Success green */
   --cui-info: #3b82f6 !important; /* Blue for data visualization */
@@ -17,40 +17,40 @@ body[data-coreui-theme="light"] {
   --cui-dark: #1e293b !important; /* Dark gray */
   
   /* Additional color palette for charts and data */
-  --chart-green: #22c55e !important;
+  --chart-purple: #8b5cf6 !important;
   --chart-blue: #3b82f6 !important;
-  --chart-light-green: #86efac !important;
+  --chart-light-purple: #c4b5fd !important;
   --chart-light-blue: #93c5fd !important;
-  --chart-dark-green: #16a34a !important;
+  --chart-dark-purple: #7c3aed !important;
   --chart-dark-blue: #1d4ed8 !important;
   
   /* Theme-based Gradient Variables - Light & Subtle */
-  --gradient-primary: linear-gradient(135deg, #86efac 0%, #4ade80 100%) !important;
+  --gradient-primary: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%) !important;
   --gradient-success: linear-gradient(135deg, #6ee7b7 0%, #34d399 100%) !important;
   --gradient-info: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%) !important;
   --gradient-warning: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
   --gradient-danger: linear-gradient(135deg, #fca5a5 0%, #f87171 100%) !important;
   
   /* Card Gradient Backgrounds - Light & Subtle */
-  --card-gradient-primary: linear-gradient(135deg, #86efac 0%, #4ade80 100%) !important;
+  --card-gradient-primary: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%) !important;
   --card-gradient-success: linear-gradient(135deg, #6ee7b7 0%, #34d399 100%) !important;
   --card-gradient-info: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%) !important;
   --card-gradient-warning: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
   
-  /* Logo-Inspired Green-Blue Gradient */
-  --card-gradient-logo: linear-gradient(135deg, #86efac 0%, #b8d7fd 100%) !important;
-  --card-gradient-logo-alt: linear-gradient(135deg, #4ade80 0%, #fbffbb 100%) !important;
+  /* Logo-Inspired Purple-Blue Gradient */
+  --card-gradient-logo: linear-gradient(135deg, #c4b5fd 0%, #b8d7fd 100%) !important;
+  --card-gradient-logo-alt: linear-gradient(135deg, #a78bfa 0%, #fbffbb 100%) !important;
   
   /* Subtle Background Gradients */
   --bg-gradient-light: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
-  --bg-gradient-primary-subtle: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(22, 163, 74, 0.05) 100%) !important;
+  --bg-gradient-primary-subtle: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(124, 58, 237, 0.05) 100%) !important;
 }
 
 /* Dark theme adjustments */
 html[data-coreui-theme="dark"],
 body[data-coreui-theme="dark"] {
-  --cui-primary: #34d399 !important; /* Brighter green for dark mode */
-  --cui-primary-rgb: 52, 211, 153 !important;
+  --cui-primary: #a78bfa !important; /* Brighter violet for dark mode */
+  --cui-primary-rgb: 167, 139, 250 !important;
   --cui-info: #60a5fa !important; /* Lighter blue for dark mode */
 }
 
@@ -67,7 +67,7 @@ body[data-coreui-theme="dark"] {
 /* Links */
 :root, html, body {
   --cui-link-color: var(--cui-primary) !important;
-  --cui-link-hover-color: #16a34a !important; /* Darker green */
+  --cui-link-hover-color: #7c3aed !important; /* Darker violet */
 }
 
 a, .link-primary { color: var(--cui-link-color) !important; }
@@ -76,8 +76,8 @@ a:hover, a:focus, .link-primary:hover { color: var(--cui-link-hover-color) !impo
 /* Enhanced button styles */
 .btn-primary:hover,
 .btn-primary:focus {
-  background-color: #16a34a !important;
-  border-color: #16a34a !important;
+  background-color: #7c3aed !important;
+  border-color: #7c3aed !important;
   transform: translateY(-1px) !important;
   box-shadow: 0 4px 8px rgba(var(--cui-primary-rgb), 0.3) !important;
 }
@@ -85,8 +85,8 @@ a:hover, a:focus, .link-primary:hover { color: var(--cui-link-hover-color) !impo
 .btn-primary:active,
 .btn-primary.active,
 .show > .btn-primary.dropdown-toggle {
-  background-color: #15803d !important;
-  border-color: #15803d !important;
+  background-color: #6d28d9 !important;
+  border-color: #6d28d9 !important;
   transform: translateY(0) !important;
 }
 
@@ -876,8 +876,8 @@ html[data-coreui-theme="dark"] .sidebar .close-button:hover {
 }
 
 .pagination-btn.active:hover {
-  background-color: #16a34a;
-  border-color: #16a34a;
+  background-color: #7c3aed;
+  border-color: #7c3aed;
 }
 
 /* Responsive pagination */
@@ -1233,7 +1233,7 @@ html[data-coreui-theme="dark"] .bg-gradient-info {
 }
 
 html[data-coreui-theme="dark"] .bg-gradient-primary {
-  background: linear-gradient(135deg, #34d399 0%, #10b981 100%) !important;
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%) !important;
 }
 
 /* Dashboard Activity Icons Dark Theme */

@@ -1,8 +1,9 @@
 import axios from 'axios'
+import config from '../config'
 import { REQUEST_CONFIG } from '../constants/api'
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://52.62.1.66:8000',
+  baseURL: config.api.baseURL,
   timeout: REQUEST_CONFIG.TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
@@ -44,14 +45,46 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
     
-    // Log error in development
+    // Log error in development (skip 404 for settings lookup as it's expected)
     if (import.meta.env.DEV) {
-      console.error('[API Error]', {
-        url: error.config?.url,
-        method: error.config?.method,
-        status: error.response?.status,
-        message: error.response?.data || error.message,
-      })
+      const isSettingsLookup = error.config?.url?.includes('/global-settings/key/') && 
+                               (error.response?.status === 404 || !error.response)
+      const isSettingsSave = error.config?.url?.includes('/global-settings/') && 
+                            (error.config?.method === 'post' || error.config?.method === 'put') &&
+                            (error.response?.status === 404 || !error.response)
+      
+      // Don't log 404 errors or network errors for settings lookup (expected behavior)
+      if (!isSettingsLookup && !isSettingsSave) {
+        // Only log if we have a response or it's a real error
+        if (error.response || (!error.response && !error.config?.url?.includes('/global-settings/key/'))) {
+          console.error('[API Error]', {
+            url: error.config?.url,
+            method: error.config?.method,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.response?.data?.detail || error.response?.data?.message || error.message,
+            fullError: error.response || error,
+          })
+        }
+      }
+      
+      // Special handling for 401 errors
+      if (error.response?.status === 401) {
+        console.warn('[401 Unauthorized]', {
+          endpoint: error.config?.url,
+          baseURL: error.config?.baseURL,
+          message: 'Authentication failed. Possible reasons:',
+          reasons: [
+            '1. Invalid email or password',
+            '2. User does not exist in backend database',
+            '3. Backend authentication endpoint format mismatch',
+            '4. CORS issues (check browser console)',
+          ],
+          requestData: error.config?.data,
+          responseData: error.response?.data,
+        })
+      }
     }
     
     // Handle 401 Unauthorized - token expired or invalid

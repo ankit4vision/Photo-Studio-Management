@@ -1,108 +1,187 @@
 import React, { useState, useEffect } from 'react'
-import { Modal, Row, Col, Card, Badge, Button, Form, Alert } from 'react-bootstrap'
+import { Modal, Row, Col, Card, Badge, Button, Spinner, Tab, Tabs, Form, Table } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
-  faTimes, 
-  faCheck, 
-  faTruck, 
-  faComment, 
-  faPrint,
-  faEnvelope,
-  faClock,
+  faShoppingCart,
+  faUser,
+  faCreditCard,
+  faTag,
+  faCalendarAlt,
+  faBuilding,
+  faFileInvoiceDollar,
   faCheckCircle,
   faExclamationTriangle,
+  faInfoCircle,
+  faList,
+  faHistory,
+  faDownload,
+  faEdit,
+  faLink,
   faImage,
-  faUser
+  faVideo,
+  faExternalLinkAlt,
+  faPlus,
+  faTrash,
+  faSave,
+  faTimes
 } from '@fortawesome/free-solid-svg-icons'
 import orderService from '../../../services/orderService'
 import { formatCurrency, formatDate } from '../../../utils'
+import { useToast } from '../../common/ToastProvider'
 
-const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate }) => {
+const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate, onEdit, orderSnapshot }) => {
+  const { success, error: showError } = useToast()
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [updating, setUpdating] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [selectedStatus, setSelectedStatus] = useState('')
-  const [notes, setNotes] = useState('')
+  const [activeTab, setActiveTab] = useState('details')
+  const [exportingPdf, setExportingPdf] = useState(false)
+  const [editingLinkIndex, setEditingLinkIndex] = useState(null)
+  const [newLink, setNewLink] = useState({ title: '', url: '' })
+  const [linkErrors, setLinkErrors] = useState('')
+  const [updatingLinks, setUpdatingLinks] = useState(false)
+
+  const getSanitizedOrderId = (value) => {
+    if (!value) return null
+    return value.toString().replace(/^#/, '').trim()
+  }
+
+  const sanitizedOrderId = getSanitizedOrderId(orderId)
 
   useEffect(() => {
-    if (show && orderId) {
+    if (orderSnapshot) {
+      setOrder(orderSnapshot)
+    }
+  }, [orderSnapshot])
+
+  useEffect(() => {
+    if (show && sanitizedOrderId) {
       fetchOrderDetails()
     }
-  }, [show, orderId])
+  }, [show, sanitizedOrderId])
 
   const fetchOrderDetails = async () => {
     setLoading(true)
-    setError('')
     try {
-      const response = await orderService.getOrderById(orderId)
-      setOrder(response.data)
-      setSelectedStatus(response.data.status)
+      const response = await orderService.getOrderById(sanitizedOrderId)
+      if (response.success) {
+        setOrder(response.data)
+      } else {
+        showError('Failed to load order details')
+      }
     } catch (err) {
-      setError('Failed to load order details')
+      showError('Failed to load order details')
       console.error('Error fetching order details:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleStatusUpdate = async () => {
-    if (!selectedStatus || selectedStatus === order.status) return
-
-    setUpdating(true)
-    setError('')
-    setSuccess('')
-
+  const handleExportPDF = async () => {
     try {
-      await orderService.updateOrderStatus(orderId, selectedStatus, notes)
-      setSuccess('Order status updated successfully')
-      setOrder(prev => ({ ...prev, status: selectedStatus }))
-      onOrderUpdate && onOrderUpdate()
-      
-      // Clear notes after successful update
-      setNotes('')
+      setExportingPdf(true)
+      const response = await orderService.exportOrderPdf(sanitizedOrderId)
+      if (response.success) {
+        success('PDF exported successfully')
+      } else {
+        showError(response.message || 'Failed to export PDF')
+      }
     } catch (err) {
-      setError('Failed to update order status')
-      console.error('Error updating order status:', err)
+      console.error('Error exporting PDF:', err)
+      showError('Failed to export PDF')
     } finally {
-      setUpdating(false)
+      setExportingPdf(false)
     }
   }
 
-  const handleQuickAction = async (action) => {
-    setUpdating(true)
-    setError('')
-    setSuccess('')
+  // Link Management Functions
+  const handleAddLink = () => {
+    if (!newLink.title.trim() || !newLink.url.trim()) {
+      setLinkErrors('Both title and URL are required')
+      return
+    }
+
+    // Basic URL validation
+    try {
+      new URL(newLink.url)
+    } catch (e) {
+      setLinkErrors('Please enter a valid URL')
+      return
+    }
+
+    const updatedLinks = [...(order?.links || []), { ...newLink, id: Date.now() }]
+    handleUpdateOrderLinks(updatedLinks)
+    setNewLink({ title: '', url: '' })
+    setLinkErrors('')
+  }
+
+  const handleEditLink = (index) => {
+    setEditingLinkIndex(index)
+    setNewLink({ ...order.links[index] })
+    setLinkErrors('')
+  }
+
+  const handleUpdateLink = () => {
+    if (!newLink.title.trim() || !newLink.url.trim()) {
+      setLinkErrors('Both title and URL are required')
+      return
+    }
+
+    // Basic URL validation
+    try {
+      new URL(newLink.url)
+    } catch (e) {
+      setLinkErrors('Please enter a valid URL')
+      return
+    }
+
+    const updatedLinks = order.links.map((link, i) => i === editingLinkIndex ? { ...newLink } : link)
+    handleUpdateOrderLinks(updatedLinks)
+    setEditingLinkIndex(null)
+    setNewLink({ title: '', url: '' })
+    setLinkErrors('')
+  }
+
+  const handleDeleteLink = async (index) => {
+    if (window.confirm('Are you sure you want to delete this link?')) {
+      const updatedLinks = order.links.filter((_, i) => i !== index)
+      handleUpdateOrderLinks(updatedLinks)
+      if (editingLinkIndex === index) {
+        setEditingLinkIndex(null)
+        setNewLink({ title: '', url: '' })
+      }
+    }
+  }
+
+  const handleCancelEditLink = () => {
+    setEditingLinkIndex(null)
+    setNewLink({ title: '', url: '' })
+    setLinkErrors('')
+  }
+
+  const handleUpdateOrderLinks = async (updatedLinks) => {
+    if (!sanitizedOrderId) return
 
     try {
-      switch (action) {
-        case 'process':
-          await orderService.updateOrderStatus(orderId, 'processing')
-          setOrder(prev => ({ ...prev, status: 'processing' }))
-          setSuccess('Order is now being processed')
-          break
-        case 'ship':
-          await orderService.updateShippingInfo(orderId, { 
-            shippedDate: new Date().toISOString() 
-          })
-          await orderService.updateOrderStatus(orderId, 'shipped')
-          setOrder(prev => ({ ...prev, status: 'shipped' }))
-          setSuccess('Order has been shipped')
-          break
-        case 'contact':
-          // This would typically open an email client or messaging system
-          setSuccess('Customer contact initiated')
-          break
-        default:
-          break
+      setUpdatingLinks(true)
+      // Update order with new links array
+      const response = await orderService.updateOrder(sanitizedOrderId, {
+        links: updatedLinks
+      })
+      
+      if (response.success) {
+        setOrder(prev => ({ ...prev, links: updatedLinks }))
+        success('Links updated successfully')
+        if (onOrderUpdate) {
+          onOrderUpdate()
+        }
+      } else {
+        showError(response.message || 'Failed to update links')
       }
-      onOrderUpdate && onOrderUpdate()
     } catch (err) {
-      setError(`Failed to ${action} order`)
-      console.error(`Error ${action}ing order:`, err)
+      console.error('Error updating links:', err)
+      showError('Failed to update links')
     } finally {
-      setUpdating(false)
+      setUpdatingLinks(false)
     }
   }
 
@@ -111,318 +190,597 @@ const OrderDetailsModal = ({ show, onHide, orderId, onOrderUpdate }) => {
       pending: 'warning',
       confirmed: 'info',
       processing: 'primary',
-      shipped: 'info',
-      delivered: 'success',
-      cancelled: 'danger',
-      refunded: 'secondary'
+      completed: 'success',
+      cancelled: 'danger'
     }
-    return statusMap[status] || 'secondary'
+    return statusMap[status?.toLowerCase()] || 'secondary'
   }
 
   const getPaymentStatusColor = (status) => {
     const statusMap = {
       pending: 'warning',
       paid: 'success',
+      partial: 'info',
       failed: 'danger',
-      refunded: 'secondary',
-      partial: 'info'
+      refunded: 'secondary'
     }
-    return statusMap[status] || 'secondary'
+    return statusMap[status?.toLowerCase()] || 'secondary'
   }
 
-  const getTimelineIcon = (status, isCompleted) => {
-    if (isCompleted) {
-      return <FontAwesomeIcon icon={faCheckCircle} className="text-success" />
-    }
-    
-    const iconMap = {
-      pending: faClock,
-      confirmed: faCheck,
-      processing: faExclamationTriangle,
-      shipped: faTruck,
-      delivered: faCheckCircle
-    }
-    
-    return <FontAwesomeIcon icon={iconMap[status] || faClock} className="text-muted" />
-  }
+  if (!order && !loading) return null
 
-  if (!order) return null
+  const totalAmount = order?.totalAmount || 0
+  const paidAmount = order?.paidAmount || 0
+  const balanceAmount = order?.remainingAmount || 0
+  const discount = order?.discount || 0
+  const items = order?.items || []
+  const payments = order?.payments || []
+  const customerName = order?.customer 
+    ? (order.customer.name || `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim() || 'Unknown')
+    : 'Unknown'
+
+  // Calculate subtotal from items
+  const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.totalPrice || 0) || 0), 0)
+
 
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
-      <Modal.Header closeButton>
-        <Modal.Title>Order Details - {order.orderNumber}</Modal.Title>
+      <Modal.Header closeButton className="border-bottom border-primary border-2">
+        <Modal.Title className="text-primary">
+          <FontAwesomeIcon icon={faShoppingCart} className="me-2" />
+          Order Details - #{order?.orderNumber || order?.id || orderId}
+        </Modal.Title>
       </Modal.Header>
       
-      <Modal.Body>
-        {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
-        {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
-        
-        <Row>
-          {/* Left Column - Order Items & Timeline */}
-          <Col lg={8}>
-            {/* Order Items */}
-            <Card className="mb-4">
-              <Card.Header>
-                <h5 className="mb-0">Order Items</h5>
-              </Card.Header>
-              <Card.Body>
-                {order.items.map((item) => (
-                  <div key={item.id} className="d-flex align-items-center mb-3 pb-3 border-bottom">
-                    {item.productImage ? (
-                      <img 
-                        src={item.productImage} 
-                        alt={item.productName}
-                        className="rounded me-3"
-                        style={{ width: '60px', height: '60px', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <div 
-                        className="d-flex align-items-center justify-content-center border rounded me-3"
-                        style={{ 
-                          width: '60px', 
-                          height: '60px', 
-                          backgroundColor: '#f8f9fa'
-                        }}
-                      >
-                        <FontAwesomeIcon icon={faImage} className="text-muted" />
-                      </div>
-                    )}
-                    <div className="flex-grow-1">
-                      <h6 className="mb-1">{item.productName}</h6>
-                      <p className="text-muted mb-1">{item.description}</p>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span className="text-muted">Qty: {item.quantity}</span>
-                        <div className="text-end">
-                          <div className="text-muted small">{formatCurrency(item.unitPrice)} each</div>
-                          <div className="fw-bold">{formatCurrency(item.totalPrice)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </Card.Body>
-            </Card>
-
-            {/* Order Timeline */}
-            <Card>
-              <Card.Header>
-                <h5 className="mb-0">Order Timeline</h5>
-              </Card.Header>
-              <Card.Body>
-                {order.timeline.map((step, index) => (
-                  <div key={step.id} className="d-flex align-items-start mb-3">
-                    <div className="me-3 mt-1">
-                      {getTimelineIcon(step.status, step.isCompleted)}
-                    </div>
-                    <div className="flex-grow-1">
-                      <div className="d-flex justify-content-between align-items-start">
-                        <div>
-                          <h6 className="mb-1">{step.title}</h6>
-                          <p className="text-muted mb-1">{step.description}</p>
-                        </div>
-                        <div className="text-end">
-                          {step.date ? (
-                            <div className="text-muted small">
-                              {formatDate(step.date, 'MMM dd, yyyy')}
-                              <br />
-                              {formatDate(step.date, 'h:mm a')}
-                            </div>
-                          ) : step.expectedDate ? (
-                            <div className="text-muted small">
-                              Expected: {step.expectedDate}
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </Card.Body>
-            </Card>
-          </Col>
-
-          {/* Right Column - Customer Info, Summary & Actions */}
-          <Col lg={4}>
-            {/* Customer Information */}
-            <Card className="mb-4">
-              <Card.Header>
-                <h5 className="mb-0">Customer Information</h5>
-              </Card.Header>
-              <Card.Body>
-                <div className="d-flex align-items-center mb-3">
-                  {order.customer.avatar ? (
-                    <img 
-                      src={order.customer.avatar} 
-                      alt={order.customer.firstName}
-                      className="rounded-circle me-3"
-                      style={{ width: '50px', height: '50px' }}
-                    />
-                  ) : (
+      <Modal.Body className="p-0">
+        {loading ? (
+          <div className="text-center py-5">
+            <Spinner animation="border" variant="primary" />
+            <p className="text-muted mt-3">Loading order details...</p>
+          </div>
+        ) : (
+          <>
+            {/* Order Header Summary */}
+            <div className="bg-gradient-primary-subtle p-4 border-bottom">
+              <Row className="g-4">
+                <Col md={4}>
+                  <div className="d-flex align-items-center">
                     <div 
-                      className="d-flex align-items-center justify-content-center border rounded-circle me-3"
+                      className="d-flex align-items-center justify-content-center rounded-circle me-3"
                       style={{ 
-                        width: '50px', 
-                        height: '50px', 
-                        backgroundColor: '#f8f9fa'
+                        width: '60px', 
+                        height: '60px', 
+                        backgroundColor: '#8b5cf6',
+                        color: 'white',
+                        fontSize: '20px',
+                        fontWeight: 'bold',
+                        flexShrink: 0
                       }}
                     >
-                      <FontAwesomeIcon icon={faUser} className="text-muted" />
+                      <FontAwesomeIcon icon={faShoppingCart} />
+                    </div>
+                    <div>
+                      <h5 className="mb-1">{customerName}</h5>
+                      {(order?.customer?.jobCode || order?.customer?.job_code) && (
+                        <p className="text-primary mb-1 small fw-bold">
+                          Job Code: {order?.customer?.jobCode || order?.customer?.job_code}
+                        </p>
+                      )}
+                      <p className="text-muted mb-0 small">
+                        {order?.customer?.mobile || order?.customer?.phone || order?.customer?.email || 'N/A'}
+                      </p>
+                      {order?.branch?.branchName && (
+                        <small className="text-muted">
+                          <FontAwesomeIcon icon={faBuilding} className="me-1" />
+                          {order.branch.branchName} {order.branch.branchCode && `(${order.branch.branchCode})`}
+                        </small>
+                      )}
+                    </div>
+                  </div>
+                </Col>
+                <Col md={4}>
+                  <div>
+                    <div className="text-muted small mb-1">Order Date</div>
+                    <div className="fw-semibold">
+                      <FontAwesomeIcon icon={faCalendarAlt} className="me-2 text-primary" />
+                      {formatDate(order?.orderDate)}
+                    </div>
+                    {order?.dueDate && (
+                      <>
+                        <div className="text-muted small mb-1 mt-2">Due Date</div>
+                        <div className={`fw-semibold ${new Date(order.dueDate) < new Date() ? 'text-danger' : 'text-primary'}`}>
+                          {formatDate(order.dueDate)}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </Col>
+                <Col md={4}>
+                  <div className="text-end">
+                    <div className="text-muted small mb-1">Total Amount</div>
+                    <div className="h4 mb-0 fw-bold text-primary">{formatCurrency(totalAmount)}</div>
+                    <div className="mt-2">
+                      <Badge bg={getStatusColor(order?.status)} className="me-2 px-3 py-2">
+                        {order?.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending'}
+                      </Badge>
+                      <Badge bg={getPaymentStatusColor(order?.paymentStatus)} className="px-3 py-2">
+                        {order?.paymentStatus ? 
+                          order.paymentStatus.charAt(0).toUpperCase() + 
+                          order.paymentStatus.slice(1) : 'Pending'}
+                      </Badge>
+                    </div>
+                  </div>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Tabs */}
+            <Tabs
+              activeKey={activeTab}
+              onSelect={(k) => setActiveTab(k)}
+              className="px-4 pt-3 border-bottom"
+            >
+              <Tab eventKey="details" title={
+                <>
+                  <FontAwesomeIcon icon={faInfoCircle} className="me-2" />
+                  Order Details
+                </>
+              }>
+                <div className="p-4">
+                  <Row>
+                    {/* Left Column - Order Items & Links */}
+                    <Col lg={8}>
+                      {/* Order Packages */}
+                      <div className="mb-4">
+                        <h5 className="mb-3 pb-2 border-bottom border-primary border-2">
+                          <FontAwesomeIcon icon={faList} className="me-2 text-primary" />
+                          Order Packages
+                        </h5>
+                        {items.length === 0 ? (
+                          <div className="text-center py-5">
+                            <FontAwesomeIcon icon={faTag} className="text-muted mb-3" size="3x" />
+                            <p className="text-muted">No packages in this order</p>
+                          </div>
+                        ) : (
+                          <div className="table-responsive">
+                            <table className="table table-hover">
+                              <thead className="table-light">
+                                <tr>
+                                  <th>Package</th>
+                                  <th>Price</th>
+                                  <th>Qty</th>
+                                  <th className="text-end">Amount</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {items.map((item, index) => (
+                                  <tr key={item.id || index}>
+                                    <td>
+                                      <div className="d-flex align-items-center">
+                                        <FontAwesomeIcon icon={faTag} className="me-2 text-primary" />
+                                        <div>
+                                          <div className="fw-semibold">{item.packageName || 'Package'}</div>
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td>{formatCurrency(item.unitPrice || 0)}</td>
+                                    <td>{item.quantity || 1}</td>
+                                    <td className="text-end fw-semibold text-primary">
+                                      {formatCurrency(item.totalPrice || 0)}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Important Links - CRUD (Moved to Left Side) */}
+                      <Card className="mb-4 border-primary border-2">
+                        <Card.Header className="bg-gradient-primary-subtle">
+                          <div className="d-flex align-items-center justify-content-between">
+                            <h5 className="mb-0 text-primary">
+                              <FontAwesomeIcon icon={faLink} className="me-2" />
+                              Important Links ({order?.links?.length || 0})
+                            </h5>
+                          </div>
+                        </Card.Header>
+                        <Card.Body>
+                          {/* Add/Edit Link Form */}
+                          <div className="bg-light p-3 rounded mb-3">
+                            <Row className="g-2">
+                              <Col md={5}>
+                                <Form.Label className="fw-semibold small">Link Title</Form.Label>
+                                <Form.Control
+                                  type="text"
+                                  placeholder="e.g., Photo Share Link, Video Link"
+                                  value={newLink.title}
+                                  onChange={(e) => setNewLink({ ...newLink, title: e.target.value })}
+                                  className="border-2"
+                                  size="sm"
+                                />
+                              </Col>
+                              <Col md={6}>
+                                <Form.Label className="fw-semibold small">Link URL</Form.Label>
+                                <Form.Control
+                                  type="url"
+                                  placeholder="https://example.com/link"
+                                  value={newLink.url}
+                                  onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+                                  className="border-2"
+                                  size="sm"
+                                />
+                              </Col>
+                              <Col md={1} className="d-flex align-items-end">
+                                {editingLinkIndex !== null ? (
+                                  <>
+                                    <Button
+                                      variant="success"
+                                      size="sm"
+                                      onClick={handleUpdateLink}
+                                      className="me-1"
+                                      title="Save"
+                                      disabled={updatingLinks}
+                                    >
+                                      <FontAwesomeIcon icon={faSave} />
+                                    </Button>
+                                    <Button
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={handleCancelEditLink}
+                                      title="Cancel"
+                                      disabled={updatingLinks}
+                                    >
+                                      <FontAwesomeIcon icon={faTimes} />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={handleAddLink}
+                                    title="Add Link"
+                                    disabled={updatingLinks}
+                                  >
+                                    <FontAwesomeIcon icon={faPlus} />
+                                  </Button>
+                                )}
+                              </Col>
+                            </Row>
+                            {linkErrors && (
+                              <div className="text-danger small mt-2">{linkErrors}</div>
+                            )}
+                          </div>
+
+                          {/* Links List */}
+                          {order?.links && Array.isArray(order.links) && order.links.length > 0 ? (
+                            <div className="table-responsive">
+                              <Table striped bordered hover size="sm">
+                                <thead>
+                                  <tr>
+                                    <th style={{ width: '30%' }}>Link Title</th>
+                                    <th style={{ width: '50%' }}>Link URL</th>
+                                    <th style={{ width: '20%' }}>Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {order.links.map((link, index) => (
+                                    <tr key={link.id || index}>
+                                      <td className="fw-semibold">{link.title || 'Untitled Link'}</td>
+                                      <td>
+                                        <a
+                                          href={link.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-primary text-decoration-none d-flex align-items-center"
+                                        >
+                                          <span className="text-truncate me-2" style={{ maxWidth: '300px' }}>
+                                            {link.url}
+                                          </span>
+                                          <FontAwesomeIcon icon={faExternalLinkAlt} size="xs" />
+                                        </a>
+                                      </td>
+                                      <td>
+                                        <div className="d-flex gap-1">
+                                          <Button
+                                            variant="outline-primary"
+                                            size="sm"
+                                            onClick={() => handleEditLink(index)}
+                                            title="Edit Link"
+                                            disabled={editingLinkIndex !== null && editingLinkIndex !== index || updatingLinks}
+                                          >
+                                            <FontAwesomeIcon icon={faEdit} />
+                                          </Button>
+                                          <Button
+                                            variant="outline-danger"
+                                            size="sm"
+                                            onClick={() => handleDeleteLink(index)}
+                                            title="Delete Link"
+                                            disabled={editingLinkIndex !== null || updatingLinks}
+                                          >
+                                            <FontAwesomeIcon icon={faTrash} />
+                                          </Button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </Table>
+                            </div>
+                          ) : (
+                            // Fallback to legacy individual fields if links array doesn't exist
+                            <>
+                              {order?.photoShareLink || order?.photo_share_link ? (
+                                <div className="mb-3">
+                                  <div className="d-flex align-items-center mb-2">
+                                    <FontAwesomeIcon icon={faImage} className="me-2 text-primary" />
+                                    <div className="text-muted small fw-semibold">Photo Share Link</div>
+                                  </div>
+                                  <a
+                                    href={order?.photoShareLink || order?.photo_share_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="d-flex align-items-center text-decoration-none text-primary"
+                                  >
+                                    <span className="text-truncate me-2" style={{ maxWidth: '200px' }}>
+                                      {order?.photoShareLink || order?.photo_share_link}
+                                    </span>
+                                    <FontAwesomeIcon icon={faExternalLinkAlt} size="xs" />
+                                  </a>
+                                </div>
+                              ) : null}
+                              {order?.videoLink || order?.video_link ? (
+                                <div className="mb-3">
+                                  <div className="d-flex align-items-center mb-2">
+                                    <FontAwesomeIcon icon={faVideo} className="me-2 text-danger" />
+                                    <div className="text-muted small fw-semibold">Video Link</div>
+                                  </div>
+                                  <a
+                                    href={order?.videoLink || order?.video_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="d-flex align-items-center text-decoration-none text-danger"
+                                  >
+                                    <span className="text-truncate me-2" style={{ maxWidth: '200px' }}>
+                                      {order?.videoLink || order?.video_link}
+                                    </span>
+                                    <FontAwesomeIcon icon={faExternalLinkAlt} size="xs" />
+                                  </a>
+                                </div>
+                              ) : null}
+                              {order?.otherImportantLink || order?.other_important_link ? (
+                                <div className="mb-3">
+                                  <div className="d-flex align-items-center mb-2">
+                                    <FontAwesomeIcon icon={faLink} className="me-2 text-success" />
+                                    <div className="text-muted small fw-semibold">Other Important Link</div>
+                                  </div>
+                                  <a
+                                    href={order?.otherImportantLink || order?.other_important_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="d-flex align-items-center text-decoration-none text-success"
+                                  >
+                                    <span className="text-truncate me-2" style={{ maxWidth: '200px' }}>
+                                      {order?.otherImportantLink || order?.other_important_link}
+                                    </span>
+                                    <FontAwesomeIcon icon={faExternalLinkAlt} size="xs" />
+                                  </a>
+                                </div>
+                              ) : null}
+                              {!order?.links && (!order?.photoShareLink && !order?.photo_share_link && 
+                               !order?.videoLink && !order?.video_link && 
+                               !order?.otherImportantLink && !order?.other_important_link) && (
+                                <div className="text-center py-3 text-muted">
+                                  <FontAwesomeIcon icon={faLink} className="mb-2" size="2x" />
+                                  <p className="mb-0">No links added for this order. Add links using the form above.</p>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </Card.Body>
+                      </Card>
+                    </Col>
+
+                    {/* Right Column - Summary & Info */}
+                    <Col lg={4}>
+                      {/* Order Summary */}
+                      <Card className="mb-4 border-primary border-2">
+                        <Card.Header className="bg-gradient-primary-subtle">
+                          <h5 className="mb-0 text-primary">
+                            <FontAwesomeIcon icon={faFileInvoiceDollar} className="me-2" />
+                            Order Summary
+                          </h5>
+                        </Card.Header>
+                        <Card.Body>
+                          <div className="d-flex justify-content-between mb-2">
+                            <span className="text-muted">Subtotal:</span>
+                            <span className="fw-semibold">{formatCurrency(subtotal)}</span>
+                          </div>
+                          {discount > 0 && (
+                            <div className="d-flex justify-content-between mb-2 text-danger">
+                              <span>Discount:</span>
+                              <span className="fw-semibold">-{formatCurrency(discount)}</span>
+                            </div>
+                          )}
+                          <hr />
+                          <div className="d-flex justify-content-between mb-3">
+                            <strong>Total Amount:</strong>
+                            <strong className="text-primary fs-5">{formatCurrency(totalAmount)}</strong>
+                          </div>
+                          <div className="d-flex justify-content-between mb-2">
+                            <span className="text-success">Paid Amount:</span>
+                            <span className="text-success fw-bold">{formatCurrency(paidAmount >= 0 ? paidAmount : 0)}</span>
+                          </div>
+                    <div className="d-flex justify-content-between">
+                      <span className={balanceAmount > 0 ? 'text-danger' : 'text-success'}>Remaining Amount:</span>
+                      <span className={`fw-bold fs-5 ${balanceAmount > 0 ? 'text-danger' : 'text-success'}`}>
+                        {formatCurrency(balanceAmount >= 0 ? balanceAmount : 0)}
+                      </span>
+                    </div>
+                        </Card.Body>
+                      </Card>
+
+                      {/* Customer Information */}
+                      <Card className="mb-4">
+                        <Card.Header>
+                          <h5 className="mb-0">
+                            <FontAwesomeIcon icon={faUser} className="me-2 text-primary" />
+                            Customer Information
+                          </h5>
+                        </Card.Header>
+                        <Card.Body>
+                          <div className="mb-2">
+                            <div className="text-muted small">Name</div>
+                            <div className="fw-semibold">{customerName}</div>
+                          </div>
+                          {(order?.customer?.jobCode || order?.customer?.job_code) && (
+                            <div className="mb-2">
+                              <div className="text-muted small">Job Code</div>
+                              <div className="fw-semibold text-primary">{order?.customer?.jobCode || order?.customer?.job_code}</div>
+                            </div>
+                          )}
+                          <div className="mb-2">
+                            <div className="text-muted small">Contact</div>
+                            <div className="fw-semibold">
+                              {order?.customer?.mobile || order?.customer?.phone || order?.customer?.email || 'N/A'}
+                            </div>
+                          </div>
+                          {order?.customer?.email && (
+                            <div>
+                              <div className="text-muted small">Email</div>
+                              <div className="fw-semibold">{order.customer.email}</div>
+                            </div>
+                          )}
+                        </Card.Body>
+                      </Card>
+
+                      {/* Order Notes */}
+                      {(order?.notes || order?.Notes) && (
+                        <Card className="mb-4">
+                          <Card.Header>
+                            <h5 className="mb-0">
+                              <FontAwesomeIcon icon={faInfoCircle} className="me-2 text-info" />
+                              Notes
+                            </h5>
+                          </Card.Header>
+                          <Card.Body>
+                            <div className="text-muted small mb-2">Order Notes</div>
+                            <div className="fw-normal" style={{ whiteSpace: 'pre-wrap' }}>
+                              {order.notes || order.Notes || 'No notes available'}
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      )}
+                    </Col>
+                  </Row>
+                </div>
+              </Tab>
+
+              <Tab eventKey="payments" title={
+                <>
+                  <FontAwesomeIcon icon={faHistory} className="me-2" />
+                  Payment History ({payments.length})
+                </>
+              }>
+                <div className="p-4">
+                  {payments.length > 0 ? (
+                    <div className="table-responsive">
+                      <table className="table table-hover">
+                        <thead className="table-light">
+                          <tr>
+                          <th>Payment #</th>
+                          <th>Date</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Remarks</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {payments.map((payment, index) => (
+                            <tr key={payment.id || index}>
+                              <td className="fw-semibold text-primary">
+                                {payment.paymentNumber || payment.payment_number || (payment.id ? `#PAY${String(payment.id).padStart(3, '0')}` : '-')}
+                              </td>
+                              <td>{formatDate(payment.paymentDate || payment.payment_date || payment.createdAt)}</td>
+                              <td>
+                                <Badge bg={payment.paymentType === 'debit' ? 'danger' : 'success'}>
+                                  {(payment.paymentType || 'credit').toUpperCase()}
+                                </Badge>
+                              </td>
+                              <td className={`fw-semibold ${payment.paymentType === 'debit' ? 'text-danger' : 'text-success'}`}>
+                                {formatCurrency(payment.amount || 0)}
+                              </td>
+                              <td>
+                                <Badge bg="info">
+                                  {payment.paymentMethod || 'Cash'}
+                                </Badge>
+                              </td>
+                              <td>
+                                <small className="text-muted">{payment.remarks || '-'}</small>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-5">
+                      <FontAwesomeIcon icon={faCreditCard} className="text-muted mb-3" size="3x" />
+                      <p className="text-muted">No payment history found for this order</p>
                     </div>
                   )}
-                  <div>
-                    <h6 className="mb-0">{order.customer.firstName} {order.customer.lastName}</h6>
-                    <p className="text-muted mb-0">{order.customer.email}</p>
-                  </div>
                 </div>
-                <div className="mb-2">
-                  <strong>Phone:</strong> {order.customer.phone}
-                </div>
-                <div>
-                  <strong>Shipping Address:</strong>
-                  <div className="text-muted">
-                    {order.shippingAddress.street}<br />
-                    {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.postalCode}<br />
-                    {order.shippingAddress.country}
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-
-            {/* Order Summary */}
-            <Card className="mb-4">
-              <Card.Header>
-                <h5 className="mb-0">Order Summary</h5>
-              </Card.Header>
-              <Card.Body>
-                <div className="d-flex justify-content-between mb-2">
-                  <span>Subtotal:</span>
-                  <span>{formatCurrency(order.subtotal)}</span>
-                </div>
-                <div className="d-flex justify-content-between mb-2">
-                  <span>Shipping:</span>
-                  <span>{formatCurrency(order.shipping)}</span>
-                </div>
-                <div className="d-flex justify-content-between mb-2">
-                  <span>GST:</span>
-                  <span>{formatCurrency(order.tax)}</span>
-                </div>
-                <hr />
-                <div className="d-flex justify-content-between mb-2">
-                  <strong>Total:</strong>
-                  <strong>{formatCurrency(order.total)}</strong>
-                </div>
-                <div className="d-flex justify-content-between">
-                  <span className="text-success">Your Commission (10%):</span>
-                  <span className="text-success fw-bold">{formatCurrency(order.commission)}</span>
-                </div>
-              </Card.Body>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card className="mb-4">
-              <Card.Header>
-                <h5 className="mb-0">Quick Actions</h5>
-              </Card.Header>
-              <Card.Body>
-                <div className="d-grid gap-2">
-                  <Button 
-                    variant="success" 
-                    size="sm"
-                    onClick={() => handleQuickAction('process')}
-                    disabled={updating || order.status === 'processing'}
-                  >
-                    <FontAwesomeIcon icon={faCheck} className="me-2" />
-                    Process Order
-                  </Button>
-                  <Button 
-                    variant="info" 
-                    size="sm"
-                    onClick={() => handleQuickAction('ship')}
-                    disabled={updating || order.status === 'shipped'}
-                  >
-                    <FontAwesomeIcon icon={faTruck} className="me-2" />
-                    Update Shipping
-                  </Button>
-                  <Button 
-                    variant="outline-primary" 
-                    size="sm"
-                    onClick={() => handleQuickAction('contact')}
-                    disabled={updating}
-                  >
-                    <FontAwesomeIcon icon={faComment} className="me-2" />
-                    Contact Customer
-                  </Button>
-                </div>
-              </Card.Body>
-            </Card>
-
-            {/* Status Update */}
-            <Card>
-              <Card.Header>
-                <h5 className="mb-0">Update Status</h5>
-              </Card.Header>
-              <Card.Body>
-                <Form.Group className="mb-3">
-                  <Form.Label>Order Status</Form.Label>
-                  <Form.Select 
-                    value={selectedStatus} 
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    disabled={updating}
-                  >
-                    {orderService.getOrderStatusOptions().map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-                
-                <Form.Group className="mb-3">
-                  <Form.Label>Notes (Optional)</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Add notes about this status change..."
-                    disabled={updating}
-                  />
-                </Form.Group>
-
-                <div className="d-grid">
-                  <Button 
-                    variant="success"
-                    onClick={handleStatusUpdate}
-                    disabled={updating || selectedStatus === order.status}
-                  >
-                    {updating ? 'Updating...' : 'Update Status'}
-                  </Button>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+              </Tab>
+            </Tabs>
+          </>
+        )}
       </Modal.Body>
       
-      <Modal.Footer>
-        <div className="d-flex justify-content-between w-100">
+      <Modal.Footer className="border-top">
+        <div className="d-flex justify-content-between w-100 align-items-center">
           <div>
-            <Badge bg={getStatusColor(order.status)} className="me-2">
-              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+            <Badge bg={getStatusColor(order?.status)} className="me-2 px-3 py-2">
+              {order?.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending'}
             </Badge>
-            <Badge bg={getPaymentStatusColor(order.paymentStatus)}>
-              {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
-            </Badge>
+            {balanceAmount === 0 ? (
+              <Badge bg="success" className="px-3 py-2">Fully Paid</Badge>
+            ) : (
+              <Badge bg="warning" className="px-3 py-2">
+                Remaining Amount: {formatCurrency(balanceAmount >= 0 ? balanceAmount : 0)}
+              </Badge>
+            )}
           </div>
-          <div>
-            <Button variant="outline-secondary" className="me-2">
-              <FontAwesomeIcon icon={faPrint} className="me-2" />
-              Print
-            </Button>
-            <Button variant="outline-primary" className="me-2">
-              <FontAwesomeIcon icon={faEnvelope} className="me-2" />
-              Email
+          <div className="d-flex gap-2">
+            {onEdit && (
+              <Button 
+                variant="outline-primary" 
+                onClick={() => {
+                  onHide()
+                  onEdit(order)
+                }}
+              >
+                <FontAwesomeIcon icon={faEdit} className="me-2" />
+                Edit Order
+              </Button>
+            )}
+            <Button 
+              variant="outline-secondary" 
+              onClick={handleExportPDF}
+              disabled={exportingPdf}
+            >
+              {exportingPdf ? (
+                <>
+                  <Spinner size="sm" className="me-2" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faDownload} className="me-2" />
+                  Export PDF
+                </>
+              )}
             </Button>
             <Button variant="secondary" onClick={onHide}>
               Close

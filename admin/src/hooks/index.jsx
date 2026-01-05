@@ -1,82 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import apiService from '../api'
+import { useAuth as useAuthContext } from '../context/AuthContext'
+import userService from '../services/userService'
+import roleService from '../services/roleService'
 
-// useAuth Hook - Authentication state management
-export const useAuth = () => {
-  const [user, setUser] = useState(null)
-  const [token, setToken] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-
-  // Check if user is authenticated
-  const isAuthenticated = !!token && !!user
-
-  // Login function
-  const login = useCallback(async (credentials) => {
-    setLoading(true)
-    setError(null)
-    
-    try {
-      const response = await apiService.login(credentials)
-      setUser(response.user)
-      setToken(response.token)
-      return response
-    } catch (err) {
-      setError(err.message)
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  // Logout function
-  const logout = useCallback(async () => {
-    setLoading(true)
-    try {
-      await apiService.logout()
-    } finally {
-      setUser(null)
-      setToken(null)
-      setError(null)
-      setLoading(false)
-    }
-  }, [])
-
-  // Update user function
-  const updateUser = useCallback((userData) => {
-    setUser(prev => ({ ...prev, ...userData }))
-  }, [])
-
-  // Check permissions
-  const hasPermission = useCallback((permission) => {
-    if (!user || !user.permissions) return false
-    return user.permissions.includes(permission)
-  }, [user])
-
-  const hasRole = useCallback((role) => {
-    if (!user) return false
-    return user.role === role
-  }, [user])
-
-  const hasAnyRole = useCallback((roles) => {
-    if (!user) return false
-    return roles.includes(user.role)
-  }, [user])
-
-  return {
-    user,
-    token,
-    loading,
-    error,
-    isAuthenticated,
-    login,
-    logout,
-    updateUser,
-    hasPermission,
-    hasRole,
-    hasAnyRole,
-  }
-}
+// useAuth Hook - Authentication state management (Context wrapper)
+export const useAuth = () => useAuthContext()
 
 // useApi Hook - API request management
 export const useApi = () => {
@@ -209,16 +137,22 @@ export const usePermissions = () => {
 // useUserManagement Hook - User management operations
 export const useUserManagement = () => {
   const [users, setUsers] = useState([])
+  const [meta, setMeta] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
   const fetchUsers = useCallback(async (params = {}) => {
     setLoading(true)
     setError(null)
-    
+
     try {
-      const response = await apiService.get('/users', { params })
-      setUsers(response.data)
+      const response = await userService.getUsers(params)
+      if (response.success) {
+        setUsers(response.data || [])
+        setMeta(response.meta || null)
+      } else {
+        setError(response.message || 'Failed to fetch users')
+      }
       return response
     } catch (err) {
       setError(err.message)
@@ -231,10 +165,14 @@ export const useUserManagement = () => {
   const createUser = useCallback(async (userData) => {
     setLoading(true)
     setError(null)
-    
+
     try {
-      const response = await apiService.post('/users', userData)
-      setUsers(prev => [...prev, response.data])
+      const response = await userService.createUser(userData)
+      if (response.success && response.data) {
+        setUsers((prev) => [...prev, response.data])
+      } else {
+        setError(response.message || 'Failed to create user')
+      }
       return response
     } catch (err) {
       setError(err.message)
@@ -247,12 +185,16 @@ export const useUserManagement = () => {
   const updateUser = useCallback(async (userId, userData) => {
     setLoading(true)
     setError(null)
-    
+
     try {
-      const response = await apiService.put(`/users/${userId}`, userData)
-      setUsers(prev => prev.map(user => 
-        user.id === userId ? { ...user, ...response.data } : user
-      ))
+      const response = await userService.updateUser(userId, userData)
+      if (response.success && response.data) {
+        setUsers((prev) =>
+          prev.map((user) => (user.id === userId ? response.data : user))
+        )
+      } else {
+        setError(response.message || 'Failed to update user')
+      }
       return response
     } catch (err) {
       setError(err.message)
@@ -265,10 +207,15 @@ export const useUserManagement = () => {
   const deleteUser = useCallback(async (userId) => {
     setLoading(true)
     setError(null)
-    
+
     try {
-      await apiService.delete(`/users/${userId}`)
-      setUsers(prev => prev.filter(user => user.id !== userId))
+      const response = await userService.deleteUser(userId)
+      if (response.success) {
+        setUsers((prev) => prev.filter((user) => user.id !== userId))
+      } else {
+        setError(response.message || 'Failed to delete user')
+      }
+      return response
     } catch (err) {
       setError(err.message)
       throw err
@@ -279,6 +226,7 @@ export const useUserManagement = () => {
 
   return {
     users,
+    meta,
     loading,
     error,
     fetchUsers,
@@ -291,16 +239,22 @@ export const useUserManagement = () => {
 // useRoleManagement Hook - Role management operations
 export const useRoleManagement = () => {
   const [roles, setRoles] = useState([])
+  const [meta, setMeta] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const fetchRoles = useCallback(async () => {
+  const fetchRoles = useCallback(async (params = {}) => {
     setLoading(true)
     setError(null)
-    
+
     try {
-      const response = await apiService.get('/roles')
-      setRoles(response.data)
+      const response = await roleService.getRoles(params)
+      if (response.success) {
+        setRoles(response.data || [])
+        setMeta(response.meta || null)
+      } else {
+        setError(response.message || 'Failed to fetch roles')
+      }
       return response
     } catch (err) {
       setError(err.message)
@@ -313,10 +267,22 @@ export const useRoleManagement = () => {
   const createRole = useCallback(async (roleData) => {
     setLoading(true)
     setError(null)
-    
+
     try {
-      const response = await apiService.post('/roles', roleData)
-      setRoles(prev => [...prev, response.data])
+      const response = await roleService.createRole(roleData)
+      if (response.success && response.data) {
+        setRoles((prev) => [...prev, response.data])
+        setMeta((prev) =>
+          prev
+            ? {
+                ...prev,
+                total: prev.total + 1,
+              }
+            : prev,
+        )
+      } else {
+        setError(response.message || 'Failed to create role')
+      }
       return response
     } catch (err) {
       setError(err.message)
@@ -329,12 +295,16 @@ export const useRoleManagement = () => {
   const updateRole = useCallback(async (roleId, roleData) => {
     setLoading(true)
     setError(null)
-    
+
     try {
-      const response = await apiService.put(`/roles/${roleId}`, roleData)
-      setRoles(prev => prev.map(role => 
-        role.id === roleId ? { ...role, ...response.data } : role
-      ))
+      const response = await roleService.updateRole(roleId, roleData)
+      if (response.success && response.data) {
+        setRoles((prev) =>
+          prev.map((role) => (role.id === roleId ? response.data : role))
+        )
+      } else {
+        setError(response.message || 'Failed to update role')
+      }
       return response
     } catch (err) {
       setError(err.message)
@@ -347,10 +317,23 @@ export const useRoleManagement = () => {
   const deleteRole = useCallback(async (roleId) => {
     setLoading(true)
     setError(null)
-    
+
     try {
-      await apiService.delete(`/roles/${roleId}`)
-      setRoles(prev => prev.filter(role => role.id !== roleId))
+      const response = await roleService.deleteRole(roleId)
+      if (response.success) {
+        setRoles((prev) => prev.filter((role) => role.id !== roleId))
+        setMeta((prev) =>
+          prev
+            ? {
+                ...prev,
+                total: Math.max(prev.total - 1, 0),
+              }
+            : prev,
+        )
+      } else {
+        setError(response.message || 'Failed to delete role')
+      }
+      return response
     } catch (err) {
       setError(err.message)
       throw err
@@ -361,6 +344,7 @@ export const useRoleManagement = () => {
 
   return {
     roles,
+    meta,
     loading,
     error,
     fetchRoles,

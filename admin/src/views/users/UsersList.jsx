@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Container, Row, Col, Button, FormControl, FormSelect, Card } from 'react-bootstrap'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { Container, Row, Col, Button, Form, FormControl, FormSelect, InputGroup, Badge } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faPencil, faTrash, faInfo, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
-import { useNavigate } from 'react-router-dom'
+import { faPlus, faPencil, faTrash, faInfo, faMagnifyingGlass, faUsers } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from '../../components'
-import { useUserManagement, usePermissions } from '../../hooks'
+import { useUserManagement, usePermissions, useRoleManagement, useDebounce } from '../../hooks'
+import { capitalize } from '../../utils'
 import { Table, Modal, FormModal, UserForm } from '../../components'
+import { PERMISSIONS } from '../../constants/permissions'
 
 const UsersList = () => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -16,6 +17,11 @@ const UsersList = () => {
   const [userToDelete, setUserToDelete] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [sortState, setSortState] = useState({
+    columnKey: 'createdAt',
+    sortBy: 'created_at',
+    sortDirection: 'desc',
+  })
   
   // Add User Modal States
   const [showAddModal, setShowAddModal] = useState(false)
@@ -34,76 +40,169 @@ const UsersList = () => {
   const addUserFormRef = useRef()
   const editUserFormRef = useRef()
 
-  const navigate = useNavigate()
-  const { success, error } = useToast()
-  const { users, loading, fetchUsers, deleteUser } = useUserManagement()
-  const { hasPermission } = usePermissions()
+  const { success, error, warning } = useToast()
+  const { users, meta, loading, fetchUsers, createUser, updateUser, deleteUser } = useUserManagement()
+  const { roles, fetchRoles, loading: rolesLoading } = useRoleManagement()
+  const { hasPermission, user: currentUser } = usePermissions()
+  const debouncedSearch = useDebounce(searchTerm, 400)
+
+  const fetchUsersWithParams = useCallback(() => {
+    const searchValue = (debouncedSearch || '').trim()
+    return fetchUsers({
+      page: currentPage,
+      limit: pageSize,
+      search: searchValue || undefined,
+      status: statusFilter || undefined,
+      role: roleFilter || undefined,
+      sortBy: sortState.sortBy,
+      sortDirection: sortState.sortDirection,
+    })
+  }, [
+    currentPage,
+    pageSize,
+    debouncedSearch,
+    statusFilter,
+    roleFilter,
+    sortState.sortBy,
+    sortState.sortDirection,
+    fetchUsers,
+  ])
+
+  const canCreateUser = hasPermission
+    ? hasPermission(PERMISSIONS.USER_WRITE) || hasPermission(PERMISSIONS.USER_MANAGE)
+    : true
+  const canUpdateUser = hasPermission
+    ? hasPermission(PERMISSIONS.USER_WRITE) || hasPermission(PERMISSIONS.USER_MANAGE)
+    : true
+  const canDeleteUser = hasPermission
+    ? hasPermission(PERMISSIONS.USER_DELETE) || hasPermission(PERMISSIONS.USER_MANAGE)
+    : true
+  const canViewUser = hasPermission
+    ? hasPermission(PERMISSIONS.USER_READ) || hasPermission(PERMISSIONS.USER_MANAGE)
+    : true
 
   useEffect(() => {
-    fetchUsers()
-  }, [fetchUsers])
+    if (!canViewUser) {
+      warning && warning('You do not have permission to view users.', { title: 'Access restricted' })
+      return
+    }
+    fetchRoles({ limit: 100, active: true })
+  }, [canViewUser, fetchRoles, warning])
+
+  useEffect(() => {
+    if (!canViewUser) {
+      return
+    }
+
+    fetchUsersWithParams()
+  }, [canViewUser, fetchUsersWithParams])
+
+  if (!canViewUser) {
+    return (
+      <Container fluid className="py-5">
+        <Row className="justify-content-center">
+          <Col md={6} className="text-center">
+            <FontAwesomeIcon icon={faUsers} className="text-muted mb-3" size="3x" />
+            <h4 className="text-muted">Access Restricted</h4>
+            <p className="text-muted">
+              You do not have permission to view user information. Please contact your administrator if you need additional access.
+            </p>
+          </Col>
+        </Row>
+      </Container>
+    )
+  }
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value)
-    // Debounce search implementation
+    setCurrentPage(1)
   }
 
   const handleCreateUser = () => {
+    if (!canCreateUser) {
+      error('You do not have permission to create users')
+      return
+    }
     setShowAddModal(true)
   }
 
   const handleAddUser = async () => {
+    if (!canCreateUser) {
+      error('You do not have permission to create users')
+      return
+    }
     if (addUserFormRef.current) {
       addUserFormRef.current.handleSubmit()
     }
   }
 
   const handleAddUserSubmit = async (userData) => {
+    if (!canCreateUser) {
+      error('You do not have permission to create users')
+      return
+    }
     setAddUserLoading(true)
     try {
-      // Simulate API call - in real app, this would be actual API
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      success('User created successfully!')
-      setShowAddModal(false)
-      // In real app, you would refresh the users list here
+      const response = await createUser(userData)
+      if (response.success) {
+        success('User created successfully!')
+        setShowAddModal(false)
+        await fetchUsersWithParams()
+      } else {
+        error(response.message || 'Failed to create user')
+      }
     } catch (err) {
-      error('Failed to create user')
+      error(err.message || 'Failed to create user')
     } finally {
       setAddUserLoading(false)
     }
   }
 
   const handleEditUser = async () => {
+    if (!canUpdateUser) {
+      error('You do not have permission to update users')
+      return
+    }
     if (editUserFormRef.current) {
       editUserFormRef.current.handleSubmit()
     }
   }
 
   const handleEditUserSubmit = async (userData) => {
+    if (!userToEdit) {
+      return
+    }
+
+    if (!canUpdateUser) {
+      error('You do not have permission to update users')
+      return
+    }
+
     setEditUserLoading(true)
     try {
-      // Simulate API call - in real app, this would be actual API
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      success('User updated successfully!')
-      setShowEditModal(false)
-      setUserToEdit(null)
-      // In real app, you would refresh the users list here
+      const response = await updateUser(userToEdit.id, userData)
+      if (response.success) {
+        success('User updated successfully!')
+        setShowEditModal(false)
+        setUserToEdit(null)
+        await fetchUsersWithParams()
+      } else {
+        error(response.message || 'Failed to update user')
+      }
     } catch (err) {
-      error('Failed to update user')
+      error(err.message || 'Failed to update user')
     } finally {
       setEditUserLoading(false)
     }
   }
 
   const handleOpenEditModal = (user) => {
+    if (!canUpdateUser) {
+      error('You do not have permission to update users')
+      return
+    }
     setUserToEdit(user)
     setShowEditModal(true)
-  }
-
-  const handleEditUserOld = (user) => {
-    navigate(`/users/edit/${user.id}`)
   }
 
   const handleViewUser = (user) => {
@@ -112,18 +211,31 @@ const UsersList = () => {
   }
 
   const handleDeleteUser = (user) => {
+    if (!canDeleteUser) {
+      error('You do not have permission to delete users')
+      return
+    }
     setUserToDelete(user)
     setShowDeleteModal(true)
   }
 
   const confirmDeleteUser = async () => {
+    if (!canDeleteUser) {
+      error('You do not have permission to delete users')
+      return
+    }
     try {
-      await deleteUser(userToDelete.id)
-      success('User deleted successfully!')
-      setShowDeleteModal(false)
-      setUserToDelete(null)
+      const response = await deleteUser(userToDelete.id)
+      if (response.success) {
+        success('User deleted successfully!')
+        setShowDeleteModal(false)
+        setUserToDelete(null)
+        await fetchUsersWithParams()
+      } else {
+        error(response.message || 'Failed to delete user')
+      }
     } catch (err) {
-      error('Failed to delete user')
+      error(err.message || 'Failed to delete user')
     }
   }
 
@@ -132,18 +244,103 @@ const UsersList = () => {
       error('Please select users to delete')
       return
     }
-    // Implement bulk delete
+    if (!canDeleteUser) {
+      error('You do not have permission to delete users')
+      return
+    }
+    // Implement bulk delete functionality when API is ready
   }
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (user.phone && user.phone.toLowerCase().includes(searchTerm.toLowerCase()))
-    const matchesRole = !roleFilter || user.role === roleFilter
-    const matchesStatus = !statusFilter || user.isActive === (statusFilter === 'active')
-    return matchesSearch && matchesRole && matchesStatus
-  })
+  const roleOptions = useMemo(() => {
+    const activeRoles = roles.filter((role) => !role.isDeleted && role.isActive !== false)
+
+    if (!hasPermission) {
+      return activeRoles.map((role) => ({
+        value: role.id,
+        label: capitalize(role.name),
+        name: role.name,
+      }))
+    }
+
+    if (hasPermission(PERMISSIONS.ROLE_MANAGE)) {
+      return activeRoles.map((role) => ({
+        value: role.id,
+        label: capitalize(role.name),
+        name: role.name,
+      }))
+    }
+
+    if (hasPermission(PERMISSIONS.ROLE_WRITE)) {
+      return activeRoles
+        .filter((role) => role.name !== 'admin')
+        .map((role) => ({
+          value: role.id,
+          label: capitalize(role.name),
+          name: role.name,
+        }))
+    }
+
+    const currentRoleNames = currentUser?.roleNames?.length
+      ? currentUser.roleNames
+      : currentUser?.role
+        ? [currentUser.role]
+        : []
+
+    const filteredRoles = currentRoleNames.length > 0
+      ? activeRoles.filter((role) => currentRoleNames.includes(role.name))
+      : activeRoles
+
+    return filteredRoles.map((role) => ({
+      value: role.id,
+      label: capitalize(role.name),
+      name: role.name,
+    }))
+  }, [roles, hasPermission, currentUser])
+
+  const roleOptionsForFilter = useMemo(() => {
+    return [
+      { value: '', label: 'All Roles' },
+      ...roleOptions.map((option) => ({
+        value: option.name,
+        label: option.label,
+      })),
+    ]
+  }, [roleOptions])
+
+  const userStats = useMemo(() => {
+    const visibleUsers = users || []
+    const active = visibleUsers.filter((user) => user.isActive).length
+    const inactive = visibleUsers.length - active
+
+    return {
+      total: meta?.total ?? visibleUsers.length,
+      active,
+      inactive,
+    }
+  }, [users, meta])
+
+  const sortKeyMap = useMemo(() => ({
+    name: 'first_name',
+    email: 'email',
+    status: 'status',
+    createdAt: 'created_at',
+  }), [])
+
+  const handleSortChange = useCallback((columnKey, direction) => {
+    if (!columnKey) {
+      return
+    }
+
+    const apiSortKey = sortKeyMap[columnKey] || columnKey
+
+    setSortState({
+      columnKey,
+      sortBy: apiSortKey,
+      sortDirection: direction || 'asc',
+    })
+
+    setCurrentPage(1)
+  }, [sortKeyMap])
 
   const columns = [
     {
@@ -214,115 +411,201 @@ const UsersList = () => {
       label: 'Actions',
       render: (value, user, index) => (
         <div className="d-flex gap-2">
-          <Button
-            variant="info"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleViewUser(user)
-            }}
-            title="View User"
-          >
-            <FontAwesomeIcon icon={faInfo} />
-          </Button>
-          <Button
-            variant="warning"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleOpenEditModal(user)
-            }}
-            title="Edit User"
-          >
-            <FontAwesomeIcon icon={faPencil} />
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleDeleteUser(user)
-            }}
-            title="Delete User"
-          >
-            <FontAwesomeIcon icon={faTrash} />
-          </Button>
+          {canViewUser && (
+            <Button
+              variant="info"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleViewUser(user)
+              }}
+              title="View User"
+            >
+              <FontAwesomeIcon icon={faInfo} />
+            </Button>
+          )}
+          {canUpdateUser && (
+            <Button
+              variant="warning"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleOpenEditModal(user)
+              }}
+              title="Edit User"
+            >
+              <FontAwesomeIcon icon={faPencil} />
+            </Button>
+          )}
+          {canDeleteUser && (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDeleteUser(user)
+              }}
+              title="Delete User"
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </Button>
+          )}
         </div>
       )
     }
   ]
 
   return (
-    <Container fluid>
-      <Row>
+    <Container fluid className="px-0 px-xl-3">
+      <Row className="g-4">
         <Col xs={12}>
-          {/* Users Table Card */}
-          <Card>
-            <Card.Header>
-              <div className="d-flex justify-content-between align-items-center w-100">
-                <Card.Title className="mb-0">Users</Card.Title>
+          <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
+            <div>
+              <h2 className="mb-1 text-dark">Users Management</h2>
+              <p className="text-muted mb-0">
+                Monitor team members, manage access levels, and keep account details up to date.
+              </p>
+            </div>
+            {canCreateUser && (
+              <div className="ms-auto">
                 <Button
                   variant="primary"
+                  className="shadow-sm text-white"
                   onClick={handleCreateUser}
                 >
                   <FontAwesomeIcon icon={faPlus} className="me-2" />
                   Add User
                 </Button>
               </div>
-            </Card.Header>
-            <Card.Body>
-              {/* Filters */}
-              <div className="d-flex gap-2 align-items-center mb-3">
-                <FormControl
-                  placeholder="Search users..."
-                  value={searchTerm}
-                  onChange={handleSearch}
-                  style={{ width: '200px' }}
-                />
-                <FormSelect
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  style={{ width: '120px' }}
-                >
-                  <option value="">All Roles</option>
-                  <option value="admin">Admin</option>
-                  <option value="manager">Manager</option>
-                  <option value="user">User</option>
-                </FormSelect>
-                <FormSelect
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  style={{ width: '120px' }}
-                >
-                  <option value="">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </FormSelect>
-                {selectedUsers.length > 0 && (
-                  <Button
-                    variant="danger"
-                    onClick={handleBulkDelete}
-                  >
-                    Delete ({selectedUsers.length})
-                  </Button>
-                )}
+            )}
+          </div>
+
+          <div className="bg-white rounded-3 shadow-sm p-4">
+            <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-primary border-2">
+              <FontAwesomeIcon icon={faUsers} className="me-3 text-primary fs-4" />
+              <div>
+                <h4 className="mb-1 text-primary">User Directory</h4>
+                <span className="text-muted">Total of {userStats.total} users in view</span>
               </div>
-              <Table
-                data={filteredUsers}
-                columns={columns}
-                loading={loading}
-                hover
-                pagination={true}
-                sortable={true}
-                sortableColumns={['name', 'email', 'phone']}
-                currentPage={currentPage}
-                pageSize={pageSize}
-                totalItems={filteredUsers.length}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={setPageSize}
-              />
-            </Card.Body>
-          </Card>
+              <Badge bg="light" text="primary" className="ms-auto border border-primary fw-semibold">
+                {userStats.active} Active · {userStats.inactive} Inactive
+              </Badge>
+            </div>
+
+            <Row className="g-3 mb-4">
+              <Col md={4} sm={6}>
+                <div className="rounded-3 border border-light-subtle p-3 bg-gradient-primary-subtle h-100">
+                  <p className="text-uppercase text-muted mb-1 small">Active Users</p>
+                  <div className="d-flex align-items-end">
+                    <h3 className="mb-0 text-primary fw-semibold">{userStats.active}</h3>
+                    <span className="ms-2 text-muted">onboarded</span>
+                  </div>
+                </div>
+              </Col>
+              <Col md={4} sm={6}>
+                <div className="rounded-3 border border-light-subtle p-3 bg-gradient-info h-100 text-white">
+                  <p className="text-uppercase mb-1 small opacity-75">Total Users</p>
+                  <div className="d-flex align-items-end">
+                    <h3 className="mb-0 fw-semibold">{userStats.total}</h3>
+                    <span className="ms-2 opacity-75">records</span>
+                  </div>
+                </div>
+              </Col>
+              <Col md={4} sm={12}>
+                <div className="rounded-3 border border-light-subtle p-3 bg-gradient-warning h-100">
+                  <p className="text-uppercase text-muted mb-1 small">Inactive Users</p>
+                  <div className="d-flex align-items-end">
+                    <h3 className="mb-0 text-warning fw-semibold">{userStats.inactive}</h3>
+                    <span className="ms-2 text-muted">flagged</span>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+
+            <Form className="mb-4">
+              <Row className="g-3 align-items-end">
+                <Col md={4} sm={12}>
+                  <Form.Label className="fw-semibold text-muted">Search</Form.Label>
+                  <InputGroup>
+                    <InputGroup.Text className="bg-white border-2 text-muted">
+                      <FontAwesomeIcon icon={faMagnifyingGlass} />
+                    </InputGroup.Text>
+                    <FormControl
+                      placeholder="Search by name, email, or phone"
+                      value={searchTerm}
+                      onChange={handleSearch}
+                      className="border-2"
+                    />
+                  </InputGroup>
+                </Col>
+                <Col md={3} sm={6}>
+                  <Form.Label className="fw-semibold text-muted">Role</Form.Label>
+                  <FormSelect
+                    value={roleFilter}
+                      onChange={(e) => {
+                      setRoleFilter(e.target.value)
+                      setCurrentPage(1)
+                    }}
+                    className="border-2"
+                  >
+                    {roleOptionsForFilter.map((option) => (
+                      <option key={option.value || 'all-roles'} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </FormSelect>
+                </Col>
+                <Col md={3} sm={6}>
+                  <Form.Label className="fw-semibold text-muted">Status</Form.Label>
+                  <FormSelect
+                    value={statusFilter}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value)
+                      setCurrentPage(1)
+                    }}
+                    className="border-2"
+                  >
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </FormSelect>
+                </Col>
+                <Col md={2} sm={12}>
+                  {selectedUsers.length > 0 && canDeleteUser && (
+                    <div className="d-grid">
+                      <Button
+                        variant="danger"
+                        className="text-white fw-semibold"
+                        onClick={handleBulkDelete}
+                      >
+                        Delete ({selectedUsers.length})
+                      </Button>
+                    </div>
+                  )}
+                </Col>
+              </Row>
+            </Form>
+
+            <Table
+              data={users}
+              columns={columns}
+              loading={loading}
+              hover
+              pagination={true}
+              sortable={true}
+              sortableColumns={Object.keys(sortKeyMap)}
+              serverSide={true}
+              meta={meta}
+              onPageChange={(page) => setCurrentPage(page)}
+              onPageSizeChange={(size) => {
+                setPageSize(size)
+                setCurrentPage(1)
+              }}
+              sortBy={sortState.columnKey}
+              sortDirection={sortState.sortDirection}
+              onSortChange={handleSortChange}
+            />
+          </div>
         </Col>
       </Row>
 
@@ -351,7 +634,14 @@ const UsersList = () => {
         loading={addUserLoading}
         loadingText="Creating..."
       >
-        <UserForm ref={addUserFormRef} mode="create" onSubmit={handleAddUserSubmit} />
+        <UserForm
+          ref={addUserFormRef}
+          mode="create"
+          onSubmit={handleAddUserSubmit}
+          loading={addUserLoading}
+          roleOptions={roleOptions}
+          rolesLoading={rolesLoading}
+        />
       </FormModal>
 
       {/* Edit User Modal */}
@@ -373,6 +663,9 @@ const UsersList = () => {
           mode="edit" 
           userData={userToEdit} 
           onSubmit={handleEditUserSubmit} 
+          loading={editUserLoading}
+          roleOptions={roleOptions}
+          rolesLoading={rolesLoading}
         />
       </FormModal>
 

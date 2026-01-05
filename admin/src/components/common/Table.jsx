@@ -25,10 +25,16 @@ const Table = ({
   // Sorting props
   sortable = true,
   sortableColumns = [], // Array of column keys that should be sortable
+  // Server-side integration
+  serverSide = false,
+  meta = null,
+  sortBy,
+  sortDirection,
+  onSortChange,
   ...props 
 }) => {
-  const [sortColumn, setSortColumn] = useState('')
-  const [sortDirection, setSortDirection] = useState('asc')
+  const [internalSortColumn, setInternalSortColumn] = useState(sortBy || '')
+  const [internalSortDirection, setInternalSortDirection] = useState(sortDirection || 'asc')
   const getTableClasses = () => {
     const classes = ['table']
     
@@ -48,25 +54,33 @@ const Table = ({
   }
 
   // Sorting functions
+  const currentSortColumn = serverSide ? (sortBy || '') : internalSortColumn
+  const currentSortDirection = serverSide ? (sortDirection || 'asc') : internalSortDirection
+
   const handleSort = (columnKey) => {
     if (!isColumnSortable(columnKey)) return
 
-    if (sortColumn === columnKey) {
-      // Toggle direction if same column
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    const nextDirection =
+      currentSortColumn === columnKey
+        ? (currentSortDirection === 'asc' ? 'desc' : 'asc')
+        : 'asc'
+
+    if (serverSide) {
+      if (onSortChange) {
+        onSortChange(columnKey, nextDirection)
+      }
     } else {
-      // New column, start with ascending
-      setSortColumn(columnKey)
-      setSortDirection('asc')
+      setInternalSortColumn(columnKey)
+      setInternalSortDirection(nextDirection)
     }
   }
 
   const sortData = (dataToSort) => {
-    if (!sortColumn || !sortable) return dataToSort
+    if (serverSide || !currentSortColumn || !sortable) return dataToSort
 
     return [...dataToSort].sort((a, b) => {
-      let aValue = a[sortColumn]
-      let bValue = b[sortColumn]
+      let aValue = a[currentSortColumn]
+      let bValue = b[currentSortColumn]
 
       // Handle different data types
       if (typeof aValue === 'string') {
@@ -75,10 +89,10 @@ const Table = ({
       }
 
       if (aValue < bValue) {
-        return sortDirection === 'asc' ? -1 : 1
+        return currentSortDirection === 'asc' ? -1 : 1
       }
       if (aValue > bValue) {
-        return sortDirection === 'asc' ? 1 : -1
+        return currentSortDirection === 'asc' ? 1 : -1
       }
       return 0
     })
@@ -87,8 +101,8 @@ const Table = ({
   const getSortIcon = (columnKey) => {
     if (!isColumnSortable(columnKey)) return null
     
-    if (sortColumn === columnKey) {
-      return sortDirection === 'asc' ? '↑' : '↓'
+    if (currentSortColumn === columnKey) {
+      return currentSortDirection === 'asc' ? '↑' : '↓'
     }
     return '↕'
   }
@@ -105,15 +119,28 @@ const Table = ({
 
   // Sort data first, then paginate
   const sortedData = sortData(data)
-  
-  // Pagination calculations
-  const totalPages = Math.ceil(totalItems / pageSize)
-  const startIndex = (currentPage - 1) * pageSize
-  const endIndex = Math.min(startIndex + pageSize, totalItems)
-  const paginatedData = pagination ? sortedData.slice(startIndex, startIndex + pageSize) : sortedData
+
+  const effectiveMeta = serverSide && meta
+    ? meta
+    : {
+        total: pagination ? totalItems : sortedData.length,
+        page: pagination ? currentPage : 1,
+        limit: pagination ? pageSize : sortedData.length || 1,
+        totalPages: pagination ? Math.ceil(totalItems / pageSize) || 1 : 1,
+        hasNext: pagination ? currentPage < (Math.ceil(totalItems / pageSize) || 1) : false,
+        hasPrev: pagination ? currentPage > 1 : false,
+      }
+
+  const startIndex = (effectiveMeta.page - 1) * effectiveMeta.limit
+  const endIndex = serverSide
+    ? startIndex + sortedData.length
+    : Math.min(startIndex + effectiveMeta.limit, effectiveMeta.total)
+  const paginatedData = pagination && !serverSide
+    ? sortedData.slice(startIndex, startIndex + effectiveMeta.limit)
+    : sortedData
 
   const handlePageChange = (page) => {
-    if (onPageChange && page >= 1 && page <= totalPages) {
+    if (onPageChange && page >= 1 && page <= effectiveMeta.totalPages) {
       onPageChange(page)
     }
   }
@@ -132,11 +159,11 @@ const Table = ({
       const range = []
       const rangeWithDots = []
 
-      for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+      for (let i = Math.max(2, effectiveMeta.page - delta); i <= Math.min(effectiveMeta.totalPages - 1, effectiveMeta.page + delta); i++) {
         range.push(i)
       }
 
-      if (currentPage - delta > 2) {
+      if (effectiveMeta.page - delta > 2) {
         rangeWithDots.push(1, '...')
       } else {
         rangeWithDots.push(1)
@@ -144,10 +171,10 @@ const Table = ({
 
       rangeWithDots.push(...range)
 
-      if (currentPage + delta < totalPages - 1) {
-        rangeWithDots.push('...', totalPages)
-      } else if (totalPages > 1) {
-        rangeWithDots.push(totalPages)
+      if (effectiveMeta.page + delta < effectiveMeta.totalPages - 1) {
+        rangeWithDots.push('...', effectiveMeta.totalPages)
+      } else if (effectiveMeta.totalPages > 1) {
+        rangeWithDots.push(effectiveMeta.totalPages)
       }
 
       // Remove duplicates while preserving order
@@ -163,7 +190,7 @@ const Table = ({
               <span className="text-muted me-2">Show:</span>
               {showPageSize && (
                 <FormSelect
-                  value={pageSize}
+                  value={effectiveMeta.limit}
                   onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
                   size="sm"
                   style={{ width: 'auto' }}
@@ -175,7 +202,7 @@ const Table = ({
                 </FormSelect>
               )}
               <span className="text-muted">
-                Showing {startIndex + 1} to {endIndex} of {totalItems} entries
+                Showing {effectiveMeta.total === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, effectiveMeta.total)} of {effectiveMeta.total} entries
               </span>
             </div>
           </Col>
@@ -187,8 +214,8 @@ const Table = ({
                 size="sm"
               >
                 <Pagination.Prev
-                  disabled={currentPage === 1}
-                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={!effectiveMeta.hasPrev}
+                  onClick={() => handlePageChange(effectiveMeta.page - 1)}
                 />
                 
                 {getVisiblePages().map((page, index) => {
@@ -201,7 +228,7 @@ const Table = ({
                   return (
                     <Pagination.Item
                       key={`page-${page}-${index}`}
-                      active={currentPage === page}
+                      active={effectiveMeta.page === page}
                       onClick={() => handlePageChange(page)}
                     >
                       {page}
@@ -210,8 +237,8 @@ const Table = ({
                 })}
                 
                 <Pagination.Next
-                  disabled={currentPage === totalPages}
-                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={!effectiveMeta.hasNext}
+                  onClick={() => handlePageChange(effectiveMeta.page + 1)}
                 />
               </Pagination>
             </div>

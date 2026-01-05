@@ -1,35 +1,59 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Container, Row, Col, Card, Button, Spinner, Form, FormControl, FormSelect, FormText, Alert } from 'react-bootstrap'
+import { Container, Row, Col, Button, Spinner, Form, FormControl, FormSelect, FormText, Alert } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPercentage, faBuilding, faEnvelope, faGlobe, faShieldAlt, faSave, faCheckCircle } from '@fortawesome/free-solid-svg-icons'
+import { faBuilding, faEnvelope, faGlobe, faSave, faCheckCircle, faFileInvoice, faPaperPlane, faCog, faImage, faUpload, faTimes } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from '../../components'
 import { settingsService } from '../../services/settingsService'
+import { usePermissions } from '../../hooks'
+import { PERMISSIONS } from '../../constants/permissions'
 
 const Settings = () => {
+  const { hasPermission } = usePermissions()
+  const { success, error, warning } = useToast()
+
+  const canViewSettings = hasPermission
+    ? hasPermission(PERMISSIONS.SETTINGS_READ) || hasPermission(PERMISSIONS.SETTINGS_WRITE)
+    : true
+  const canEditSettings = hasPermission
+    ? hasPermission(PERMISSIONS.SETTINGS_WRITE)
+    : true
+  const isReadOnly = !canEditSettings
+
   const [settingsData, setSettingsData] = useState({
-    taxPricing: {
-      defaultGstRate: 15,
-      defaultProfitMargin: 25
-    },
     businessInfo: {
-      businessName: 'Farm2Fridge',
+      company_name: 'Photo Studio Management',
+      business_email: '',
+      business_phone: '',
+      business_website: '',
       gstNumber: '',
-      businessAddress: '123 Queen Street, Auckland Central, Auckland 1010, New Zealand'
+      businessAddress: ''
     },
-    emailNotifications: {
-      supportEmail: 'support@farm2fridge.co.nz',
-      adminEmail: 'admin@farm2fridge.co.nz',
-      enableOrderNotifications: false
+    invoiceSettings: {
+      invoice_prefix: 'INV',
+      invoice_business_name: '',
+      invoice_business_website: '',
+      invoice_business_address: '',
+      invoice_contact_phone: '',
+      invoice_contact_email: '',
+      invoice_footer_text: ''
+    },
+    emailSettings: {
+      mailer: 'smtp',
+      host: '',
+      port: '',
+      username: '',
+      password: '',
+      encryption: 'tls',
+      from_address: '',
+      from_name: ''
     },
     currencyRegional: {
-      currency: 'NZD',
+      currency: 'INR',
       dateFormat: 'DD/MM/YYYY',
-      timeZone: 'Pacific/Auckland'
+      timeZone: 'Asia/Kolkata'
     },
-    security: {
-      sessionTimeout: 30,
-      passwordExpiry: 90,
-      enableTwoFactor: false
+    appSettings: {
+      web_url: ''
     }
   })
   const [loading, setLoading] = useState(true)
@@ -37,29 +61,50 @@ const Settings = () => {
   const [errors, setErrors] = useState({})
   const [autoSaving, setAutoSaving] = useState({}) // Track which fields are auto-saving
   const [autoSaved, setAutoSaved] = useState({}) // Track which fields were recently saved
-  const { success, error } = useToast()
+  const [testEmailAddress, setTestEmailAddress] = useState('')
+  const [sendingTestEmail, setSendingTestEmail] = useState(false)
+  const [logoPreview, setLogoPreview] = useState(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const fileInputRef = useRef(null)
   
   const isInitialLoadRef = useRef(true) // Track if we're still loading initial data
   
   // Mapping from form fields to API keys and sections
   const fieldMapping = {
-    'taxPricing.defaultGstRate': { key: 'defaultGstRate', section: 'Tax & Pricing' },
-    'taxPricing.defaultProfitMargin': { key: 'defaultProfitMargin', section: 'Tax & Pricing' },
-    'businessInfo.businessName': { key: 'businessName', section: 'Business Information' },
+    'businessInfo.company_name': { key: 'company_name', section: 'Business Information' },
+    'businessInfo.business_email': { key: 'business_email', section: 'Business Information' },
+    'businessInfo.business_phone': { key: 'business_phone', section: 'Business Information' },
+    'businessInfo.business_website': { key: 'business_website', section: 'Business Information' },
     'businessInfo.gstNumber': { key: 'gstNumber', section: 'Business Information' },
     'businessInfo.businessAddress': { key: 'businessAddress', section: 'Business Information' },
-    'emailNotifications.supportEmail': { key: 'supportEmail', section: 'Email & Notification' },
-    'emailNotifications.adminEmail': { key: 'adminEmail', section: 'Email & Notification' },
-    'emailNotifications.enableOrderNotifications': { key: 'enableOrderNotifications', section: 'Email & Notification' },
+    'invoiceSettings.invoice_prefix': { key: 'invoice_prefix', section: 'Invoice Settings' },
+    'invoiceSettings.invoice_business_name': { key: 'invoice_business_name', section: 'Invoice Settings' },
+    'invoiceSettings.invoice_business_website': { key: 'invoice_business_website', section: 'Invoice Settings' },
+    'invoiceSettings.invoice_business_address': { key: 'invoice_business_address', section: 'Invoice Settings' },
+    'invoiceSettings.invoice_contact_phone': { key: 'invoice_contact_phone', section: 'Invoice Settings' },
+    'invoiceSettings.invoice_contact_email': { key: 'invoice_contact_email', section: 'Invoice Settings' },
+    'invoiceSettings.invoice_footer_text': { key: 'invoice_footer_text', section: 'Invoice Settings' },
+    'emailSettings.mailer': { key: 'mailer', section: 'Email Settings' },
+    'emailSettings.host': { key: 'host', section: 'Email Settings' },
+    'emailSettings.port': { key: 'port', section: 'Email Settings' },
+    'emailSettings.username': { key: 'username', section: 'Email Settings' },
+    'emailSettings.password': { key: 'password', section: 'Email Settings' },
+    'emailSettings.encryption': { key: 'encryption', section: 'Email Settings' },
+    'emailSettings.from_address': { key: 'from_address', section: 'Email Settings' },
+    'emailSettings.from_name': { key: 'from_name', section: 'Email Settings' },
     'currencyRegional.currency': { key: 'currency', section: 'Currency & Regional' },
     'currencyRegional.dateFormat': { key: 'dateFormat', section: 'Currency & Regional' },
     'currencyRegional.timeZone': { key: 'timeZone', section: 'Currency & Regional' },
-    'security.sessionTimeout': { key: 'sessionTimeout', section: 'Security' },
-    'security.passwordExpiry': { key: 'passwordExpiry', section: 'Security' },
-    'security.enableTwoFactor': { key: 'enableTwoFactor', section: 'Security' }
+    'appSettings.web_url': { key: 'web_url', section: 'App Settings' }
   }
 
   useEffect(() => {
+    if (!canViewSettings) {
+      setLoading(false)
+      warning && warning('You do not have permission to view settings.', { title: 'Access restricted' })
+      return
+    }
+
     const fetchSettings = async () => {
       setLoading(true)
       try {
@@ -79,6 +124,40 @@ const Settings = () => {
           setSettingsData(defaultData)
           isInitialLoadRef.current = false
         }
+        
+        // Load business logo
+        const logoResponse = await settingsService.getSettingByKey('business_logo', 'Business Information', true)
+        if (logoResponse.success && logoResponse.data && logoResponse.data.value) {
+          const logoPath = logoResponse.data.value
+          // Convert storage path to URL
+          // For subdirectory installations like /admin/api, storage is at /admin/api/storage/
+          let logoUrl
+          if (logoPath.startsWith('http')) {
+            // Already a full URL, use it as is
+            logoUrl = logoPath
+          } else {
+            // Construct URL from API base URL
+            let baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+            // Remove trailing slash if present
+            baseUrl = baseUrl.replace(/\/+$/, '')
+            // For subdirectory installations (/admin/api), storage is at /admin/api/storage/
+            // If baseUrl includes /admin/api, use it as is
+            if (baseUrl.includes('/admin/api')) {
+              logoUrl = `${baseUrl}/storage/${logoPath}`
+            } else if (baseUrl.includes('/admin')) {
+              // If baseUrl is /admin, add /api/storage
+              logoUrl = `${baseUrl}/api/storage/${logoPath}`
+            } else {
+              // For root installations, remove /api if present and add /storage
+              baseUrl = baseUrl.replace(/\/api\/?$/, '')
+              logoUrl = `${baseUrl}/storage/${logoPath}`
+            }
+          }
+          
+          // Add cache busting to prevent browser caching issues
+          const logoUrlWithCache = `${logoUrl}?t=${Date.now()}`
+          setLogoPreview(logoUrlWithCache)
+        }
       } catch (err) {
         // If error occurs, use default values
         error('Failed to load settings. Using default values.')
@@ -92,10 +171,14 @@ const Settings = () => {
     }
     fetchSettings()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [canViewSettings, warning])
 
   // Auto-save function (triggered on blur)
   const autoSaveSetting = useCallback(async (fieldPath, key, section, value) => {
+    if (!canEditSettings) {
+      return
+    }
+
     const fieldId = fieldPath
     
     // Set auto-saving state
@@ -134,9 +217,13 @@ const Settings = () => {
         return newState
       })
     }
-  }, [error])
+  }, [error, canEditSettings])
 
   const handleChange = (section, field, value) => {
+    if (!canEditSettings) {
+      warning && warning('You do not have permission to modify settings.', { title: 'Read only' })
+      return
+    }
     const fieldPath = `${section}.${field}`
     
     // Update form data
@@ -159,7 +246,15 @@ const Settings = () => {
 
   // Handle blur event (save when field loses focus)
   const handleBlur = (section, field, value) => {
+    if (!canEditSettings) {
+      return
+    }
     const fieldPath = `${section}.${field}`
+    
+    // Don't auto-save email settings on blur - they should be saved together via "Save Email Settings" button
+    if (section === 'emailSettings') {
+      return
+    }
     
     // Auto-save if field mapping exists and not during initial load
     if (!isInitialLoadRef.current) {
@@ -173,33 +268,35 @@ const Settings = () => {
   const validateForm = () => {
     const newErrors = {}
     
-    // Validate GST Rate
-    if (settingsData.taxPricing.defaultGstRate < 0 || settingsData.taxPricing.defaultGstRate > 100) {
-      newErrors['taxPricing.defaultGstRate'] = 'GST rate must be between 0 and 100'
+    // Validate Business Information
+    if (!settingsData.businessInfo.company_name?.trim()) {
+      newErrors['businessInfo.company_name'] = 'Company name is required'
     }
-    
-    // Validate Profit Margin
-    if (settingsData.taxPricing.defaultProfitMargin < 0 || settingsData.taxPricing.defaultProfitMargin > 100) {
-      newErrors['taxPricing.defaultProfitMargin'] = 'Profit margin must be between 0 and 100'
-    }
-    
-    // Validate Email addresses
+
     const emailRegex = /\S+@\S+\.\S+/
-    if (settingsData.emailNotifications.supportEmail && !emailRegex.test(settingsData.emailNotifications.supportEmail)) {
-      newErrors['emailNotifications.supportEmail'] = 'Please enter a valid email address'
+    if (settingsData.businessInfo.business_email && !emailRegex.test(settingsData.businessInfo.business_email)) {
+      newErrors['businessInfo.business_email'] = 'Please enter a valid business email address'
     }
-    if (settingsData.emailNotifications.adminEmail && !emailRegex.test(settingsData.emailNotifications.adminEmail)) {
-      newErrors['emailNotifications.adminEmail'] = 'Please enter a valid email address'
+
+    const phoneRegex = /^[0-9+()\-\s]{6,20}$/
+    if (settingsData.businessInfo.business_phone && !phoneRegex.test(settingsData.businessInfo.business_phone)) {
+      newErrors['businessInfo.business_phone'] = 'Please enter a valid phone number'
     }
-    
-    // Validate Session Timeout
-    if (settingsData.security.sessionTimeout < 5 || settingsData.security.sessionTimeout > 480) {
-      newErrors['security.sessionTimeout'] = 'Session timeout must be between 5 and 480 minutes'
+
+    const urlRegex = /^(https?:\/\/)?([\w-]+\.)+[\w-]{2,}(\/\S*)?$/
+    if (settingsData.businessInfo.business_website && !urlRegex.test(settingsData.businessInfo.business_website.trim())) {
+      newErrors['businessInfo.business_website'] = 'Please enter a valid website URL'
     }
-    
-    // Validate Password Expiry
-    if (settingsData.security.passwordExpiry < 30 || settingsData.security.passwordExpiry > 365) {
-      newErrors['security.passwordExpiry'] = 'Password expiry must be between 30 and 365 days'
+
+    // Validate Email Settings
+    if (settingsData.emailSettings.from_address && !emailRegex.test(settingsData.emailSettings.from_address)) {
+      newErrors['emailSettings.from_address'] = 'Please enter a valid email address'
+    }
+    if (settingsData.emailSettings.host && !settingsData.emailSettings.host.trim()) {
+      newErrors['emailSettings.host'] = 'SMTP Host is required'
+    }
+    if (settingsData.emailSettings.port && (!/^\d+$/.test(settingsData.emailSettings.port) || parseInt(settingsData.emailSettings.port) < 1 || parseInt(settingsData.emailSettings.port) > 65535)) {
+      newErrors['emailSettings.port'] = 'Please enter a valid port number (1-65535)'
     }
     
     setErrors(newErrors)
@@ -207,6 +304,11 @@ const Settings = () => {
   }
 
   const handleSaveAll = async () => {
+    if (!canEditSettings) {
+      error('You do not have permission to update settings.')
+      return
+    }
+    
     if (!validateForm()) {
       error('Please fix the validation errors before saving')
       return
@@ -226,95 +328,102 @@ const Settings = () => {
     setSaving(false)
   }
 
-  const renderTaxPricingSettings = () => (
-    <div className="mb-5">
-      {/* Section Header */}
-      <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-success border-2">
-        <FontAwesomeIcon icon={faPercentage} className="me-3 text-success fs-4" />
-        <h4 className="mb-0 text-success">Tax & Pricing Settings</h4>
-      </div>
+  // Handle logo upload
+  const handleLogoUpload = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
 
-      {/* Summary Stats */}
-      <Row className="mb-4">
-        <Col md={6}>
-            <div className="p-4 rounded-3 bg-gradient-logo text-dark mb-3 shadow-sm">
-            <div className="text-center">
-              <h3 className="mb-1 text-dark">{settingsData.taxPricing.defaultGstRate}%</h3>
-              <p className="mb-0 fw-semibold text-dark">Default GST Rate</p>
-              <small className="text-muted">Default GST rate applied to all orders unless specified individually.</small>
-            </div>
-          </div>
-        </Col>
-        <Col md={6}>
-          <div className="p-4 rounded-3 bg-gradient-logo-alt text-dark mb-3 shadow-sm">
-            <div className="text-center">
-              <h3 className="mb-1 text-dark">{settingsData.taxPricing.defaultProfitMargin}%</h3>
-              <p className="mb-0 fw-semibold text-dark">Default Profit Margin</p>
-              <small className="text-muted">Default profit margin applied to all packages unless specified individually.</small>
-            </div>
-          </div>
-        </Col>
-      </Row>
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      error('Please upload a valid image file (JPEG, PNG, or WebP)')
+      return
+    }
 
-      {/* Input Fields */}
-      <Row>
-        <Col md={6}>
-          <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">
-              Default GST Rate (%)
-              {autoSaving['taxPricing.defaultGstRate'] && (
-                <Spinner size="sm" className="ms-2" variant="primary" />
-              )}
-              {autoSaved['taxPricing.defaultGstRate'] && (
-                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
-              )}
-            </Form.Label>
-            <FormControl
-              type="number"
-              min="0"
-              max="100"
-              value={settingsData.taxPricing.defaultGstRate}
-              onChange={(e) => handleChange('taxPricing', 'defaultGstRate', parseInt(e.target.value) || 0)}
-              onBlur={(e) => handleBlur('taxPricing', 'defaultGstRate', parseInt(e.target.value) || 0)}
-              isInvalid={!!errors['taxPricing.defaultGstRate']}
-              className="border-2"
-            />
-            <FormText className="text-muted">This will be used for orders that don't have a specific GST rate set.</FormText>
-            {errors['taxPricing.defaultGstRate'] && (
-              <FormText className="text-danger">{errors['taxPricing.defaultGstRate']}</FormText>
-            )}
-          </Form.Group>
-        </Col>
-        <Col md={6}>
-          <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">
-              Default Profit Margin (%)
-              {autoSaving['taxPricing.defaultProfitMargin'] && (
-                <Spinner size="sm" className="ms-2" variant="primary" />
-              )}
-              {autoSaved['taxPricing.defaultProfitMargin'] && (
-                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
-              )}
-            </Form.Label>
-            <FormControl
-              type="number"
-              min="0"
-              max="100"
-              value={settingsData.taxPricing.defaultProfitMargin}
-              onChange={(e) => handleChange('taxPricing', 'defaultProfitMargin', parseInt(e.target.value) || 0)}
-              onBlur={(e) => handleBlur('taxPricing', 'defaultProfitMargin', parseInt(e.target.value) || 0)}
-              isInvalid={!!errors['taxPricing.defaultProfitMargin']}
-              className="border-2"
-            />
-            <FormText className="text-muted">This will be used for packages that don't have a specific margin set.</FormText>
-            {errors['taxPricing.defaultProfitMargin'] && (
-              <FormText className="text-danger">{errors['taxPricing.defaultProfitMargin']}</FormText>
-            )}
-          </Form.Group>
-        </Col>
-      </Row>
-    </div>
-  )
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      error('Image size must be less than 2MB')
+      return
+    }
+
+    setUploadingLogo(true)
+    try {
+      const result = await settingsService.uploadLogo(file)
+      if (result.success) {
+        success('Logo uploaded successfully')
+        // Use URL from backend response, add cache busting
+        const logoUrl = result.data.url || result.data.path
+        const logoUrlWithCache = logoUrl ? `${logoUrl}?t=${Date.now()}` : null
+        setLogoPreview(logoUrlWithCache)
+        
+        // Update localStorage settings for immediate sidebar update
+        try {
+          const settingsStr = localStorage.getItem('app_settings')
+          const settings = settingsStr ? JSON.parse(settingsStr) : {}
+          settings.business_logo = logoUrl
+          settings.business_logo_path = result.data.path
+          localStorage.setItem('app_settings', JSON.stringify(settings))
+          // Dispatch custom event for sidebar to update (same-tab)
+          window.dispatchEvent(new CustomEvent('settingsUpdated', {
+            detail: settings
+          }))
+        } catch (err) {
+          console.warn('Failed to update localStorage settings:', err)
+        }
+      } else {
+        error(result.message || 'Failed to upload logo')
+      }
+    } catch (err) {
+      error('Failed to upload logo')
+      console.error('Logo upload error:', err)
+    } finally {
+      setUploadingLogo(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleRemoveLogo = async () => {
+    if (!canEditSettings) {
+      error('You do not have permission to delete logo.')
+      return
+    }
+
+    try {
+      const result = await settingsService.deleteLogo()
+      if (result.success) {
+        success('Logo deleted successfully')
+        setLogoPreview(null)
+        // Clear the logo from settings data
+        setSettingsData(prev => ({
+          ...prev,
+          businessInfo: { ...prev.businessInfo, business_logo: '' }
+        }))
+        
+        // Update localStorage settings for immediate sidebar update
+        try {
+          const settingsStr = localStorage.getItem('app_settings')
+          const settings = settingsStr ? JSON.parse(settingsStr) : {}
+          settings.business_logo = null
+          settings.business_logo_path = null
+          localStorage.setItem('app_settings', JSON.stringify(settings))
+          // Dispatch custom event for sidebar to update (same-tab)
+          window.dispatchEvent(new CustomEvent('settingsUpdated', {
+            detail: settings
+          }))
+        } catch (err) {
+          console.warn('Failed to update localStorage settings:', err)
+        }
+      } else {
+        error(result.message || 'Failed to delete logo')
+      }
+    } catch (err) {
+      error('Failed to delete logo. Please try again.')
+      console.error('Logo deletion error:', err)
+    }
+  }
 
   const renderBusinessInfo = () => (
     <div className="mb-5">
@@ -325,17 +434,109 @@ const Settings = () => {
       </div>
 
       <Row>
-        <Col md={6}>
+        <Col md={12}>
           <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">Business Name</Form.Label>
+            <Form.Label className="fw-semibold">
+              Company Name
+              {autoSaving['businessInfo.company_name'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['businessInfo.company_name'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
             <FormControl
-              value={settingsData.businessInfo.businessName}
-              onChange={(e) => handleChange('businessInfo', 'businessName', e.target.value)}
-              onBlur={(e) => handleBlur('businessInfo', 'businessName', e.target.value)}
+              value={settingsData.businessInfo.company_name}
+              onChange={(e) => handleChange('businessInfo', 'company_name', e.target.value)}
+              onBlur={(e) => handleBlur('businessInfo', 'company_name', e.target.value)}
+              isInvalid={!!errors['businessInfo.company_name']}
               className="border-2"
             />
+            {errors['businessInfo.company_name'] && (
+              <FormText className="text-danger">{errors['businessInfo.company_name']}</FormText>
+            )}
           </Form.Group>
         </Col>
+      </Row>
+      
+      {/* Logo Upload Section */}
+      <Row>
+        <Col md={12}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              <FontAwesomeIcon icon={faImage} className="me-2" />
+              Business Logo
+            </Form.Label>
+            <div className="d-flex align-items-start gap-3">
+              {logoPreview && (
+                <div className="position-relative" style={{ minWidth: '120px' }}>
+                  <img
+                    src={logoPreview}
+                    alt="Business Logo"
+                    style={{
+                      width: '120px',
+                      height: '120px',
+                      objectFit: 'contain',
+                      border: '2px solid #dee2e6',
+                      borderRadius: '8px',
+                      padding: '8px',
+                      backgroundColor: '#f8f9fa'
+                    }}
+                    onError={() => {
+                      setLogoPreview(null)
+                      error('Failed to load logo image')
+                    }}
+                  />
+                  {!isReadOnly && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      className="position-absolute top-0 end-0"
+                      style={{ transform: 'translate(50%, -50%)' }}
+                      onClick={handleRemoveLogo}
+                      title="Remove logo"
+                    >
+                      <FontAwesomeIcon icon={faTimes} />
+                    </Button>
+                  )}
+                </div>
+              )}
+              <div className="flex-grow-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handleLogoUpload}
+                  disabled={isReadOnly || uploadingLogo}
+                  style={{ display: 'none' }}
+                />
+                <Button
+                  variant="outline-primary"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isReadOnly || uploadingLogo}
+                  className="mb-2"
+                >
+                  {uploadingLogo ? (
+                    <>
+                      <Spinner size="sm" className="me-2" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <FontAwesomeIcon icon={faUpload} className="me-2" />
+                      {logoPreview ? 'Change Logo' : 'Upload Logo'}
+                    </>
+                  )}
+                </Button>
+                <FormText className="d-block text-muted">
+                  Upload your business logo (JPEG, PNG, or WebP, max 2MB). This logo will appear on all PDF exports.
+                </FormText>
+              </div>
+            </div>
+          </Form.Group>
+        </Col>
+      </Row>
+      <Row>
         <Col md={6}>
           <Form.Group className="mb-3">
             <Form.Label className="fw-semibold">GST Number</Form.Label>
@@ -346,6 +547,81 @@ const Settings = () => {
               onBlur={(e) => handleBlur('businessInfo', 'gstNumber', e.target.value)}
               className="border-2"
             />
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Business Email
+              {autoSaving['businessInfo.business_email'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['businessInfo.business_email'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              type="email"
+              placeholder="contact@yourcompany.com"
+              value={settingsData.businessInfo.business_email}
+              onChange={(e) => handleChange('businessInfo', 'business_email', e.target.value)}
+              onBlur={(e) => handleBlur('businessInfo', 'business_email', e.target.value)}
+              className="border-2"
+              isInvalid={!!errors['businessInfo.business_email']}
+            />
+            {errors['businessInfo.business_email'] && (
+              <FormText className="text-danger">{errors['businessInfo.business_email']}</FormText>
+            )}
+          </Form.Group>
+        </Col>
+      </Row>
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Business Phone
+              {autoSaving['businessInfo.business_phone'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['businessInfo.business_phone'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              placeholder="+91 98765 43210"
+              value={settingsData.businessInfo.business_phone}
+              onChange={(e) => handleChange('businessInfo', 'business_phone', e.target.value)}
+              onBlur={(e) => handleBlur('businessInfo', 'business_phone', e.target.value)}
+              className="border-2"
+              isInvalid={!!errors['businessInfo.business_phone']}
+            />
+            {errors['businessInfo.business_phone'] && (
+              <FormText className="text-danger">{errors['businessInfo.business_phone']}</FormText>
+            )}
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Business Website
+              {autoSaving['businessInfo.business_website'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['businessInfo.business_website'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              placeholder="https://www.yourcompany.com"
+              value={settingsData.businessInfo.business_website}
+              onChange={(e) => handleChange('businessInfo', 'business_website', e.target.value)}
+              onBlur={(e) => handleBlur('businessInfo', 'business_website', e.target.value)}
+              className="border-2"
+              isInvalid={!!errors['businessInfo.business_website']}
+            />
+            {errors['businessInfo.business_website'] && (
+              <FormText className="text-danger">{errors['businessInfo.business_website']}</FormText>
+            )}
           </Form.Group>
         </Col>
       </Row>
@@ -367,59 +643,522 @@ const Settings = () => {
     </div>
   )
 
-  const renderEmailNotifications = () => (
+  const renderInvoiceSettings = () => (
     <div className="mb-5">
       {/* Section Header */}
       <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-success border-2">
-        <FontAwesomeIcon icon={faEnvelope} className="me-3 text-success fs-4" />
-        <h4 className="mb-0 text-success">Email & Notification Settings</h4>
+        <FontAwesomeIcon icon={faFileInvoice} className="me-3 text-success fs-4" />
+        <h4 className="mb-0 text-success">Invoice Settings</h4>
       </div>
 
       <Row>
         <Col md={6}>
           <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">Support Email</Form.Label>
+            <Form.Label className="fw-semibold">
+              Invoice Prefix
+              {autoSaving['invoiceSettings.invoice_prefix'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['invoiceSettings.invoice_prefix'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
             <FormControl
-              type="email"
-              value={settingsData.emailNotifications.supportEmail}
-              onChange={(e) => handleChange('emailNotifications', 'supportEmail', e.target.value)}
-              onBlur={(e) => handleBlur('emailNotifications', 'supportEmail', e.target.value)}
-              isInvalid={!!errors['emailNotifications.supportEmail']}
+              placeholder="INV"
+              value={settingsData.invoiceSettings.invoice_prefix}
+              onChange={(e) => handleChange('invoiceSettings', 'invoice_prefix', e.target.value)}
+              onBlur={(e) => handleBlur('invoiceSettings', 'invoice_prefix', e.target.value)}
               className="border-2"
             />
-            {errors['emailNotifications.supportEmail'] && (
-              <FormText className="text-danger">{errors['emailNotifications.supportEmail']}</FormText>
+            <FormText className="text-muted">Prefix for invoice numbers (e.g., INV-001, ORD-001)</FormText>
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Invoice Business Name
+              {autoSaving['invoiceSettings.invoice_business_name'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['invoiceSettings.invoice_business_name'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              placeholder="Your Business Name"
+              value={settingsData.invoiceSettings.invoice_business_name}
+              onChange={(e) => handleChange('invoiceSettings', 'invoice_business_name', e.target.value)}
+              onBlur={(e) => handleBlur('invoiceSettings', 'invoice_business_name', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">Business name to display on invoices</FormText>
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Invoice Business Website
+              {autoSaving['invoiceSettings.invoice_business_website'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['invoiceSettings.invoice_business_website'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              placeholder="https://www.example.com"
+              value={settingsData.invoiceSettings.invoice_business_website}
+              onChange={(e) => handleChange('invoiceSettings', 'invoice_business_website', e.target.value)}
+              onBlur={(e) => handleBlur('invoiceSettings', 'invoice_business_website', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">Business website URL to display on invoices</FormText>
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col md={12}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Invoice Business Address
+              {autoSaving['invoiceSettings.invoice_business_address'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['invoiceSettings.invoice_business_address'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              as="textarea"
+              rows={3}
+              placeholder="Street Address, City, State, ZIP Code"
+              value={settingsData.invoiceSettings.invoice_business_address}
+              onChange={(e) => handleChange('invoiceSettings', 'invoice_business_address', e.target.value)}
+              onBlur={(e) => handleBlur('invoiceSettings', 'invoice_business_address', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">Complete business address to display on invoices</FormText>
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Invoice Contact Phone
+              {autoSaving['invoiceSettings.invoice_contact_phone'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['invoiceSettings.invoice_contact_phone'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              placeholder="+1 234 567 8900"
+              value={settingsData.invoiceSettings.invoice_contact_phone}
+              onChange={(e) => handleChange('invoiceSettings', 'invoice_contact_phone', e.target.value)}
+              onBlur={(e) => handleBlur('invoiceSettings', 'invoice_contact_phone', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">Contact phone number to display on invoices</FormText>
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Invoice Contact Email
+              {autoSaving['invoiceSettings.invoice_contact_email'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['invoiceSettings.invoice_contact_email'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              type="email"
+              placeholder="contact@example.com"
+              value={settingsData.invoiceSettings.invoice_contact_email}
+              onChange={(e) => handleChange('invoiceSettings', 'invoice_contact_email', e.target.value)}
+              onBlur={(e) => handleBlur('invoiceSettings', 'invoice_contact_email', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">Contact email address to display on invoices</FormText>
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col md={12}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              Invoice Footer Text
+              {autoSaving['invoiceSettings.invoice_footer_text'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['invoiceSettings.invoice_footer_text'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              as="textarea"
+              rows={3}
+              placeholder="Thank you for your business!"
+              value={settingsData.invoiceSettings.invoice_footer_text}
+              onChange={(e) => handleChange('invoiceSettings', 'invoice_footer_text', e.target.value)}
+              onBlur={(e) => handleBlur('invoiceSettings', 'invoice_footer_text', e.target.value)}
+              className="border-2"
+            />
+            <FormText className="text-muted">Footer text/message to display at the bottom of invoices</FormText>
+          </Form.Group>
+        </Col>
+      </Row>
+    </div>
+  )
+
+  const handleSaveEmailSettings = async () => {
+    if (!canEditSettings) {
+      error('You do not have permission to update settings.')
+      return
+    }
+
+    // Validate email settings
+    const emailRegex = /\S+@\S+\.\S+/
+    const newErrors = {}
+    
+    if (!settingsData.emailSettings.host?.trim()) {
+      newErrors['emailSettings.host'] = 'SMTP Host is required'
+    }
+    if (!settingsData.emailSettings.port?.trim()) {
+      newErrors['emailSettings.port'] = 'SMTP Port is required'
+    }
+    if (!/^\d+$/.test(settingsData.emailSettings.port) || parseInt(settingsData.emailSettings.port) < 1 || parseInt(settingsData.emailSettings.port) > 65535) {
+      newErrors['emailSettings.port'] = 'Please enter a valid port number (1-65535)'
+    }
+    if (!settingsData.emailSettings.username?.trim()) {
+      newErrors['emailSettings.username'] = 'SMTP User is required'
+    }
+    if (!settingsData.emailSettings.password?.trim()) {
+      newErrors['emailSettings.password'] = 'SMTP Password is required'
+    }
+    if (!settingsData.emailSettings.from_address?.trim()) {
+      newErrors['emailSettings.from_address'] = 'From Email is required'
+    } else if (!emailRegex.test(settingsData.emailSettings.from_address)) {
+      newErrors['emailSettings.from_address'] = 'Please enter a valid email address'
+    }
+    if (!settingsData.emailSettings.from_name?.trim()) {
+      newErrors['emailSettings.from_name'] = 'From Name is required'
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      error('Please fix the validation errors before saving')
+      return
+    }
+
+    setSaving(true)
+    try {
+      // Save all email settings
+      const emailSettingsToSave = {
+        mailer: settingsData.emailSettings.mailer,
+        host: settingsData.emailSettings.host,
+        port: settingsData.emailSettings.port,
+        username: settingsData.emailSettings.username,
+        password: settingsData.emailSettings.password,
+        encryption: settingsData.emailSettings.encryption,
+        from_address: settingsData.emailSettings.from_address,
+        from_name: settingsData.emailSettings.from_name,
+      }
+
+      // Save each setting (suppress 404 errors as they're expected for new settings)
+      const savePromises = Object.entries(emailSettingsToSave).map(async ([key, value]) => {
+        try {
+          return await settingsService.saveSetting(key, 'Email Settings', value)
+        } catch (err) {
+          // Ignore 404 errors as they're expected when creating new settings
+          if (err.response?.status === 404) {
+            return { success: true, message: `${key} saved` }
+          }
+          throw err
+        }
+      })
+
+      const results = await Promise.all(savePromises)
+      const allSuccess = results.every(r => r && r.success)
+
+      if (allSuccess) {
+        success('Email settings saved successfully!')
+      } else {
+        const failedSettings = results
+          .map((r, index) => (!r || !r.success) ? Object.keys(emailSettingsToSave)[index] : null)
+          .filter(Boolean)
+        error(`Failed to save: ${failedSettings.join(', ')}. Please try again.`)
+      }
+    } catch (err) {
+      error('Failed to save email settings. Please try again.')
+      console.error('Save email settings error:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSendTestEmail = async () => {
+    if (!testEmailAddress?.trim()) {
+      error('Please enter a test email address')
+      return
+    }
+
+    const emailRegex = /\S+@\S+\.\S+/
+    if (!emailRegex.test(testEmailAddress.trim())) {
+      error('Please enter a valid email address')
+      return
+    }
+
+    setSendingTestEmail(true)
+    try {
+      const response = await settingsService.sendTestEmail(testEmailAddress.trim())
+      if (response.success) {
+        success(response.message || 'Test email sent successfully! Please check your inbox.')
+        setTestEmailAddress('')
+      } else {
+        // Show validation errors if available
+        if (response.errors && typeof response.errors === 'object') {
+          const errorMessages = Object.values(response.errors).flat()
+          error(errorMessages.join(', ') || response.message || 'Failed to send test email. Please check your email configuration.')
+        } else {
+          error(response.message || 'Failed to send test email. Please check your email configuration.')
+        }
+      }
+    } catch (err) {
+      error('Failed to send test email. Please try again.')
+      console.error('Send test email error:', err)
+    } finally {
+      setSendingTestEmail(false)
+    }
+  }
+
+  const renderEmailSettings = () => (
+    <div className="mb-5">
+      {/* Section Header */}
+      <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-success border-2">
+        <FontAwesomeIcon icon={faEnvelope} className="me-3 text-success fs-4" />
+        <h4 className="mb-0 text-success">Email Settings</h4>
+      </div>
+
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">SMTP Host</Form.Label>
+            <FormControl
+              placeholder="e.g., smtp.gmail.com"
+              value={settingsData.emailSettings.host}
+              onChange={(e) => handleChange('emailSettings', 'host', e.target.value)}
+              onBlur={(e) => handleBlur('emailSettings', 'host', e.target.value)}
+              isInvalid={!!errors['emailSettings.host']}
+              className="border-2"
+            />
+            {errors['emailSettings.host'] && (
+              <FormText className="text-danger">{errors['emailSettings.host']}</FormText>
             )}
           </Form.Group>
         </Col>
         <Col md={6}>
           <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">Admin Email</Form.Label>
+            <Form.Label className="fw-semibold">SMTP Port</Form.Label>
             <FormControl
-              type="email"
-              value={settingsData.emailNotifications.adminEmail}
-              onChange={(e) => handleChange('emailNotifications', 'adminEmail', e.target.value)}
-              onBlur={(e) => handleBlur('emailNotifications', 'adminEmail', e.target.value)}
-              isInvalid={!!errors['emailNotifications.adminEmail']}
+              placeholder="e.g., 587"
+              value={settingsData.emailSettings.port}
+              onChange={(e) => handleChange('emailSettings', 'port', e.target.value)}
+              onBlur={(e) => handleBlur('emailSettings', 'port', e.target.value)}
+              isInvalid={!!errors['emailSettings.port']}
               className="border-2"
             />
-            {errors['emailNotifications.adminEmail'] && (
-              <FormText className="text-danger">{errors['emailNotifications.adminEmail']}</FormText>
+            {errors['emailSettings.port'] && (
+              <FormText className="text-danger">{errors['emailSettings.port']}</FormText>
             )}
           </Form.Group>
         </Col>
       </Row>
+
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">SMTP User</Form.Label>
+            <FormControl
+              type="email"
+              placeholder="e.g., your-email@gmail.com"
+              value={settingsData.emailSettings.username}
+              onChange={(e) => handleChange('emailSettings', 'username', e.target.value)}
+              onBlur={(e) => handleBlur('emailSettings', 'username', e.target.value)}
+              isInvalid={!!errors['emailSettings.username']}
+              className="border-2"
+            />
+            {errors['emailSettings.username'] && (
+              <FormText className="text-danger">{errors['emailSettings.username']}</FormText>
+            )}
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">SMTP Password</Form.Label>
+            <FormControl
+              type="password"
+              placeholder="Enter SMTP password"
+              value={settingsData.emailSettings.password}
+              onChange={(e) => handleChange('emailSettings', 'password', e.target.value)}
+              onBlur={(e) => handleBlur('emailSettings', 'password', e.target.value)}
+              isInvalid={!!errors['emailSettings.password']}
+              className="border-2"
+            />
+            {errors['emailSettings.password'] && (
+              <FormText className="text-danger">{errors['emailSettings.password']}</FormText>
+            )}
+            <FormText className="text-muted">We store this encrypted. Leave blank to keep the current password.</FormText>
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">From Email</Form.Label>
+            <FormControl
+              type="email"
+              placeholder="e.g., noreply@photostudio.com"
+              value={settingsData.emailSettings.from_address}
+              onChange={(e) => handleChange('emailSettings', 'from_address', e.target.value)}
+              onBlur={(e) => handleBlur('emailSettings', 'from_address', e.target.value)}
+              isInvalid={!!errors['emailSettings.from_address']}
+              className="border-2"
+            />
+            {errors['emailSettings.from_address'] && (
+              <FormText className="text-danger">{errors['emailSettings.from_address']}</FormText>
+            )}
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">From Name</Form.Label>
+            <FormControl
+              placeholder="e.g., Photo Studio Management"
+              value={settingsData.emailSettings.from_name}
+              onChange={(e) => handleChange('emailSettings', 'from_name', e.target.value)}
+              onBlur={(e) => handleBlur('emailSettings', 'from_name', e.target.value)}
+              isInvalid={!!errors['emailSettings.from_name']}
+              className="border-2"
+            />
+            {errors['emailSettings.from_name'] && (
+              <FormText className="text-danger">{errors['emailSettings.from_name']}</FormText>
+            )}
+          </Form.Group>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col md={12}>
+          <div className="d-flex justify-content-end mb-4">
+            <Button
+              variant="primary"
+              onClick={handleSaveEmailSettings}
+              disabled={saving || isReadOnly}
+              className="px-4"
+            >
+              {saving ? (
+                <>
+                  <Spinner size="sm" className="me-2" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faSave} className="me-2" />
+                  Save Email Settings
+                </>
+              )}
+            </Button>
+          </div>
+        </Col>
+      </Row>
+
+      {/* Test Email Configuration Section */}
+      <div className="mt-5 pt-4 border-top">
+        <h5 className="mb-3">Test Email Configuration</h5>
+        <p className="text-muted mb-4">Test your email settings by sending a test email.</p>
+        
+        <Row>
+          <Col md={8}>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold">Test Email Address</Form.Label>
+              <FormControl
+                type="email"
+                placeholder="Enter email address to test"
+                value={testEmailAddress}
+                onChange={(e) => setTestEmailAddress(e.target.value)}
+                className="border-2"
+              />
+            </Form.Group>
+          </Col>
+          <Col md={4} className="d-flex align-items-end">
+            <Button
+              variant="primary"
+              onClick={handleSendTestEmail}
+              disabled={sendingTestEmail || isReadOnly}
+              className="w-100"
+            >
+              {sendingTestEmail ? (
+                <>
+                  <Spinner size="sm" className="me-2" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faPaperPlane} className="me-2" />
+                  Send Test Email
+                </>
+              )}
+            </Button>
+          </Col>
+        </Row>
+      </div>
+    </div>
+  )
+
+  const renderAppSettings = () => (
+    <div className="mb-5">
+      {/* Section Header */}
+      <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-primary border-2">
+        <FontAwesomeIcon icon={faCog} className="me-3 text-primary fs-4" />
+        <h4 className="mb-0 text-primary">App Settings</h4>
+      </div>
+
       <Row>
         <Col md={12}>
           <Form.Group className="mb-3">
-            <Form.Check
-              type="checkbox"
-              label="Enable email notifications for new orders"
-              checked={settingsData.emailNotifications.enableOrderNotifications}
-              onChange={(e) => handleChange('emailNotifications', 'enableOrderNotifications', e.target.checked)}
-              onBlur={(e) => handleBlur('emailNotifications', 'enableOrderNotifications', e.target.checked)}
-              className="fs-6"
+            <Form.Label className="fw-semibold">
+              Web URL
+              {autoSaving['appSettings.web_url'] && (
+                <Spinner size="sm" className="ms-2" variant="primary" />
+              )}
+              {autoSaved['appSettings.web_url'] && (
+                <FontAwesomeIcon icon={faCheckCircle} className="ms-2 text-success" />
+              )}
+            </Form.Label>
+            <FormControl
+              type="url"
+              placeholder="e.g., https://www.example.com"
+              value={settingsData.appSettings.web_url}
+              onChange={(e) => handleChange('appSettings', 'web_url', e.target.value)}
+              onBlur={(e) => handleBlur('appSettings', 'web_url', e.target.value)}
+              isInvalid={!!errors['appSettings.web_url']}
+              className="border-2"
             />
+            {errors['appSettings.web_url'] && (
+              <FormText className="text-danger">{errors['appSettings.web_url']}</FormText>
+            )}
+            <FormText className="text-muted">Enter the web URL for your application</FormText>
           </Form.Group>
         </Col>
       </Row>
@@ -444,6 +1183,7 @@ const Settings = () => {
               onBlur={(e) => handleBlur('currencyRegional', 'currency', e.target.value)}
               className="border-2"  
             >
+              <option value="INR">Indian Rupee (INR)</option>
               <option value="NZD">New Zealand Dollar (NZD)</option>
               <option value="USD">US Dollar (USD)</option>
               <option value="EUR">Euro (EUR)</option>
@@ -477,77 +1217,13 @@ const Settings = () => {
               onBlur={(e) => handleBlur('currencyRegional', 'timeZone', e.target.value)}
               className="border-2"
             >
+              <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
               <option value="Pacific/Auckland">Pacific/Auckland (NZDT/NZST)</option>
               <option value="UTC">UTC</option>
               <option value="America/New_York">America/New_York (EST/EDT)</option>
               <option value="Europe/London">Europe/London (GMT/BST)</option>
               <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
             </FormSelect>
-          </Form.Group>
-        </Col>
-      </Row>
-    </div>
-  )
-
-  const renderSecuritySettings = () => (
-    <div className="mb-5">
-      {/* Section Header */}
-      <div className="d-flex align-items-center mb-4 pb-3 border-bottom border-success border-2">
-        <FontAwesomeIcon icon={faShieldAlt} className="me-3 text-success fs-4" />
-        <h4 className="mb-0 text-success">Security Settings</h4>
-      </div>
-
-      <Row>
-        <Col md={6}>
-          <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">Session Timeout (minutes)</Form.Label>
-            <FormControl
-              type="number"
-              min="5"
-              max="480"
-              value={settingsData.security.sessionTimeout}
-              onChange={(e) => handleChange('security', 'sessionTimeout', parseInt(e.target.value) || 30)}
-              onBlur={(e) => handleBlur('security', 'sessionTimeout', parseInt(e.target.value) || 30)}
-              isInvalid={!!errors['security.sessionTimeout']}
-              className="border-2"
-            />
-            <FormText className="text-muted">Automatically log out inactive users after this period.</FormText>
-            {errors['security.sessionTimeout'] && (
-              <FormText className="text-danger">{errors['security.sessionTimeout']}</FormText>
-            )}
-          </Form.Group>
-        </Col>
-        <Col md={6}>
-          <Form.Group className="mb-3">
-            <Form.Label className="fw-semibold">Password Expiry (days)</Form.Label>
-            <FormControl
-              type="number"
-              min="30"
-              max="365"
-              value={settingsData.security.passwordExpiry}
-              onChange={(e) => handleChange('security', 'passwordExpiry', parseInt(e.target.value) || 90)}
-              onBlur={(e) => handleBlur('security', 'passwordExpiry', parseInt(e.target.value) || 90)}
-              isInvalid={!!errors['security.passwordExpiry']}
-              className="border-2"
-            />
-            <FormText className="text-muted">Force password change after this period.</FormText>
-            {errors['security.passwordExpiry'] && (
-              <FormText className="text-danger">{errors['security.passwordExpiry']}</FormText>
-            )}
-          </Form.Group>
-        </Col>
-      </Row>
-      <Row>
-        <Col md={12}>
-          <Form.Group className="mb-3">
-            <Form.Check
-              type="checkbox"
-              label="Enable Two-Factor Authentication for admin accounts"
-              checked={settingsData.security.enableTwoFactor}
-              onChange={(e) => handleChange('security', 'enableTwoFactor', e.target.checked)}
-              onBlur={(e) => handleBlur('security', 'enableTwoFactor', e.target.checked)}
-              className="fs-6"
-            />
           </Form.Group>
         </Col>
       </Row>
@@ -562,6 +1238,22 @@ const Settings = () => {
     )
   }
 
+  if (!canViewSettings) {
+    return (
+      <Container fluid className="py-5">
+        <Row className="justify-content-center">
+          <Col md={6} className="text-center">
+            <FontAwesomeIcon icon={faCog} className="text-muted mb-3" size="3x" />
+            <h4 className="text-muted">Access Restricted</h4>
+            <p className="text-muted">
+              You do not have permission to view application settings. Please contact your administrator if you need additional access.
+            </p>
+          </Col>
+        </Row>
+      </Container>
+    )
+  }
+
   return (
     <Container fluid>
       <Row>
@@ -569,59 +1261,72 @@ const Settings = () => {
           {/* Page Header */}
           <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
             <h2 className="mb-0 text-dark">Global Settings</h2>
-            <div className="ms-auto">
-              <Button 
-                variant="primary" 
-                size="lg" 
-                onClick={handleSaveAll}
-                disabled={saving}
-                className="px-4"
-              >
-                {saving ? (
-                  <>
-                    <Spinner size="sm" className="me-2" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <FontAwesomeIcon icon={faSave} className="me-2" />
-                    Save All Settings
-                  </>
-                )}
-              </Button>
-            </div>
+            {canEditSettings && (
+              <div className="ms-auto">
+                <Button 
+                  variant="primary" 
+                  size="lg" 
+                  onClick={handleSaveAll}
+                  disabled={saving}
+                  className="px-4"
+                >
+                  {saving ? (
+                    <>
+                      <Spinner size="sm" className="me-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <FontAwesomeIcon icon={faSave} className="me-2" />
+                      Save All Settings
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Settings Sections */}
           <div className="bg-white rounded-3 shadow-sm p-4">
-            {renderTaxPricingSettings()}
-            {renderBusinessInfo()}
-            {renderEmailNotifications()}
-            {renderCurrencyRegional()}
-            {renderSecuritySettings()}
+            <fieldset disabled={isReadOnly} style={{ border: 'none', padding: 0, margin: 0 }}>
+              {renderBusinessInfo()}
+              {renderInvoiceSettings()}
+              {renderEmailSettings()}
+              {renderAppSettings()}
+              {renderCurrencyRegional()}
+            </fieldset>
             
             {/* Bottom Save Button */}
-            <div className="text-center mt-4 pt-4 border-top">
-              <Button 
-                variant="primary" 
-                size="lg" 
-                onClick={handleSaveAll}
-                disabled={saving}
-                className="px-5"
-              >
-                {saving ? (
-                  <>
-                    <Spinner size="sm" className="me-2" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <FontAwesomeIcon icon={faSave} className="me-2" />
-                    Save All Settings
-                  </>
-                )}
-              </Button>
-            </div>
+            {canEditSettings && (
+              <div className="text-center mt-4 pt-4 border-top">
+                <Button 
+                  variant="primary" 
+                  size="lg" 
+                  onClick={handleSaveAll}
+                  disabled={saving}
+                  className="px-5"
+                >
+                  {saving ? (
+                    <>
+                      <Spinner size="sm" className="me-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <FontAwesomeIcon icon={faSave} className="me-2" />
+                      Save All Settings
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            {!canEditSettings && (
+              <div className="text-center mt-4 pt-4 border-top">
+                <Alert variant="info" className="mb-0">
+                  You have read-only access to settings.
+                </Alert>
+              </div>
+            )}
           </div>
         </Col>
       </Row>

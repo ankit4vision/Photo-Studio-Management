@@ -1,254 +1,151 @@
-# 📸 Photo Studio Admin Management System
+# 📸 Photo Studio Admin Management System — Implementation Snapshot
 
-**Tech Stack:**
+This document replaces the legacy specification with an up-to-date view of the codebase as it exists **January 2026**. It focuses on actual behaviour, data sources, and the gaps that still need integration work.
 
-* Frontend: React + Vite + JSX 
-* Backend: PHP Laravel (REST API)
-* Auth: JWT
-* Architecture: Multi-Branch, Role-Based Access
+---
 
+## 🧱 Platform Overview
 
-## 🧩 MODULES OVERVIEW
+| Layer        | Details                                                                 |
+|--------------|-------------------------------------------------------------------------| 
+| Frontend     | React 18 + Vite, React-Bootstrap, CoreUI components, FontAwesome icons  |
+| State        | Local component state, React Context for auth, mock JSON data fallback  |
+| Backend      | Laravel REST API planned; only auth endpoints currently wired           |
+| Auth         | JWT stored in `localStorage`; enhanced error toasts & logging           |
+| PDF Export   | Custom HTML → `window.print()` utilities in `src/utils/pdfExport.js`    |
+
+### Data Sources
+- **Auth**: points to configured API (expects `/auth/login`).
+- **Customers / Orders / Branches / Packages**: default to mock JSON in `src/mock/` with service-layer fallbacks when the API call fails.
+- **New orders**: stored in-memory inside `ordersMockData` for the current session (no persistence across refreshes).
+
+---
+
+## 🚦 Module Health Snapshot
+
+| Module            | Status | Notes |
+|-------------------|--------|-------|
+| Authentication    | 🟡  | Login wired to API with robust error handling. Role management UI not implemented. |
+| Photographer Mgmt (Customers) | 🟢  | Complete UI overhaul for photographers, list + modal + PDF export. Uses mock data. |
+| Orders            | 🟡  | Create + edit (multi-package) working with mock data. Needs real API wiring. |
+| Branches          | 🟡  | Statistics built from photographer dataset. CRUD still mock-only. |
+| Packages          | 🟡  | Mock package catalogue, exposed in orders form. CRUD calls fall back to mock. |
+| Payments/Transactions | 🔴  | Placeholder pages only; services exist but rely on mock skeletons. |
+| Reports / Settings | 🔴  | Stubs / legacy CoreUI pages. Not aligned with current data model. |
+
+Legend: 🟢 Complete (mock OK) · 🟡 Functional but awaiting real API · 🔴 Needs implementation.
+
+---
+
+## 🔍 Detailed Module Notes
 
 ### 1. Authentication & Roles
+- **UX**: Improved login feedback (`ToastProvider`, descriptive toasts, troubleshooting tips).
+- **State**: JWT retained in `localStorage` via `AuthContext`.
+- **Gaps**: Role-based routing placeholders exist (`PermissionRoute`) but role data not populated from backend.
 
-**Purpose:** Secure access with user roles (Admin, Manager, Staff)
+### 2. Photographer Management (Customers)
+- **List View** (`views/customers/CustomersList.jsx`):
+  - Converted from customers to photographers with compact layout, responsive table, branch indicator (L/V).
+  - Columns show Total/Paid/Remaining amounts, Services count, joined date.
+  - PDF exports: full list + single photographer (beautified HTML-based design).
+- **Details Modal**: Handles photographer stats, cards for Total/Paid/Remaining amounts, safe null checks.
+- **Data**: `photographers.json` + `customerService` mock create/update flows.
 
-**Frontend Pages:**
+### 3. Orders
+- **List** (`OrdersList.jsx`):
+  - Actions: View, **new** Edit, PDF export (invoice-style).
+  - Customer names now resolved (`customer_name` stored on order, fallback via `customer` object).
+- **Form** (`OrderForm.jsx` + `OrderFormView.jsx`):
+  - Multi-select package picker, automatic price/qty population.
+  - Supports single add and bulk add modes.
+  - Edit flow now normalises legacy mock structure → pre-fills customer/branch/dates/items.
+  - Validation ensures customer/branch/date and at least one item.
+- **Service layer** (`orderService.js`):
+  - API call with graceful mock fallback.
+  - `createOrder` augments order with customer info, updates `ordersMockData`, and increments customer totals (services count respects number of items).
+  - **TODO**: Persist new order to backend once endpoints exist; update stats dashboard accordingly.
 
-* `/login`
-* `/profile`
-* `/users/list`
-* `/users/form`
+### 4. Branches
+- **BranchesList**: uses photographer dataset to compute revenue, customers, and services per branch. Cards + table reflect mock data.
+- **Branch service**: CRUD methods fall back to `branches.json` when API fails.
 
-**Backend API Endpoints:**
+### 5. Packages
+- Mock dataset (`packages.json`) includes 20 photographer-centric services.
+- Package service delivers fallback CRUD to maintain UI functionality.
+- Orders form consumes packages to auto-populate pricing.
 
-| Method | Endpoint       | Description          |
-| ------ | -------------- | -------------------- |
-| POST   | `/auth/login`  | Login and return JWT |
-| POST   | `/auth/logout` | Logout user          |
-| GET    | `/auth/me`     | Fetch logged-in user |
-| GET    | `/users`       | List users           |
-| POST   | `/users`       | Create user          |
-| PUT    | `/users/{id}`  | Update user          |
-| DELETE | `/users/{id}`  | Delete user          |
+### 6. PDF Utilities (`utils/pdfExport.js`)
+- `exportPhotographersToPDF`, `exportSinglePhotographerToPDF`, `exportOrderToPDF` deliver polished printable documents.
+- Based on HTML templates + `window.print()` (no external dependency yet). Conversion to jsPDF remains optional future work.
 
-**User Fields:**
-`id`, `name`, `email`, `mobile`, `password`, `role` (admin/manager/staff), `branch_id`, `status`, `created_at`
-
----
-
-### 2. Branch Management
-
-**Frontend Pages:**
-
-* `/branches/list`
-* `/branches/form`
-
-**Backend API Endpoints:**
-
-| Method | Endpoint         | Description   |
-| ------ | ---------------- | ------------- |
-| GET    | `/branches`      | List branches |
-| POST   | `/branches`      | Add branch    |
-| PUT    | `/branches/{id}` | Update branch |
-| DELETE | `/branches/{id}` | Delete branch |
-
-**Fields:**
-`id`, `branch_name`, `branch_code`, `address`, `city`, `contact_number`, `email`, `status`
+### 7. Miscellaneous Improvements
+- Enhanced logging & error handling around Axios client (`config/apiClient.js`).
+- Toast system centralised in `ToastProvider.jsx` with success/error helpers.
+- Mock service pattern standardised (try API → fallback to mock generator → return structured `{ success, data }`).
 
 ---
 
-### 3. Customer Management
+## 🧪 Known Limitations & Next Steps
 
-**Frontend Pages:**
+1. **API Integration**
+   - Wire `orderService`, `customerService`, `branchService`, etc., to Laravel endpoints once available.
+   - Persist order creation and updates server-side.
 
-* `/customers/list`
-* `/customers/form`
-* `/customers/view/{id}`
+2. **State Synchronisation**
+   - Orders created during a session live only in-memory; consider local storage or optimistic UI strategy until backend is ready.
 
-**Backend API Endpoints:**
+3. **Payments & Transactions**
+   - Views are placeholders; services must be extended beyond skeleton functions.
+   - Wallet balance currently derived from mock totals only.
 
-| Method | Endpoint          | Description           |
-| ------ | ----------------- | --------------------- |
-| GET    | `/customers`      | List all customers    |
-| POST   | `/customers`      | Create customer       |
-| GET    | `/customers/{id}` | View customer details |
-| PUT    | `/customers/{id}` | Update customer       |
-| DELETE | `/customers/{id}` | Delete customer       |
+4. **Role-Based Access**
+   - Implement role fetch (`/auth/me`) and adjust menu visibility / routing accordingly.
 
-**Fields:**
-`id`, `branch_id`, `name`, `mobile`, `email`, `address`, `dob`, `anniversary_date`, `wallet_balance`, `total_orders`, `status`, `created_by`, `created_at`
+5. **Testing**
+   - No unit/integration tests yet. Introduce vitest/react-testing-library for critical flows (auth, orders form, PDF utils).
 
-**Extra Functionality:**
-
-* Customer ledger view (orders + transactions)
-* Wallet summary
+6. **Design Consistency**
+   - Some legacy CoreUI pages remain untouched (reports, settings). Align styling with new sections when those modules are addressed.
 
 ---
 
-### 4. Package Management
+## 🚀 Developer Quick Start
 
-**Frontend Pages:**
+```bash
+# 1. Install dependencies
+npm install
 
-* `/packages/list`
-* `/packages/form`
+# 2. Run development server
+npm run dev
 
-**Backend API Endpoints:**
-
-| Method | Endpoint         | Description       |
-| ------ | ---------------- | ----------------- |
-| GET    | `/packages`      | List all packages |
-| POST   | `/packages`      | Add package       |
-| PUT    | `/packages/{id}` | Update package    |
-| DELETE | `/packages/{id}` | Delete package    |
-
-**Fields:**
-`id`, `package_name`, `package_type` (Album / PhotoShoot / Editing / Video), `default_price`, `description`, `status`
-
----
-
-### 5. Order Management
-
-**Frontend Pages:**
-
-* `/orders/list`
-* `/orders/form`
-* `/orders/view/{id}`
-
-**Backend API Endpoints:**
-
-| Method | Endpoint       | Description      |
-| ------ | -------------- | ---------------- |
-| GET    | `/orders`      | List orders      |
-| POST   | `/orders`      | Create new order |
-| GET    | `/orders/{id}` | View order       |
-| PUT    | `/orders/{id}` | Update order     |
-| DELETE | `/orders/{id}` | Delete order     |
-
-**Order Fields:**
-`id`, `customer_id`, `branch_id`, `order_date`, `due_date`, `flat_discount`, `total_amount`, `paid_amount`, `balance_amount`, `status`
-
-**Order Items (Multiple Packages):**
-
-| Field          | Description                    |
-| -------------- | ------------------------------ |
-| `id`           | Primary key                    |
-| `order_id`     | Linked order                   |
-| `package_id`   | Selected package               |
-| `package_name` | Auto-filled                    |
-| `price`        | Default from package, editable |
-| `qty`          | Quantity                       |
-| `amount`       | Calculated (price × qty)       |
-
-**Logic:**
-
-* Selecting a package auto-fills its price but allows editing
-* Supports multiple packages per order
-* Flat discount applies to total bill
-
----
-
-### 6. Transactions (Wallet / Credit-Debit)
-
-**Frontend Pages:**
-
-* `/transactions/list`
-* `/transactions/form`
-* `/customers/{id}/wallet`
-
-**Backend API Endpoints:**
-
-| Method | Endpoint             | Description        |
-| ------ | -------------------- | ------------------ |
-| GET    | `/transactions`      | List transactions  |
-| POST   | `/transactions`      | Add transaction    |
-| GET    | `/transactions/{id}` | View transaction   |
-| PUT    | `/transactions/{id}` | Update transaction |
-
-**Fields:**
-`id`, `customer_id`, `order_id (nullable)`, `branch_id`, `transaction_date`, `type` (`credit` or `debit`), `amount`, `remarks`, `created_by`
-
-**Logic:**
-
-* Credit = Money In (advance, payment received)
-* Debit = Money Out (order, refund, due)
-* Auto-created on order/payment actions
-* Manual add option for adjustments
-
----
-
-### 7. Payment Management
-
-**Linked to Transactions**
-
-**Features:**
-
-* Partial / full payments
-* Advance balance handling
-* Payment methods: Cash / UPI / Card
-
-**Endpoints:**
-
-| Method | Endpoint                     | Description              |
-| ------ | ---------------------------- | ------------------------ |
-| POST   | `/payments`                  | Record payment for order |
-| GET    | `/payments/order/{order_id}` | View order payments      |
-
----
-
-### 8. Reports
-
-**Frontend Pages:**
-
-* `/reports/sales`
-* `/reports/ledger`
-* `/reports/branch`
-* `/reports/staff`
-
-**Reports:**
-
-* Branch-wise Sales Summary
-* Customer Ledger
-* Order Summary
-* Income vs Due
-* Staff Performance
-
----
-
-### 9. Settings
-
-* `/settings/general`
-* `/settings/branches`
-* `/settings/invoice`
-
-**Global Settings Fields:**
-`currency`, `tax_percentage`, `company_name`, `logo`, `invoice_prefix`
-
----
-
-## 💰 Wallet Logic
-
-**Wallet Formula:**
-
-```
-wallet_balance = total_credit - total_debit
+# 3. Lint (optional)
+npm run lint
 ```
 
-**Examples:**
-
-* Order Created → Debit = order_amount
-* Payment Received → Credit = paid_amount
-* Advance Added → Credit = amount
-* Refund → Debit = amount
+Environment variables live in `admin/env.example`. Update API base URL to point to the Laravel backend when ready.
 
 ---
 
-## 🔄 Example Workflow
+## 📦 Mock Data Cheat Sheet
 
-1. Admin adds **Branches** and **Users**
-2. Staff adds **Packages**
-3. Customer registered under branch
-4. Create **Order** → Select multiple packages → Adjust price → Apply flat discount
-5. Record **Payment** → Auto-creates transaction
-6. View **Customer Wallet / Ledger** anytime
+| File | Purpose |
+|------|---------|
+| `src/mock/photographers.json` | Primary dataset for photographer management + branch stats |
+| `src/mock/orders.json`        | Seed orders list & supports order edit normalisation       |
+| `src/mock/packages.json`      | Package catalogue used in order form multi-select          |
+| `src/mock/branches.json`      | Branch fallback data                                       |
+
+Use `customerService.*` and `orderService.*` helpers to generate consistent mock responses in new modules.
+
+---
+
+## 📈 Recent Highlights
+- Photographer table redesigned: compact actions, no horizontal scroll, branch indicator integrated into name column.
+- Customer modal displays Total/Paid/Remaining and gracefully handles missing data.
+- Orders form robust multi-select with automatic price/qty, pre-filling edits, and PDF invoice export.
+- Order creation updates linked customer statistics (services count, amounts, last order date).
+
+---
+
+This document should be treated as the authoritative snapshot of the current frontend implementation. Update after major feature work or when real API integration replaces mock fallbacks.

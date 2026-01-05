@@ -1,96 +1,136 @@
 // Profile Management Service
-import apiService from '../api'
+import apiClient from '../config/apiClient'
 import { API_ENDPOINTS } from '../constants/api'
-import profileMockData from '../mock/profile.json'
-
-// Mock delay function
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+import { handleApiError } from '../utils/errorHandler'
 
 class ProfileService {
+  // Normalize user data from API to frontend format
+  normalizeProfileData(user) {
+    if (!user) return null
+    
+    // Use avatar_url if available (full URL), otherwise use avatar (relative path)
+    // Priority: avatar_url > avatar
+    let avatarUrl = null
+    if (user.avatar_url) {
+      avatarUrl = user.avatar_url
+    } else if (user.avatar) {
+      // If avatar is a relative path, convert to full URL
+      if (user.avatar.startsWith('avatars/') || user.avatar.startsWith('/avatars/')) {
+        // This shouldn't happen if backend is working correctly, but handle it
+        const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+        avatarUrl = `${baseURL}/storage/${user.avatar.replace(/^\/?/, '')}`
+      } else if (user.avatar.startsWith('http')) {
+        avatarUrl = user.avatar
+      } else {
+        avatarUrl = user.avatar
+      }
+    }
+    
+    return {
+      id: user.id,
+      firstName: user.first_name || user.firstName,
+      lastName: user.last_name || user.lastName,
+      email: user.email,
+      phone: user.phone || '',
+      address: user.address || '',
+      city: user.city || '',
+      state: user.state || '',
+      zipCode: user.zip_code || user.zipCode || '',
+      country: user.country || '',
+      bio: user.bio || '',
+      avatar: avatarUrl, // Always use full URL
+      dateOfBirth: user.date_of_birth || user.dateOfBirth || '',
+      gender: user.gender || '',
+      status: user.status || 'active',
+      roles: user.roles || [],
+      createdAt: user.created_at || user.createdAt,
+      updatedAt: user.updated_at || user.updatedAt,
+    }
+  }
+
+  // Serialize profile data for API
+  serializeProfileData(data) {
+    // Helper to convert empty strings to null
+    const toNullIfEmpty = (value) => {
+      if (value === '' || value === undefined) return null
+      return value
+    }
+    
+    return {
+      first_name: data.firstName || data.first_name,
+      last_name: data.lastName || data.last_name,
+      email: data.email,
+      phone: toNullIfEmpty(data.phone),
+      address: toNullIfEmpty(data.address),
+      city: toNullIfEmpty(data.city),
+      state: toNullIfEmpty(data.state),
+      zip_code: toNullIfEmpty(data.zipCode || data.zip_code),
+      country: toNullIfEmpty(data.country),
+      bio: toNullIfEmpty(data.bio),
+      avatar: data.avatar,
+      date_of_birth: toNullIfEmpty(data.dateOfBirth || data.date_of_birth),
+      gender: toNullIfEmpty(data.gender),
+    }
+  }
+
   // Get current user profile
   async getProfile() {
     try {
-      // For development, return mock data
-      return {
-        success: true,
-        data: profileMockData.profile,
-        message: 'Profile fetched successfully'
+      const response = await apiClient.get(API_ENDPOINTS.USERS.GET_PROFILE)
+      
+      if (response.data?.success && response.data?.data) {
+        const normalizedData = this.normalizeProfileData(response.data.data)
+        
+        // Debug log
+        if (import.meta.env.DEV) {
+          console.log('[ProfileService] Profile fetched:', {
+            raw: response.data.data,
+            normalized: normalizedData,
+            avatar_url: response.data.data.avatar_url,
+            avatar: response.data.data.avatar
+          })
+        }
+        
+        return {
+          success: true,
+          data: normalizedData,
+          message: 'Profile fetched successfully'
+        }
       }
       
-      // Uncomment for real API integration
-      // const response = await apiService.get(API_ENDPOINTS.USERS.GET_PROFILE)
-      // return {
-      //   success: true,
-      //   data: response.data,
-      //   message: 'Profile fetched successfully'
-      // }
-    } catch (error) {
-      console.error('Error fetching profile:', error)
       return {
         success: false,
         data: null,
-        message: error.response?.data?.message || 'Failed to fetch profile'
+        message: 'Invalid response format'
       }
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+      return handleApiError(error)
     }
   }
 
   // Update current user profile
   async updateProfile(profileData) {
     try {
-      // For development, simulate successful update
-      const updatedProfile = {
-        ...profileMockData.profile,
-        ...profileData,
-        updatedAt: new Date().toISOString()
+      const payload = this.serializeProfileData(profileData)
+      const response = await apiClient.put(API_ENDPOINTS.USERS.UPDATE_PROFILE, payload)
+      
+      if (response.data?.success && response.data?.data) {
+        return {
+          success: true,
+          data: this.normalizeProfileData(response.data.data),
+          message: response.data.message || 'Profile updated successfully'
+        }
       }
       
       return {
-        success: true,
-        data: updatedProfile,
-        message: 'Profile updated successfully'
+        success: false,
+        data: null,
+        message: 'Invalid response format'
       }
-      
-      // Uncomment for real API integration
-      // const response = await apiService.put(API_ENDPOINTS.USERS.UPDATE_PROFILE, profileData)
-      // return {
-      //   success: true,
-      //   data: response.data,
-      //   message: 'Profile updated successfully'
-      // }
     } catch (error) {
       console.error('Error updating profile:', error)
-      return {
-        success: false,
-        data: null,
-        message: error.response?.data?.message || 'Failed to update profile'
-      }
-    }
-  }
-
-  // Change user password
-  async changePassword(passwordData) {
-    try {
-      // For development, simulate successful password change
-      return {
-        success: true,
-        data: { message: 'Password changed successfully' },
-        message: 'Password changed successfully'
-      }
-      
-      // Uncomment for real API integration
-      // const response = await apiService.put(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, passwordData)
-      // return {
-      //   success: true,
-      //   data: response.data,
-      //   message: 'Password changed successfully'
-      // }
-    } catch (error) {
-      console.error('Error changing password:', error)
-      return {
-        success: false,
-        data: null,
-        message: error.response?.data?.message || 'Failed to change password'
-      }
+      return handleApiError(error)
     }
   }
 
@@ -100,43 +140,109 @@ class ProfileService {
       const formData = new FormData()
       formData.append('avatar', file)
 
-      const response = await apiService.post(API_ENDPOINTS.USERS.UPLOAD_AVATAR, formData, {
+      const response = await apiClient.post(API_ENDPOINTS.USERS.UPLOAD_AVATAR, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+        },
       })
-      
+
+      if (response.data.success) {
+        return {
+          success: true,
+          data: this.normalizeProfileData(response.data.data),
+          message: response.data.message || 'Avatar uploaded successfully',
+        }
+      }
+
       return {
-        success: true,
-        data: response.data,
-        message: 'Avatar uploaded successfully'
+        success: false,
+        message: response.data.message || 'Failed to upload avatar',
       }
     } catch (error) {
       console.error('Error uploading avatar:', error)
-      return {
-        success: false,
-        data: null,
-        message: error.response?.data?.message || 'Failed to upload avatar'
-      }
+      return handleApiError(error)
     }
   }
 
   // Delete profile avatar
   async deleteAvatar() {
     try {
-      const response = await apiService.delete(API_ENDPOINTS.USERS.UPLOAD_AVATAR)
+      const response = await apiClient.delete(API_ENDPOINTS.USERS.DELETE_AVATAR)
+
+      if (response.data.success) {
+        return {
+          success: true,
+          data: this.normalizeProfileData(response.data.data),
+          message: response.data.message || 'Avatar deleted successfully',
+        }
+      }
+
       return {
-        success: true,
-        data: response.data,
-        message: 'Avatar deleted successfully'
+        success: false,
+        message: response.data.message || 'Failed to delete avatar',
       }
     } catch (error) {
       console.error('Error deleting avatar:', error)
-      return {
-        success: false,
-        data: null,
-        message: error.response?.data?.message || 'Failed to delete avatar'
+      return handleApiError(error)
+    }
+  }
+
+  // Change user password
+  async changePassword(passwordData) {
+    try {
+      const payload = {
+        current_password: passwordData.currentPassword || passwordData.current_password,
+        new_password: passwordData.newPassword || passwordData.new_password,
+        new_password_confirmation: passwordData.confirmPassword || passwordData.new_password_confirmation || passwordData.newPassword || passwordData.new_password,
       }
+      
+      const response = await apiClient.put(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, payload)
+      
+      // Backend returns { message: "..." } on success
+      if (response.data?.message) {
+        return {
+          success: true,
+          data: response.data,
+          message: response.data.message
+        }
+      }
+      
+      return {
+        success: true,
+        data: response.data,
+        message: 'Password changed successfully'
+      }
+    } catch (error) {
+      console.error('Error changing password:', error)
+      const errorResponse = handleApiError(error)
+      
+      // Map backend validation errors to frontend format
+      if (errorResponse.errors && typeof errorResponse.errors === 'object') {
+        const mappedErrors = {}
+        Object.keys(errorResponse.errors).forEach(key => {
+          // Map backend field names to frontend field names
+          if (key === 'current_password') {
+            mappedErrors.currentPassword = Array.isArray(errorResponse.errors[key]) 
+              ? errorResponse.errors[key][0] 
+              : errorResponse.errors[key]
+          } else if (key === 'new_password') {
+            mappedErrors.newPassword = Array.isArray(errorResponse.errors[key]) 
+              ? errorResponse.errors[key][0] 
+              : errorResponse.errors[key]
+          } else if (key === 'new_password_confirmation') {
+            mappedErrors.confirmPassword = Array.isArray(errorResponse.errors[key]) 
+              ? errorResponse.errors[key][0] 
+              : errorResponse.errors[key]
+          } else {
+            mappedErrors[key] = Array.isArray(errorResponse.errors[key]) 
+              ? errorResponse.errors[key][0] 
+              : errorResponse.errors[key]
+          }
+        })
+        errorResponse.errors = mappedErrors
+      }
+      
+      return errorResponse
     }
   }
 

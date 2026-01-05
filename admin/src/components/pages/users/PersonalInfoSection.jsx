@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Card, Button, Spinner } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUser, faPencil, faSave, faX } from '@fortawesome/free-solid-svg-icons'
@@ -23,6 +23,21 @@ const PersonalInfoSection = ({
   })
   const [errors, setErrors] = useState({})
 
+  // Update formData when personalData prop changes (but not when editing)
+  useEffect(() => {
+    if (!isEditing && personalData) {
+      setFormData({
+        firstName: personalData.firstName || '',
+        lastName: personalData.lastName || '',
+        email: personalData.email || '',
+        phone: personalData.phone || '',
+        bio: personalData.bio || '',
+        dateOfBirth: personalData.dateOfBirth || '',
+        gender: personalData.gender || '',
+      })
+    }
+  }, [personalData, isEditing])
+
   const handleEditClick = () => {
     setIsEditing(true)
     setErrors({})
@@ -30,21 +45,27 @@ const PersonalInfoSection = ({
 
   const handleCancelEdit = () => {
     setIsEditing(false)
+    // Reset form data to original personalData
     setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      bio: '',
-      dateOfBirth: '',
-      gender: '',
-      ...personalData
+      firstName: personalData.firstName || '',
+      lastName: personalData.lastName || '',
+      email: personalData.email || '',
+      phone: personalData.phone || '',
+      bio: personalData.bio || '',
+      dateOfBirth: personalData.dateOfBirth || '',
+      gender: personalData.gender || '',
     })
     setErrors({})
   }
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    // For date fields, ensure proper format
+    if (field === 'dateOfBirth' && value) {
+      // Date input already provides YYYY-MM-DD format, so just use it as is
+      setFormData(prev => ({ ...prev, [field]: value }))
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }))
+    }
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
@@ -97,6 +118,8 @@ const PersonalInfoSection = ({
         setErrors({})
       } catch (error) {
         console.error('Error saving personal info:', error)
+        // Re-throw error so parent can handle it
+        throw error
       }
     }
   }
@@ -267,11 +290,23 @@ const PersonalInfoSection = ({
             </div>
             <div className="col-md-6 mb-3">
               <strong>Date of Birth:</strong>
-              <p className="text-muted mb-0">{personalData.dateOfBirth || 'Not provided'}</p>
+              <p className="text-muted mb-0">
+                {personalData.dateOfBirth 
+                  ? new Date(personalData.dateOfBirth).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })
+                  : 'Not provided'}
+              </p>
             </div>
             <div className="col-md-6 mb-3">
               <strong>Gender:</strong>
-              <p className="text-muted mb-0">{personalData.gender || 'Not provided'}</p>
+              <p className="text-muted mb-0">
+                {personalData.gender 
+                  ? personalData.gender.charAt(0).toUpperCase() + personalData.gender.slice(1).replace(/-/g, ' ')
+                  : 'Not provided'}
+              </p>
             </div>
             <div className="col-12 mb-3">
               <strong>Bio:</strong>

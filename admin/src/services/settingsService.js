@@ -45,6 +45,51 @@ class SettingsService {
     }
   }
 
+  // Send test email
+  async sendTestEmail(email) {
+    try {
+      // Validate email format before sending
+      if (!email || !email.trim()) {
+        return {
+          success: false,
+          message: 'Email address is required'
+        }
+      }
+
+      const emailRegex = /\S+@\S+\.\S+/
+      if (!emailRegex.test(email.trim())) {
+        return {
+          success: false,
+          message: 'Please enter a valid email address'
+        }
+      }
+
+      const response = await apiClient.post('/settings/test-email', { 
+        email: email.trim() 
+      })
+      
+      return {
+        success: true,
+        data: response.data,
+        message: response.data?.message || 'Test email sent successfully'
+      }
+    } catch (error) {
+      const errorResponse = handleApiError(error)
+      
+      // Map validation errors to user-friendly messages
+      if (errorResponse.status === 422 && errorResponse.errors) {
+        const errorMessages = Object.values(errorResponse.errors).flat()
+        return {
+          success: false,
+          message: errorMessages.join(', ') || 'Invalid email address',
+          errors: errorResponse.errors
+        }
+      }
+      
+      return errorResponse
+    }
+  }
+
   // Get setting by ID
   async getSettingById(id) {
     try {
@@ -60,15 +105,47 @@ class SettingsService {
   }
 
   // Get setting by key
-  async getSettingByKey(key) {
+  async getSettingByKey(key, section, suppressNotFoundError = false) {
     try {
-      const response = await apiClient.get(`/global-settings/key/${encodeURIComponent(key)}`)
+      const params = {}
+      if (section) {
+        params.section = section
+      }
+
+      const response = await apiClient.get(`/global-settings/key/${encodeURIComponent(key)}`, {
+        params,
+      })
+
       return {
         success: true,
         data: response.data,
-        message: 'Setting fetched successfully'
+        message: 'Setting fetched successfully',
       }
     } catch (error) {
+      // For 404 errors, if suppressNotFoundError is true, return a clean not found response
+      // This is expected when checking if a setting exists before creating it
+      if (suppressNotFoundError) {
+        // Handle 404 from response
+        if (error.response?.status === 404) {
+          return {
+            success: false,
+            data: null,
+            status: 404,
+            error: 'not_found',
+            message: 'Setting not found'
+          }
+        }
+        // Handle network errors or errors without response (also treat as not found for settings lookup)
+        if (!error.response) {
+          return {
+            success: false,
+            data: null,
+            status: 404,
+            error: 'not_found',
+            message: 'Setting not found'
+          }
+        }
+      }
       return handleApiError(error)
     }
   }
@@ -76,7 +153,15 @@ class SettingsService {
   // Create new setting
   async createSetting(settingData) {
     try {
-      const response = await apiClient.post('/global-settings/', settingData)
+      const payload = { ...settingData }
+      if (!payload.section) {
+        payload.section = 'general'
+      }
+      if (payload.value === undefined || payload.value === null) {
+        payload.value = ''
+      }
+
+      const response = await apiClient.post('/global-settings/', payload)
       return {
         success: true,
         data: response.data,
@@ -102,13 +187,18 @@ class SettingsService {
   }
 
   // Update setting by key
-  async updateSettingByKey(key, settingData) {
+  async updateSettingByKey(key, settingData, section) {
     try {
-      const response = await apiClient.put(`/global-settings/key/${encodeURIComponent(key)}`, settingData)
+      const payload = { ...settingData }
+      if (section) {
+        payload.section = section
+      }
+
+      const response = await apiClient.put(`/global-settings/key/${encodeURIComponent(key)}`, payload)
       return {
         success: true,
         data: response.data,
-        message: 'Setting updated successfully'
+        message: 'Setting updated successfully',
       }
     } catch (error) {
       return handleApiError(error)
@@ -117,32 +207,31 @@ class SettingsService {
 
   // Save or update a single setting by key (used for auto-save on change)
   async saveSetting(key, section, value) {
-    try {
-      // First, try to get the setting to check if it exists
-      const getResponse = await this.getSettingByKey(key)
-      
-      if (getResponse.success && getResponse.data) {
-        // Setting exists - update it
-        return await this.updateSettingByKey(key, { value: String(value) })
-      } else {
-        // Setting doesn't exist - create it
-        return await this.createSetting({
-          key: key,
-          section: section,
-          value: String(value)
-        })
-      }
-    } catch (error) {
-      // If getSettingByKey fails with 404, create the setting
-      if (error.response?.status === 404) {
-        return await this.createSetting({
-          key: key,
-          section: section,
-          value: String(value)
-        })
-      }
-      return handleApiError(error)
+    const normalizedSection = section || 'general'
+    // For boolean values, convert to 'true'/'false'
+    let normalizedValue
+    if (typeof value === 'boolean') {
+      normalizedValue = value ? 'true' : 'false'
+    } else {
+      normalizedValue = value === undefined || value === null ? '' : String(value)
     }
+
+    // Suppress 404 error logging when checking if setting exists (expected behavior)
+    const lookup = await this.getSettingByKey(key, normalizedSection, true)
+
+    if (lookup.success && lookup.data) {
+      return this.updateSettingByKey(key, { value: normalizedValue }, normalizedSection)
+    }
+
+    if (lookup.status === 404 || lookup.error === 'not_found') {
+      return this.createSetting({
+        key,
+        section: normalizedSection,
+        value: normalizedValue,
+      })
+    }
+
+    return lookup
   }
 
   // Delete setting by ID
@@ -160,13 +249,20 @@ class SettingsService {
   }
 
   // Delete setting by key
-  async deleteSettingByKey(key) {
+  async deleteSettingByKey(key, section) {
     try {
-      await apiClient.delete(`/global-settings/key/${encodeURIComponent(key)}`)
+      const params = {}
+      if (section) {
+        params.section = section
+      }
+
+      await apiClient.delete(`/global-settings/key/${encodeURIComponent(key)}`, {
+        params,
+      })
       return {
         success: true,
         data: null,
-        message: 'Setting deleted successfully'
+        message: 'Setting deleted successfully',
       }
     } catch (error) {
       return handleApiError(error)
@@ -179,25 +275,34 @@ class SettingsService {
     try {
       // Define all settings that should exist with their mapping
       const settingsMapping = [
-        // Tax & Pricing
-        { key: 'defaultGstRate', section: 'Tax & Pricing', formPath: ['taxPricing', 'defaultGstRate'], type: 'number' },
-        { key: 'defaultProfitMargin', section: 'Tax & Pricing', formPath: ['taxPricing', 'defaultProfitMargin'], type: 'number' },
         // Business Information
-        { key: 'businessName', section: 'Business Information', formPath: ['businessInfo', 'businessName'], type: 'string' },
+        { key: 'company_name', section: 'Business Information', formPath: ['businessInfo', 'company_name'], type: 'string' },
+        { key: 'business_email', section: 'Business Information', formPath: ['businessInfo', 'business_email'], type: 'string' },
+        { key: 'business_phone', section: 'Business Information', formPath: ['businessInfo', 'business_phone'], type: 'string' },
+        { key: 'business_website', section: 'Business Information', formPath: ['businessInfo', 'business_website'], type: 'string' },
         { key: 'gstNumber', section: 'Business Information', formPath: ['businessInfo', 'gstNumber'], type: 'string' },
         { key: 'businessAddress', section: 'Business Information', formPath: ['businessInfo', 'businessAddress'], type: 'string' },
-        // Email & Notification
-        { key: 'supportEmail', section: 'Email & Notification', formPath: ['emailNotifications', 'supportEmail'], type: 'string' },
-        { key: 'adminEmail', section: 'Email & Notification', formPath: ['emailNotifications', 'adminEmail'], type: 'string' },
-        { key: 'enableOrderNotifications', section: 'Email & Notification', formPath: ['emailNotifications', 'enableOrderNotifications'], type: 'boolean' },
+        // Invoice Settings
+        { key: 'invoice_prefix', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_prefix'], type: 'string' },
+        { key: 'invoice_business_name', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_business_name'], type: 'string' },
+        { key: 'invoice_business_website', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_business_website'], type: 'string' },
+        { key: 'invoice_business_address', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_business_address'], type: 'string' },
+        { key: 'invoice_contact_phone', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_contact_phone'], type: 'string' },
+        { key: 'invoice_contact_email', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_contact_email'], type: 'string' },
+        { key: 'invoice_footer_text', section: 'Invoice Settings', formPath: ['invoiceSettings', 'invoice_footer_text'], type: 'string' },
+        // Email Settings
+        { key: 'mailer', section: 'Email Settings', formPath: ['emailSettings', 'mailer'], type: 'string' },
+        { key: 'host', section: 'Email Settings', formPath: ['emailSettings', 'host'], type: 'string' },
+        { key: 'port', section: 'Email Settings', formPath: ['emailSettings', 'port'], type: 'string' },
+        { key: 'username', section: 'Email Settings', formPath: ['emailSettings', 'username'], type: 'string' },
+        { key: 'password', section: 'Email Settings', formPath: ['emailSettings', 'password'], type: 'string' },
+        { key: 'encryption', section: 'Email Settings', formPath: ['emailSettings', 'encryption'], type: 'string' },
+        { key: 'from_address', section: 'Email Settings', formPath: ['emailSettings', 'from_address'], type: 'string' },
+        { key: 'from_name', section: 'Email Settings', formPath: ['emailSettings', 'from_name'], type: 'string' },
         // Currency & Regional
         { key: 'currency', section: 'Currency & Regional', formPath: ['currencyRegional', 'currency'], type: 'string' },
         { key: 'dateFormat', section: 'Currency & Regional', formPath: ['currencyRegional', 'dateFormat'], type: 'string' },
         { key: 'timeZone', section: 'Currency & Regional', formPath: ['currencyRegional', 'timeZone'], type: 'string' },
-        // Security
-        { key: 'sessionTimeout', section: 'Security', formPath: ['security', 'sessionTimeout'], type: 'number' },
-        { key: 'passwordExpiry', section: 'Security', formPath: ['security', 'passwordExpiry'], type: 'number' },
-        { key: 'enableTwoFactor', section: 'Security', formPath: ['security', 'enableTwoFactor'], type: 'boolean' }
       ]
 
       // Get all current settings to check what exists
@@ -233,6 +338,7 @@ class SettingsService {
             stringValue = String(formValue ?? '')
           }
 
+
           // Check if setting exists
           const existingSetting = existingSettingsMap.get(mapping.key)
           
@@ -240,7 +346,7 @@ class SettingsService {
             // Setting exists - update it only if value changed
             const currentValue = existingSetting.value || ''
             if (currentValue !== stringValue) {
-              const updateResponse = await this.updateSettingByKey(mapping.key, { value: stringValue })
+              const updateResponse = await this.updateSettingByKey(mapping.key, { value: stringValue }, mapping.section)
               if (updateResponse.success) {
                 successes.push(mapping.key)
               } else {
@@ -290,11 +396,10 @@ class SettingsService {
   findSettingValue(settingsData, section, key) {
     // Map section names to settingsData keys
     const sectionMap = {
-      'Tax & Pricing': 'taxPricing',
       'Business Information': 'businessInfo',
-      'Email & Notification': 'emailNotifications',
+      'Invoice Settings': 'invoiceSettings',
+      'Email Settings': 'emailSettings',
       'Currency & Regional': 'currencyRegional',
-      'Security': 'security'
     }
 
     const sectionKey = sectionMap[section]
@@ -304,17 +409,26 @@ class SettingsService {
 
     // Map API keys to form field names
     const keyMap = {
-      'defaultGstRate': 'defaultGstRate',
-      'defaultProfitMargin': 'defaultProfitMargin',
-      'businessName': 'businessName',
+      'company_name': 'company_name',
+      'businessName': 'company_name',
+      'business_email': 'business_email',
+      'business_phone': 'business_phone',
+      'business_website': 'business_website',
       'gstNumber': 'gstNumber',
       'businessAddress': 'businessAddress',
+      'invoice_prefix': 'invoice_prefix',
       'supportEmail': 'supportEmail',
       'adminEmail': 'adminEmail',
       'enableOrderNotifications': 'enableOrderNotifications',
       'currency': 'currency',
       'dateFormat': 'dateFormat',
       'timeZone': 'timeZone',
+      'enabled': 'enabled',
+      'bucket': 'bucketName',
+      'region': 'region',
+      'key': 'accessKey',
+      'secret': 'secretKey',
+      'use_path_style': 'useSSL',
       'sessionTimeout': 'sessionTimeout',
       'passwordExpiry': 'passwordExpiry',
       'enableTwoFactor': 'enableTwoFactor'
@@ -328,49 +442,71 @@ class SettingsService {
   transformSettingsToForm(apiSections) {
     // Define default values - these will be used if API response is empty or missing fields
     const formData = {
-      taxPricing: {
-        defaultGstRate: 15,
-        defaultProfitMargin: 25
-      },
       businessInfo: {
-        businessName: 'Farm2Fridge',
+        company_name: 'Photo Studio Management',
+        business_email: '',
+        business_phone: '',
         gstNumber: '',
-        businessAddress: ''
+        businessAddress: '',
       },
-      emailNotifications: {
-        supportEmail: '',
-        adminEmail: '',
-        enableOrderNotifications: false
+      invoiceSettings: {
+        invoice_prefix: 'INV',
+        invoice_business_name: '',
+        invoice_business_website: '',
+        invoice_business_address: '',
+        invoice_contact_phone: '',
+        invoice_contact_email: '',
+        invoice_footer_text: '',
+      },
+      emailSettings: {
+        mailer: 'smtp',
+        host: '',
+        port: '',
+        username: '',
+        password: '',
+        encryption: 'tls',
+        from_address: '',
+        from_name: '',
       },
       currencyRegional: {
-        currency: 'NZD',
+        currency: 'INR',
         dateFormat: 'DD/MM/YYYY',
-        timeZone: 'Pacific/Auckland'
+        timeZone: 'Asia/Kolkata',
       },
-      security: {
-        sessionTimeout: 30,
-        passwordExpiry: 90,
-        enableTwoFactor: false
+      appSettings: {
+        web_url: '',
       }
     }
 
     // Key mapping from API keys to form structure
     // Fields with 'useDefaultIfEmpty: true' will use default value if API returns empty string
     const keyMapping = {
-      'defaultGstRate': { section: 'Tax & Pricing', field: 'taxPricing', prop: 'defaultGstRate', type: 'number', useDefaultIfEmpty: true },
-      'defaultProfitMargin': { section: 'Tax & Pricing', field: 'taxPricing', prop: 'defaultProfitMargin', type: 'number', useDefaultIfEmpty: true },
-      'businessName': { section: 'Business Information', field: 'businessInfo', prop: 'businessName', type: 'string', useDefaultIfEmpty: true },
+      'company_name': { section: 'Business Information', field: 'businessInfo', prop: 'company_name', type: 'string', useDefaultIfEmpty: true },
+      'businessName': { section: 'Business Information', field: 'businessInfo', prop: 'company_name', type: 'string', useDefaultIfEmpty: true },
+      'business_email': { section: 'Business Information', field: 'businessInfo', prop: 'business_email', type: 'string', useDefaultIfEmpty: false },
+      'business_phone': { section: 'Business Information', field: 'businessInfo', prop: 'business_phone', type: 'string', useDefaultIfEmpty: false },
+      'business_website': { section: 'Business Information', field: 'businessInfo', prop: 'business_website', type: 'string', useDefaultIfEmpty: false },
       'gstNumber': { section: 'Business Information', field: 'businessInfo', prop: 'gstNumber', type: 'string', useDefaultIfEmpty: false },
       'businessAddress': { section: 'Business Information', field: 'businessInfo', prop: 'businessAddress', type: 'string', useDefaultIfEmpty: false },
-      'supportEmail': { section: 'Email & Notification', field: 'emailNotifications', prop: 'supportEmail', type: 'string', useDefaultIfEmpty: false },
-      'adminEmail': { section: 'Email & Notification', field: 'emailNotifications', prop: 'adminEmail', type: 'string', useDefaultIfEmpty: false },
-      'enableOrderNotifications': { section: 'Email & Notification', field: 'emailNotifications', prop: 'enableOrderNotifications', type: 'boolean', useDefaultIfEmpty: true },
+      'invoice_prefix': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_prefix', type: 'string', useDefaultIfEmpty: true },
+      'invoice_business_name': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_business_name', type: 'string', useDefaultIfEmpty: false },
+      'invoice_business_website': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_business_website', type: 'string', useDefaultIfEmpty: false },
+      'invoice_business_address': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_business_address', type: 'string', useDefaultIfEmpty: false },
+      'invoice_contact_phone': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_contact_phone', type: 'string', useDefaultIfEmpty: false },
+      'invoice_contact_email': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_contact_email', type: 'string', useDefaultIfEmpty: false },
+      'invoice_footer_text': { section: 'Invoice Settings', field: 'invoiceSettings', prop: 'invoice_footer_text', type: 'string', useDefaultIfEmpty: false },
+      'mailer': { section: 'Email Settings', field: 'emailSettings', prop: 'mailer', type: 'string', useDefaultIfEmpty: true },
+      'host': { section: 'Email Settings', field: 'emailSettings', prop: 'host', type: 'string', useDefaultIfEmpty: false },
+      'port': { section: 'Email Settings', field: 'emailSettings', prop: 'port', type: 'string', useDefaultIfEmpty: false },
+      'username': { section: 'Email Settings', field: 'emailSettings', prop: 'username', type: 'string', useDefaultIfEmpty: false },
+      'password': { section: 'Email Settings', field: 'emailSettings', prop: 'password', type: 'string', useDefaultIfEmpty: false },
+      'encryption': { section: 'Email Settings', field: 'emailSettings', prop: 'encryption', type: 'string', useDefaultIfEmpty: true },
+      'from_address': { section: 'Email Settings', field: 'emailSettings', prop: 'from_address', type: 'string', useDefaultIfEmpty: false },
+      'from_name': { section: 'Email Settings', field: 'emailSettings', prop: 'from_name', type: 'string', useDefaultIfEmpty: false },
       'currency': { section: 'Currency & Regional', field: 'currencyRegional', prop: 'currency', type: 'string', useDefaultIfEmpty: true },
       'dateFormat': { section: 'Currency & Regional', field: 'currencyRegional', prop: 'dateFormat', type: 'string', useDefaultIfEmpty: true },
       'timeZone': { section: 'Currency & Regional', field: 'currencyRegional', prop: 'timeZone', type: 'string', useDefaultIfEmpty: true },
-      'sessionTimeout': { section: 'Security', field: 'security', prop: 'sessionTimeout', type: 'number', useDefaultIfEmpty: true },
-      'passwordExpiry': { section: 'Security', field: 'security', prop: 'passwordExpiry', type: 'number', useDefaultIfEmpty: true },
-      'enableTwoFactor': { section: 'Security', field: 'security', prop: 'enableTwoFactor', type: 'boolean', useDefaultIfEmpty: true }
+      'web_url': { section: 'App Settings', field: 'appSettings', prop: 'web_url', type: 'string', useDefaultIfEmpty: false },
     }
 
     // If API response is null, undefined, or empty array, return defaults
@@ -397,6 +533,11 @@ class SettingsService {
           return
         }
 
+        if (mapping.key === 'secret') {
+          formData[mapping.field][mapping.prop] = ''
+          return
+        }
+
         let value = setting.value
         
         // Handle null/undefined - always use default
@@ -407,6 +548,12 @@ class SettingsService {
         // Handle empty string for fields that should use defaults
         if (mapping.useDefaultIfEmpty && value === '') {
           return // Keep default value
+        }
+
+        // Special handling for port field - always use empty string if value is '587' (old default)
+        if (mapping.prop === 'port' && value === '587') {
+          formData[mapping.field][mapping.prop] = ''
+          return
         }
 
         // Convert value based on type
@@ -433,6 +580,56 @@ class SettingsService {
     })
 
     return formData
+  }
+
+  // Upload business logo
+  async uploadLogo(file) {
+    try {
+      const formData = new FormData()
+      formData.append('logo', file)
+
+      const response = await apiClient.post('/settings/upload-logo', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      if (response.data.success) {
+        return {
+          success: true,
+          data: response.data.data,
+          message: response.data.message || 'Logo uploaded successfully',
+        }
+      }
+
+      return {
+        success: false,
+        message: response.data.message || 'Failed to upload logo',
+      }
+    } catch (error) {
+      return handleApiError(error)
+    }
+  }
+
+  // Delete business logo
+  async deleteLogo() {
+    try {
+      const response = await apiClient.delete('/settings/delete-logo')
+      
+      if (response.data.success) {
+        return {
+          success: true,
+          message: response.data.message || 'Logo deleted successfully',
+        }
+      }
+
+      return {
+        success: false,
+        message: response.data.message || 'Failed to delete logo',
+      }
+    } catch (error) {
+      return handleApiError(error)
+    }
   }
 }
 

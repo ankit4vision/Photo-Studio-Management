@@ -13,10 +13,11 @@ export const TextField = ({
   col = 6,
   invalid = false,
   feedback,
+  labelClassName = '',
   ...props 
 }) => (
   <Col md={col}>
-    <FormLabel htmlFor={props.id}>
+    <FormLabel htmlFor={props.id} className={labelClassName}>
       {label} {required && <span className="text-danger">*</span>}
     </FormLabel>
     <FormControl

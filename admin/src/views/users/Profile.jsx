@@ -38,6 +38,25 @@ const Profile = () => {
       const response = await profileService.getProfile()
       if (response.success) {
         setProfileData(response.data)
+        
+        // Also update auth context with latest profile data
+        if (updateUser && response.data) {
+          // Ensure avatar is properly set
+          const profileDataToUpdate = {
+            ...response.data,
+            avatar: response.data.avatar || null // Use the normalized avatar URL
+          }
+          
+          if (import.meta.env.DEV) {
+            console.log('[Profile] Updating auth context:', {
+              profileData: response.data,
+              avatar: response.data.avatar,
+              updatingWith: profileDataToUpdate
+            })
+          }
+          
+          updateUser(profileDataToUpdate)
+        }
       } else {
         error(response.message || 'Failed to fetch profile')
       }
@@ -49,55 +68,6 @@ const Profile = () => {
     }
   }
 
-  // Handle avatar change
-  const handleAvatarChange = async (file, base64) => {
-    try {
-      setSaving(true)
-      const response = await profileService.updateProfile({ avatar: base64 })
-      
-      if (response.success) {
-        setProfileData(response.data)
-        success('Profile picture updated successfully')
-        
-        // Update auth context with new user data
-        if (updateUser) {
-          updateUser(response.data)
-        }
-      } else {
-        error(response.message || 'Failed to update profile picture')
-      }
-    } catch (err) {
-      console.error('Error updating avatar:', err)
-      error('Failed to update profile picture')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // Handle avatar delete
-  const handleAvatarDelete = async () => {
-    try {
-      setSaving(true)
-      const response = await profileService.updateProfile({ avatar: '' })
-      
-      if (response.success) {
-        setProfileData(response.data)
-        success('Profile picture deleted successfully')
-        
-        // Update auth context with new user data
-        if (updateUser) {
-          updateUser(response.data)
-        }
-      } else {
-        error(response.message || 'Failed to delete profile picture')
-      }
-    } catch (err) {
-      console.error('Error deleting avatar:', err)
-      error('Failed to delete profile picture')
-    } finally {
-      setSaving(false)
-    }
-  }
 
   // Handle personal info save
   const handlePersonalInfoSave = async (personalData) => {
@@ -149,6 +119,56 @@ const Profile = () => {
     }
   }
 
+  // Handle avatar upload
+  const handleAvatarUpload = async (file) => {
+    try {
+      const response = await profileService.uploadAvatar(file)
+      
+      if (response.success) {
+        setProfileData(response.data)
+        success(response.message || 'Profile picture uploaded successfully')
+        
+        // Update auth context with new user data
+        if (updateUser) {
+          updateUser(response.data)
+        }
+        return response
+      } else {
+        error(response.message || 'Failed to upload profile picture')
+        return response
+      }
+    } catch (err) {
+      console.error('Error uploading avatar:', err)
+      error('Failed to upload profile picture')
+      return { success: false, message: 'Failed to upload profile picture' }
+    }
+  }
+
+  // Handle avatar delete
+  const handleAvatarDelete = async () => {
+    try {
+      setSaving(true)
+      const response = await profileService.deleteAvatar()
+      
+      if (response.success) {
+        setProfileData(response.data)
+        success(response.message || 'Profile picture removed successfully')
+        
+        // Update auth context with new user data
+        if (updateUser) {
+          updateUser(response.data)
+        }
+      } else {
+        error(response.message || 'Failed to remove profile picture')
+      }
+    } catch (err) {
+      console.error('Error deleting avatar:', err)
+      error('Failed to remove profile picture')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleChangePassword = () => {
     setShowChangePasswordModal(true)
   }
@@ -179,11 +199,12 @@ const Profile = () => {
       setSaving(true)
       const response = await profileService.changePassword({
         currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword
+        newPassword: passwordData.newPassword,
+        confirmPassword: passwordData.confirmPassword
       })
       
       if (response.success) {
-        success('Password changed successfully')
+        success(response.message || 'Password changed successfully')
         setShowChangePasswordModal(false)
         setPasswordData({
           currentPassword: '',
@@ -192,7 +213,13 @@ const Profile = () => {
         })
         setPasswordErrors({})
       } else {
-        error(response.message || 'Failed to change password')
+        // Handle validation errors from backend
+        if (response.errors) {
+          setPasswordErrors(response.errors)
+          error(response.message || 'Please fix the errors and try again')
+        } else {
+          error(response.message || 'Failed to change password')
+        }
       }
     } catch (err) {
       console.error('Error changing password:', err)
@@ -262,9 +289,9 @@ const Profile = () => {
                 <CCol xs={12} className="mb-4">
                   <ProfilePictureSection
                     avatar={profileData.avatar}
-                    onAvatarChange={handleAvatarChange}
-                    onAvatarDelete={handleAvatarDelete}
                     loading={saving}
+                    onAvatarUpload={handleAvatarUpload}
+                    onAvatarDelete={handleAvatarDelete}
                   />
                 </CCol>
 

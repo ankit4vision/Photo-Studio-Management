@@ -1,8 +1,27 @@
+const resolveApiBaseUrl = () => {
+  const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').trim()
+
+  // Default to relative /api during local dev when nothing configured
+  if (!rawBaseUrl || rawBaseUrl === '/') {
+    return '/api'
+  }
+
+  const normalize = (value) => value.replace(/\/+$/, '')
+
+  if (rawBaseUrl.startsWith('/')) {
+    const relativeBase = normalize(rawBaseUrl)
+    return relativeBase.endsWith('/api') ? relativeBase : `${relativeBase}/api`
+  }
+
+  const absoluteBase = normalize(rawBaseUrl)
+  return absoluteBase.endsWith('/api') ? absoluteBase : `${absoluteBase}/api`
+}
+
 // App Configuration
 const config = {
   // API Configuration
   api: {
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api',
+    baseURL: resolveApiBaseUrl(),
     timeout: parseInt(import.meta.env.VITE_API_TIMEOUT) || 10000,
   },
 

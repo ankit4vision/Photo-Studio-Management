@@ -15,25 +15,27 @@ const PrivateRoute = ({ children, requiredRole = null }) => {
   }
 
   // Check token expiration (JWT)
-  try {
-    // JWT format: header.payload.signature (base64url)
-    const parts = token.split('.')
-    if (parts.length !== 3) {
-      throw new Error('Invalid JWT format')
-    }
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
-    // exp is in seconds since epoch
-    if (payload.exp && payload.exp * 1000 < Date.now()) {
-      // Token expired, clear storage and redirect
+  if (token.includes('.')) {
+    try {
+      // JWT format: header.payload.signature (base64url)
+      const parts = token.split('.')
+      if (parts.length !== 3) {
+        throw new Error('Invalid JWT format')
+      }
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+      // exp is in seconds since epoch
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        // Token expired, clear storage and redirect
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('user')
+        return <Navigate to="/login" state={{ from: location }} replace />
+      }
+    } catch (error) {
+      // Invalid JWT, clear storage and redirect
       localStorage.removeItem('access_token')
       localStorage.removeItem('user')
       return <Navigate to="/login" state={{ from: location }} replace />
     }
-  } catch (error) {
-    // Invalid token, clear storage and redirect
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('user')
-    return <Navigate to="/login" state={{ from: location }} replace />
   }
 
   // Check role-based access

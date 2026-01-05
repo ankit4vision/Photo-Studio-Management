@@ -1,7 +1,18 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react'
 import { FormRow, TextField, SelectField } from '../../common/FormFields'
 import PropTypes from 'prop-types'
-import { FormCheck, Col } from 'react-bootstrap'
+import { FormCheck, Col, Spinner, Alert } from 'react-bootstrap'
+import permissionService from '../../../services/permissionService'
+
+const startCase = (value = '') =>
+  value
+    .toString()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 
 const RoleForm = forwardRef(({ 
   mode = 'create', 
@@ -17,54 +28,27 @@ const RoleForm = forwardRef(({
     isActive: true
   })
   const [errors, setErrors] = useState({})
+  const [availablePermissions, setAvailablePermissions] = useState([])
+  const [permissionsLoading, setPermissionsLoading] = useState(false)
+  const [permissionsError, setPermissionsError] = useState(null)
 
-  // Available permissions
-  const availablePermissions = [
-    { id: 'user:read', label: 'Read Users', category: 'User Management' },
-    { id: 'user:write', label: 'Create/Edit Users', category: 'User Management' },
-    { id: 'user:delete', label: 'Delete Users', category: 'User Management' },
-    { id: 'user:export', label: 'Export Users', category: 'User Management' },
-    { id: 'user:import', label: 'Import Users', category: 'User Management' },
-    { id: 'role:read', label: 'Read Roles', category: 'Role Management' },
-    { id: 'role:write', label: 'Create/Edit Roles', category: 'Role Management' },
-    { id: 'role:delete', label: 'Delete Roles', category: 'Role Management' },
-    { id: 'role:assign', label: 'Assign Roles', category: 'Role Management' },
-    { id: 'dashboard:read', label: 'View Dashboard', category: 'System Access' },
-    { id: 'dashboard:write', label: 'Edit Dashboard', category: 'System Access' },
-    { id: 'dashboard:customize', label: 'Customize Dashboard', category: 'System Access' },
-    { id: 'settings:access', label: 'System Settings', category: 'System Access' },
-    { id: 'settings:backup', label: 'Backup & Restore', category: 'System Access' },
-    { id: 'settings:logs', label: 'View System Logs', category: 'System Access' },
-    { id: 'reports:read', label: 'View Reports', category: 'Reports' },
-    { id: 'reports:write', label: 'Create Reports', category: 'Reports' },
-    { id: 'reports:export', label: 'Export Reports', category: 'Reports' },
-    { id: 'reports:schedule', label: 'Schedule Reports', category: 'Reports' },
-    { id: 'branch:read', label: 'View Branches', category: 'Branch Management' },
-    { id: 'branch:write', label: 'Create/Edit Branches', category: 'Branch Management' },
-    { id: 'branch:delete', label: 'Delete Branches', category: 'Branch Management' },
-    { id: 'package:read', label: 'View Packages', category: 'Package Management' },
-    { id: 'package:write', label: 'Create/Edit Packages', category: 'Package Management' },
-    { id: 'package:delete', label: 'Delete Packages', category: 'Package Management' },
-    { id: 'customer:read', label: 'View Customers', category: 'Customer Management' },
-    { id: 'customer:write', label: 'Create/Edit Customers', category: 'Customer Management' },
-    { id: 'customer:delete', label: 'Delete Customers', category: 'Customer Management' },
-    { id: 'customer:wallet', label: 'Manage Customer Wallet', category: 'Customer Management' },
-    { id: 'order:read', label: 'View Orders', category: 'Order Management' },
-    { id: 'order:write', label: 'Create/Edit Orders', category: 'Order Management' },
-    { id: 'order:delete', label: 'Delete Orders', category: 'Order Management' },
-    { id: 'transaction:read', label: 'View Transactions', category: 'Transaction Management' },
-    { id: 'transaction:write', label: 'Create/Edit Transactions', category: 'Transaction Management' },
-    { id: 'payment:read', label: 'View Payments', category: 'Payment Management' },
-    { id: 'payment:write', label: 'Create Payments', category: 'Payment Management' },
-    { id: 'analytics:read', label: 'View Analytics', category: 'Analytics' },
-    { id: 'analytics:export', label: 'Export Analytics', category: 'Analytics' },
-    { id: 'notifications:read', label: 'View Notifications', category: 'Notifications' },
-    { id: 'notifications:write', label: 'Send Notifications', category: 'Notifications' },
-    { id: 'api:read', label: 'API Read Access', category: 'API Management' },
-    { id: 'api:write', label: 'API Write Access', category: 'API Management' },
-    { id: 'security:audit', label: 'Security Audit', category: 'Security' },
-    { id: 'security:monitor', label: 'Security Monitoring', category: 'Security' }
-  ]
+  useEffect(() => {
+    const loadPermissions = async () => {
+      setPermissionsLoading(true)
+      setPermissionsError(null)
+
+      const response = await permissionService.getPermissions({ groupByModule: true })
+      if (response.success) {
+        setAvailablePermissions(response.data || [])
+      } else {
+        setPermissionsError(response.message || 'Unable to load permissions.')
+      }
+
+      setPermissionsLoading(false)
+    }
+
+    loadPermissions()
+  }, [])
 
   // Load role data for edit mode
   useEffect(() => {
@@ -72,7 +56,11 @@ const RoleForm = forwardRef(({
       setFormData({
         name: roleData.name || '',
         description: roleData.description || '',
-        permissions: roleData.permissions || [],
+        permissions: Array.isArray(roleData.permissions)
+          ? roleData.permissions
+              .map((permission) => (typeof permission === 'object' ? permission.id : permission))
+              .filter((permissionId) => permissionId !== undefined && permissionId !== null)
+          : [],
         isActive: roleData.isActive !== undefined ? roleData.isActive : true
       })
     }
@@ -97,6 +85,8 @@ const RoleForm = forwardRef(({
         : prev.permissions.filter(p => p !== permissionId)
     }))
   }
+
+  const controlsDisabled = loading || permissionsLoading
 
   const validateForm = () => {
     const newErrors = {}
@@ -148,10 +138,18 @@ const RoleForm = forwardRef(({
 
   // Group permissions by category
   const groupedPermissions = availablePermissions.reduce((acc, permission) => {
-    if (!acc[permission.category]) {
-      acc[permission.category] = []
+    const moduleLabel = permission.module ? startCase(permission.module) : 'General'
+    const submoduleLabel =
+      permission.submodule && permission.submodule !== 'general'
+        ? startCase(permission.submodule)
+        : null
+
+    const category = submoduleLabel ? `${moduleLabel} • ${submoduleLabel}` : moduleLabel
+
+    if (!acc[category]) {
+      acc[category] = []
     }
-    acc[permission.category].push(permission)
+    acc[category].push(permission)
     return acc
   }, {})
 
@@ -168,6 +166,7 @@ const RoleForm = forwardRef(({
           col={6}
           invalid={!!errors.name}
           feedback={errors.name}
+          disabled={controlsDisabled}
         />
         <SelectField
           id="status"
@@ -178,6 +177,7 @@ const RoleForm = forwardRef(({
           col={6}
           invalid={!!errors.status}
           feedback={errors.status}
+          disabled={controlsDisabled}
         />
       </FormRow>
 
@@ -192,6 +192,7 @@ const RoleForm = forwardRef(({
           col={12}
           invalid={!!errors.description}
           feedback={errors.description}
+          disabled={controlsDisabled}
         />
       </FormRow>
 
@@ -201,23 +202,37 @@ const RoleForm = forwardRef(({
             Permissions <span className="text-danger">*</span>
           </label>
           <div className="border rounded p-3">
-            <div className="row">
-              {Object.entries(groupedPermissions).map(([category, permissions]) => (
-                <div key={category} className="col-md-6 mb-3">
-                  <h6 className="text-primary">{category}</h6>
-                  {permissions.map((permission) => (
-                    <div key={permission.id} className="form-check">
-                      <FormCheck
-                        id={permission.id}
-                        label={permission.label}
-                        checked={formData.permissions.includes(permission.id)}
-                        onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
+            {permissionsLoading ? (
+              <div className="d-flex align-items-center justify-content-center py-3">
+                <Spinner animation="border" role="status" size="sm" className="me-2">
+                  <span className="visually-hidden">Loading permissions...</span>
+                </Spinner>
+                <span>Loading permissions...</span>
+              </div>
+            ) : permissionsError ? (
+              <Alert variant="danger" className="mb-0">
+                {permissionsError}
+              </Alert>
+            ) : (
+              <div className="row">
+                {Object.entries(groupedPermissions).map(([category, permissions]) => (
+                  <div key={category} className="col-md-6 mb-3">
+                    <h6 className="text-primary">{category}</h6>
+                    {permissions.map((permission) => (
+                      <div key={permission.id} className="form-check">
+                        <FormCheck
+                          id={`permission-${permission.id}`}
+                          label={permission.label}
+                          checked={formData.permissions.includes(permission.id)}
+                          onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
+                          disabled={controlsDisabled}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
             {errors.permissions && (
               <div className="invalid-feedback d-block text-danger mt-2">
                 {errors.permissions}
