@@ -19,7 +19,6 @@ import CustomerForm from '../../components/pages/customers/CustomerForm'
 import CustomerDetailsModal from '../../components/pages/customers/CustomerDetailsModal'
 import { customerService } from '../../services/customerService'
 import branchService from '../../services/branchService'
-import photographersData from '../../mock/photographers.json'
 import { useLocation } from 'react-router-dom'
 import { usePermissions } from '../../hooks'
 import { PERMISSIONS } from '../../constants/permissions'
@@ -53,7 +52,7 @@ const CustomersList = () => {
   const [locationFilter, setLocationFilter] = useState('')
   const [registrationDateFilter, setRegistrationDateFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(25)
   
   // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false)

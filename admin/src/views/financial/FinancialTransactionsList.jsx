@@ -54,6 +54,9 @@ const FinancialTransactionsList = () => {
   const [transactionToDelete, setTransactionToDelete] = useState(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState(null)
+  const [showReceiptTypeModal, setShowReceiptTypeModal] = useState(false)
+  const [transactionToExport, setTransactionToExport] = useState(null)
+  const [selectedReceiptType, setSelectedReceiptType] = useState('transaction')
   
   // Add/Edit Modal States
   const [showAddModal, setShowAddModal] = useState(false)
@@ -149,6 +152,40 @@ const FinancialTransactionsList = () => {
   const handleViewDetails = (transaction) => {
     setSelectedTransaction(transaction)
     setShowDetailsModal(true)
+  }
+
+  const handleExportTransaction = (transaction) => {
+    setTransactionToExport(transaction)
+    setSelectedReceiptType('transaction')
+    setShowReceiptTypeModal(true)
+  }
+
+  const confirmExportTransaction = async () => {
+    if (!transactionToExport) return
+    
+    const transactionId = transactionToExport.id || transactionToExport.transactionId
+    if (!transactionId) {
+      showError('Transaction ID not found')
+      setShowReceiptTypeModal(false)
+      setTransactionToExport(null)
+      return
+    }
+
+    try {
+      const result = await financialService.exportFinancialTransactionPdf(transactionId, selectedReceiptType)
+      if (result.success) {
+        success(result.message || 'PDF exported successfully')
+      } else {
+        showError(result.message || 'Failed to export PDF')
+      }
+    } catch (err) {
+      console.error('Error exporting transaction PDF:', err)
+      showError('An error occurred while exporting PDF')
+    } finally {
+      setShowReceiptTypeModal(false)
+      setTransactionToExport(null)
+      setSelectedReceiptType('transaction')
+    }
   }
 
   const handleEditTransaction = (transaction) => {
@@ -319,6 +356,15 @@ const FinancialTransactionsList = () => {
             style={{ minWidth: '32px', padding: '4px 8px' }}
           >
             <FontAwesomeIcon icon={faEye} />
+          </Button>
+          <Button
+            variant="outline-success"
+            size="sm"
+            onClick={() => handleExportTransaction(transaction)}
+            title="Export Transaction PDF"
+            style={{ minWidth: '32px', padding: '4px 8px' }}
+          >
+            <FontAwesomeIcon icon={faFilePdf} />
           </Button>
           {canEditTransaction && (
             <Button
@@ -606,6 +652,58 @@ const FinancialTransactionsList = () => {
             <strong>Transaction:</strong> {transactionToDelete.transactionNumber || transactionToDelete.transaction_number || `#${transactionToDelete.id}`}<br />
             <strong>Type:</strong> {transactionToDelete.transactionType || transactionToDelete.transaction_type}<br />
             <strong>Amount:</strong> {formatCurrency(transactionToDelete.amount || 0)}
+          </div>
+        )}
+      </Modal>
+
+      {/* Receipt Type Selection Modal */}
+      <Modal
+        visible={showReceiptTypeModal}
+        onClose={() => {
+          setShowReceiptTypeModal(false)
+          setTransactionToExport(null)
+          setSelectedReceiptType('transaction')
+        }}
+        title="Select Receipt Type"
+        onConfirm={confirmExportTransaction}
+        confirmText="Generate PDF"
+        type="primary"
+      >
+        <p className="mb-3">Please select the type of receipt you want to generate:</p>
+        <div className="mb-3">
+          <Form.Check
+            type="radio"
+            id="receipt-type-transaction"
+            name="receiptType"
+            label="Income/Expense Receipt"
+            value="transaction"
+            checked={selectedReceiptType === 'transaction'}
+            onChange={(e) => setSelectedReceiptType(e.target.value)}
+            className="mb-2"
+          />
+          <small className="text-muted d-block ms-4 mb-3">
+            Standard transaction receipt with transaction details
+          </small>
+          
+          <Form.Check
+            type="radio"
+            id="receipt-type-payment"
+            name="receiptType"
+            label="Payment Receipt"
+            value="payment"
+            checked={selectedReceiptType === 'payment'}
+            onChange={(e) => setSelectedReceiptType(e.target.value)}
+            className="mb-2"
+          />
+          <small className="text-muted d-block ms-4">
+            Payment receipt format showing "Received From" / "Paid To" information prominently
+          </small>
+        </div>
+        {transactionToExport && (
+          <div className="alert alert-info mt-3">
+            <strong>Transaction:</strong> {transactionToExport.transactionNumber || transactionToExport.transaction_number || `#${transactionToExport.id}`}<br />
+            <strong>Type:</strong> {transactionToExport.transactionType || transactionToExport.transaction_type}<br />
+            <strong>Amount:</strong> {formatCurrency(transactionToExport.amount || 0)}
           </div>
         )}
       </Modal>

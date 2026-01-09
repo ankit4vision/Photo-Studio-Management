@@ -198,10 +198,9 @@ class CustomerService {
         return payload
       }
 
-      return this.getMockCustomers(params)
+      return handleApiError({ response: { data: payload } })
     } catch (error) {
-      console.warn('API call failed, using mock data:', error)
-      return this.getMockCustomers(params)
+      return handleApiError(error)
     }
   }
 
@@ -253,8 +252,7 @@ class CustomerService {
       const response = await apiClient.get(API_ENDPOINTS.CUSTOMERS.GET_BY_ID(id))
       return this.transformItemResponse(response?.data)
     } catch (error) {
-      console.warn('API call failed, using mock data:', error)
-      return this.getMockCustomerById(id)
+      return handleApiError(error)
     }
   }
 
@@ -307,8 +305,7 @@ class CustomerService {
       const response = await apiClient.post(API_ENDPOINTS.CUSTOMERS.CREATE, backendData)
       return this.transformItemResponse(response?.data)
     } catch (error) {
-      console.warn('API call failed, using mock data:', error)
-      return this.createMockCustomer(customerData)
+      return handleApiError(error)
     }
   }
 
@@ -590,10 +587,9 @@ class CustomerService {
           message: 'Customer statistics fetched successfully'
         }
       }
-      return this.getMockCustomerStats()
+      return handleApiError({ response: { data: response?.data } })
     } catch (error) {
-      console.warn('API call failed, using mock data:', error)
-      return this.getMockCustomerStats()
+      return handleApiError(error)
     }
   }
 
@@ -690,10 +686,9 @@ class CustomerService {
           message: 'Customers exported successfully'
         }
       }
-      return this.exportMockCustomers(format, filters)
+      return handleApiError({ response: { data: response?.data } })
     } catch (error) {
-      console.warn('API call failed, using mock data:', error)
-      return this.exportMockCustomers(format, filters)
+      return handleApiError(error)
     }
   }
 

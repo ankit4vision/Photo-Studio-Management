@@ -42,7 +42,7 @@ const PackagesList = () => {
   const [typeFilter, setTypeFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(25)
   const [paginationMeta, setPaginationMeta] = useState({
     total: 0,
     totalPages: 1,

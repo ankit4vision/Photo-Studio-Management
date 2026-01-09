@@ -8,6 +8,8 @@ use App\Http\Requests\FinancialTransactionStoreRequest;
 use App\Http\Requests\FinancialTransactionUpdateRequest;
 use App\Http\Resources\FinancialTransactionResource;
 use App\Models\FinancialTransaction;
+use App\Models\Setting;
+use App\Services\PdfExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -266,5 +268,59 @@ class FinancialTransactionController extends Controller
                 'monthlyTrends' => $monthlyTrends,
             ],
         ]);
+    }
+
+    /**
+     * Export financial transaction receipt as PDF.
+     */
+    public function exportPdf(Request $request, FinancialTransaction $transaction, PdfExportService $pdfService)
+    {
+        $transaction->load(['category', 'createdBy']);
+
+        // Get receipt type from request (default: 'transaction' for Income/Expense Receipt)
+        $receiptType = $request->input('receipt_type', 'transaction'); // 'transaction' or 'payment'
+
+        // Get business & invoice settings for PDF branding
+        $settings = Setting::businessInfo([
+            'invoice_business_name',
+            'invoice_business_website',
+            'invoice_business_address',
+            'invoice_contact_phone',
+            'invoice_contact_email',
+            'invoice_footer_text',
+            'business_logo',
+        ]);
+
+        // Get category name safely
+        $category = $transaction->category;
+        $categoryName = 'N/A';
+        if ($category) {
+            $categoryName = $category->name ?? 'N/A';
+        }
+        
+        // Sanitize category name for filename
+        $categoryNameSafe = preg_replace('/[^a-zA-Z0-9_\- ]/', '', $categoryName);
+        $categoryNameSafe = str_replace(' ', '_', trim($categoryNameSafe)) ?: 'Category';
+        
+        // Get transaction ID and type
+        $transactionId = $transaction->id ?? 'Unknown';
+        $transactionType = strtoupper($transaction->transaction_type ?? 'TRANSACTION');
+
+        $data = [
+            'transaction' => $transaction,
+            'settings' => $settings,
+            'exportDate' => now()->format('Y-m-d H:i:s'),
+        ];
+
+        // Select template based on receipt type
+        $template = $receiptType === 'payment' 
+            ? 'pdfs.financial_transaction_payment_receipt' 
+            : 'pdfs.financial_transaction';
+        
+        // Update filename based on receipt type
+        $receiptTypeLabel = $receiptType === 'payment' ? 'PaymentReceipt' : $transactionType;
+        $filename = "{$receiptTypeLabel}_{$transactionId}_{$categoryNameSafe}.pdf";
+
+        return $pdfService->download($template, $data, $filename);
     }
 }

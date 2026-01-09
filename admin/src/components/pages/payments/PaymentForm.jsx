@@ -365,18 +365,14 @@ const PaymentForm = forwardRef(({
                   customerName = order.customer_name.toString().replace(/\d{10,}/g, '').trim()
                 }
                 
-                // Get customer_code in #CUST format (like in customer list)
-                const customerCode = order.customer?.customer_code || 
-                                    order.customer?.customerId || 
-                                    order.customer?.photographerId ||
-                                    (order.customer?.id ? `#CUST${String(order.customer.id).padStart(3, '0')}` : '') ||
-                                    (order.customer_id ? `#CUST${String(order.customer_id).padStart(3, '0')}` : '')
+                // Get order number
+                const orderNumber = order.order_number || order.orderNumber || `#${order.id || 'N/A'}`
                 
-                // Format: Customer Name (#CUST006)
-                // Example: "Rajesh Patel (#CUST001)"
+                // Format: Customer Name + Order Number
+                // Example: "Rajesh Patel #ORD001"
                 return {
                   value: order.id.toString(), // Order ID as value
-                  label: customerCode ? `${customerName} (${customerCode})` : customerName
+                  label: `${customerName} ${orderNumber}`
                 }
               })
           ]}

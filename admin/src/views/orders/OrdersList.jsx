@@ -88,7 +88,7 @@ const OrdersList = () => {
   // Pagination
   const [pagination, setPagination] = useState({
     currentPage: 1,
-    pageSize: 10,
+    pageSize: 25,
     totalItems: 0
   })
 
@@ -652,7 +652,7 @@ const OrdersList = () => {
     },
     {
       key: 'orderDate',
-      label: 'Order Date (Event Date)',
+      label: 'Order Date',
       render: (value, order) => {
         if (!order) return <div>N/A</div>
         return formatDate(order.orderDate || order.order_date)
