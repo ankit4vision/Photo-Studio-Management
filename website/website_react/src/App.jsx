@@ -8,6 +8,7 @@ import About from './pages/About'
 import Gallery from './pages/Gallery'
 import OurWorks from './pages/OurWorks'
 import AlbumDetail from './pages/AlbumDetail'
+import Contact from './pages/Contact'
 import './App.css'
 
 function App() {
@@ -44,6 +45,7 @@ function App() {
           '/plugins/nice-select/jquery.nice-select.min.js',
           '/plugins/cursor-effect/cursor-effect.js',
           '/assets/js/theme.js'
+          // map.js is not needed - Contact page initializes map directly
         ]
 
         // Load scripts sequentially
@@ -75,6 +77,7 @@ function App() {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/our-works" element={<OurWorks />} />
           <Route path="/album-detail" element={<AlbumDetail />} />
+          <Route path="/contact" element={<Contact />} />
         </Routes>
       </main>
       <Footer />

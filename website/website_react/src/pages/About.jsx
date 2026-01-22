@@ -33,7 +33,7 @@ const About = () => {
       <div className="wptb-page-heading">
         <div className="wptb-item--inner" style={{ backgroundImage: "url('/assets/img/background/bg-3.jpg')" }}>
           <div className="wptb-item-layer wptb-item-layer-one">
-            <img src="/assets/img/more/circle.png" alt="img" />
+            <img src="/assets/img/more/circle.png" alt="img" loading="lazy" />
           </div>
           <h2 className="wptb-item--title">About Us</h2>
         </div>
@@ -45,7 +45,7 @@ const About = () => {
           <div className="wptb-image-single mr-bottom-90 wow fadeInUp">
             <div className="wptb-item--inner">
               <div className="wptb-item--image">
-                <img src="/assets/img/background/bg-6.jpg" alt="img" />
+                <img src="/assets/img/background/bg-6.jpg" alt="img" loading="lazy" />
               </div>
             </div>
           </div>
@@ -57,7 +57,7 @@ const About = () => {
                   <div className="wptb-image-single wow fadeInUp">
                     <div className="wptb-item--inner">
                       <div className="wptb-item--image">
-                        <img src="/assets/img/more/1.jpg" alt="img" />
+                        <img src="/assets/img/more/1.jpg" alt="img" loading="lazy" />
                       </div>
                     </div>
                   </div>
@@ -108,7 +108,7 @@ const About = () => {
               <div className="wptb-image-single wow fadeInUp">
                 <div className="wptb-item--inner">
                   <div className="wptb-item--image">
-                    <img src="/assets/img/more/2.jpg" alt="img" />
+                    <img src="/assets/img/more/2.jpg" alt="img" loading="lazy" />
                   </div>
                 </div>
               </div>
@@ -116,7 +116,7 @@ const About = () => {
           </div>
 
           <div className="wptb-item-layer wptb-item-layer-one">
-            <img src="/assets/img/more/light-1.png" alt="img" />
+            <img src="/assets/img/more/light-1.png" alt="img" loading="lazy" />
           </div>
         </div>
       </section>
@@ -154,7 +154,7 @@ const About = () => {
               <div className="wptb-image-single wow fadeInUp">
                 <div className="wptb-item--inner">
                   <div className="wptb-item--image">
-                    <img src="/assets/img/more/3.png" alt="img" />
+                    <img src="/assets/img/more/3.png" alt="img" loading="lazy" />
                   </div>
                 </div>
               </div>
@@ -171,36 +171,36 @@ const About = () => {
               <h4 className="wptb-item--text">
                 <span className="wptb-text-backdrop">LV_Clicks</span>
                 <span className="wptb-item-layer both-version position-relative">
-                  <img src="/assets/img/more/star.png" alt="img" />
-                  <img src="/assets/img/more/star-dark.png" alt="img" />
+                  <img src="/assets/img/more/star.png" alt="img" loading="lazy" />
+                  <img src="/assets/img/more/star-dark.png" alt="img" loading="lazy" />
                 </span>
               </h4>
               <h4 className="wptb-item--text text-outline">
                 <span className="wptb-text-backdrop">Photography</span>
                 <span className="wptb-item-layer both-version position-relative">
-                  <img src="/assets/img/more/star.png" alt="img" />
-                  <img src="/assets/img/more/star-dark.png" alt="img" />
+                  <img src="/assets/img/more/star.png" alt="img" loading="lazy" />
+                  <img src="/assets/img/more/star-dark.png" alt="img" loading="lazy" />
                 </span>
               </h4>
               <h4 className="wptb-item--text">
                 <span className="wptb-text-backdrop">Studio</span>
                 <span className="wptb-item-layer both-version position-relative">
-                  <img src="/assets/img/more/star.png" alt="img" />
-                  <img src="/assets/img/more/star-dark.png" alt="img" />
+                  <img src="/assets/img/more/star.png" alt="img" loading="lazy" />
+                  <img src="/assets/img/more/star-dark.png" alt="img" loading="lazy" />
                 </span>
               </h4>
               <h4 className="wptb-item--text text-outline">
                 <span className="wptb-text-backdrop">Agency</span>
                 <span className="wptb-item-layer both-version position-relative">
-                  <img src="/assets/img/more/star.png" alt="img" />
-                  <img src="/assets/img/more/star-dark.png" alt="img" />
+                  <img src="/assets/img/more/star.png" alt="img" loading="lazy" />
+                  <img src="/assets/img/more/star-dark.png" alt="img" loading="lazy" />
                 </span>
               </h4>
               <h4 className="wptb-item--text">
                 <span className="wptb-text-backdrop">LV_Clicks</span>
                 <span className="wptb-item-layer both-version position-relative">
-                  <img src="/assets/img/more/star.png" alt="img" />
-                  <img src="/assets/img/more/star-dark.png" alt="img" />
+                  <img src="/assets/img/more/star.png" alt="img" loading="lazy" />
+                  <img src="/assets/img/more/star-dark.png" alt="img" loading="lazy" />
                 </span>
               </h4>
             </div>
@@ -208,36 +208,36 @@ const About = () => {
               <h4 className="wptb-item--text text-outline">
                 <span className="wptb-text-backdrop">Photography</span>
                 <span className="wptb-item-layer both-version position-relative">
-                  <img src="/assets/img/more/star.png" alt="img" />
-                  <img src="/assets/img/more/star-dark.png" alt="img" />
+                  <img src="/assets/img/more/star.png" alt="img" loading="lazy" />
+                  <img src="/assets/img/more/star-dark.png" alt="img" loading="lazy" />
                 </span>
               </h4>
               <h4 className="wptb-item--text">
                 <span className="wptb-text-backdrop">Studio</span>
                 <span className="wptb-item-layer both-version position-relative">
-                  <img src="/assets/img/more/star.png" alt="img" />
-                  <img src="/assets/img/more/star-dark.png" alt="img" />
+                  <img src="/assets/img/more/star.png" alt="img" loading="lazy" />
+                  <img src="/assets/img/more/star-dark.png" alt="img" loading="lazy" />
                 </span>
               </h4>
               <h4 className="wptb-item--text text-outline">
                 <span className="wptb-text-backdrop">Agency</span>
                 <span className="wptb-item-layer both-version position-relative">
-                  <img src="/assets/img/more/star.png" alt="img" />
-                  <img src="/assets/img/more/star-dark.png" alt="img" />
+                  <img src="/assets/img/more/star.png" alt="img" loading="lazy" />
+                  <img src="/assets/img/more/star-dark.png" alt="img" loading="lazy" />
                 </span>
               </h4>
               <h4 className="wptb-item--text">
                 <span className="wptb-text-backdrop">LV_Clicks</span>
                 <span className="wptb-item-layer both-version position-relative">
-                  <img src="/assets/img/more/star.png" alt="img" />
-                  <img src="/assets/img/more/star-dark.png" alt="img" />
+                  <img src="/assets/img/more/star.png" alt="img" loading="lazy" />
+                  <img src="/assets/img/more/star-dark.png" alt="img" loading="lazy" />
                 </span>
               </h4>
               <h4 className="wptb-item--text text-outline">
                 <span className="wptb-text-backdrop">Photography</span>
                 <span className="wptb-item-layer both-version position-relative">
-                  <img src="/assets/img/more/star.png" alt="img" />
-                  <img src="/assets/img/more/star-dark.png" alt="img" />
+                  <img src="/assets/img/more/star.png" alt="img" loading="lazy" />
+                  <img src="/assets/img/more/star-dark.png" alt="img" loading="lazy" />
                 </span>
               </h4>
             </div>
@@ -261,7 +261,7 @@ const About = () => {
             </div>
           </div>
           <div className="wptb-item-layer wptb-item-layer-one">
-            <img src="/assets/img/more/light-3.png" alt="img" />
+            <img src="/assets/img/more/light-3.png" alt="img" loading="lazy" />
           </div>
         </div>
       </div>
@@ -302,7 +302,7 @@ const About = () => {
                   <div className="wptb-team-grid1">
                     <div className="wptb-item--inner">
                       <div className="wptb-item--image">
-                        <img src={`/assets/img/team/${member.image}.jpg`} alt="img" />
+                        <img src={`/assets/img/team/${member.image}.jpg`} alt="img" loading="lazy" />
                       </div>
                       <div className="wptb-item--holder">
                         <div className="wptb-item--meta">
@@ -355,7 +355,7 @@ const About = () => {
                             </p>
                             <div className="wptb-item--meta">
                               <div className="wptb-item--image">
-                                <img src={`/assets/img/testimonial/${testimonial.image}.jpg`} alt="img" />
+                                <img src={`/assets/img/testimonial/${testimonial.image}.jpg`} alt="img" loading="lazy" />
                               </div>
                               <div className="wptb-item--meta-left">
                                 <h4 className="wptb-item--title">{testimonial.name}</h4>
@@ -410,7 +410,7 @@ const About = () => {
                   <a href="/album-detail">Photography Team of the Year 2023</a>
                 </div>
                 <div className="wptb-item--image">
-                  <img src="/assets/img/more/4.jpg" alt="img" />
+                  <img src="/assets/img/more/4.jpg" alt="img" loading="lazy" />
                   <div className="wptb-item--button">
                     <a href="/album-detail" className="btn">View</a>
                   </div>
@@ -424,7 +424,7 @@ const About = () => {
                   <a href="/album-detail">Best Wedding Photographer 2022</a>
                 </div>
                 <div className="wptb-item--image">
-                  <img src="/assets/img/more/5.jpg" alt="img" />
+                  <img src="/assets/img/more/5.jpg" alt="img" loading="lazy" />
                   <div className="wptb-item--button">
                     <a href="/album-detail" className="btn">View</a>
                   </div>
@@ -438,7 +438,7 @@ const About = () => {
                   <a href="/album-detail">Photography Team of the Year 2019</a>
                 </div>
                 <div className="wptb-item--image">
-                  <img src="/assets/img/more/6.jpg" alt="img" />
+                  <img src="/assets/img/more/6.jpg" alt="img" loading="lazy" />
                   <div className="wptb-item--button">
                     <a href="/album-detail" className="btn">View</a>
                   </div>

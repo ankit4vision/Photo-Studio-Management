@@ -1,6 +1,10 @@
 import { useEffect } from 'react'
+import useIsotope from '../hooks/useIsotope'
 
 const Gallery = () => {
+  // Initialize Isotope for the gallery grid
+  useIsotope('.style-masonry .grid')
+
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
@@ -13,7 +17,7 @@ const Gallery = () => {
       <div className="wptb-page-heading">
         <div className="wptb-item--inner" style={{ backgroundImage: "url('/assets/img/background/bg-3.jpg')" }}>
           <div className="wptb-item-layer wptb-item-layer-one">
-            <img src="/assets/img/more/circle.png" alt="img" />
+            <img src="/assets/img/more/circle.png" alt="img" loading="lazy" />
           </div>
           <h2 className="wptb-item--title">Gallery</h2>
         </div>
@@ -39,7 +43,7 @@ const Gallery = () => {
                 <div key={num} className="grid-item">
                   <div className="wptb-item--inner">
                     <div className="wptb-item--image">
-                      <img src={`/assets/img/projects/1/${num}.jpg`} alt="img" />
+                      <img src={`/assets/img/projects/1/${num}.jpg`} alt="img" loading="lazy" />
                       <a className="wptb-image-popup" href={`/assets/img/projects/1/${num}.jpg`} data-fancybox="gallery-images">
                         <i className="bi bi-arrows-fullscreen"></i>
                       </a>
@@ -103,8 +107,8 @@ const Gallery = () => {
       {/* Contact Form Section */}
       <section className="wptb-contact-form style2">
         <div className="wptb-item-layer both-version">
-          <img src="/assets/img/more/texture-2.png" alt="" />
-          <img src="/assets/img/more/texture-2-light.png" alt="" />
+          <img src="/assets/img/more/texture-2.png" alt="" loading="lazy" />
+          <img src="/assets/img/more/texture-2-light.png" alt="" loading="lazy" />
         </div>
         <div className="container">
           <div className="wptb-form--wrapper no-bg">

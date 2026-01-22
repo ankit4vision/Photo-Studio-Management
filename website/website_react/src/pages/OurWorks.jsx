@@ -1,7 +1,11 @@
 import { Link } from 'react-router-dom'
 import { useEffect } from 'react'
+import useIsotope from '../hooks/useIsotope'
 
 const OurWorks = () => {
+  // Initialize Isotope for the albums grid
+  useIsotope('.effect-gradient .grid')
+
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
@@ -23,7 +27,7 @@ const OurWorks = () => {
       <div className="wptb-page-heading">
         <div className="wptb-item--inner" style={{ backgroundImage: "url('/assets/img/background/bg-3.jpg')" }}>
           <div className="wptb-item-layer wptb-item-layer-one">
-            <img src="/assets/img/more/circle.png" alt="img" />
+            <img src="/assets/img/more/circle.png" alt="img" loading="lazy" />
           </div>
           <h2 className="wptb-item--title">Our Works</h2>
         </div>
@@ -54,7 +58,7 @@ const OurWorks = () => {
                     <div key={album.id} className={`grid-item col-md-${album.col}`}>
                       <div className="wptb-item--inner">
                         <div className="wptb-item--image">
-                          <img src={`/assets/img/projects/1/${album.image}.jpg`} alt="img" />
+                          <img src={`/assets/img/projects/1/${album.image}.jpg`} alt="img" loading="lazy" />
                           <Link to="/album-detail" className="wptb-item--link">
                             <i className="bi bi-chevron-right"></i>
                           </Link>
@@ -80,8 +84,8 @@ const OurWorks = () => {
       {/* Contact */}
       <section className="wptb-contact-form style2">
         <div className="wptb-item-layer both-version">
-          <img src="/assets/img/more/texture-2.png" alt="" />
-          <img src="/assets/img/more/texture-2-light.png" alt="" />
+          <img src="/assets/img/more/texture-2.png" alt="" loading="lazy" />
+          <img src="/assets/img/more/texture-2-light.png" alt="" loading="lazy" />
         </div>
         <div className="container">
           <div className="wptb-form--wrapper no-bg">

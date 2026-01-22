@@ -15,7 +15,7 @@ const AlbumDetail = () => {
       <div className="wptb-page-heading">
         <div className="wptb-item--inner" style={{ backgroundImage: "url('/assets/img/background/bg-3.jpg')" }}>
           <div className="wptb-item-layer wptb-item-layer-one">
-            <img src="/assets/img/more/circle.png" alt="circle" />
+            <img src="/assets/img/more/circle.png" alt="circle" loading="lazy" />
           </div>
           <h2 className="wptb-item--title">Album Detail</h2>
         </div>
@@ -34,7 +34,7 @@ const AlbumDetail = () => {
                       {sliderImages.map((num) => (
                         <div key={num} className="swiper-slide">
                           <figure className="block-gallery">
-                            <img src={`/assets/img/projects/gallery/${num}.jpg`} alt={`Slide ${num}`} />
+                            <img src={`/assets/img/projects/gallery/${num}.jpg`} alt={`Slide ${num}`} loading="lazy" />
                             <a className="wptb-image-popup" href={`/assets/img/projects/gallery/${num}.jpg`} data-fancybox="album-gallery">
                               <i className="bi bi-arrows-fullscreen"></i>
                             </a>
@@ -64,14 +64,14 @@ const AlbumDetail = () => {
                     <div className="row mt-5">
                       <div className="col-md-6">
                         <figure className="block-gallery mb-4">
-                          <img src="/assets/img/projects/details/2.jpg" alt="detail" />
+                          <img src="/assets/img/projects/details/2.jpg" alt="detail" loading="lazy" />
                           <a className="wptb-image-popup" href="/assets/img/projects/details/2.jpg" data-fancybox="album-gallery">
                             <i className="bi bi-arrows-fullscreen"></i>
                           </a>
                         </figure>
 
                         <figure className="block-gallery mb-4">
-                          <img src="/assets/img/projects/details/3.jpg" alt="detail" />
+                          <img src="/assets/img/projects/details/3.jpg" alt="detail" loading="lazy" />
                           <a className="wptb-image-popup" href="/assets/img/projects/details/3.jpg" data-fancybox="album-gallery">
                             <i className="bi bi-arrows-fullscreen"></i>
                           </a>
@@ -79,14 +79,14 @@ const AlbumDetail = () => {
                       </div>
                       <div className="col-md-6">
                         <figure className="block-gallery mb-4">
-                          <img src="/assets/img/projects/details/4.jpg" alt="detail" />
+                          <img src="/assets/img/projects/details/4.jpg" alt="detail" loading="lazy" />
                           <a className="wptb-image-popup" href="/assets/img/projects/details/4.jpg" data-fancybox="album-gallery">
                             <i className="bi bi-arrows-fullscreen"></i>
                           </a>
                         </figure>
 
                         <figure className="block-gallery mb-4">
-                          <img src="/assets/img/projects/details/5.jpg" alt="detail" />
+                          <img src="/assets/img/projects/details/5.jpg" alt="detail" loading="lazy" />
                           <a className="wptb-image-popup" href="/assets/img/projects/details/5.jpg" data-fancybox="album-gallery">
                             <i className="bi bi-arrows-fullscreen"></i>
                           </a>
@@ -97,7 +97,7 @@ const AlbumDetail = () => {
                     <div className="row mt-3">
                       <div className="col-md-4">
                         <figure className="block-gallery mb-4">
-                          <img src="/assets/img/projects/details/6.jpg" alt="detail" />
+                          <img src="/assets/img/projects/details/6.jpg" alt="detail" loading="lazy" />
                           <a className="wptb-image-popup" href="/assets/img/projects/details/6.jpg" data-fancybox="album-gallery">
                             <i className="bi bi-arrows-fullscreen"></i>
                           </a>
@@ -105,7 +105,7 @@ const AlbumDetail = () => {
                       </div>
                       <div className="col-md-4">
                         <figure className="block-gallery mb-4">
-                          <img src="/assets/img/projects/details/7.jpg" alt="detail" />
+                          <img src="/assets/img/projects/details/7.jpg" alt="detail" loading="lazy" />
                           <a className="wptb-image-popup" href="/assets/img/projects/details/7.jpg" data-fancybox="album-gallery">
                             <i className="bi bi-arrows-fullscreen"></i>
                           </a>
@@ -113,7 +113,7 @@ const AlbumDetail = () => {
                       </div>
                       <div className="col-md-4">
                         <figure className="block-gallery mb-4">
-                          <img src="/assets/img/projects/details/8.jpg" alt="detail" />
+                          <img src="/assets/img/projects/details/8.jpg" alt="detail" loading="lazy" />
                           <a className="wptb-image-popup" href="/assets/img/projects/details/8.jpg" data-fancybox="album-gallery">
                             <i className="bi bi-arrows-fullscreen"></i>
                           </a>
@@ -124,7 +124,7 @@ const AlbumDetail = () => {
                     <div className="row mt-3">
                       <div className="col-md-6">
                         <figure className="block-gallery mb-4">
-                          <img src="/assets/img/projects/details/9.jpg" alt="detail" />
+                          <img src="/assets/img/projects/details/9.jpg" alt="detail" loading="lazy" />
                           <a className="wptb-image-popup" href="/assets/img/projects/details/9.jpg" data-fancybox="album-gallery">
                             <i className="bi bi-arrows-fullscreen"></i>
                           </a>
@@ -132,7 +132,7 @@ const AlbumDetail = () => {
                       </div>
                       <div className="col-md-6">
                         <figure className="block-gallery mb-4">
-                          <img src="/assets/img/projects/details/10.jpg" alt="detail" />
+                          <img src="/assets/img/projects/details/10.jpg" alt="detail" loading="lazy" />
                           <a className="wptb-image-popup" href="/assets/img/projects/details/10.jpg" data-fancybox="album-gallery">
                             <i className="bi bi-arrows-fullscreen"></i>
                           </a>
@@ -193,8 +193,8 @@ const AlbumDetail = () => {
       {/* Contact */}
       <section className="wptb-contact-form style2">
         <div className="wptb-item-layer both-version">
-          <img src="/assets/img/more/texture-2.png" alt="texture" />
-          <img src="/assets/img/more/texture-2-light.png" alt="texture" />
+          <img src="/assets/img/more/texture-2.png" alt="texture" loading="lazy" />
+          <img src="/assets/img/more/texture-2-light.png" alt="texture" loading="lazy" />
         </div>
         <div className="container">
           <div className="wptb-form--wrapper no-bg">

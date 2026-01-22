@@ -1,9 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useRef } from 'react'
+import useIsotope from '../hooks/useIsotope'
 
 const Home = () => {
   const sliderRef = useRef(null)
   const swiperInstanceRef = useRef(null)
+
+  // Initialize Isotope for gallery grids
+  useIsotope('.style-masonry .grid')
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -130,7 +134,7 @@ const Home = () => {
               <div key={index} className="swiper-slide">
                 <div className="wptb-slider--item">
                   <div className="wptb-slider--image">
-                    <img src={`/assets/img/slider/${num}.jpg`} alt={`Slider ${index + 1}`} />
+                    <img src={`/assets/img/slider/${num}.jpg`} alt={`Slider ${index + 1}`} loading="lazy" />
                   </div>
                 </div>
               </div>
@@ -140,16 +144,16 @@ const Home = () => {
 
         {/* Layer Images */}
         <div className="wptb-item-layer wptb-item-layer-one both-version">
-          <img src="/assets/img/slider/texture-1.png" alt="texture" />
-          <img src="/assets/img/slider/texture-1-light.png" alt="texture" />
+          <img src="/assets/img/slider/texture-1.png" alt="texture" loading="lazy" />
+          <img src="/assets/img/slider/texture-1-light.png" alt="texture" loading="lazy" />
         </div>
         <div className="wptb-item-layer wptb-item-layer-two both-version">
-          <img src="/assets/img/slider/round.png" alt="round" />
-          <img src="/assets/img/slider/round-light.png" alt="round" />
+          <img src="/assets/img/slider/round.png" alt="round" loading="lazy" />
+          <img src="/assets/img/slider/round-light.png" alt="round" loading="lazy" />
         </div>
         <div className="wptb-item-layer wptb-item-layer-three both-version">
-          <img src="/assets/img/slider/overlay.png" alt="overlay" />
-          <img src="/assets/img/slider/overlay-light.png" alt="overlay" />
+          <img src="/assets/img/slider/overlay.png" alt="overlay" loading="lazy" />
+          <img src="/assets/img/slider/overlay-light.png" alt="overlay" loading="lazy" />
         </div>
       </section>
 
@@ -165,8 +169,8 @@ const Home = () => {
                   <h4 key={idx} className={`wptb-item--text ${item.outline ? 'text-outline' : ''}`}>
                     <span className="wptb-text-backdrop">{item.text}</span>
                     <span className="wptb-item-layer both-version position-relative">
-                      <img src="/assets/img/more/star.png" alt="star" />
-                      <img src="/assets/img/more/star-dark.png" alt="star" />
+                      <img src="/assets/img/more/star.png" alt="star" loading="lazy" />
+                      <img src="/assets/img/more/star-dark.png" alt="star" loading="lazy" />
                     </span>
                   </h4>
                 ))}
@@ -239,7 +243,7 @@ const Home = () => {
                 <div key={project.id} className="grid-item">
                   <div className="wptb-item--inner">
                     <div className="wptb-item--image">
-                      <img src={`/assets/img/projects/1/${project.id}.jpg`} alt={project.title} />
+                      <img src={`/assets/img/projects/1/${project.id}.jpg`} alt={project.title} loading="lazy" />
                     </div>
                     <div className="wptb-item--holder">
                       <div className="wptb-item--meta">
@@ -275,7 +279,7 @@ const Home = () => {
                 <div key={num} className="grid-item">
                   <div className="wptb-item--inner">
                     <div className="wptb-item--image">
-                      <img src={`/assets/img/projects/1/${num}.jpg`} alt={`Gallery ${num}`} />
+                      <img src={`/assets/img/projects/1/${num}.jpg`} alt={`Gallery ${num}`} loading="lazy" />
                       <a className="wptb-image-popup" href={`/assets/img/projects/1/${num}.jpg`} data-fancybox="home-gallery">
                         <i className="bi bi-arrows-fullscreen"></i>
                       </a>
@@ -333,7 +337,7 @@ const Home = () => {
                             </p>
                             <div className="wptb-item--meta">
                               <div className="wptb-item--image">
-                                <img src={`/assets/img/testimonial/${testimonial.image}.jpg`} alt={testimonial.name} />
+                                <img src={`/assets/img/testimonial/${testimonial.image}.jpg`} alt={testimonial.name} loading="lazy" />
                               </div>
                               <div className="wptb-item--meta-left">
                                 <h4 className="wptb-item--title">{testimonial.name}</h4>
@@ -441,8 +445,8 @@ const Home = () => {
       {/* Contact Form */}
       <section className="wptb-contact-form style2">
         <div className="wptb-item-layer both-version">
-          <img src="/assets/img/more/texture-2.png" alt="texture" />
-          <img src="/assets/img/more/texture-2-light.png" alt="texture" />
+          <img src="/assets/img/more/texture-2.png" alt="texture" loading="lazy" />
+          <img src="/assets/img/more/texture-2-light.png" alt="texture" loading="lazy" />
         </div>
         <div className="container">
           <div className="wptb-form--wrapper no-bg">

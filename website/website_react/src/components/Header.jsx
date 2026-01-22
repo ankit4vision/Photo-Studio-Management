@@ -47,45 +47,8 @@ const Header = () => {
                     <li className={`menu-item ${isActive('/about') ? 'active' : ''}`}>
                       <Link to="/about" style={{ textDecoration: 'none' }}>About Us</Link>
                     </li>
-                    <li className="menu-item menu-item-has-children">
-                      <a href="#">Pages</a>
-                      <ul className="sub-menu" data-lenis-prevent>
-                        <li className="menu-item menu-item-has-children">
-                          <a href="#">Services</a>
-                          <ul className="sub-menu" data-lenis-prevent>
-                            <li className="menu-item"><a href="#services">Services Grid</a></li>
-                            <li className="menu-item"><a href="#service-details">Service Details</a></li>
-                          </ul>
-                        </li>
-                        <li className="menu-item menu-item-has-children">
-                          <a href="#">Our Team</a>
-                          <ul className="sub-menu" data-lenis-prevent>
-                            <li className="menu-item"><a href="#team">Team Grid</a></li>
-                            <li className="menu-item"><a href="#team-details">Team Details</a></li>
-                          </ul>
-                        </li>
-                        <li className="menu-item"><a href="#booking">Booking Form</a></li>
-                        <li className="menu-item menu-item-has-children">
-                          <a href="#">Prices</a>
-                          <ul className="sub-menu" data-lenis-prevent>
-                            <li className="menu-item"><a href="#packages">Package List</a></li>
-                            <li className="menu-item"><a href="#pricetable">Price Table</a></li>
-                          </ul>
-                        </li>
-                      </ul>
-                    </li>
-                    <li className="menu-item menu-item-has-children">
-                      <a href="#">Contact</a>
-                      <ul className="sub-menu" data-lenis-prevent>
-                        <li className="menu-item"><a href="#contact">Contact Us</a></li>
-                      </ul>
-                    </li>
-                    <li className="menu-item menu-item-has-children">
-                      <a href="#">Blog</a>
-                      <ul className="sub-menu" data-lenis-prevent>
-                        <li className="menu-item"><a href="#blog">Blog Grid</a></li>
-                        <li className="menu-item"><a href="#blog-details">Blog Details</a></li>
-                      </ul>
+                    <li className={`menu-item ${isActive('/contact') ? 'active' : ''}`}>
+                      <Link to="/contact" style={{ textDecoration: 'none' }}>Contact</Link>
                     </li>
                   </ul>
                 </div>
@@ -191,7 +154,7 @@ const Header = () => {
               {[6, 7, 8, 9, 10, 11].map((num) => (
                 <div key={num} className="wptb-item">
                   <div className="wptb-item--image">
-                    <img src={`/assets/img/instagram/${num}.jpg`} alt="instagram" />
+                    <img src={`/assets/img/instagram/${num}.jpg`} alt="instagram" loading="lazy" />
                   </div>
                 </div>
               ))}

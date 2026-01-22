@@ -2,10 +2,10 @@
 	'use strict';
 	
     $(document).ready(function(){
-            //Google Map
+            //Google Map - LV_Clicks Studio Location
             var mapProp= {
-                center:new google.maps.LatLng(51.508742,-0.120850),
-                zoom: 14,
+                center:new google.maps.LatLng(23.130011,73.61087),
+                zoom: 15,
                 styles: [
             {
                 "featureType": "all",

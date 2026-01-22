@@ -35,3 +35,24 @@ body {
 body.theme-style--gradient {
   /* Theme styles will be applied from main.css */
 }
+
+/* Fix for Isotope grid - ensure proper layout before initialization */
+.grid {
+  /* Ensure grid container has proper display */
+  position: relative;
+}
+
+/* Ensure grid items have proper display before Isotope initializes */
+.grid-item {
+  display: block;
+  /* Isotope will handle positioning, but we need this for initial render */
+}
+
+/* Prevent layout shift while images load */
+.grid-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+  /* Prevent images from causing layout issues */
+  object-fit: cover;
+}

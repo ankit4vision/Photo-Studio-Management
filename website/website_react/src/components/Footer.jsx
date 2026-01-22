@@ -55,9 +55,7 @@ const Footer = () => {
                       <ul>
                         <li className="menu-item"><a href="#booking">Booking</a></li>
                         <li className="menu-item"><a href="#shop">Products</a></li>
-                        <li className="menu-item"><a href="#blog">Recent Posts</a></li>
-                        <li className="menu-item"><a href="#blog">Latest News</a></li>
-                        <li className="menu-item"><a href="#contact">Contact Us</a></li>
+                        <li className="menu-item"><Link to="/contact">Contact Us</Link></li>
                       </ul>
                     </div>
                   </div>
