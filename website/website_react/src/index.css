@@ -1,0 +1,37 @@
+/* Custom styles for React app */
+.logo-text {
+  font-size: 24px;
+  font-weight: bold;
+  color: inherit;
+  text-decoration: none;
+}
+
+.spinner-text {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Ensure React Router Link components don't have underlines */
+.header .mainnav ul.main-menu li a,
+.header .mainnav ul.main-menu li Link,
+.header .mainnav ul.main-menu li a:link,
+.header .mainnav ul.main-menu li a:visited,
+.header .mainnav ul.main-menu li a:hover,
+.header .mainnav ul.main-menu li a:active {
+  text-decoration: none !important;
+}
+
+/* Ensure body has the theme class */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body.theme-style--gradient {
+  /* Theme styles will be applied from main.css */
+}

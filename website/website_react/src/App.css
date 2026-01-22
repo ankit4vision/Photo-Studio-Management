@@ -1,0 +1,9 @@
+/* App-specific styles */
+.App {
+  min-height: 100vh;
+}
+
+/* Ensure body has theme class */
+body.theme-style--gradient {
+  /* Styles from main.css */
+}
