@@ -218,8 +218,7 @@ class OrderService {
       const response = await apiClient.post(API_ENDPOINTS.ORDERS.CREATE, backendData)
       return this.transformItemResponse(response?.data)
     } catch (error) {
-      console.warn('API call failed, using mock data:', error)
-      return this.createMockOrder(orderData)
+      return handleApiError(error)
     }
   }
 
@@ -460,8 +459,7 @@ class OrderService {
       const response = await apiClient.get(API_ENDPOINTS.ORDERS.STATS, { params })
       return this.transformItemResponse(response?.data)
     } catch (error) {
-      console.warn('API call failed, using mock data:', error)
-      return this.getMockOrderStats()
+      return handleApiError(error)
     }
   }
 
@@ -497,8 +495,7 @@ class OrderService {
       })
       return this.transformListResponse(response?.data)
     } catch (error) {
-      console.warn('API call failed, using mock data:', error)
-      return this.getMockOrdersByCustomer(customerId, params)
+      return handleApiError(error)
     }
   }
 

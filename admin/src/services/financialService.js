@@ -125,45 +125,48 @@ class FinancialService {
     }
   }
 
-  // Export PDF (optional - Phase 2)
-  async exportPdf(params = {}) {
+  // Export single financial transaction to PDF
+  async exportFinancialTransactionPdf(transactionId, receiptType = 'transaction', params = {}) {
     try {
       const queryParams = new URLSearchParams()
-      if (params.start_date || params.startDate) queryParams.append('start_date', params.start_date || params.startDate)
-      if (params.end_date || params.endDate) queryParams.append('end_date', params.end_date || params.endDate)
-      if (params.transaction_type || params.transactionType) queryParams.append('transaction_type', params.transaction_type || params.transactionType)
-
-      const url = `${API_ENDPOINTS.FINANCIAL_TRANSACTIONS.EXPORT_PDF}${queryParams.toString() ? '?' + queryParams.toString() : ''}`
-      const response = await apiClient.get(url, {
-        responseType: 'blob',
+      // Add receipt_type parameter
+      queryParams.append('receipt_type', receiptType)
+      Object.keys(params).forEach(key => {
+        if (params[key]) queryParams.append(key, params[key])
       })
-
-      // Create blob URL and trigger download
+      
+      const url = `${API_ENDPOINTS.FINANCIAL_TRANSACTIONS.EXPORT_PDF(transactionId)}${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+      const response = await apiClient.get(url, { responseType: 'blob' })
+      
+      // Extract filename from Content-Disposition header
+      let filename = `financial_transaction_${transactionId}.pdf`
+      const contentDisposition = response.headers['content-disposition'] || response.headers['Content-Disposition']
+      if (contentDisposition) {
+        // Try to extract filename (handles both quoted and unquoted, and URL-encoded)
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '').trim()
+          // Decode URL-encoded filename if needed
+          try {
+            filename = decodeURIComponent(filename)
+          } catch (e) {
+            // If decoding fails, use as-is
+          }
+        }
+      }
+      
+      // Create blob and download
       const blob = new Blob([response.data], { type: 'application/pdf' })
       const url_blob = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url_blob
-      
-      // Extract filename from Content-Disposition header
-      const contentDisposition = response.headers['content-disposition']
-      let filename = 'financial-report.pdf'
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i)
-        if (filenameMatch) {
-          filename = filenameMatch[1]
-        }
-      }
-      
-      link.setAttribute('download', filename)
+      link.download = filename
       document.body.appendChild(link)
       link.click()
-      link.remove()
+      document.body.removeChild(link)
       window.URL.revokeObjectURL(url_blob)
-
-      return {
-        success: true,
-        message: 'PDF exported successfully',
-      }
+      
+      return { success: true, message: 'PDF exported successfully' }
     } catch (error) {
       return handleApiError(error)
     }

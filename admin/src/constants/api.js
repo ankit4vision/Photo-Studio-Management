@@ -204,7 +204,7 @@ export const API_ENDPOINTS = {
     UPDATE: (id) => `/financial-transactions/${id}`,
     DELETE: (id) => `/financial-transactions/${id}`,
     STATS: '/financial-transactions/stats',
-    EXPORT_PDF: '/financial-transactions/export-pdf',
+    EXPORT_PDF: (id) => `/financial-transactions/${id}/export-pdf`,
   },
 
   FINANCIAL_CATEGORIES: {

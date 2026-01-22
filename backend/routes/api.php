@@ -125,8 +125,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Financial Transaction Management
     // TODO: Re-enable permission middleware after assigning permissions to roles
-    // IMPORTANT: /stats route must come BEFORE /{transaction} route to avoid route model binding conflict
+    // IMPORTANT: /stats and /export-pdf routes must come BEFORE /{transaction} route to avoid route model binding conflict
     Route::get('/financial-transactions/stats', [FinancialTransactionController::class, 'stats']); // ->middleware('permission:view_financial_transaction');
+    Route::get('/financial-transactions/{transaction}/export-pdf', [FinancialTransactionController::class, 'exportPdf']); // ->middleware('permission:view_financial_transaction');
     Route::get('/financial-transactions', [FinancialTransactionController::class, 'index']); // ->middleware('permission:view_financial_transaction');
     Route::post('/financial-transactions', [FinancialTransactionController::class, 'store']); // ->middleware('permission:create_financial_transaction');
     Route::get('/financial-transactions/{transaction}', [FinancialTransactionController::class, 'show']); // ->middleware('permission:view_financial_transaction');
