@@ -237,7 +237,9 @@ const Home = () => {
                       <i className={`bi ${service.icon}`} style={{ fontSize: '48px' }}></i>
                     </div>
                     <div className="wptb-item--holder">
-                      <h4 className="wptb-item--title"><a href="#service-details">{service.title}</a></h4>
+                      <h4 className="wptb-item--title">
+                        <Link to="/our-works">{service.title}</Link>
+                      </h4>
                       <p className="wptb-item--description">{service.desc}</p>
                       <h6 className="wptb-item--count text-outline">{service.num}</h6>
                     </div>
@@ -280,7 +282,9 @@ const Home = () => {
                     </div>
                     <div className="wptb-item--holder">
                       <div className="wptb-item--meta">
-                        <h4><a href="#project-details">{project.title}</a></h4>
+                        <h4>
+                          <Link to="/album-detail">{project.title}</Link>
+                        </h4>
                         <p>By {project.author}</p>
                       </div>
                     </div>

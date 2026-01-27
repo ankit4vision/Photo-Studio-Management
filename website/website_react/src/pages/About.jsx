@@ -81,7 +81,9 @@ const About = () => {
                     <div className="wptb-item--inner">
                       <div className="wptb-item--holder d-flex align-items-center">
                         <div className="wptb-item--value">
-                          <span className="odometer" data-count="100"></span><span className="suffix">%</span>
+                          {/* Start from 0 so Odometer can animate to data-count, and show a value even if JS is disabled */}
+                          <span className="odometer" data-count="100">0</span>
+                          <span className="suffix">%</span>
                         </div>
                         <div className="wptb-item--text">Customer Satisfaction</div>
                       </div>
@@ -94,7 +96,9 @@ const About = () => {
                     <div className="wptb-item--inner">
                       <div className="wptb-item--holder d-flex align-items-center">
                         <div className="wptb-item--value flex-shrink-0">
-                          <span className="odometer" data-count="350"></span><span className="suffix">+</span>
+                          {/* Start from 0 so Odometer can animate to data-count, and show a value even if JS is disabled */}
+                          <span className="odometer" data-count="350">0</span>
+                          <span className="suffix">+</span>
                         </div>
                         <div className="wptb-item--text">Photography Session</div>
                       </div>
