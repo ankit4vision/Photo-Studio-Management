@@ -7,32 +7,6 @@ const Contact = () => {
 
   return (
     <>
-      {/* Page Header */}
-      <div className="wptb-page-heading">
-        <div className="wptb-item--inner" style={{ backgroundImage: "url('/assets/img/background/bg-3.jpg')" }}>
-          <div className="wptb-item-layer wptb-item-layer-one">
-            <img src="/assets/img/more/circle.png" alt="img" loading="lazy" />
-          </div>
-          <h2 className="wptb-item--title">Contact Us</h2>
-        </div>
-      </div>
-
-      {/* Google Map - Using iframe embed (no API key required) */}
-      <div className="gmapbox wow fadeInUp">
-        <div className="map" style={{ width: '100%', height: '100%', minHeight: '500px', position: 'relative' }}>
-          <iframe
-            src="https://www.google.com/maps?q=23.130011,73.61087&hl=en&z=15&output=embed"
-            width="100%"
-            height="100%"
-            style={{ border: 0, minHeight: '500px', display: 'block' }}
-            allowFullScreen={true}
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            title="LV_Clicks Studio Location - Voharwad, Lunawada, Gujarat"
-          ></iframe>
-        </div>
-      </div>
-
       {/* Contact Form Section */}
       <section className="wptb-contact-form style1 bg-image-2" style={{ backgroundImage: "url('/assets/img/background/bg-9.jpg')" }}>
         <div className="wptb-item-layer both-version">
@@ -152,6 +126,22 @@ const Contact = () => {
           </div>
         </div>
       </section>
+
+      {/* Google Map - Using iframe embed (no API key required) */}
+      <div className="gmapbox wow fadeInUp">
+        <div className="map" style={{ width: '100%', height: '100%', minHeight: '500px', position: 'relative' }}>
+          <iframe
+            src="https://www.google.com/maps?q=23.130011,73.61087&hl=en&z=15&output=embed"
+            width="100%"
+            height="100%"
+            style={{ border: 0, minHeight: '500px', display: 'block' }}
+            allowFullScreen={true}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title="LV_Clicks Studio Location - Voharwad, Lunawada, Gujarat"
+          ></iframe>
+        </div>
+      </div>
     </>
   )
 }

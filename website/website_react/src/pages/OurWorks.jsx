@@ -23,16 +23,6 @@ const OurWorks = () => {
 
   return (
     <>
-      {/* Page Header */}
-      <div className="wptb-page-heading">
-        <div className="wptb-item--inner" style={{ backgroundImage: "url('/assets/img/background/bg-3.jpg')" }}>
-          <div className="wptb-item-layer wptb-item-layer-one">
-            <img src="/assets/img/more/circle.png" alt="img" loading="lazy" />
-          </div>
-          <h2 className="wptb-item--title">Our Works</h2>
-        </div>
-      </div>
-
       {/* Albums Section */}
       <section className="wptb-project pd-top-100 pd-bottom-80">
         <div className="container">

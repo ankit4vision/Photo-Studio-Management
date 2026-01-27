@@ -29,16 +29,6 @@ const About = () => {
 
   return (
     <>
-      {/* Page Header */}
-      <div className="wptb-page-heading">
-        <div className="wptb-item--inner" style={{ backgroundImage: "url('/assets/img/background/bg-3.jpg')" }}>
-          <div className="wptb-item-layer wptb-item-layer-one">
-            <img src="/assets/img/more/circle.png" alt="img" loading="lazy" />
-          </div>
-          <h2 className="wptb-item--title">About Us</h2>
-        </div>
-      </div>
-
       {/* About LV_Clicks */}
       <section className="wptb-about-one bg-image-2" style={{ backgroundImage: "url('/assets/img/more/texture.png')" }}>
         <div className="container">
