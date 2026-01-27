@@ -161,7 +161,7 @@ const AlbumDetail = () => {
                       <div className="social-box">
                         <ul>
                           <li><a href="#"><i className="bi bi-facebook"></i></a></li>
-                          <li><a href="#"><i className="bi bi-instagram"></i></a></li>
+                          <li><a href="https://www.instagram.com/lv_clicks_/" target="_blank" rel="noopener noreferrer"><i className="bi bi-instagram"></i></a></li>
                           <li><a href="#"><i className="bi bi-twitter"></i></a></li>
                           <li><a href="#"><i className="bi bi-pinterest"></i></a></li>
                         </ul>

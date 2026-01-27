@@ -75,7 +75,7 @@ const Footer = () => {
               <div className="social-box style-oval">
                 <ul>
                   <li><a href="https://www.facebook.com/" className="bi bi-facebook"></a></li>
-                  <li><a href="https://www.instagram.com/" className="bi bi-instagram"></a></li>
+                  <li><a href="https://www.instagram.com/lv_clicks_/" className="bi bi-instagram" target="_blank" rel="noopener noreferrer"></a></li>
                   <li><a href="https://www.linkedin.com/" className="bi bi-linkedin"></a></li>
                   <li><a href="https://www.behance.com/" className="bi bi-behance"></a></li>
                 </ul>

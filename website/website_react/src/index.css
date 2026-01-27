@@ -32,9 +32,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-body.theme-style--gradient {
-  /* Theme styles will be applied from main.css */
-}
+/* Theme styles are applied from main.css */
 
 /* Fix for Isotope grid - ensure proper layout before initialization */
 .grid {
@@ -55,4 +53,9 @@ body.theme-style--gradient {
   display: block;
   /* Prevent images from causing layout issues */
   object-fit: cover;
+}
+
+/* Marquee padding-bottom override */
+.wptb-marquee {
+  padding-bottom: 50px !important;
 }

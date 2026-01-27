@@ -64,12 +64,6 @@ const Header = () => {
                   </div>
                 </div>
 
-                <div className="header_search wptb-element">
-                  <a href="#" className="modal_search_icon" data-bs-toggle="modal" data-bs-target="#modalSearch">
-                    <i className="bi bi-search"></i>
-                  </a>
-                </div>
-
                 <button type="button" className="mr_menu_toggle wptb-element d-xl-none">
                   <i className="bi bi-list"></i>
                 </button>
@@ -127,7 +121,7 @@ const Header = () => {
         <div className="social-box">
           <ul>
             <li><a href="https://www.facebook.com/"><i className="bi bi-facebook"></i></a></li>
-            <li><a href="https://www.instagram.com/"><i className="bi bi-instagram"></i></a></li>
+            <li><a href="https://www.instagram.com/lv_clicks_/" target="_blank" rel="noopener noreferrer"><i className="bi bi-instagram"></i></a></li>
             <li><a href="https://www.linkedin.com/"><i className="bi bi-linkedin"></i></a></li>
             <li><a href="https://www.behance.com/"><i className="bi bi-behance"></i></a></li>
             <li><a href="https://www.youtube.com/"><i className="bi bi-youtube"></i></a></li>
@@ -198,31 +192,11 @@ const Header = () => {
           <div className="social-box style-square">
             <ul>
               <li><a href="https://www.facebook.com/"><i className="bi bi-facebook"></i></a></li>
-              <li><a href="https://www.instagram.com/"><i className="bi bi-instagram"></i></a></li>
+              <li><a href="https://www.instagram.com/lv_clicks_/" target="_blank" rel="noopener noreferrer"><i className="bi bi-instagram"></i></a></li>
               <li><a href="https://www.linkedin.com/"><i className="bi bi-linkedin"></i></a></li>
               <li><a href="https://www.behance.com/"><i className="bi bi-behance"></i></a></li>
               <li><a href="https://www.youtube.com/"><i className="bi bi-youtube"></i></a></li>
             </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal Search */}
-      <div className="search-modal">
-        <div className="modal fade" id="modalSearch">
-          <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content">
-              <div className="search_overlay">
-                <form className="credential-form" method="post">
-                  <div className="form-group">
-                    <input type="text" name="search" className="keyword form-control" placeholder="Search Here" />
-                  </div>
-                  <button type="submit" className="btn-search">
-                    <span className="text-first"> <i className="bi bi-arrow-right"></i> </span>
-                  </button>
-                </form>
-              </div>
-            </div>
           </div>
         </div>
       </div>
