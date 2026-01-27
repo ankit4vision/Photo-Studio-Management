@@ -90,13 +90,46 @@ const Home = () => {
   ]
 
   const galleryImages = [1, 2, 3, 4, 5, 6]
+
+  // Core photography services offered by LV_Clicks
   const services = [
-    { icon: 'bi-camera', title: 'Wedding Photography', desc: 'The talent at LV_Clicks runs wide range of services. Across many markets, geographies', num: '01' },
-    { icon: 'bi-camera-video', title: 'Wedding Cinematography', desc: 'The talent at LV_Clicks runs wide range of services. Across many markets, geographies', num: '02', active: true },
-    { icon: 'bi-film', title: 'Wedding Cinematography', desc: 'The talent at LV_Clicks runs wide range of services. Across many markets, geographies', num: '03' },
-    { icon: 'bi-person-badge', title: 'Personal Portfolio Shoot', desc: 'The talent at LV_Clicks runs wide range of services. Across many markets, geographies', num: '04' },
-    { icon: 'bi-camera-reels', title: 'Wedding Cinematography', desc: 'The talent at LV_Clicks runs wide range of services. Across many markets, geographies', num: '05' },
-    { icon: 'bi-images', title: 'Personal Portfolio Shoot', desc: 'The talent at LV_Clicks runs wide range of services. Across many markets, geographies', num: '06' }
+    {
+      icon: 'bi-camera',
+      title: 'Wedding Photography',
+      desc: 'Complete wedding day coverage with candid and traditional photography for every important ritual.',
+      num: '01'
+    },
+    {
+      icon: 'bi-camera-video',
+      title: 'Wedding Cinematography',
+      desc: 'Cinematic wedding films with storytelling, speeches, and music edits that capture real emotions.',
+      num: '02',
+      active: true
+    },
+    {
+      icon: 'bi-heart',
+      title: 'Pre‑Wedding Shoots',
+      desc: 'Concept-based pre‑wedding sessions at outdoor locations, customized themes, and couple portraits.',
+      num: '03'
+    },
+    {
+      icon: 'bi-people',
+      title: 'Portrait & Portfolio',
+      desc: 'Professional studio and outdoor portrait sessions for personal, modelling, and social media portfolios.',
+      num: '04'
+    },
+    {
+      icon: 'bi-camera-reels',
+      title: 'Event Photography',
+      desc: 'Birthday, engagement, baby shower, corporate events, and family functions with full photo coverage.',
+      num: '05'
+    },
+    {
+      icon: 'bi-image',
+      title: 'Baby & Maternity',
+      desc: 'Newborn, kids, and maternity sessions with creative setups, props, and safe studio lighting.',
+      num: '06'
+    }
   ]
 
   const testimonials = [
