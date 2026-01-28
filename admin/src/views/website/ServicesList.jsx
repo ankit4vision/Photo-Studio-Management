@@ -11,6 +11,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { Table, Modal, FormModal } from '../../components'
 import ServiceForm from '../../components/pages/website/ServiceForm'
+import WebsiteCMSNav from '../../components/pages/website/WebsiteCMSNav'
 import websiteService from '../../services/websiteService'
 import { useToast } from '../../components'
 import { usePermissions, useDebounce } from '../../hooks'
@@ -304,8 +305,10 @@ const ServicesList = () => {
   }
 
   return (
-    <Container fluid className="py-4">
-      <Row className="mb-4">
+    <>
+      <WebsiteCMSNav />
+      <Container fluid className="py-4">
+        <Row className="mb-4">
         <Col>
           <div className="d-flex justify-content-between align-items-center">
             <div>
@@ -473,7 +476,8 @@ const ServicesList = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-    </Container>
+      </Container>
+    </>
   )
 }
 

@@ -11,6 +11,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { Table, Modal, FormModal } from '../../components'
 import GalleryVideoForm from '../../components/pages/website/GalleryVideoForm'
+import WebsiteCMSNav from '../../components/pages/website/WebsiteCMSNav'
 import websiteService from '../../services/websiteService'
 import { useToast } from '../../components'
 import { usePermissions, useDebounce } from '../../hooks'
@@ -311,7 +312,9 @@ const GalleryVideosList = () => {
   }
 
   return (
-    <Container fluid className="py-4">
+    <>
+      <WebsiteCMSNav />
+      <Container fluid className="py-4">
       <Row className="mb-4">
         <Col>
           <div className="d-flex justify-content-between align-items-center">
@@ -488,7 +491,8 @@ const GalleryVideosList = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-    </Container>
+      </Container>
+    </>
   )
 }
 

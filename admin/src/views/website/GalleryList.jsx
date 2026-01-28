@@ -11,6 +11,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { Table, Modal, FormModal } from '../../components'
 import GalleryForm from '../../components/pages/website/GalleryForm'
+import WebsiteCMSNav from '../../components/pages/website/WebsiteCMSNav'
 import websiteService from '../../services/websiteService'
 import { useToast } from '../../components'
 import { usePermissions, useDebounce } from '../../hooks'
@@ -490,7 +491,8 @@ const GalleryList = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-    </Container>
+      </Container>
+    </>
   )
 }
 

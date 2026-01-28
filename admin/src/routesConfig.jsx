@@ -50,6 +50,7 @@ const routesConfig = [
   { path: '/settings', name: 'Settings' },
   
   // Website CMS Routes
+  { path: '/website', name: 'Website CMS' },
   { path: '/website/slider', name: 'Hero Slider' },
   { path: '/website/services', name: 'Services' },
   { path: '/website/projects', name: 'Projects' },

@@ -126,6 +126,25 @@ const AppSidebar = () => {
           return { ...item, items: filteredChildren }
         }
 
+        // Special handling for Website CMS main link - show if user has any website permission
+        if (item.to === '/website' && item.permission === null) {
+          const websitePermissions = [
+            'view_website_slider',
+            'view_website_service',
+            'view_website_project',
+            'view_website_home_gallery',
+            'view_website_testimonial',
+            'view_website_gallery',
+            'view_website_gallery_video',
+            'view_website_album',
+          ]
+          const hasAnyWebsitePermission = hasPermission && websitePermissions.some(perm => hasPermission(perm))
+          if (!hasAnyWebsitePermission) {
+            return null
+          }
+          return item
+        }
+
         // Hide items if user doesn't have permission
         if (item.permission && hasPermission && !hasPermission(item.permission)) {
           return null
