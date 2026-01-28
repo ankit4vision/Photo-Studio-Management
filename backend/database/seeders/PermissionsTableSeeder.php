@@ -81,6 +81,54 @@ class PermissionsTableSeeder extends Seeder
             ['name' => 'create_financial_category', 'description' => 'Create financial categories', 'module' => 'financial', 'submodule' => 'categories', 'type' => 'write'],
             ['name' => 'edit_financial_category', 'description' => 'Edit financial categories', 'module' => 'financial', 'submodule' => 'categories', 'type' => 'write'],
             ['name' => 'delete_financial_category', 'description' => 'Delete financial categories', 'module' => 'financial', 'submodule' => 'categories', 'type' => 'delete'],
+
+            // Website CMS - Slider Management
+            ['name' => 'view_website_slider', 'description' => 'View website sliders', 'module' => 'website', 'submodule' => 'slider', 'type' => 'read'],
+            ['name' => 'create_website_slider', 'description' => 'Create website sliders', 'module' => 'website', 'submodule' => 'slider', 'type' => 'write'],
+            ['name' => 'edit_website_slider', 'description' => 'Edit website sliders', 'module' => 'website', 'submodule' => 'slider', 'type' => 'write'],
+            ['name' => 'delete_website_slider', 'description' => 'Delete website sliders', 'module' => 'website', 'submodule' => 'slider', 'type' => 'delete'],
+
+            // Website CMS - Service Management
+            ['name' => 'view_website_service', 'description' => 'View website services', 'module' => 'website', 'submodule' => 'service', 'type' => 'read'],
+            ['name' => 'create_website_service', 'description' => 'Create website services', 'module' => 'website', 'submodule' => 'service', 'type' => 'write'],
+            ['name' => 'edit_website_service', 'description' => 'Edit website services', 'module' => 'website', 'submodule' => 'service', 'type' => 'write'],
+            ['name' => 'delete_website_service', 'description' => 'Delete website services', 'module' => 'website', 'submodule' => 'service', 'type' => 'delete'],
+
+            // Website CMS - Project Management
+            ['name' => 'view_website_project', 'description' => 'View website projects', 'module' => 'website', 'submodule' => 'project', 'type' => 'read'],
+            ['name' => 'create_website_project', 'description' => 'Create website projects', 'module' => 'website', 'submodule' => 'project', 'type' => 'write'],
+            ['name' => 'edit_website_project', 'description' => 'Edit website projects', 'module' => 'website', 'submodule' => 'project', 'type' => 'write'],
+            ['name' => 'delete_website_project', 'description' => 'Delete website projects', 'module' => 'website', 'submodule' => 'project', 'type' => 'delete'],
+
+            // Website CMS - Home Gallery Management
+            ['name' => 'view_website_home_gallery', 'description' => 'View website home gallery', 'module' => 'website', 'submodule' => 'home_gallery', 'type' => 'read'],
+            ['name' => 'create_website_home_gallery', 'description' => 'Create website home gallery', 'module' => 'website', 'submodule' => 'home_gallery', 'type' => 'write'],
+            ['name' => 'edit_website_home_gallery', 'description' => 'Edit website home gallery', 'module' => 'website', 'submodule' => 'home_gallery', 'type' => 'write'],
+            ['name' => 'delete_website_home_gallery', 'description' => 'Delete website home gallery', 'module' => 'website', 'submodule' => 'home_gallery', 'type' => 'delete'],
+
+            // Website CMS - Testimonial Management
+            ['name' => 'view_website_testimonial', 'description' => 'View website testimonials', 'module' => 'website', 'submodule' => 'testimonial', 'type' => 'read'],
+            ['name' => 'create_website_testimonial', 'description' => 'Create website testimonials', 'module' => 'website', 'submodule' => 'testimonial', 'type' => 'write'],
+            ['name' => 'edit_website_testimonial', 'description' => 'Edit website testimonials', 'module' => 'website', 'submodule' => 'testimonial', 'type' => 'write'],
+            ['name' => 'delete_website_testimonial', 'description' => 'Delete website testimonials', 'module' => 'website', 'submodule' => 'testimonial', 'type' => 'delete'],
+
+            // Website CMS - Gallery Management
+            ['name' => 'view_website_gallery', 'description' => 'View website gallery', 'module' => 'website', 'submodule' => 'gallery', 'type' => 'read'],
+            ['name' => 'create_website_gallery', 'description' => 'Create website gallery', 'module' => 'website', 'submodule' => 'gallery', 'type' => 'write'],
+            ['name' => 'edit_website_gallery', 'description' => 'Edit website gallery', 'module' => 'website', 'submodule' => 'gallery', 'type' => 'write'],
+            ['name' => 'delete_website_gallery', 'description' => 'Delete website gallery', 'module' => 'website', 'submodule' => 'gallery', 'type' => 'delete'],
+
+            // Website CMS - Gallery Video Management
+            ['name' => 'view_website_gallery_video', 'description' => 'View website gallery videos', 'module' => 'website', 'submodule' => 'gallery_video', 'type' => 'read'],
+            ['name' => 'create_website_gallery_video', 'description' => 'Create website gallery videos', 'module' => 'website', 'submodule' => 'gallery_video', 'type' => 'write'],
+            ['name' => 'edit_website_gallery_video', 'description' => 'Edit website gallery videos', 'module' => 'website', 'submodule' => 'gallery_video', 'type' => 'write'],
+            ['name' => 'delete_website_gallery_video', 'description' => 'Delete website gallery videos', 'module' => 'website', 'submodule' => 'gallery_video', 'type' => 'delete'],
+
+            // Website CMS - Album Management
+            ['name' => 'view_website_album', 'description' => 'View website albums', 'module' => 'website', 'submodule' => 'album', 'type' => 'read'],
+            ['name' => 'create_website_album', 'description' => 'Create website albums', 'module' => 'website', 'submodule' => 'album', 'type' => 'write'],
+            ['name' => 'edit_website_album', 'description' => 'Edit website albums', 'module' => 'website', 'submodule' => 'album', 'type' => 'write'],
+            ['name' => 'delete_website_album', 'description' => 'Delete website albums', 'module' => 'website', 'submodule' => 'album', 'type' => 'delete'],
         ];
 
         foreach ($permissions as $permission) {

@@ -1,13 +1,280 @@
 import { Link } from 'react-router-dom'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import useIsotope from '../hooks/useIsotope'
+import websiteApi from '../services/websiteApi'
 
 const Home = () => {
   const sliderRef = useRef(null)
   const swiperInstanceRef = useRef(null)
+  const [sliderImages, setSliderImages] = useState([])
+  const [sliderLoading, setSliderLoading] = useState(true)
+  const [services, setServices] = useState([])
+  const [servicesLoading, setServicesLoading] = useState(true)
+  const [projects, setProjects] = useState([])
+  const [projectsLoading, setProjectsLoading] = useState(true)
 
   // Initialize Isotope for gallery grids
   useIsotope('.style-masonry .grid')
+
+  // Fetch slider images from API
+  useEffect(() => {
+    const fetchSlider = async () => {
+      try {
+        setSliderLoading(true)
+        const response = await websiteApi.getSlider()
+        if (response.success && response.data) {
+          setSliderImages(response.data)
+        } else {
+          // Fallback to static data if API fails
+          setSliderImages([37, 38, 39, 40, 41, 38, 39, 40].map(num => ({
+            id: num,
+            image_path: `/assets/img/slider/${num}.jpg`,
+            alt_text: `Slider ${num}`
+          })))
+        }
+      } catch (error) {
+        console.error('Error fetching slider:', error)
+        // Fallback to static data on error
+        setSliderImages([37, 38, 39, 40, 41, 38, 39, 40].map(num => ({
+          id: num,
+          image_path: `/assets/img/slider/${num}.jpg`,
+          alt_text: `Slider ${num}`
+        })))
+      } finally {
+        setSliderLoading(false)
+      }
+    }
+
+    fetchSlider()
+  }, [])
+
+  // Fetch services from API
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setServicesLoading(true)
+        const response = await websiteApi.getServices()
+        if (response.success && response.data) {
+          // Transform API data to match component structure
+          const transformedServices = response.data.map(service => ({
+            icon: service.icon_class || 'bi-cog',
+            title: service.title,
+            desc: service.description || '',
+            num: service.service_number || '',
+            active: service.is_active
+          }))
+          setServices(transformedServices)
+        } else {
+          // Fallback to static data if API fails
+          setServices([
+            {
+              icon: 'bi-camera',
+              title: 'Wedding Photography',
+              desc: 'Complete wedding day coverage with candid and traditional photography for every important ritual.',
+              num: '01'
+            },
+            {
+              icon: 'bi-camera-video',
+              title: 'Wedding Cinematography',
+              desc: 'Cinematic wedding films with storytelling, speeches, and music edits that capture real emotions.',
+              num: '02',
+              active: true
+            },
+            {
+              icon: 'bi-heart',
+              title: 'Pre‑Wedding Shoots',
+              desc: 'Concept-based pre‑wedding sessions at outdoor locations, customized themes, and couple portraits.',
+              num: '03'
+            },
+            {
+              icon: 'bi-people',
+              title: 'Portrait & Portfolio',
+              desc: 'Professional studio and outdoor portrait sessions for personal, modelling, and social media portfolios.',
+              num: '04'
+            },
+            {
+              icon: 'bi-camera-reels',
+              title: 'Event Photography',
+              desc: 'Birthday, engagement, baby shower, corporate events, and family functions with full photo coverage.',
+              num: '05'
+            },
+            {
+              icon: 'bi-image',
+              title: 'Baby & Maternity',
+              desc: 'Newborn, kids, and maternity sessions with creative setups, props, and safe studio lighting.',
+              num: '06'
+            }
+          ])
+        }
+      } catch (error) {
+        console.error('Error fetching services:', error)
+        // Fallback to static data on error
+        setServices([
+          {
+            icon: 'bi-camera',
+            title: 'Wedding Photography',
+            desc: 'Complete wedding day coverage with candid and traditional photography for every important ritual.',
+            num: '01'
+          },
+          {
+            icon: 'bi-camera-video',
+            title: 'Wedding Cinematography',
+            desc: 'Cinematic wedding films with storytelling, speeches, and music edits that capture real emotions.',
+            num: '02',
+            active: true
+          },
+          {
+            icon: 'bi-heart',
+            title: 'Pre‑Wedding Shoots',
+            desc: 'Concept-based pre‑wedding sessions at outdoor locations, customized themes, and couple portraits.',
+            num: '03'
+          },
+          {
+            icon: 'bi-people',
+            title: 'Portrait & Portfolio',
+            desc: 'Professional studio and outdoor portrait sessions for personal, modelling, and social media portfolios.',
+            num: '04'
+          },
+          {
+            icon: 'bi-camera-reels',
+            title: 'Event Photography',
+            desc: 'Birthday, engagement, baby shower, corporate events, and family functions with full photo coverage.',
+            num: '05'
+          },
+          {
+            icon: 'bi-image',
+            title: 'Baby & Maternity',
+            desc: 'Newborn, kids, and maternity sessions with creative setups, props, and safe studio lighting.',
+            num: '06'
+          }
+        ])
+      } finally {
+        setServicesLoading(false)
+      }
+    }
+
+    fetchServices()
+  }, [])
+
+  // Fetch projects from API
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setProjectsLoading(true)
+        const response = await websiteApi.getProjects(true) // Get featured projects for homepage
+        if (response.success && response.data) {
+          // Transform API data to match component structure
+          const transformedProjects = response.data.map(project => ({
+            id: project.id,
+            title: project.title,
+            author: project.author || 'Jonathon Willson'
+          }))
+          setProjects(transformedProjects)
+        } else {
+          // Fallback to static data if API fails
+          setProjects([
+            { id: 1, title: 'Bright Boho Sunshine', author: 'Jonathon Willson' },
+            { id: 2, title: 'California Fall Collection 2023', author: 'Jonathon Willson' },
+            { id: 3, title: 'Brown girl next door', author: 'Jonathon Willson' },
+            { id: 4, title: 'Fashion next stage', author: 'Jonathon Willson' },
+            { id: 5, title: 'Jenifer in green', author: 'Jonathon Willson' },
+            { id: 6, title: 'Sunflower Boho girl', author: 'Jonathon Willson' },
+            { id: 7, title: 'Iceland girl', author: 'Jonathon Willson' },
+            { id: 8, title: 'Summer sadness', author: 'Jonathon Willson' },
+            { id: 9, title: 'Festive mode one', author: 'Jonathon Willson' },
+            { id: 10, title: 'Bright Boho Sunshine0', author: 'Jonathon Willson' }
+          ])
+        }
+      } catch (error) {
+        console.error('Error fetching projects:', error)
+        // Fallback to static data on error
+        setProjects([
+          { id: 1, title: 'Bright Boho Sunshine', author: 'Jonathon Willson' },
+          { id: 2, title: 'California Fall Collection 2023', author: 'Jonathon Willson' },
+          { id: 3, title: 'Brown girl next door', author: 'Jonathon Willson' },
+          { id: 4, title: 'Fashion next stage', author: 'Jonathon Willson' },
+          { id: 5, title: 'Jenifer in green', author: 'Jonathon Willson' },
+          { id: 6, title: 'Sunflower Boho girl', author: 'Jonathon Willson' },
+          { id: 7, title: 'Iceland girl', author: 'Jonathon Willson' },
+          { id: 8, title: 'Summer sadness', author: 'Jonathon Willson' },
+          { id: 9, title: 'Festive mode one', author: 'Jonathon Willson' },
+          { id: 10, title: 'Bright Boho Sunshine0', author: 'Jonathon Willson' }
+        ])
+      } finally {
+        setProjectsLoading(false)
+      }
+    }
+
+    fetchProjects()
+  }, [])
+
+  // Fetch home gallery images from API
+  useEffect(() => {
+    const fetchGallery = async () => {
+      try {
+        setGalleryLoading(true)
+        const response = await websiteApi.getHomeGallery()
+        if (response.success && response.data) {
+          // Transform API data to match component structure (array of numbers for image paths)
+          const transformedGallery = response.data.map(item => {
+            // Extract number from path like /assets/img/gallery/1.jpg -> 1
+            const match = item.image_path.match(/(\d+)\.jpg$/)
+            return match ? parseInt(match[1]) : 1
+          })
+          setGalleryImages(transformedGallery)
+        } else {
+          // Fallback to static data if API fails
+          setGalleryImages([1, 2, 3, 4, 5, 6])
+        }
+      } catch (error) {
+        console.error('Error fetching gallery:', error)
+        // Fallback to static data on error
+        setGalleryImages([1, 2, 3, 4, 5, 6])
+      } finally {
+        setGalleryLoading(false)
+      }
+    }
+
+    fetchGallery()
+  }, [])
+
+  // Fetch testimonials from API
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        setTestimonialsLoading(true)
+        const response = await websiteApi.getTestimonials(true) // Get featured testimonials for homepage
+        if (response.success && response.data) {
+          // Transform API data to match component structure
+          const transformedTestimonials = response.data.map(testimonial => ({
+            name: testimonial.customer_name,
+            location: testimonial.location || '',
+            image: testimonial.photo_path ? parseInt(testimonial.photo_path.match(/(\d+)\.jpg$/)?.[1] || '1') : 1
+          }))
+          setTestimonials(transformedTestimonials)
+        } else {
+          // Fallback to static data if API fails
+          setTestimonials([
+            { name: 'Rachel Jackson', location: 'New York', image: 1 },
+            { name: 'Helen Jordan', location: 'Chicago', image: 2 },
+            { name: 'Helen Jordan', location: 'New York', image: 3 }
+          ])
+        }
+      } catch (error) {
+        console.error('Error fetching testimonials:', error)
+        // Fallback to static data on error
+        setTestimonials([
+          { name: 'Rachel Jackson', location: 'New York', image: 1 },
+          { name: 'Helen Jordan', location: 'Chicago', image: 2 },
+          { name: 'Helen Jordan', location: 'New York', image: 3 }
+        ])
+      } finally {
+        setTestimonialsLoading(false)
+      }
+    }
+
+    fetchTestimonials()
+  }, [])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -73,70 +340,14 @@ const Home = () => {
         swiperInstanceRef.current = null
       }
     }
-  }, [])
+  }, [sliderImages]) // Re-initialize Swiper when slider images change
 
-  const sliderImages = [37, 38, 39, 40, 41, 38, 39, 40]
-  const projects = [
-    { id: 1, title: 'Bright Boho Sunshine', author: 'Jonathon Willson' },
-    { id: 2, title: 'California Fall Collection 2023', author: 'Jonathon Willson' },
-    { id: 3, title: 'Brown girl next door', author: 'Jonathon Willson' },
-    { id: 4, title: 'Fashion next stage', author: 'Jonathon Willson' },
-    { id: 5, title: 'Jenifer in green', author: 'Jonathon Willson' },
-    { id: 6, title: 'Sunflower Boho girl', author: 'Jonathon Willson' },
-    { id: 7, title: 'Iceland girl', author: 'Jonathon Willson' },
-    { id: 8, title: 'Summer sadness', author: 'Jonathon Willson' },
-    { id: 9, title: 'Festive mode one', author: 'Jonathon Willson' },
-    { id: 10, title: 'Bright Boho Sunshine0', author: 'Jonathon Willson' }
-  ]
+  // Projects are now fetched from API (see useEffect above)
 
-  const galleryImages = [1, 2, 3, 4, 5, 6]
+  // Services are now fetched from API (see useEffect above)
+  // Gallery images are now fetched from API (see useEffect above)
 
-  // Core photography services offered by LV_Clicks
-  const services = [
-    {
-      icon: 'bi-camera',
-      title: 'Wedding Photography',
-      desc: 'Complete wedding day coverage with candid and traditional photography for every important ritual.',
-      num: '01'
-    },
-    {
-      icon: 'bi-camera-video',
-      title: 'Wedding Cinematography',
-      desc: 'Cinematic wedding films with storytelling, speeches, and music edits that capture real emotions.',
-      num: '02',
-      active: true
-    },
-    {
-      icon: 'bi-heart',
-      title: 'Pre‑Wedding Shoots',
-      desc: 'Concept-based pre‑wedding sessions at outdoor locations, customized themes, and couple portraits.',
-      num: '03'
-    },
-    {
-      icon: 'bi-people',
-      title: 'Portrait & Portfolio',
-      desc: 'Professional studio and outdoor portrait sessions for personal, modelling, and social media portfolios.',
-      num: '04'
-    },
-    {
-      icon: 'bi-camera-reels',
-      title: 'Event Photography',
-      desc: 'Birthday, engagement, baby shower, corporate events, and family functions with full photo coverage.',
-      num: '05'
-    },
-    {
-      icon: 'bi-image',
-      title: 'Baby & Maternity',
-      desc: 'Newborn, kids, and maternity sessions with creative setups, props, and safe studio lighting.',
-      num: '06'
-    }
-  ]
-
-  const testimonials = [
-    { name: 'Rachel Jackson', location: 'New York', image: 1 },
-    { name: 'Helen Jordan', location: 'Chicago', image: 2 },
-    { name: 'Helen Jordan', location: 'New York', image: 3 }
-  ]
+  // Testimonials are now fetched from API (see useEffect above)
 
   const marqueeItems = [
     { text: 'LV_Clicks', outline: false },
@@ -163,15 +374,37 @@ const Home = () => {
 
         <div className="swiper-container wptb-swiper-slider-four" ref={sliderRef}>
           <div className="swiper-wrapper">
-            {sliderImages.map((num, index) => (
-              <div key={index} className="swiper-slide">
+            {sliderLoading ? (
+              <div className="swiper-slide">
                 <div className="wptb-slider--item">
-                  <div className="wptb-slider--image">
-                    <img src={`/assets/img/slider/${num}.jpg`} alt={`Slider ${index + 1}`} loading="lazy" />
+                  <div className="wptb-slider--image" style={{ minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="text-white">Loading slider...</div>
                   </div>
                 </div>
               </div>
-            ))}
+            ) : sliderImages.length > 0 ? (
+              sliderImages.map((slider, index) => (
+                <div key={slider.id || index} className="swiper-slide">
+                  <div className="wptb-slider--item">
+                    <div className="wptb-slider--image">
+                      <img 
+                        src={slider.image_path} 
+                        alt={slider.alt_text || slider.title || `Slider ${index + 1}`} 
+                        loading="lazy" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="swiper-slide">
+                <div className="wptb-slider--item">
+                  <div className="wptb-slider--image" style={{ minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="text-white">No slider images available</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

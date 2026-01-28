@@ -225,6 +225,76 @@ export const API_ENDPOINTS = {
     STAFF: '/reports/staff',
     EXPORT: (type) => `/reports/${type}/export`,
   },
+
+  // Website CMS
+  WEBSITE: {
+    SLIDER: {
+      BASE: '/admin/website/slider',
+      LIST: '/admin/website/slider',
+      CREATE: '/admin/website/slider',
+      GET_BY_ID: (id) => `/admin/website/slider/${id}`,
+      UPDATE: (id) => `/admin/website/slider/${id}`,
+      DELETE: (id) => `/admin/website/slider/${id}`,
+      REORDER: '/admin/website/slider/reorder',
+    },
+    SERVICE: {
+      BASE: '/admin/website/services',
+      LIST: '/admin/website/services',
+      CREATE: '/admin/website/services',
+      GET_BY_ID: (id) => `/admin/website/services/${id}`,
+      UPDATE: (id) => `/admin/website/services/${id}`,
+      DELETE: (id) => `/admin/website/services/${id}`,
+      REORDER: '/admin/website/services/reorder',
+    },
+    PROJECT: {
+      BASE: '/admin/website/projects',
+      LIST: '/admin/website/projects',
+      CREATE: '/admin/website/projects',
+      GET_BY_ID: (id) => `/admin/website/projects/${id}`,
+      UPDATE: (id) => `/admin/website/projects/${id}`,
+      DELETE: (id) => `/admin/website/projects/${id}`,
+    },
+    HOME_GALLERY: {
+      BASE: '/admin/website/home-gallery',
+      LIST: '/admin/website/home-gallery',
+      CREATE: '/admin/website/home-gallery',
+      GET_BY_ID: (id) => `/admin/website/home-gallery/${id}`,
+      UPDATE: (id) => `/admin/website/home-gallery/${id}`,
+      DELETE: (id) => `/admin/website/home-gallery/${id}`,
+    },
+    TESTIMONIAL: {
+      BASE: '/admin/website/testimonials',
+      LIST: '/admin/website/testimonials',
+      CREATE: '/admin/website/testimonials',
+      GET_BY_ID: (id) => `/admin/website/testimonials/${id}`,
+      UPDATE: (id) => `/admin/website/testimonials/${id}`,
+      DELETE: (id) => `/admin/website/testimonials/${id}`,
+    },
+    GALLERY: {
+      BASE: '/admin/website/gallery',
+      LIST: '/admin/website/gallery',
+      CREATE: '/admin/website/gallery',
+      GET_BY_ID: (id) => `/admin/website/gallery/${id}`,
+      UPDATE: (id) => `/admin/website/gallery/${id}`,
+      DELETE: (id) => `/admin/website/gallery/${id}`,
+    },
+    GALLERY_VIDEO: {
+      BASE: '/admin/website/gallery-videos',
+      LIST: '/admin/website/gallery-videos',
+      CREATE: '/admin/website/gallery-videos',
+      GET_BY_ID: (id) => `/admin/website/gallery-videos/${id}`,
+      UPDATE: (id) => `/admin/website/gallery-videos/${id}`,
+      DELETE: (id) => `/admin/website/gallery-videos/${id}`,
+    },
+    ALBUM: {
+      BASE: '/admin/website/albums',
+      LIST: '/admin/website/albums',
+      CREATE: '/admin/website/albums',
+      GET_BY_ID: (id) => `/admin/website/albums/${id}`,
+      UPDATE: (id) => `/admin/website/albums/${id}`,
+      DELETE: (id) => `/admin/website/albums/${id}`,
+    },
+  },
 }
 
 // HTTP Methods

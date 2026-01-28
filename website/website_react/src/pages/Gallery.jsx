@@ -1,7 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import useIsotope from '../hooks/useIsotope'
+import websiteApi from '../services/websiteApi'
 
 const Gallery = () => {
+  const [galleryImages, setGalleryImages] = useState([])
+  const [galleryLoading, setGalleryLoading] = useState(true)
+  const [videos, setVideos] = useState([])
+  const [videosLoading, setVideosLoading] = useState(true)
+
   // Initialize Isotope for the gallery grid
   useIsotope('.style-masonry .grid')
 
@@ -9,7 +15,78 @@ const Gallery = () => {
     window.scrollTo(0, 0)
   }, [])
 
-  const galleryImages = Array.from({ length: 10 }, (_, i) => i + 1)
+  // Fetch gallery images from API
+  useEffect(() => {
+    const fetchGallery = async () => {
+      try {
+        setGalleryLoading(true)
+        const response = await websiteApi.getGallery(1, 20)
+        if (response.success && response.data) {
+          // Transform API data to match component structure (array of numbers for image paths)
+          const transformedGallery = response.data.map(item => {
+            // Extract number from path like /assets/img/projects/1/1.jpg -> 1
+            const match = item.image_path.match(/\/(\d+)\.jpg$/)
+            return match ? parseInt(match[1]) : 1
+          })
+          setGalleryImages(transformedGallery.length > 0 ? transformedGallery : Array.from({ length: 10 }, (_, i) => i + 1))
+        } else {
+          // Fallback to static data if API fails
+          setGalleryImages(Array.from({ length: 10 }, (_, i) => i + 1))
+        }
+      } catch (error) {
+        console.error('Error fetching gallery:', error)
+        // Fallback to static data on error
+        setGalleryImages(Array.from({ length: 10 }, (_, i) => i + 1))
+      } finally {
+        setGalleryLoading(false)
+      }
+    }
+
+    fetchGallery()
+  }, [])
+
+  // Fetch gallery videos from API
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        setVideosLoading(true)
+        const response = await websiteApi.getGalleryVideos()
+        if (response.success && response.data) {
+          // Transform API data to match component structure
+          const transformedVideos = response.data.map(video => ({
+            title: video.title || 'Video',
+            url: video.video_url
+          }))
+          setVideos(transformedVideos)
+        } else {
+          // Fallback to static data if API fails
+          setVideos([
+            { title: 'Photography Session', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+            { title: 'Wedding Highlights', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+            { title: 'Portrait Session', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+            { title: 'Event Coverage', url: 'https://vimeo.com/123456789' },
+            { title: 'Fashion Shoot', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+            { title: 'Behind The Scenes', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
+          ])
+        }
+      } catch (error) {
+        console.error('Error fetching videos:', error)
+        // Fallback to static data on error
+        setVideos([
+          { title: 'Photography Session', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+          { title: 'Wedding Highlights', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+          { title: 'Portrait Session', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+          { title: 'Event Coverage', url: 'https://vimeo.com/123456789' },
+          { title: 'Fashion Shoot', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+          { title: 'Behind The Scenes', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
+        ])
+      } finally {
+        setVideosLoading(false)
+      }
+    }
+
+    fetchVideos()
+  }, [])
 
   return (
     <>

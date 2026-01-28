@@ -28,6 +28,16 @@ class RouteServiceProvider extends ServiceProvider
     {
         $this->configureRateLimiting();
 
+        // Route model bindings
+        Route::model('slider', \App\Models\Website\Slider::class);
+        Route::model('service', \App\Models\Website\Service::class);
+        Route::model('project', \App\Models\Website\Project::class);
+        Route::model('homeGallery', \App\Models\Website\HomeGallery::class);
+        Route::model('testimonial', \App\Models\Website\Testimonial::class);
+        Route::model('gallery', \App\Models\Website\Gallery::class);
+        Route::model('galleryVideo', \App\Models\Website\GalleryVideo::class);
+        Route::model('album', \App\Models\Website\Album::class);
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')

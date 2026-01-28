@@ -40,6 +40,16 @@ const FinancialCategoriesList = React.lazy(() => import('../../views/financial/F
 // Report Components
 const CompanyHealthReport = React.lazy(() => import('../../views/reports/CompanyHealthReport'))
 
+// Website CMS Components
+const SliderList = React.lazy(() => import('../../views/website/SliderList'))
+const ServicesList = React.lazy(() => import('../../views/website/ServicesList'))
+const ProjectsList = React.lazy(() => import('../../views/website/ProjectsList'))
+const HomeGalleryList = React.lazy(() => import('../../views/website/HomeGalleryList'))
+const TestimonialsList = React.lazy(() => import('../../views/website/TestimonialsList'))
+const GalleryList = React.lazy(() => import('../../views/website/GalleryList'))
+const GalleryVideosList = React.lazy(() => import('../../views/website/GalleryVideosList'))
+const AlbumsList = React.lazy(() => import('../../views/website/AlbumsList'))
+
 import PermissionRoute from './PermissionRoute'
 import { PERMISSIONS } from '../../constants/permissions'
 
@@ -205,6 +215,72 @@ const AppContent = () => {
             element={
               <PermissionRoute requiredPermission={PERMISSIONS.REPORT_READ} showAccessDenied>
                 <CompanyHealthReport />
+              </PermissionRoute>
+            }
+          />
+          
+          {/* Website CMS Routes */}
+          <Route
+            path="/website/slider"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.WEBSITE_SLIDER_READ} showAccessDenied>
+                <SliderList />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/website/services"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.WEBSITE_SERVICE_READ} showAccessDenied>
+                <ServicesList />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/website/projects"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.WEBSITE_PROJECT_READ} showAccessDenied>
+                <ProjectsList />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/website/home-gallery"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.WEBSITE_HOME_GALLERY_READ} showAccessDenied>
+                <HomeGalleryList />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/website/testimonials"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.WEBSITE_TESTIMONIAL_READ} showAccessDenied>
+                <TestimonialsList />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/website/gallery"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.WEBSITE_GALLERY_READ} showAccessDenied>
+                <GalleryList />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/website/gallery-videos"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.WEBSITE_GALLERY_VIDEO_READ} showAccessDenied>
+                <GalleryVideosList />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/website/albums"
+            element={
+              <PermissionRoute requiredPermission={PERMISSIONS.WEBSITE_ALBUM_READ} showAccessDenied>
+                <AlbumsList />
               </PermissionRoute>
             }
           />

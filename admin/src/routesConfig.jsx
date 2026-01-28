@@ -49,6 +49,16 @@ const routesConfig = [
   { path: '/profile/edit', name: 'Edit Profile' },
   { path: '/settings', name: 'Settings' },
   
+  // Website CMS Routes
+  { path: '/website/slider', name: 'Hero Slider' },
+  { path: '/website/services', name: 'Services' },
+  { path: '/website/projects', name: 'Projects' },
+  { path: '/website/home-gallery', name: 'Home Gallery' },
+  { path: '/website/testimonials', name: 'Testimonials' },
+  { path: '/website/gallery', name: 'Gallery Images' },
+  { path: '/website/gallery-videos', name: 'Gallery Videos' },
+  { path: '/website/albums', name: 'Albums' },
+  
   // Auth Routes
   { path: '/login', name: 'Login' },
   { path: '/forgot-password', name: 'Forgot Password' },

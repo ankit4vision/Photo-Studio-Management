@@ -86,6 +86,62 @@ export const PERMISSIONS = {
   // Admin
   ADMIN_ACCESS: 'admin:access',
   SYSTEM_CONFIG: 'system:config',
+
+  // Website CMS - Slider
+  WEBSITE_SLIDER_READ: 'view_website_slider',
+  WEBSITE_SLIDER_CREATE: 'create_website_slider',
+  WEBSITE_SLIDER_EDIT: 'edit_website_slider',
+  WEBSITE_SLIDER_DELETE: 'delete_website_slider',
+  WEBSITE_SLIDER_MANAGE: 'view_website_slider', // Manage uses view permission
+
+  // Website CMS - Service
+  WEBSITE_SERVICE_READ: 'view_website_service',
+  WEBSITE_SERVICE_CREATE: 'create_website_service',
+  WEBSITE_SERVICE_EDIT: 'edit_website_service',
+  WEBSITE_SERVICE_DELETE: 'delete_website_service',
+  WEBSITE_SERVICE_MANAGE: 'view_website_service', // Manage uses view permission
+
+  // Website CMS - Project
+  WEBSITE_PROJECT_READ: 'view_website_project',
+  WEBSITE_PROJECT_CREATE: 'create_website_project',
+  WEBSITE_PROJECT_EDIT: 'edit_website_project',
+  WEBSITE_PROJECT_DELETE: 'delete_website_project',
+  WEBSITE_PROJECT_MANAGE: 'view_website_project', // Manage uses view permission
+
+  // Website CMS - Home Gallery
+  WEBSITE_HOME_GALLERY_READ: 'view_website_home_gallery',
+  WEBSITE_HOME_GALLERY_CREATE: 'create_website_home_gallery',
+  WEBSITE_HOME_GALLERY_EDIT: 'edit_website_home_gallery',
+  WEBSITE_HOME_GALLERY_DELETE: 'delete_website_home_gallery',
+  WEBSITE_HOME_GALLERY_MANAGE: 'view_website_home_gallery', // Manage uses view permission
+
+  // Website CMS - Testimonial
+  WEBSITE_TESTIMONIAL_READ: 'view_website_testimonial',
+  WEBSITE_TESTIMONIAL_CREATE: 'create_website_testimonial',
+  WEBSITE_TESTIMONIAL_EDIT: 'edit_website_testimonial',
+  WEBSITE_TESTIMONIAL_DELETE: 'delete_website_testimonial',
+  WEBSITE_TESTIMONIAL_MANAGE: 'view_website_testimonial', // Manage uses view permission
+
+  // Website CMS - Gallery
+  WEBSITE_GALLERY_READ: 'view_website_gallery',
+  WEBSITE_GALLERY_CREATE: 'create_website_gallery',
+  WEBSITE_GALLERY_EDIT: 'edit_website_gallery',
+  WEBSITE_GALLERY_DELETE: 'delete_website_gallery',
+  WEBSITE_GALLERY_MANAGE: 'view_website_gallery', // Manage uses view permission
+
+  // Website CMS - Gallery Video
+  WEBSITE_GALLERY_VIDEO_READ: 'view_website_gallery_video',
+  WEBSITE_GALLERY_VIDEO_CREATE: 'create_website_gallery_video',
+  WEBSITE_GALLERY_VIDEO_EDIT: 'edit_website_gallery_video',
+  WEBSITE_GALLERY_VIDEO_DELETE: 'delete_website_gallery_video',
+  WEBSITE_GALLERY_VIDEO_MANAGE: 'view_website_gallery_video', // Manage uses view permission
+
+  // Website CMS - Album
+  WEBSITE_ALBUM_READ: 'view_website_album',
+  WEBSITE_ALBUM_CREATE: 'create_website_album',
+  WEBSITE_ALBUM_EDIT: 'edit_website_album',
+  WEBSITE_ALBUM_DELETE: 'delete_website_album',
+  WEBSITE_ALBUM_MANAGE: 'view_website_album', // Manage uses view permission
 }
 
 // Define roles and their permissions

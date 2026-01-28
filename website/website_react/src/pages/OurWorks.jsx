@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import useIsotope from '../hooks/useIsotope'
+import websiteApi from '../services/websiteApi'
 
 const OurWorks = () => {
+  const [albums, setAlbums] = useState([])
+  const [albumsLoading, setAlbumsLoading] = useState(true)
+
   // Initialize Isotope for the albums grid
   useIsotope('.effect-gradient .grid')
 
@@ -10,16 +14,73 @@ const OurWorks = () => {
     window.scrollTo(0, 0)
   }, [])
 
-  const albums = [
-    { id: 1, title: 'Wedding Album 2024', count: '25 Photos', image: 1, col: 4 },
-    { id: 2, title: 'Portrait Session', count: '18 Photos', image: 2, col: 4 },
-    { id: 3, title: 'Fashion Collection', count: '32 Photos', image: 3, col: 4 },
-    { id: 4, title: 'Event Coverage 2024', count: '45 Photos', image: 4, col: 8 },
-    { id: 5, title: 'Nature Photography', count: '28 Photos', image: 5, col: 8 },
-    { id: 6, title: 'Studio Session', count: '20 Photos', image: 6, col: 4 },
-    { id: 7, title: 'Outdoor Adventure', count: '22 Photos', image: 7, col: 4 },
-    { id: 8, title: 'Family Portrait', count: '15 Photos', image: 8, col: 4 }
-  ]
+  // Fetch albums from API
+  useEffect(() => {
+    const fetchAlbums = async () => {
+      try {
+        setAlbumsLoading(true)
+        const response = await websiteApi.getAlbums(false) // Get all albums
+        if (response.success && response.data) {
+          // Transform API data to match component structure
+          const transformedAlbums = response.data.map((album, index) => {
+            // Extract number from cover_image path or use index + 1
+            const imageMatch = album.cover_image ? album.cover_image.match(/\/(\d+)\.jpg$/) : null
+            const imageNum = imageMatch ? parseInt(imageMatch[1]) : (index % 8) + 1
+            
+            // Determine column size based on featured or index (alternating pattern)
+            const col = album.is_featured || index % 4 === 3 ? 8 : 4
+            
+            return {
+              id: album.id,
+              title: album.title,
+              count: 'Photos', // Can be updated later with actual photo count
+              image: imageNum,
+              col: col
+            }
+          })
+          setAlbums(transformedAlbums.length > 0 ? transformedAlbums : [
+            { id: 1, title: 'Wedding Album 2024', count: '25 Photos', image: 1, col: 4 },
+            { id: 2, title: 'Portrait Session', count: '18 Photos', image: 2, col: 4 },
+            { id: 3, title: 'Fashion Collection', count: '32 Photos', image: 3, col: 4 },
+            { id: 4, title: 'Event Coverage 2024', count: '45 Photos', image: 4, col: 8 },
+            { id: 5, title: 'Nature Photography', count: '28 Photos', image: 5, col: 8 },
+            { id: 6, title: 'Studio Session', count: '20 Photos', image: 6, col: 4 },
+            { id: 7, title: 'Outdoor Adventure', count: '22 Photos', image: 7, col: 4 },
+            { id: 8, title: 'Family Portrait', count: '15 Photos', image: 8, col: 4 }
+          ])
+        } else {
+          // Fallback to static data if API fails
+          setAlbums([
+            { id: 1, title: 'Wedding Album 2024', count: '25 Photos', image: 1, col: 4 },
+            { id: 2, title: 'Portrait Session', count: '18 Photos', image: 2, col: 4 },
+            { id: 3, title: 'Fashion Collection', count: '32 Photos', image: 3, col: 4 },
+            { id: 4, title: 'Event Coverage 2024', count: '45 Photos', image: 4, col: 8 },
+            { id: 5, title: 'Nature Photography', count: '28 Photos', image: 5, col: 8 },
+            { id: 6, title: 'Studio Session', count: '20 Photos', image: 6, col: 4 },
+            { id: 7, title: 'Outdoor Adventure', count: '22 Photos', image: 7, col: 4 },
+            { id: 8, title: 'Family Portrait', count: '15 Photos', image: 8, col: 4 }
+          ])
+        }
+      } catch (error) {
+        console.error('Error fetching albums:', error)
+        // Fallback to static data on error
+        setAlbums([
+          { id: 1, title: 'Wedding Album 2024', count: '25 Photos', image: 1, col: 4 },
+          { id: 2, title: 'Portrait Session', count: '18 Photos', image: 2, col: 4 },
+          { id: 3, title: 'Fashion Collection', count: '32 Photos', image: 3, col: 4 },
+          { id: 4, title: 'Event Coverage 2024', count: '45 Photos', image: 4, col: 8 },
+          { id: 5, title: 'Nature Photography', count: '28 Photos', image: 5, col: 8 },
+          { id: 6, title: 'Studio Session', count: '20 Photos', image: 6, col: 4 },
+          { id: 7, title: 'Outdoor Adventure', count: '22 Photos', image: 7, col: 4 },
+          { id: 8, title: 'Family Portrait', count: '15 Photos', image: 8, col: 4 }
+        ])
+      } finally {
+        setAlbumsLoading(false)
+      }
+    }
+
+    fetchAlbums()
+  }, [])
 
   return (
     <>

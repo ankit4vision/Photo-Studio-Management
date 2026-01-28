@@ -14,6 +14,7 @@ import {
   cilLockLocked,
   cilDollar,
   cilListRich,
+  cilImage,
 } from '@coreui/icons'
 import { CNavItem, CNavTitle } from '@coreui/react'
 import { PERMISSIONS } from './constants/permissions'
@@ -126,6 +127,66 @@ const _nav = [
     to: '/settings',
     icon: <CIcon icon={cilCog} customClassName="nav-icon" />,
     permission: PERMISSIONS.SETTINGS_READ,
+  },
+  {
+    component: CNavTitle,
+    name: 'Website CMS',
+  },
+  {
+    component: CNavItem,
+    name: 'Hero Slider',
+    to: '/website/slider',
+    icon: <CIcon icon={cilImage} customClassName="nav-icon" />,
+    permission: PERMISSIONS.WEBSITE_SLIDER_READ,
+  },
+  {
+    component: CNavItem,
+    name: 'Services',
+    to: '/website/services',
+    icon: <CIcon icon={cilCog} customClassName="nav-icon" />,
+    permission: PERMISSIONS.WEBSITE_SERVICE_READ,
+  },
+  {
+    component: CNavItem,
+    name: 'Projects',
+    to: '/website/projects',
+    icon: <CIcon icon={cilImage} customClassName="nav-icon" />,
+    permission: PERMISSIONS.WEBSITE_PROJECT_READ,
+  },
+  {
+    component: CNavItem,
+    name: 'Home Gallery',
+    to: '/website/home-gallery',
+    icon: <CIcon icon={cilImage} customClassName="nav-icon" />,
+    permission: PERMISSIONS.WEBSITE_HOME_GALLERY_READ,
+  },
+  {
+    component: CNavItem,
+    name: 'Testimonials',
+    to: '/website/testimonials',
+    icon: <CIcon icon={cilImage} customClassName="nav-icon" />,
+    permission: PERMISSIONS.WEBSITE_TESTIMONIAL_READ,
+  },
+  {
+    component: CNavItem,
+    name: 'Gallery Images',
+    to: '/website/gallery',
+    icon: <CIcon icon={cilImage} customClassName="nav-icon" />,
+    permission: PERMISSIONS.WEBSITE_GALLERY_READ,
+  },
+  {
+    component: CNavItem,
+    name: 'Gallery Videos',
+    to: '/website/gallery-videos',
+    icon: <CIcon icon={cilImage} customClassName="nav-icon" />,
+    permission: PERMISSIONS.WEBSITE_GALLERY_VIDEO_READ,
+  },
+  {
+    component: CNavItem,
+    name: 'Albums',
+    to: '/website/albums',
+    icon: <CIcon icon={cilImage} customClassName="nav-icon" />,
+    permission: PERMISSIONS.WEBSITE_ALBUM_READ,
   },
 ]
 

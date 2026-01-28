@@ -16,6 +16,14 @@ use App\Http\Controllers\API\FinancialCategoryController;
 use App\Http\Controllers\API\FinancialTransactionController;
 use App\Http\Controllers\API\ReportController;
 use App\Http\Controllers\API\PackageTypeController;
+use App\Http\Controllers\API\Website\SliderController;
+use App\Http\Controllers\API\Website\ServiceController;
+use App\Http\Controllers\API\Website\ProjectController;
+use App\Http\Controllers\API\Website\HomeGalleryController;
+use App\Http\Controllers\API\Website\TestimonialController;
+use App\Http\Controllers\API\Website\GalleryController;
+use App\Http\Controllers\API\Website\GalleryVideoController;
+use App\Http\Controllers\API\Website\AlbumController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,6 +40,18 @@ use App\Http\Controllers\API\PackageTypeController;
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+
+// Website CMS Public Routes (for website frontend)
+Route::prefix('website')->group(function () {
+    Route::get('/slider', [SliderController::class, 'index']);
+    Route::get('/services', [ServiceController::class, 'index']);
+    Route::get('/projects', [ProjectController::class, 'index']);
+    Route::get('/home-gallery', [HomeGalleryController::class, 'index']);
+    Route::get('/testimonials', [TestimonialController::class, 'index']);
+    Route::get('/gallery', [GalleryController::class, 'index']);
+    Route::get('/gallery-videos', [GalleryVideoController::class, 'index']);
+    Route::get('/albums', [AlbumController::class, 'index']);
+});
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -175,6 +195,67 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/key/{key}', [SettingController::class, 'destroyByKey']);
             Route::delete('/{setting}', [SettingController::class, 'destroy']);
         });
+    });
+
+    // Website CMS Admin Routes
+    Route::prefix('admin/website')->group(function () {
+        // Slider Management
+        Route::get('/slider', [SliderController::class, 'adminIndex'])->middleware('permission:view_website_slider');
+        Route::post('/slider', [SliderController::class, 'store'])->middleware('permission:create_website_slider');
+        Route::get('/slider/{slider}', [SliderController::class, 'show'])->middleware('permission:view_website_slider');
+        Route::put('/slider/{slider}', [SliderController::class, 'update'])->middleware('permission:edit_website_slider');
+        Route::delete('/slider/{slider}', [SliderController::class, 'destroy'])->middleware('permission:delete_website_slider');
+        Route::put('/slider/reorder', [SliderController::class, 'reorder'])->middleware('permission:edit_website_slider');
+
+        // Service Management
+        Route::get('/services', [ServiceController::class, 'adminIndex'])->middleware('permission:view_website_service');
+        Route::post('/services', [ServiceController::class, 'store'])->middleware('permission:create_website_service');
+        Route::get('/services/{service}', [ServiceController::class, 'show'])->middleware('permission:view_website_service');
+        Route::put('/services/{service}', [ServiceController::class, 'update'])->middleware('permission:edit_website_service');
+        Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->middleware('permission:delete_website_service');
+        Route::put('/services/reorder', [ServiceController::class, 'reorder'])->middleware('permission:edit_website_service');
+
+        // Project Management
+        Route::get('/projects', [ProjectController::class, 'adminIndex'])->middleware('permission:view_website_project');
+        Route::post('/projects', [ProjectController::class, 'store'])->middleware('permission:create_website_project');
+        Route::get('/projects/{project}', [ProjectController::class, 'show'])->middleware('permission:view_website_project');
+        Route::put('/projects/{project}', [ProjectController::class, 'update'])->middleware('permission:edit_website_project');
+        Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->middleware('permission:delete_website_project');
+
+        // Home Gallery Management
+        Route::get('/home-gallery', [HomeGalleryController::class, 'adminIndex'])->middleware('permission:view_website_home_gallery');
+        Route::post('/home-gallery', [HomeGalleryController::class, 'store'])->middleware('permission:create_website_home_gallery');
+        Route::get('/home-gallery/{homeGallery}', [HomeGalleryController::class, 'show'])->middleware('permission:view_website_home_gallery');
+        Route::put('/home-gallery/{homeGallery}', [HomeGalleryController::class, 'update'])->middleware('permission:edit_website_home_gallery');
+        Route::delete('/home-gallery/{homeGallery}', [HomeGalleryController::class, 'destroy'])->middleware('permission:delete_website_home_gallery');
+
+        // Testimonial Management
+        Route::get('/testimonials', [TestimonialController::class, 'adminIndex'])->middleware('permission:view_website_testimonial');
+        Route::post('/testimonials', [TestimonialController::class, 'store'])->middleware('permission:create_website_testimonial');
+        Route::get('/testimonials/{testimonial}', [TestimonialController::class, 'show'])->middleware('permission:view_website_testimonial');
+        Route::put('/testimonials/{testimonial}', [TestimonialController::class, 'update'])->middleware('permission:edit_website_testimonial');
+        Route::delete('/testimonials/{testimonial}', [TestimonialController::class, 'destroy'])->middleware('permission:delete_website_testimonial');
+
+        // Gallery Management
+        Route::get('/gallery', [GalleryController::class, 'adminIndex'])->middleware('permission:view_website_gallery');
+        Route::post('/gallery', [GalleryController::class, 'store'])->middleware('permission:create_website_gallery');
+        Route::get('/gallery/{gallery}', [GalleryController::class, 'show'])->middleware('permission:view_website_gallery');
+        Route::put('/gallery/{gallery}', [GalleryController::class, 'update'])->middleware('permission:edit_website_gallery');
+        Route::delete('/gallery/{gallery}', [GalleryController::class, 'destroy'])->middleware('permission:delete_website_gallery');
+
+        // Gallery Video Management
+        Route::get('/gallery-videos', [GalleryVideoController::class, 'adminIndex'])->middleware('permission:view_website_gallery_video');
+        Route::post('/gallery-videos', [GalleryVideoController::class, 'store'])->middleware('permission:create_website_gallery_video');
+        Route::get('/gallery-videos/{galleryVideo}', [GalleryVideoController::class, 'show'])->middleware('permission:view_website_gallery_video');
+        Route::put('/gallery-videos/{galleryVideo}', [GalleryVideoController::class, 'update'])->middleware('permission:edit_website_gallery_video');
+        Route::delete('/gallery-videos/{galleryVideo}', [GalleryVideoController::class, 'destroy'])->middleware('permission:delete_website_gallery_video');
+
+        // Album Management
+        Route::get('/albums', [AlbumController::class, 'adminIndex'])->middleware('permission:view_website_album');
+        Route::post('/albums', [AlbumController::class, 'store'])->middleware('permission:create_website_album');
+        Route::get('/albums/{album}', [AlbumController::class, 'show'])->middleware('permission:view_website_album');
+        Route::put('/albums/{album}', [AlbumController::class, 'update'])->middleware('permission:edit_website_album');
+        Route::delete('/albums/{album}', [AlbumController::class, 'destroy'])->middleware('permission:delete_website_album');
     });
 });
 
