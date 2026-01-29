@@ -34,5 +34,29 @@ class ProjectController extends Controller
             'data' => ProjectResource::collection($projects),
         ]);
     }
+
+    /**
+     * Display the specified project (Public - for website frontend).
+     * No authentication required.
+     */
+    public function show(Project $project)
+    {
+        // Only show active projects to public
+        if (!$project->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Project not found.',
+            ], 404);
+        }
+
+        // Load photos relationship for detail page
+        $project->load('photos');
+
+        return (new ProjectResource($project))
+            ->additional([
+                'success' => true,
+                'message' => 'Project retrieved successfully.',
+            ]);
+    }
 }
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'rea
 import { FormRow, TextField } from '../../common/FormFields'
 import { FormLabel, FormControl, FormText, Col } from 'react-bootstrap'
 import PropTypes from 'prop-types'
+import ImagePathSelector from '../../common/ImagePathSelector'
 
 const ProjectForm = forwardRef(({ 
   mode = 'create', 
@@ -14,9 +15,15 @@ const ProjectForm = forwardRef(({
     title: '',
     author: '',
     thumbnail_image: '',
+    hero_image: '',
+    description: '',
+    event_date: '',
+    location: '',
+    photographer: '',
     album_id: '',
     category: '',
     tags: [],
+    photos: [], // Array of { image_path, order }
     is_featured: false,
     is_active: true,
     order: 0
@@ -31,9 +38,21 @@ const ProjectForm = forwardRef(({
         title: projectData.title || '',
         author: projectData.author || '',
         thumbnail_image: projectData.thumbnail_image || '',
+        hero_image: projectData.hero_image || '',
+        description: projectData.description || '',
+        event_date: projectData.event_date || '',
+        location: projectData.location || '',
+        photographer: projectData.photographer || '',
         album_id: projectData.album_id || '',
         category: projectData.category || '',
         tags: projectData.tags || [],
+        photos: (Array.isArray(projectData.photos) && projectData.photos.length > 0) 
+          ? projectData.photos.map((photo, index) => ({
+              id: photo.id,
+              image_path: photo.image_path || '',
+              order: photo.order !== undefined ? photo.order : index
+            }))
+          : [],
         is_featured: projectData.is_featured || false,
         is_active: projectData.is_active !== undefined ? projectData.is_active : true,
         order: projectData.order || 0
@@ -69,6 +88,40 @@ const ProjectForm = forwardRef(({
     }))
   }
 
+  const handleAddPhoto = (imagePath) => {
+    if (formData.photos.length >= 12) {
+      setErrors(prev => ({ ...prev, photos: 'Maximum 12 photos allowed' }))
+      return
+    }
+    setFormData(prev => ({
+      ...prev,
+      photos: [...prev.photos, { image_path: imagePath, order: prev.photos.length }]
+    }))
+    if (errors.photos) {
+      setErrors(prev => ({ ...prev, photos: '' }))
+    }
+  }
+
+  const handleRemovePhoto = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index).map((photo, i) => ({ ...photo, order: i }))
+    }))
+  }
+
+  const handleReorderPhoto = (index, direction) => {
+    if ((direction === 'up' && index === 0) || (direction === 'down' && index === formData.photos.length - 1)) {
+      return
+    }
+    const newPhotos = [...formData.photos]
+    const newIndex = direction === 'up' ? index - 1 : index + 1
+    ;[newPhotos[index], newPhotos[newIndex]] = [newPhotos[newIndex], newPhotos[index]]
+    setFormData(prev => ({
+      ...prev,
+      photos: newPhotos.map((photo, i) => ({ ...photo, order: i }))
+    }))
+  }
+
   const validateForm = () => {
     const newErrors = {}
 
@@ -97,9 +150,19 @@ const ProjectForm = forwardRef(({
       title: formData.title.trim(),
       author: formData.author.trim() || null,
       thumbnail_image: formData.thumbnail_image.trim(),
+      hero_image: formData.hero_image.trim() || null,
+      description: formData.description.trim() || null,
+      event_date: formData.event_date || null,
+      location: formData.location.trim() || null,
+      photographer: formData.photographer.trim() || null,
       album_id: formData.album_id ? parseInt(formData.album_id) : null,
       category: formData.category.trim() || null,
       tags: formData.tags.length > 0 ? formData.tags : null,
+      photos: formData.photos.map((photo, index) => ({
+        id: photo.id,
+        image_path: photo.image_path,
+        order: photo.order !== undefined ? photo.order : index
+      })),
       is_featured: formData.is_featured,
       is_active: formData.is_active,
       order: parseInt(formData.order) || 0
@@ -142,19 +205,166 @@ const ProjectForm = forwardRef(({
         />
       </FormRow>
 
+      <ImagePathSelector
+        label="Thumbnail Image (for Our Works page)"
+        name="thumbnail_image"
+        id="thumbnail_image"
+        value={formData.thumbnail_image}
+        onChange={(path) => handleChange('thumbnail_image', path)}
+        uploadFolder="projects"
+        required
+        invalid={!!errors.thumbnail_image}
+        feedback={errors.thumbnail_image}
+        helpText="Upload a project thumbnail image (JPEG, PNG, WebP). This will be used in Our Works page."
+      />
+
+      <ImagePathSelector
+        label="Hero Image (for detail page)"
+        name="hero_image"
+        id="hero_image"
+        value={formData.hero_image}
+        onChange={(path) => handleChange('hero_image', path)}
+        uploadFolder="projects"
+        invalid={!!errors.hero_image}
+        feedback={errors.hero_image}
+        helpText="Upload hero image for detail page. If not provided, thumbnail image will be used."
+      />
+
+      <FormRow>
+        <Col md={12}>
+          <FormLabel htmlFor="description">
+            Description <span className="text-danger">*</span>
+          </FormLabel>
+          <FormControl
+            as="textarea"
+            rows={6}
+            id="description"
+            value={formData.description}
+            onChange={(e) => handleChange('description', e.target.value)}
+            placeholder="Enter project description (rich text editor can be added later)"
+            isInvalid={!!errors.description}
+          />
+          {errors.description && <div className="invalid-feedback d-block">{errors.description}</div>}
+          <FormText>Project/Album description. Rich text editor can be integrated later.</FormText>
+        </Col>
+      </FormRow>
+
       <FormRow>
         <TextField
-          label="Thumbnail Image Path"
-          name="thumbnail_image"
-          id="thumbnail_image"
-          value={formData.thumbnail_image}
-          onChange={(e) => handleChange('thumbnail_image', e.target.value)}
-          placeholder="/assets/img/project/1.jpg"
-          required
-          invalid={!!errors.thumbnail_image}
-          feedback={errors.thumbnail_image}
-          helpText="Enter the path to the project thumbnail image"
+          label="Event Date"
+          name="event_date"
+          id="event_date"
+          type="date"
+          value={formData.event_date}
+          onChange={(e) => handleChange('event_date', e.target.value)}
+          invalid={!!errors.event_date}
+          feedback={errors.event_date}
         />
+        <TextField
+          label="Location"
+          name="location"
+          id="location"
+          value={formData.location}
+          onChange={(e) => handleChange('location', e.target.value)}
+          placeholder="New York, USA"
+          invalid={!!errors.location}
+          feedback={errors.location}
+        />
+      </FormRow>
+
+      <FormRow>
+        <TextField
+          label="Photographer"
+          name="photographer"
+          id="photographer"
+          value={formData.photographer}
+          onChange={(e) => handleChange('photographer', e.target.value)}
+          placeholder="Photographer name (overrides author if provided)"
+          invalid={!!errors.photographer}
+          feedback={errors.photographer}
+          helpText="If provided, this will override the Author field in detail page"
+        />
+      </FormRow>
+
+      <FormRow>
+        <Col md={12}>
+          <FormLabel htmlFor="photos">
+            Gallery Photos (Max 12) {formData.photos.length > 0 && <span className="text-muted">({formData.photos.length}/12)</span>}
+          </FormLabel>
+          {formData.photos.length < 12 && (
+            <div className="mb-3">
+              <ImagePathSelector
+                label=""
+                name="add_photo"
+                id="add_photo"
+                value=""
+                onChange={handleAddPhoto}
+                uploadFolder="projects"
+                helpText="Add a photo to the gallery (max 12 photos)"
+              />
+            </div>
+          )}
+          {errors.photos && <div className="text-danger mb-2">{errors.photos}</div>}
+          {formData.photos.length > 0 && (
+            <div className="row g-2">
+              {formData.photos.map((photo, index) => {
+                const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+                const baseUrl = apiUrl.replace('/api', '')
+                const previewUrl = photo.image_path?.startsWith('http') 
+                  ? photo.image_path 
+                  : photo.image_path?.startsWith('/assets/')
+                  ? `${import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173'}${photo.image_path}`
+                  : photo.image_path 
+                  ? `${baseUrl}/storage/${photo.image_path}`
+                  : null
+                return (
+                  <div key={index} className="col-md-3 mb-2">
+                    <div className="border rounded p-2 position-relative">
+                      {previewUrl && (
+                        <img 
+                          src={previewUrl} 
+                          alt={`Photo ${index + 1}`} 
+                          className="img-fluid rounded"
+                          style={{ maxHeight: '100px', width: '100%', objectFit: 'cover' }}
+                        />
+                      )}
+                      <div className="d-flex justify-content-between mt-2">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => handleRemovePhoto(index)}
+                        >
+                          Remove
+                        </button>
+                        <div>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => handleReorderPhoto(index, 'up')}
+                            disabled={index === 0}
+                            title="Move up"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary ms-1"
+                            onClick={() => handleReorderPhoto(index, 'down')}
+                            disabled={index === formData.photos.length - 1}
+                            title="Move down"
+                          >
+                            ↓
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          <FormText>Add up to 12 photos for the gallery slider on detail page</FormText>
+        </Col>
       </FormRow>
 
       <FormRow>

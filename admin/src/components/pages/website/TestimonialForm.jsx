@@ -2,6 +2,7 @@ import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'rea
 import { FormRow, TextField } from '../../common/FormFields'
 import { FormLabel, FormControl, FormText, Col } from 'react-bootstrap'
 import PropTypes from 'prop-types'
+import ImagePathSelector from '../../common/ImagePathSelector'
 
 const TestimonialForm = forwardRef(({ 
   mode = 'create', 
@@ -160,19 +161,17 @@ const TestimonialForm = forwardRef(({
         />
       </FormRow>
 
-      <FormRow>
-        <TextField
-          label="Photo Path"
-          name="photo_path"
-          id="photo_path"
-          value={formData.photo_path}
-          onChange={(e) => handleChange('photo_path', e.target.value)}
-          placeholder="/assets/img/testimonial/1.jpg"
-          invalid={!!errors.photo_path}
-          feedback={errors.photo_path}
-          helpText="Enter the path to the customer photo"
-        />
-      </FormRow>
+      <ImagePathSelector
+        label="Customer Photo"
+        name="photo_path"
+        id="photo_path"
+        value={formData.photo_path}
+        onChange={(path) => handleChange('photo_path', path)}
+        uploadFolder="testimonials"
+        invalid={!!errors.photo_path}
+        feedback={errors.photo_path}
+        helpText="Upload a customer photo (JPEG, PNG, WebP)."
+      />
 
       <FormRow>
         <TextField

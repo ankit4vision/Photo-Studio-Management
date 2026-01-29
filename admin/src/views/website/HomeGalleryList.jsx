@@ -213,18 +213,54 @@ const HomeGalleryList = () => {
     {
       key: 'image',
       label: 'Image',
-      render: (value, item) => (
-        <div style={{ width: '80px', height: '50px', overflow: 'hidden', borderRadius: '4px' }}>
-          <img
-            src={item.image_url || item.image_path}
-            alt={item.alt_text || item.title || 'Gallery'}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/80x50?text=No+Image'
-            }}
-          />
-        </div>
-      ),
+      render: (value, item) => {
+        // Use image_url if available, otherwise construct from image_path
+        const getImageUrl = () => {
+          if (item.image_url && !item.image_url.includes('via.placeholder.com') && !item.image_url.includes('placeholder')) {
+            return item.image_url
+          }
+          if (item.image_path) {
+            // If it's already a full URL, use it
+            if (item.image_path.startsWith('http://') || item.image_path.startsWith('https://')) {
+              return item.image_path
+            }
+            // If it's a frontend asset path, construct URL
+            if (item.image_path.startsWith('/assets/')) {
+              const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173'
+              return `${frontendUrl}${item.image_path}`
+            }
+            // If it's a storage path, construct storage URL
+            if (item.image_path && !item.image_path.includes('\\') && !item.image_path.match(/^[A-Z]:/)) {
+              const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+              const baseUrl = apiUrl.replace('/api', '')
+              return `${baseUrl}/storage/${item.image_path}`
+            }
+          }
+          return null
+        }
+
+        const imageUrl = getImageUrl()
+
+        return (
+          <div style={{ width: '80px', height: '50px', overflow: 'hidden', borderRadius: '4px', backgroundColor: '#f0f0f0' }}>
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={item.alt_text || item.title || 'Gallery'}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                  e.currentTarget.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: #999; font-size: 10px;">No Image</div>'
+                }}
+              />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', color: '#999', fontSize: '10px' }}>
+                No Image
+              </div>
+            )}
+          </div>
+        )
+      },
     },
     {
       key: 'title',

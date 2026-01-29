@@ -17,8 +17,8 @@ const Home = () => {
   const [testimonials, setTestimonials] = useState([])
   const [testimonialsLoading, setTestimonialsLoading] = useState(true)
 
-  // Initialize Isotope for gallery grids
-  useIsotope('.style-masonry .grid')
+  // Initialize Isotope for gallery grids - re-initialize when projects or gallery images change
+  useIsotope('.style-masonry .grid', {}, [projects.length, galleryImages.length])
 
   // Fetch slider images from API
   useEffect(() => {
@@ -169,43 +169,76 @@ const Home = () => {
       try {
         setProjectsLoading(true)
         const response = await websiteApi.getProjects(true) // Get featured projects for homepage
-        if (response.success && response.data) {
-          // Transform API data to match component structure
-          const transformedProjects = response.data.map(project => ({
-            id: project.id,
-            title: project.title,
-            author: project.author || 'Jonathon Willson'
-          }))
+        if (response.success && response.data && response.data.length > 0) {
+          // Transform API data to match component structure - use thumbnail_image_url from API
+          const transformedProjects = response.data.map(project => {
+            // Get image URL - prefer thumbnail_image_url from backend, otherwise construct from thumbnail_image
+            const getImageUrl = () => {
+              // Filter out placeholder URLs
+              if (project.thumbnail_image_url && !project.thumbnail_image_url.includes('via.placeholder.com') && !project.thumbnail_image_url.includes('placeholder')) {
+                return project.thumbnail_image_url
+              }
+              if (project.thumbnail_image) {
+                // Filter out placeholder paths
+                if (project.thumbnail_image.includes('via.placeholder.com') || project.thumbnail_image.includes('placeholder')) {
+                  return null
+                }
+                // If it's already a full URL, use it
+                if (project.thumbnail_image.startsWith('http://') || project.thumbnail_image.startsWith('https://')) {
+                  return project.thumbnail_image
+                }
+                // If it's a frontend asset path, use it as is
+                if (project.thumbnail_image.startsWith('/assets/')) {
+                  return project.thumbnail_image
+                }
+                // If it's a storage path, construct the storage URL
+                if (project.thumbnail_image && !project.thumbnail_image.includes('\\') && !project.thumbnail_image.match(/^[A-Z]:/)) {
+                  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+                  const baseUrl = apiUrl.replace(/\/api\/?$/, '')
+                  return `${baseUrl}/storage/${project.thumbnail_image}`
+                }
+              }
+              // Fallback to static image based on ID
+              return `/assets/img/projects/1/${project.id || 1}.jpg`
+            }
+
+            return {
+              id: project.id,
+              title: project.title,
+              author: project.author || 'Jonathon Willson',
+              image_url: getImageUrl()
+            }
+          })
           setProjects(transformedProjects)
         } else {
           // Fallback to static data if API fails
           setProjects([
-            { id: 1, title: 'Bright Boho Sunshine', author: 'Jonathon Willson' },
-            { id: 2, title: 'California Fall Collection 2023', author: 'Jonathon Willson' },
-            { id: 3, title: 'Brown girl next door', author: 'Jonathon Willson' },
-            { id: 4, title: 'Fashion next stage', author: 'Jonathon Willson' },
-            { id: 5, title: 'Jenifer in green', author: 'Jonathon Willson' },
-            { id: 6, title: 'Sunflower Boho girl', author: 'Jonathon Willson' },
-            { id: 7, title: 'Iceland girl', author: 'Jonathon Willson' },
-            { id: 8, title: 'Summer sadness', author: 'Jonathon Willson' },
-            { id: 9, title: 'Festive mode one', author: 'Jonathon Willson' },
-            { id: 10, title: 'Bright Boho Sunshine0', author: 'Jonathon Willson' }
+            { id: 1, title: 'Bright Boho Sunshine', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/1.jpg' },
+            { id: 2, title: 'California Fall Collection 2023', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/2.jpg' },
+            { id: 3, title: 'Brown girl next door', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/3.jpg' },
+            { id: 4, title: 'Fashion next stage', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/4.jpg' },
+            { id: 5, title: 'Jenifer in green', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/5.jpg' },
+            { id: 6, title: 'Sunflower Boho girl', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/6.jpg' },
+            { id: 7, title: 'Iceland girl', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/7.jpg' },
+            { id: 8, title: 'Summer sadness', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/8.jpg' },
+            { id: 9, title: 'Festive mode one', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/9.jpg' },
+            { id: 10, title: 'Bright Boho Sunshine0', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/10.jpg' }
           ])
         }
       } catch (error) {
         console.error('Error fetching projects:', error)
         // Fallback to static data on error
         setProjects([
-          { id: 1, title: 'Bright Boho Sunshine', author: 'Jonathon Willson' },
-          { id: 2, title: 'California Fall Collection 2023', author: 'Jonathon Willson' },
-          { id: 3, title: 'Brown girl next door', author: 'Jonathon Willson' },
-          { id: 4, title: 'Fashion next stage', author: 'Jonathon Willson' },
-          { id: 5, title: 'Jenifer in green', author: 'Jonathon Willson' },
-          { id: 6, title: 'Sunflower Boho girl', author: 'Jonathon Willson' },
-          { id: 7, title: 'Iceland girl', author: 'Jonathon Willson' },
-          { id: 8, title: 'Summer sadness', author: 'Jonathon Willson' },
-          { id: 9, title: 'Festive mode one', author: 'Jonathon Willson' },
-          { id: 10, title: 'Bright Boho Sunshine0', author: 'Jonathon Willson' }
+          { id: 1, title: 'Bright Boho Sunshine', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/1.jpg' },
+          { id: 2, title: 'California Fall Collection 2023', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/2.jpg' },
+          { id: 3, title: 'Brown girl next door', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/3.jpg' },
+          { id: 4, title: 'Fashion next stage', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/4.jpg' },
+          { id: 5, title: 'Jenifer in green', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/5.jpg' },
+          { id: 6, title: 'Sunflower Boho girl', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/6.jpg' },
+          { id: 7, title: 'Iceland girl', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/7.jpg' },
+          { id: 8, title: 'Summer sadness', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/8.jpg' },
+          { id: 9, title: 'Festive mode one', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/9.jpg' },
+          { id: 10, title: 'Bright Boho Sunshine0', author: 'Jonathon Willson', image_url: '/assets/img/projects/1/10.jpg' }
         ])
       } finally {
         setProjectsLoading(false)
@@ -221,22 +254,73 @@ const Home = () => {
       try {
         setGalleryLoading(true)
         const response = await websiteApi.getHomeGallery()
-        if (response.success && response.data) {
-          // Transform API data to match component structure (array of numbers for image paths)
-          const transformedGallery = response.data.map(item => {
-            // Extract number from path like /assets/img/gallery/1.jpg -> 1
-            const match = item.image_path.match(/(\d+)\.jpg$/)
-            return match ? parseInt(match[1]) : 1
-          })
+        if (response.success && response.data && response.data.length > 0) {
+          // Transform API data - use image_url from API directly
+          const transformedGallery = response.data
+            .filter(item => {
+              // Filter out items with placeholder URLs in the API response
+              if (item.image_url && (item.image_url.includes('via.placeholder.com') || item.image_url.includes('placeholder'))) {
+                return false
+              }
+              if (item.image_path && (item.image_path.includes('via.placeholder.com') || item.image_path.includes('placeholder'))) {
+                return false
+              }
+              return true
+            })
+            .map(item => {
+              // Get image URL - prefer image_url from backend, otherwise construct from image_path
+              const getImageUrl = () => {
+                if (item.image_url && !item.image_url.includes('via.placeholder.com') && !item.image_url.includes('placeholder')) {
+                  return item.image_url
+                }
+                if (item.image_path) {
+                  // If it's already a full URL, use it
+                  if (item.image_path.startsWith('http://') || item.image_path.startsWith('https://')) {
+                    return item.image_path
+                  }
+                  // If it's a frontend asset path, use it as is
+                  if (item.image_path.startsWith('/assets/')) {
+                    return item.image_path
+                  }
+                  // If it's a storage path, construct the storage URL
+                  if (item.image_path && !item.image_path.includes('\\') && !item.image_path.match(/^[A-Z]:/)) {
+                    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+                    const baseUrl = apiUrl.replace(/\/api\/?$/, '')
+                    return `${baseUrl}/storage/${item.image_path}`
+                  }
+                }
+                // Fallback to static image
+                return '/assets/img/projects/1/1.jpg'
+              }
+
+              return {
+                id: item.id || Math.random(),
+                image_url: getImageUrl()
+              }
+            })
           setGalleryImages(transformedGallery)
         } else {
           // Fallback to static data if API fails
-          setGalleryImages([1, 2, 3, 4, 5, 6])
+          setGalleryImages([
+            { id: 1, image_url: '/assets/img/projects/1/1.jpg' },
+            { id: 2, image_url: '/assets/img/projects/1/2.jpg' },
+            { id: 3, image_url: '/assets/img/projects/1/3.jpg' },
+            { id: 4, image_url: '/assets/img/projects/1/4.jpg' },
+            { id: 5, image_url: '/assets/img/projects/1/5.jpg' },
+            { id: 6, image_url: '/assets/img/projects/1/6.jpg' }
+          ])
         }
       } catch (error) {
         console.error('Error fetching gallery:', error)
         // Fallback to static data on error
-        setGalleryImages([1, 2, 3, 4, 5, 6])
+        setGalleryImages([
+          { id: 1, image_url: '/assets/img/projects/1/1.jpg' },
+          { id: 2, image_url: '/assets/img/projects/1/2.jpg' },
+          { id: 3, image_url: '/assets/img/projects/1/3.jpg' },
+          { id: 4, image_url: '/assets/img/projects/1/4.jpg' },
+          { id: 5, image_url: '/assets/img/projects/1/5.jpg' },
+          { id: 6, image_url: '/assets/img/projects/1/6.jpg' }
+        ])
       } finally {
         setGalleryLoading(false)
       }
@@ -252,28 +336,46 @@ const Home = () => {
         setTestimonialsLoading(true)
         const response = await websiteApi.getTestimonials(true) // Get featured testimonials for homepage
         if (response.success && response.data) {
+          // Helper function to filter out placeholder URLs
+          const isValidUrl = (url) => {
+            if (!url) return false
+            return !url.includes('via.placeholder.com') && !url.includes('placeholder')
+          }
+
           // Transform API data to match component structure
-          const transformedTestimonials = response.data.map(testimonial => ({
-            name: testimonial.customer_name,
-            location: testimonial.location || '',
-            image: testimonial.photo_path ? parseInt(testimonial.photo_path.match(/(\d+)\.jpg$/)?.[1] || '1') : 1
-          }))
+          const transformedTestimonials = response.data.map(testimonial => {
+            // Use photo_url if available and valid, otherwise use fallback
+            let imageUrl = null
+            if (testimonial.photo_url && isValidUrl(testimonial.photo_url)) {
+              imageUrl = testimonial.photo_url
+            } else if (testimonial.photo_path && isValidUrl(testimonial.photo_path)) {
+              // Fallback to photo_path if it's a valid URL
+              imageUrl = testimonial.photo_path
+            }
+
+            return {
+              name: testimonial.customer_name,
+              location: testimonial.location || '',
+              image_url: imageUrl,
+              testimonial_text: testimonial.testimonial_text || ''
+            }
+          })
           setTestimonials(transformedTestimonials)
         } else {
           // Fallback to static data if API fails
           setTestimonials([
-            { name: 'Rachel Jackson', location: 'New York', image: 1 },
-            { name: 'Helen Jordan', location: 'Chicago', image: 2 },
-            { name: 'Helen Jordan', location: 'New York', image: 3 }
+            { name: 'Rachel Jackson', location: 'New York', image_url: '/assets/img/testimonial/1.jpg' },
+            { name: 'Helen Jordan', location: 'Chicago', image_url: '/assets/img/testimonial/2.jpg' },
+            { name: 'Helen Jordan', location: 'New York', image_url: '/assets/img/testimonial/3.jpg' }
           ])
         }
       } catch (error) {
         console.error('Error fetching testimonials:', error)
         // Fallback to static data on error
         setTestimonials([
-          { name: 'Rachel Jackson', location: 'New York', image: 1 },
-          { name: 'Helen Jordan', location: 'Chicago', image: 2 },
-          { name: 'Helen Jordan', location: 'New York', image: 3 }
+          { name: 'Rachel Jackson', location: 'New York', image_url: '/assets/img/testimonial/1.jpg' },
+          { name: 'Helen Jordan', location: 'Chicago', image_url: '/assets/img/testimonial/2.jpg' },
+          { name: 'Helen Jordan', location: 'New York', image_url: '/assets/img/testimonial/3.jpg' }
         ])
       } finally {
         setTestimonialsLoading(false)
@@ -581,23 +683,55 @@ const Home = () => {
           <div className="style-masonry effect-blur">
             <div className="grid grid-3 gutter-10 clearfix">
               <div className="grid-sizer"></div>
-              {projects.map((project) => (
-                <div key={project.id} className="grid-item">
-                  <div className="wptb-item--inner">
-                    <div className="wptb-item--image">
-                      <img src={`/assets/img/projects/1/${project.id}.jpg`} alt={project.title} loading="lazy" />
-                    </div>
-                    <div className="wptb-item--holder">
-                      <div className="wptb-item--meta">
-                        <h4>
-                          <Link to="/album-detail">{project.title}</Link>
-                        </h4>
-                        <p>By {project.author}</p>
+              {projectsLoading ? (
+                <div className="grid-item col-12 text-center" style={{ padding: '40px' }}>
+                  <p>Loading projects...</p>
+                </div>
+              ) : projects.length > 0 ? (
+                projects.map((project) => {
+                  // Filter out placeholder URLs and invalid URLs
+                  const isValidUrl = (url) => {
+                    if (!url) return false
+                    if (url.includes('via.placeholder.com')) return false
+                    if (url.includes('placeholder')) return false
+                    return true
+                  }
+
+                  const imageUrl = isValidUrl(project.image_url) 
+                    ? project.image_url 
+                    : `/assets/img/projects/1/${project.id}.jpg`
+
+                  return (
+                    <div key={project.id} className="grid-item">
+                      <div className="wptb-item--inner">
+                        <div className="wptb-item--image">
+                          <img 
+                            src={imageUrl} 
+                            alt={project.title} 
+                            loading="lazy"
+                            onError={(e) => {
+                              console.error('Project image load error:', imageUrl)
+                              e.currentTarget.src = `/assets/img/projects/1/${project.id}.jpg`
+                            }}
+                          />
+                        </div>
+                        <div className="wptb-item--holder">
+                          <div className="wptb-item--meta">
+                            <h4>
+                              <Link to="/album-detail">{project.title}</Link>
+                            </h4>
+                            <p>By {project.author}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )
+                })
+              ) : (
+                <div className="grid-item col-12 text-center" style={{ padding: '40px' }}>
+                  <p>No projects available</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -619,18 +753,45 @@ const Home = () => {
           <div className="style-masonry effect-blur">
             <div className="grid grid-3 gutter-10 clearfix">
               <div className="grid-sizer"></div>
-              {galleryImages.map((num) => (
-                <div key={num} className="grid-item">
-                  <div className="wptb-item--inner">
-                    <div className="wptb-item--image">
-                      <img src={`/assets/img/projects/1/${num}.jpg`} alt={`Gallery ${num}`} loading="lazy" />
-                      <a className="wptb-image-popup" href={`/assets/img/projects/1/${num}.jpg`} data-fancybox="home-gallery">
-                        <i className="bi bi-arrows-fullscreen"></i>
-                      </a>
-                    </div>
-                  </div>
+              {galleryLoading ? (
+                <div className="grid-item col-12 text-center" style={{ padding: '40px' }}>
+                  <p>Loading gallery...</p>
                 </div>
-              ))}
+              ) : galleryImages.length > 0 ? (
+                galleryImages
+                  .filter((item) => {
+                    // Filter out items with placeholder URLs
+                    const url = item.image_url || (typeof item === 'number' ? `/assets/img/projects/1/${item}.jpg` : item)
+                    return url && !url.includes('via.placeholder.com') && !url.includes('placeholder')
+                  })
+                  .map((item) => {
+                    const imageUrl = item.image_url || (typeof item === 'number' ? `/assets/img/projects/1/${item}.jpg` : item)
+                    return (
+                      <div key={item.id || item} className="grid-item">
+                        <div className="wptb-item--inner">
+                          <div className="wptb-item--image">
+                            <img 
+                              src={imageUrl} 
+                              alt={`Gallery ${item.id || item}`} 
+                              loading="lazy"
+                              onError={(e) => {
+                                console.error('Gallery image load error:', imageUrl)
+                                e.currentTarget.src = `/assets/img/projects/1/1.jpg`
+                              }}
+                            />
+                            <a className="wptb-image-popup" href={imageUrl} data-fancybox="home-gallery">
+                              <i className="bi bi-arrows-fullscreen"></i>
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+              ) : (
+                <div className="grid-item col-12 text-center" style={{ padding: '40px' }}>
+                  <p>No gallery images available</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -676,12 +837,18 @@ const Home = () => {
                               </div>
                             </div>
                             <p className="wptb-item--description">
-                              "I have an amazing photography session with team LV_Clicks photography agency, highly recommended.
-                              They have amazing atmosphere in their studio. Iw'd love to visit again"
+                              {testimonial.testimonial_text ? `"${testimonial.testimonial_text}"` : '"I have an amazing photography session with team LV_Clicks photography agency, highly recommended. They have amazing atmosphere in their studio. I\'d love to visit again"'}
                             </p>
                             <div className="wptb-item--meta">
                               <div className="wptb-item--image">
-                                <img src={`/assets/img/testimonial/${testimonial.image}.jpg`} alt={testimonial.name} loading="lazy" />
+                                <img 
+                                  src={testimonial.image_url || '/assets/img/testimonial/1.jpg'} 
+                                  alt={testimonial.name} 
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    e.target.src = '/assets/img/testimonial/1.jpg'
+                                  }}
+                                />
                               </div>
                               <div className="wptb-item--meta-left">
                                 <h4 className="wptb-item--title">{testimonial.name}</h4>

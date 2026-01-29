@@ -58,6 +58,7 @@ Route::prefix('website')->group(function () {
     Route::get('/slider', [PublicSliderController::class, 'index']);
     Route::get('/services', [PublicServiceController::class, 'index']);
     Route::get('/projects', [PublicProjectController::class, 'index']);
+    Route::get('/projects/{project}', [PublicProjectController::class, 'show']);
     Route::get('/home-gallery', [PublicHomeGalleryController::class, 'index']);
     Route::get('/testimonials', [PublicTestimonialController::class, 'index']);
     Route::get('/gallery', [PublicGalleryController::class, 'index']);

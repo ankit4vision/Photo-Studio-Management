@@ -8,8 +8,8 @@ const Gallery = () => {
   const [videos, setVideos] = useState([])
   const [videosLoading, setVideosLoading] = useState(true)
 
-  // Initialize Isotope for the gallery grid
-  useIsotope('.style-masonry .grid')
+  // Initialize Isotope for the gallery grid - re-initialize when images change
+  useIsotope('.style-masonry .grid', {}, [galleryImages.length])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -21,22 +21,65 @@ const Gallery = () => {
       try {
         setGalleryLoading(true)
         const response = await websiteApi.getGallery(1, 20)
-        if (response.success && response.data) {
-          // Transform API data to match component structure (array of numbers for image paths)
-          const transformedGallery = response.data.map(item => {
-            // Extract number from path like /assets/img/projects/1/1.jpg -> 1
-            const match = item.image_path.match(/\/(\d+)\.jpg$/)
-            return match ? parseInt(match[1]) : 1
-          })
-          setGalleryImages(transformedGallery.length > 0 ? transformedGallery : Array.from({ length: 10 }, (_, i) => i + 1))
+        if (response.success && response.data && response.data.length > 0) {
+          // Transform API data - use image_url from API directly
+          const transformedGallery = response.data
+            .filter(item => {
+              // Filter out items with placeholder URLs in the API response
+              if (item.image_url && (item.image_url.includes('via.placeholder.com') || item.image_url.includes('placeholder'))) {
+                return false
+              }
+              if (item.image_path && (item.image_path.includes('via.placeholder.com') || item.image_path.includes('placeholder'))) {
+                return false
+              }
+              return true
+            })
+            .map(item => {
+              // Get image URL - prefer image_url from backend, otherwise construct from image_path
+              const getImageUrl = () => {
+                if (item.image_url && !item.image_url.includes('via.placeholder.com') && !item.image_url.includes('placeholder')) {
+                  return item.image_url
+                }
+                if (item.image_path) {
+                  // If it's already a full URL, use it
+                  if (item.image_path.startsWith('http://') || item.image_path.startsWith('https://')) {
+                    return item.image_path
+                  }
+                  // If it's a frontend asset path, use it as is
+                  if (item.image_path.startsWith('/assets/')) {
+                    return item.image_path
+                  }
+                  // If it's a storage path, construct the storage URL
+                  if (item.image_path && !item.image_path.includes('\\') && !item.image_path.match(/^[A-Z]:/)) {
+                    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+                    const baseUrl = apiUrl.replace(/\/api\/?$/, '')
+                    return `${baseUrl}/storage/${item.image_path}`
+                  }
+                }
+                // Fallback to static image
+                return '/assets/img/projects/1/1.jpg'
+              }
+
+              return {
+                id: item.id || Math.random(),
+                image_url: getImageUrl()
+              }
+            })
+          setGalleryImages(transformedGallery)
         } else {
           // Fallback to static data if API fails
-          setGalleryImages(Array.from({ length: 10 }, (_, i) => i + 1))
+          setGalleryImages(Array.from({ length: 10 }, (_, i) => ({
+            id: i + 1,
+            image_url: `/assets/img/projects/1/${i + 1}.jpg`
+          })))
         }
       } catch (error) {
         console.error('Error fetching gallery:', error)
         // Fallback to static data on error
-        setGalleryImages(Array.from({ length: 10 }, (_, i) => i + 1))
+        setGalleryImages(Array.from({ length: 10 }, (_, i) => ({
+          id: i + 1,
+          image_url: `/assets/img/projects/1/${i + 1}.jpg`
+        })))
       } finally {
         setGalleryLoading(false)
       }
@@ -106,18 +149,45 @@ const Gallery = () => {
           <div className="style-masonry effect-blur">
             <div className="grid grid-3 gutter-10 clearfix">
               <div className="grid-sizer"></div>
-              {galleryImages.map((num) => (
-                <div key={num} className="grid-item">
-                  <div className="wptb-item--inner">
-                    <div className="wptb-item--image">
-                      <img src={`/assets/img/projects/1/${num}.jpg`} alt="img" loading="lazy" />
-                      <a className="wptb-image-popup" href={`/assets/img/projects/1/${num}.jpg`} data-fancybox="gallery-images">
-                        <i className="bi bi-arrows-fullscreen"></i>
-                      </a>
-                    </div>
-                  </div>
+              {galleryLoading ? (
+                <div className="grid-item col-12 text-center" style={{ padding: '40px' }}>
+                  <p>Loading gallery images...</p>
                 </div>
-              ))}
+              ) : galleryImages.length > 0 ? (
+                galleryImages
+                  .filter((item) => {
+                    // Filter out items with placeholder URLs
+                    const url = item.image_url || (typeof item === 'number' ? `/assets/img/projects/1/${item}.jpg` : item)
+                    return url && !url.includes('via.placeholder.com') && !url.includes('placeholder')
+                  })
+                  .map((item) => {
+                    const imageUrl = item.image_url || (typeof item === 'number' ? `/assets/img/projects/1/${item}.jpg` : item)
+                    return (
+                      <div key={item.id || item} className="grid-item">
+                        <div className="wptb-item--inner">
+                          <div className="wptb-item--image">
+                            <img 
+                              src={imageUrl} 
+                              alt={`Gallery ${item.id || item}`} 
+                              loading="lazy"
+                              onError={(e) => {
+                                console.error('Gallery image load error:', imageUrl)
+                                e.currentTarget.src = `/assets/img/projects/1/1.jpg`
+                              }}
+                            />
+                            <a className="wptb-image-popup" href={imageUrl} data-fancybox="gallery-images">
+                              <i className="bi bi-arrows-fullscreen"></i>
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+              ) : (
+                <div className="grid-item col-12 text-center" style={{ padding: '40px' }}>
+                  <p>No gallery images available</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

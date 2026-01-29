@@ -229,18 +229,54 @@ const TestimonialsList = () => {
     {
       key: 'photo',
       label: 'Photo',
-      render: (value, testimonial) => (
-        <div style={{ width: '50px', height: '50px', overflow: 'hidden', borderRadius: '50%' }}>
-          <img
-            src={testimonial.photo_path || 'https://via.placeholder.com/50?text=No+Photo'}
-            alt={testimonial.customer_name || 'Customer'}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/50?text=No+Photo'
-            }}
-          />
-        </div>
-      ),
+      render: (value, testimonial) => {
+        // Use photo_url if available, otherwise construct from photo_path
+        const getPhotoUrl = () => {
+          if (testimonial.photo_url && !testimonial.photo_url.includes('via.placeholder.com') && !testimonial.photo_url.includes('placeholder')) {
+            return testimonial.photo_url
+          }
+          if (testimonial.photo_path) {
+            // If it's already a full URL, use it
+            if (testimonial.photo_path.startsWith('http://') || testimonial.photo_path.startsWith('https://')) {
+              return testimonial.photo_path
+            }
+            // If it's a frontend asset path, construct URL
+            if (testimonial.photo_path.startsWith('/assets/')) {
+              const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173'
+              return `${frontendUrl}${testimonial.photo_path}`
+            }
+            // If it's a storage path, construct storage URL
+            if (testimonial.photo_path && !testimonial.photo_path.includes('\\') && !testimonial.photo_path.match(/^[A-Z]:/)) {
+              const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+              const baseUrl = apiUrl.replace('/api', '')
+              return `${baseUrl}/storage/${testimonial.photo_path}`
+            }
+          }
+          return null
+        }
+
+        const photoUrl = getPhotoUrl()
+
+        return (
+          <div style={{ width: '50px', height: '50px', overflow: 'hidden', borderRadius: '50%', backgroundColor: '#f0f0f0' }}>
+            {photoUrl ? (
+              <img
+                src={photoUrl}
+                alt={testimonial.customer_name || 'Customer'}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                  e.currentTarget.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: #999; font-size: 10px;">No Photo</div>'
+                }}
+              />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', color: '#999', fontSize: '10px' }}>
+                No Photo
+              </div>
+            )}
+          </div>
+        )
+      },
     },
     {
       key: 'customer_name',

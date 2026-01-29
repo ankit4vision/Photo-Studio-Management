@@ -204,6 +204,34 @@ class WebsiteApi {
       }
     }
   }
+
+  /**
+   * Get album details by ID (deprecated - use getProjectDetail)
+   */
+  async getAlbumDetail(albumId) {
+    // For backward compatibility, redirect to project detail
+    return this.getProjectDetail(albumId)
+  }
+
+  /**
+   * Get project details by ID
+   */
+  async getProjectDetail(projectId) {
+    try {
+      const response = await this.request(`/website/projects/${projectId}`)
+      return {
+        success: true,
+        data: response.data || null,
+      }
+    } catch (error) {
+      console.error('Error fetching project detail:', error)
+      return {
+        success: false,
+        data: null,
+        error: error.message,
+      }
+    }
+  }
 }
 
 // Create and export singleton instance

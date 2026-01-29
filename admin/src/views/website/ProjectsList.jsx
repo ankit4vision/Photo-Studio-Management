@@ -157,13 +157,28 @@ const ProjectsList = () => {
     }
   }
 
-  const handleEditClick = (project) => {
+  const handleEditClick = async (project) => {
     if (!canUpdateProject) {
       error('You do not have permission to edit projects')
       return
     }
-    setProjectToEdit(project)
-    setShowEditModal(true)
+    
+    try {
+      // Fetch full project details with photos
+      const response = await websiteService.getProjectById(project.id)
+      if (response.success && response.data) {
+        setProjectToEdit(response.data)
+        setShowEditModal(true)
+      } else {
+        error('Failed to load project details')
+      }
+    } catch (err) {
+      console.error('Error fetching project details:', err)
+      error('An error occurred while loading project details')
+      // Fallback to using the project data from list (without photos)
+      setProjectToEdit(project)
+      setShowEditModal(true)
+    }
   }
 
   const handleEditSubmit = () => {
@@ -218,18 +233,54 @@ const ProjectsList = () => {
     {
       key: 'thumbnail',
       label: 'Thumbnail',
-      render: (value, project) => (
-        <div style={{ width: '80px', height: '50px', overflow: 'hidden', borderRadius: '4px' }}>
-          <img
-            src={project.thumbnail_image}
-            alt={project.title || 'Project'}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/80x50?text=No+Image'
-            }}
-          />
-        </div>
-      ),
+      render: (value, project) => {
+        // Use thumbnail_image_url if available, otherwise construct from thumbnail_image
+        const getThumbnailUrl = () => {
+          if (project.thumbnail_image_url) {
+            return project.thumbnail_image_url
+          }
+          if (project.thumbnail_image) {
+            // If it's already a full URL, use it
+            if (project.thumbnail_image.startsWith('http://') || project.thumbnail_image.startsWith('https://')) {
+              return project.thumbnail_image
+            }
+            // If it's a frontend asset path, construct URL
+            if (project.thumbnail_image.startsWith('/assets/')) {
+              const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173'
+              return `${frontendUrl}${project.thumbnail_image}`
+            }
+            // If it's a storage path, construct storage URL
+            if (project.thumbnail_image && !project.thumbnail_image.includes('\\') && !project.thumbnail_image.match(/^[A-Z]:/)) {
+              const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+              const baseUrl = apiUrl.replace('/api', '')
+              return `${baseUrl}/storage/${project.thumbnail_image}`
+            }
+          }
+          return null
+        }
+
+        const thumbnailUrl = getThumbnailUrl()
+
+        return (
+          <div style={{ width: '80px', height: '50px', overflow: 'hidden', borderRadius: '4px', backgroundColor: '#f0f0f0' }}>
+            {thumbnailUrl ? (
+              <img
+                src={thumbnailUrl}
+                alt={project.title || 'Project'}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                  e.currentTarget.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: #999; font-size: 10px;">No Image</div>'
+                }}
+              />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', color: '#999', fontSize: '10px' }}>
+                No Image
+              </div>
+            )}
+          </div>
+        )
+      },
     },
     {
       key: 'title',

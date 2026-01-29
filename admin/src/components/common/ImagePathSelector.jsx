@@ -151,7 +151,11 @@ const ImagePathSelector = ({
               alt="Preview"
               style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'cover' }}
               onError={(e) => {
-                e.currentTarget.src = 'https://via.placeholder.com/200x120?text=Image+Not+Found'
+                e.currentTarget.style.display = 'none'
+                const parent = e.currentTarget.parentElement
+                if (parent) {
+                  parent.innerHTML = '<span className="text-muted small">Image not found</span>'
+                }
               }}
             />
           ) : (

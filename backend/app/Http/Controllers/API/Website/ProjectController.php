@@ -8,6 +8,7 @@ use App\Http\Requests\Website\ProjectStoreRequest;
 use App\Http\Requests\Website\ProjectUpdateRequest;
 use App\Http\Resources\Website\ProjectResource;
 use App\Models\Website\Project;
+use App\Models\Website\ProjectPhoto;
 use Illuminate\Http\Request;
 
 class ProjectController extends Controller
@@ -93,7 +94,24 @@ class ProjectController extends Controller
      */
     public function store(ProjectStoreRequest $request)
     {
-        $project = Project::create($request->validated());
+        $validated = $request->validated();
+        $photos = $validated['photos'] ?? [];
+        unset($validated['photos']);
+
+        $project = Project::create($validated);
+
+        // Create photos if provided
+        if (!empty($photos)) {
+            foreach ($photos as $photoData) {
+                ProjectPhoto::create([
+                    'project_id' => $project->id,
+                    'image_path' => $photoData['image_path'],
+                    'order' => $photoData['order'] ?? 0,
+                ]);
+            }
+        }
+
+        $project->load('photos');
 
         return (new ProjectResource($project))
             ->additional([
@@ -109,6 +127,9 @@ class ProjectController extends Controller
      */
     public function show(Project $project)
     {
+        // Load photos relationship for detail page
+        $project->load('photos');
+        
         return (new ProjectResource($project))
             ->additional([
                 'success' => true,
@@ -121,7 +142,43 @@ class ProjectController extends Controller
      */
     public function update(ProjectUpdateRequest $request, Project $project)
     {
-        $project->update($request->validated());
+        $validated = $request->validated();
+        $photos = $validated['photos'] ?? null;
+        unset($validated['photos']);
+
+        $project->update($validated);
+
+        // Update photos if provided
+        if ($photos !== null) {
+            // Get existing photo IDs
+            $existingPhotoIds = collect($photos)->pluck('id')->filter()->toArray();
+            
+            // Delete photos that are not in the new list
+            $project->photos()->whereNotIn('id', $existingPhotoIds)->delete();
+
+            // Update or create photos
+            foreach ($photos as $photoData) {
+                if (isset($photoData['id']) && $photoData['id']) {
+                    // Update existing photo
+                    $photo = ProjectPhoto::find($photoData['id']);
+                    if ($photo && $photo->project_id === $project->id) {
+                        $photo->update([
+                            'image_path' => $photoData['image_path'],
+                            'order' => $photoData['order'] ?? $photo->order,
+                        ]);
+                    }
+                } else {
+                    // Create new photo
+                    ProjectPhoto::create([
+                        'project_id' => $project->id,
+                        'image_path' => $photoData['image_path'],
+                        'order' => $photoData['order'] ?? 0,
+                    ]);
+                }
+            }
+        }
+
+        $project->load('photos');
 
         return (new ProjectResource($project))
             ->additional([

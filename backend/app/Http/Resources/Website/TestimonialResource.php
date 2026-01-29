@@ -2,10 +2,13 @@
 
 namespace App\Http\Resources\Website;
 
+use App\Http\Resources\Website\Concerns\HasStorageUrl;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class TestimonialResource extends JsonResource
 {
+    use HasStorageUrl;
+
     /**
      * Transform the resource into an array.
      *
@@ -20,7 +23,8 @@ class TestimonialResource extends JsonResource
             'location' => $this->location,
             'testimonial_text' => $this->testimonial_text,
             'rating' => $this->rating,
-            'photo_path' => $this->photo_path,
+            'photo_path' => $this->photo_path, // Keep original path
+            'photo_url' => $this->getStorageUrl($this->photo_path), // Add full URL for frontend
             'is_featured' => $this->is_featured,
             'is_active' => $this->is_active,
             'order' => $this->order,

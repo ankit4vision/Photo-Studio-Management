@@ -15,6 +15,11 @@ class Project extends Model
         'title',
         'author',
         'thumbnail_image',
+        'hero_image',
+        'description',
+        'event_date',
+        'location',
+        'photographer',
         'album_id',
         'category',
         'tags',
@@ -25,11 +30,20 @@ class Project extends Model
 
     protected $casts = [
         'tags' => 'array',
+        'event_date' => 'date',
         'is_featured' => 'boolean',
         'is_active' => 'boolean',
         'order' => 'integer',
         'album_id' => 'integer',
     ];
+
+    /**
+     * Get the photos for the project.
+     */
+    public function photos()
+    {
+        return $this->hasMany(ProjectPhoto::class)->orderBy('order', 'asc');
+    }
 
     /**
      * Scope a query to only include active projects.

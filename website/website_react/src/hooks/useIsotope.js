@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react'
  * @param {string} gridSelector - CSS selector for the grid container (default: '.grid')
  * @param {Object} options - Additional Isotope options
  */
-const useIsotope = (gridSelector = '.grid', options = {}) => {
+const useIsotope = (gridSelector = '.grid', options = {}, dependencies = []) => {
   const isotopeRef = useRef(null)
   const gridElementRef = useRef(null)
 
@@ -168,7 +168,7 @@ const useIsotope = (gridSelector = '.grid', options = {}) => {
         isotopeRef.current = null
       }
     }
-  }, [gridSelector, JSON.stringify(options)])
+  }, [gridSelector, JSON.stringify(options), ...dependencies])
 
   return isotopeRef.current
 }
