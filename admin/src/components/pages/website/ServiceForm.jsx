@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react'
 import { FormRow, TextField } from '../../common/FormFields'
-import { FormLabel, FormControl, FormText, Col } from 'react-bootstrap'
+import { FormLabel, FormControl, FormText, Col, FormSelect } from 'react-bootstrap'
 import PropTypes from 'prop-types'
 
 const ServiceForm = forwardRef(({ 
@@ -20,6 +20,45 @@ const ServiceForm = forwardRef(({
     is_active: true
   })
   const [errors, setErrors] = useState({})
+
+  const iconOptions = [
+    { value: '', label: 'Select icon...' },
+    // Camera & Photography
+    { value: 'bi-camera', label: '📷 Camera (bi-camera)' },
+    { value: 'bi-camera-video', label: '📹 Camera Video (bi-camera-video)' },
+    { value: 'bi-camera-reels', label: '🎬 Camera Reels (bi-camera-reels)' },
+    { value: 'bi-camera-fill', label: '📷 Camera Fill (bi-camera-fill)' },
+    // People & Events
+    { value: 'bi-people', label: '👥 People (bi-people)' },
+    { value: 'bi-person', label: '👤 Person (bi-person)' },
+    { value: 'bi-people-fill', label: '👥 People Fill (bi-people-fill)' },
+    // Love & Wedding
+    { value: 'bi-heart', label: '❤️ Heart (bi-heart)' },
+    { value: 'bi-heart-fill', label: '❤️ Heart Fill (bi-heart-fill)' },
+    { value: 'bi-balloon-heart', label: '💝 Balloon Heart (bi-balloon-heart)' },
+    // Images & Gallery
+    { value: 'bi-image', label: '🖼️ Image (bi-image)' },
+    { value: 'bi-images', label: '🖼️ Images (bi-images)' },
+    { value: 'bi-image-fill', label: '🖼️ Image Fill (bi-image-fill)' },
+    { value: 'bi-collection', label: '📚 Collection (bi-collection)' },
+    // Video
+    { value: 'bi-play-circle', label: '▶️ Play Circle (bi-play-circle)' },
+    { value: 'bi-play-fill', label: '▶️ Play Fill (bi-play-fill)' },
+    { value: 'bi-film', label: '🎞️ Film (bi-film)' },
+    // Baby & Family
+    { value: 'bi-emoji-smile', label: '😊 Smile (bi-emoji-smile)' },
+    { value: 'bi-emoji-heart-eyes', label: '😍 Heart Eyes (bi-emoji-heart-eyes)' },
+    { value: 'bi-house-heart', label: '🏠 House Heart (bi-house-heart)' },
+    // General
+    { value: 'bi-star', label: '⭐ Star (bi-star)' },
+    { value: 'bi-star-fill', label: '⭐ Star Fill (bi-star-fill)' },
+    { value: 'bi-gift', label: '🎁 Gift (bi-gift)' },
+    { value: 'bi-gift-fill', label: '🎁 Gift Fill (bi-gift-fill)' },
+    { value: 'bi-calendar-event', label: '📅 Calendar Event (bi-calendar-event)' },
+    { value: 'bi-clock', label: '🕐 Clock (bi-clock)' },
+    { value: 'bi-award', label: '🏆 Award (bi-award)' },
+    { value: 'bi-trophy', label: '🏆 Trophy (bi-trophy)' },
+  ]
 
   // Load service data for edit mode
   useEffect(() => {
@@ -128,17 +167,28 @@ const ServiceForm = forwardRef(({
       </FormRow>
 
       <FormRow>
-        <TextField
-          label="Icon Class"
-          name="icon_class"
-          id="icon_class"
-          value={formData.icon_class}
-          onChange={(e) => handleChange('icon_class', e.target.value)}
-          placeholder="bi-camera"
-          invalid={!!errors.icon_class}
-          feedback={errors.icon_class}
-          helpText="Bootstrap icon class (e.g., bi-camera, bi-camera-video, bi-heart)"
-        />
+        <Col md={12}>
+          <FormLabel htmlFor="icon_class">Icon Class</FormLabel>
+          <FormSelect
+            id="icon_class"
+            name="icon_class"
+            value={formData.icon_class}
+            onChange={(e) => handleChange('icon_class', e.target.value)}
+            isInvalid={!!errors.icon_class}
+          >
+            {iconOptions.map((opt) => (
+              <option key={opt.value || 'empty'} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </FormSelect>
+          {errors.icon_class && (
+            <div className="invalid-feedback d-block">{errors.icon_class}</div>
+          )}
+          <FormText>
+            Select a Bootstrap icon class for this service.
+          </FormText>
+        </Col>
       </FormRow>
 
       <FormRow>

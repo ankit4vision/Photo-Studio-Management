@@ -219,7 +219,7 @@ const GalleryList = () => {
       render: (value, item) => (
         <div style={{ width: '80px', height: '50px', overflow: 'hidden', borderRadius: '4px' }}>
           <img
-            src={item.image_path}
+            src={item.image_url || item.image_path}
             alt={item.alt_text || item.title || 'Gallery'}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             onError={(e) => {
@@ -305,19 +305,24 @@ const GalleryList = () => {
 
   if (!canViewGallery) {
     return (
-      <Container fluid className="py-4">
-        <Card>
-          <Card.Body className="text-center py-5">
-            <h5>Access Denied</h5>
-            <p className="text-muted">You do not have permission to view gallery.</p>
-          </Card.Body>
-        </Card>
-      </Container>
+      <>
+        <WebsiteCMSNav />
+        <Container fluid className="py-4">
+          <Card>
+            <Card.Body className="text-center py-5">
+              <h5>Access Denied</h5>
+              <p className="text-muted">You do not have permission to view gallery.</p>
+            </Card.Body>
+          </Card>
+        </Container>
+      </>
     )
   }
 
   return (
-    <Container fluid className="py-4">
+    <>
+      <WebsiteCMSNav />
+      <Container fluid className="py-4">
       <Row className="mb-4">
         <Col>
           <div className="d-flex justify-content-between align-items-center">

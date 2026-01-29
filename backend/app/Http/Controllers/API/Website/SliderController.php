@@ -104,13 +104,37 @@ class SliderController extends Controller
      */
     public function update(SliderUpdateRequest $request, Slider $slider)
     {
-        $slider->update($request->validated());
-
-        return (new SliderResource($slider))
-            ->additional([
-                'success' => true,
-                'message' => 'Slider updated successfully.',
+        try {
+            $validated = $request->validated();
+            
+            // Log for debugging (remove in production)
+            \Log::info('Updating slider', [
+                'slider_id' => $slider->id,
+                'validated_data' => $validated
             ]);
+            
+            $slider->update($validated);
+            
+            // Refresh the model to get updated data
+            $slider->refresh();
+
+            return (new SliderResource($slider))
+                ->additional([
+                    'success' => true,
+                    'message' => 'Slider updated successfully.',
+                ]);
+        } catch (\Exception $e) {
+            \Log::error('Error updating slider', [
+                'slider_id' => $slider->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update slider: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

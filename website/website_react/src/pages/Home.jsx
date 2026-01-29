@@ -12,6 +12,10 @@ const Home = () => {
   const [servicesLoading, setServicesLoading] = useState(true)
   const [projects, setProjects] = useState([])
   const [projectsLoading, setProjectsLoading] = useState(true)
+  const [galleryImages, setGalleryImages] = useState([])
+  const [galleryLoading, setGalleryLoading] = useState(true)
+  const [testimonials, setTestimonials] = useState([])
+  const [testimonialsLoading, setTestimonialsLoading] = useState(true)
 
   // Initialize Isotope for gallery grids
   useIsotope('.style-masonry .grid')
@@ -56,13 +60,16 @@ const Home = () => {
         const response = await websiteApi.getServices()
         if (response.success && response.data) {
           // Transform API data to match component structure
-          const transformedServices = response.data.map(service => ({
-            icon: service.icon_class || 'bi-cog',
-            title: service.title,
-            desc: service.description || '',
-            num: service.service_number || '',
-            active: service.is_active
-          }))
+          const transformedServices = response.data
+            .map(service => ({
+              icon: service.icon_class || 'bi-cog',
+              title: service.title,
+              desc: service.description || '',
+              num: service.service_number || String(service.order || '').padStart(2, '0'),
+              active: service.is_active,
+              order: service.order || 0
+            }))
+            .sort((a, b) => (a.order || 0) - (b.order || 0)) // Sort by order field
           setServices(transformedServices)
         } else {
           // Fallback to static data if API fails
@@ -281,11 +288,27 @@ const Home = () => {
 
     // Initialize Swiper slider after component mounts and scripts are loaded
     const initSwiper = () => {
-      if (typeof window.Swiper !== 'undefined' && sliderRef.current && !swiperInstanceRef.current) {
+      if (typeof window.Swiper !== 'undefined' && sliderRef.current && !swiperInstanceRef.current && sliderImages.length > 0) {
+        // Destroy any existing Swiper instance created by theme.js
+        const existingSwiper = sliderRef.current.swiper
+        if (existingSwiper) {
+          try {
+            existingSwiper.destroy(true, true)
+          } catch (e) {
+            // Ignore errors if already destroyed
+          }
+        }
+
+        // Calculate minimum slides needed for loop mode
+        // Loop requires at least slidesPerView * 2 slides (or more for better experience)
+        const minSlidesForLoop = 4 // Minimum for loop with max slidesPerView of 4
+        const enableLoop = sliderImages.length >= minSlidesForLoop
+
         swiperInstanceRef.current = new window.Swiper('.wptb-swiper-slider-four', {
-          loop: true,
+          loop: enableLoop, // Only enable loop if we have enough slides
           autoplay: {
             delay: 3000,
+            disableOnInteraction: false,
           },
           autoHeight: true,
           speed: 2500,
@@ -383,19 +406,70 @@ const Home = () => {
                 </div>
               </div>
             ) : sliderImages.length > 0 ? (
-              sliderImages.map((slider, index) => (
-                <div key={slider.id || index} className="swiper-slide">
-                  <div className="wptb-slider--item">
-                    <div className="wptb-slider--image">
-                      <img 
-                        src={slider.image_path} 
-                        alt={slider.alt_text || slider.title || `Slider ${index + 1}`} 
-                        loading="lazy" 
-                      />
+              sliderImages.map((slider, index) => {
+                // Get image URL - prefer image_url from backend, otherwise use image_path
+                const getImageUrl = () => {
+                  if (slider.image_url) {
+                    return slider.image_url
+                  }
+                  if (slider.image_path) {
+                    // If it's already a full URL, use it
+                    if (slider.image_path.startsWith('http://') || slider.image_path.startsWith('https://')) {
+                      return slider.image_path
+                    }
+                    // If it's a frontend asset path, use it as is (relative to website root)
+                    if (slider.image_path.startsWith('/assets/')) {
+                      return slider.image_path
+                    }
+                    // If it's a storage path, construct the storage URL
+                    if (slider.image_path && !slider.image_path.includes('\\') && !slider.image_path.match(/^[A-Z]:/)) {
+                      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+                      const baseUrl = apiUrl.replace(/\/api\/?$/, '')
+                      return `${baseUrl}/storage/${slider.image_path}`
+                    }
+                  }
+                  return null
+                }
+
+                const imageUrl = getImageUrl()
+
+                return (
+                  <div key={slider.id || index} className="swiper-slide">
+                    <div className="wptb-slider--item">
+                      <div className="wptb-slider--image">
+                        {imageUrl ? (
+                          <img 
+                            src={imageUrl} 
+                            alt={slider.alt_text || slider.title || `Slider ${index + 1}`} 
+                            loading="lazy"
+                            onError={(e) => {
+                              console.error('Slider image load error:', {
+                                url: imageUrl,
+                                image_path: slider.image_path,
+                                image_url: slider.image_url,
+                                slider: slider
+                              })
+                              // Show placeholder or hide image
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                        ) : (
+                          <div style={{ 
+                            minHeight: '400px', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            backgroundColor: '#f0f0f0',
+                            color: '#999'
+                          }}>
+                            No Image
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                )
+              })
             ) : (
               <div className="swiper-slide">
                 <div className="wptb-slider--item">
@@ -463,7 +537,7 @@ const Home = () => {
 
           <div className="row">
             {services.map((service, index) => (
-              <div key={index} className="col-md-4 pd-left-25 pd-right-25 wow fadeInLeft">
+              <div key={service.id || index} className="col-md-4 pd-left-25 pd-right-25 wow fadeInLeft">
                 <div className={`wptb-icon-box7 mb-0 ${service.active ? 'active highlight' : ''}`}>
                   <div className="wptb-item--inner">
                     <div className="wptb-item--icon">

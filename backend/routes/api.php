@@ -16,6 +16,17 @@ use App\Http\Controllers\API\FinancialCategoryController;
 use App\Http\Controllers\API\FinancialTransactionController;
 use App\Http\Controllers\API\ReportController;
 use App\Http\Controllers\API\PackageTypeController;
+// Public Controllers (for website frontend - no authentication)
+use App\Http\Controllers\API\Website\Public\SliderController as PublicSliderController;
+use App\Http\Controllers\API\Website\Public\ServiceController as PublicServiceController;
+use App\Http\Controllers\API\Website\Public\ProjectController as PublicProjectController;
+use App\Http\Controllers\API\Website\Public\HomeGalleryController as PublicHomeGalleryController;
+use App\Http\Controllers\API\Website\Public\TestimonialController as PublicTestimonialController;
+use App\Http\Controllers\API\Website\Public\GalleryController as PublicGalleryController;
+use App\Http\Controllers\API\Website\Public\GalleryVideoController as PublicGalleryVideoController;
+use App\Http\Controllers\API\Website\Public\AlbumController as PublicAlbumController;
+
+// Admin Controllers (for admin panel - requires authentication)
 use App\Http\Controllers\API\Website\SliderController;
 use App\Http\Controllers\API\Website\ServiceController;
 use App\Http\Controllers\API\Website\ProjectController;
@@ -24,6 +35,7 @@ use App\Http\Controllers\API\Website\TestimonialController;
 use App\Http\Controllers\API\Website\GalleryController;
 use App\Http\Controllers\API\Website\GalleryVideoController;
 use App\Http\Controllers\API\Website\AlbumController;
+use App\Http\Controllers\API\Website\MediaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,16 +53,16 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 
-// Website CMS Public Routes (for website frontend)
+// Website CMS Public Routes (for website frontend - NO AUTHENTICATION REQUIRED)
 Route::prefix('website')->group(function () {
-    Route::get('/slider', [SliderController::class, 'index']);
-    Route::get('/services', [ServiceController::class, 'index']);
-    Route::get('/projects', [ProjectController::class, 'index']);
-    Route::get('/home-gallery', [HomeGalleryController::class, 'index']);
-    Route::get('/testimonials', [TestimonialController::class, 'index']);
-    Route::get('/gallery', [GalleryController::class, 'index']);
-    Route::get('/gallery-videos', [GalleryVideoController::class, 'index']);
-    Route::get('/albums', [AlbumController::class, 'index']);
+    Route::get('/slider', [PublicSliderController::class, 'index']);
+    Route::get('/services', [PublicServiceController::class, 'index']);
+    Route::get('/projects', [PublicProjectController::class, 'index']);
+    Route::get('/home-gallery', [PublicHomeGalleryController::class, 'index']);
+    Route::get('/testimonials', [PublicTestimonialController::class, 'index']);
+    Route::get('/gallery', [PublicGalleryController::class, 'index']);
+    Route::get('/gallery-videos', [PublicGalleryVideoController::class, 'index']);
+    Route::get('/albums', [PublicAlbumController::class, 'index']);
 });
 
 // Protected routes
@@ -197,7 +209,7 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-    // Website CMS Admin Routes
+    // Website CMS Admin Routes (REQUIRES AUTHENTICATION + PERMISSIONS)
     Route::prefix('admin/website')->group(function () {
         // Slider Management
         Route::get('/slider', [SliderController::class, 'adminIndex'])->middleware('permission:view_website_slider');
@@ -256,6 +268,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/albums/{album}', [AlbumController::class, 'show'])->middleware('permission:view_website_album');
         Route::put('/albums/{album}', [AlbumController::class, 'update'])->middleware('permission:edit_website_album');
         Route::delete('/albums/{album}', [AlbumController::class, 'destroy'])->middleware('permission:delete_website_album');
+
+        // Media Upload (centralized CMS image upload) - REQUIRES AUTHENTICATION
+        Route::post('/media/upload', [MediaController::class, 'upload'])->middleware('permission:create_website_content');
     });
 });
 

@@ -218,9 +218,9 @@ const GalleryVideosList = () => {
       label: 'Thumbnail',
       render: (value, video) => (
         <div style={{ width: '80px', height: '50px', overflow: 'hidden', borderRadius: '4px', backgroundColor: '#f0f0f0' }}>
-          {video.thumbnail_path ? (
+          {video.thumbnail_url || video.thumbnail_path ? (
             <img
-              src={video.thumbnail_path}
+              src={video.thumbnail_url || video.thumbnail_path}
               alt={video.title || 'Video'}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={(e) => {

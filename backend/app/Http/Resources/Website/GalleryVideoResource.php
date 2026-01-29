@@ -2,10 +2,13 @@
 
 namespace App\Http\Resources\Website;
 
+use App\Http\Resources\Website\Concerns\HasStorageUrl;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class GalleryVideoResource extends JsonResource
 {
+    use HasStorageUrl;
+
     /**
      * Transform the resource into an array.
      *
@@ -21,6 +24,7 @@ class GalleryVideoResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'thumbnail_path' => $this->thumbnail_path,
+            'thumbnail_url' => $this->getStorageUrl($this->thumbnail_path),
             'order' => $this->order,
             'is_active' => $this->is_active,
             'created_at' => $this->created_at?->toISOString(),

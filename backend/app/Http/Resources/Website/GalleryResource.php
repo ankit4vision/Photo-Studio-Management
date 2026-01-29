@@ -2,10 +2,13 @@
 
 namespace App\Http\Resources\Website;
 
+use App\Http\Resources\Website\Concerns\HasStorageUrl;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class GalleryResource extends JsonResource
 {
+    use HasStorageUrl;
+
     /**
      * Transform the resource into an array.
      *
@@ -17,6 +20,7 @@ class GalleryResource extends JsonResource
         return [
             'id' => $this->id,
             'image_path' => $this->image_path,
+            'image_url' => $this->getStorageUrl($this->image_path),
             'title' => $this->title,
             'description' => $this->description,
             'alt_text' => $this->alt_text,

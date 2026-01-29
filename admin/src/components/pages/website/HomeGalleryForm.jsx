@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react'
 import { FormRow, TextField } from '../../common/FormFields'
 import PropTypes from 'prop-types'
+import ImagePathSelector from '../../common/ImagePathSelector'
 
 const HomeGalleryForm = forwardRef(({ 
   mode = 'create', 
@@ -78,20 +79,18 @@ const HomeGalleryForm = forwardRef(({
 
   return (
     <div>
-      <FormRow>
-        <TextField
-          label="Image Path"
-          name="image_path"
-          id="image_path"
-          value={formData.image_path}
-          onChange={(e) => handleChange('image_path', e.target.value)}
-          placeholder="/assets/img/gallery/1.jpg"
-          required
-          invalid={!!errors.image_path}
-          feedback={errors.image_path}
-          helpText="Enter the path to the gallery image"
-        />
-      </FormRow>
+      <ImagePathSelector
+        label="Gallery Image"
+        name="image_path"
+        id="image_path"
+        value={formData.image_path}
+        onChange={(path) => handleChange('image_path', path)}
+        uploadFolder="home-gallery"
+        required
+        invalid={!!errors.image_path}
+        feedback={errors.image_path}
+        helpText="Upload a home gallery image (JPEG, PNG, WebP)."
+      />
 
       <FormRow>
         <TextField

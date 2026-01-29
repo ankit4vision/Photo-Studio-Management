@@ -2,6 +2,7 @@ import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'rea
 import { FormRow, TextField } from '../../common/FormFields'
 import { FormLabel, FormControl, FormText, Col, FormSelect } from 'react-bootstrap'
 import PropTypes from 'prop-types'
+import ImagePathSelector from '../../common/ImagePathSelector'
 
 const GalleryVideoForm = forwardRef(({ 
   mode = 'create', 
@@ -142,19 +143,17 @@ const GalleryVideoForm = forwardRef(({
         </Col>
       </FormRow>
 
-      <FormRow>
-        <TextField
-          label="Thumbnail Path"
-          name="thumbnail_path"
-          id="thumbnail_path"
-          value={formData.thumbnail_path}
-          onChange={(e) => handleChange('thumbnail_path', e.target.value)}
-          placeholder="/assets/img/background/bg-3.jpg"
-          invalid={!!errors.thumbnail_path}
-          feedback={errors.thumbnail_path}
-          helpText="Optional: Custom thumbnail image path"
-        />
-      </FormRow>
+      <ImagePathSelector
+        label="Thumbnail Image"
+        name="thumbnail_path"
+        id="thumbnail_path"
+        value={formData.thumbnail_path}
+        onChange={(path) => handleChange('thumbnail_path', path)}
+        uploadFolder="gallery-videos"
+        invalid={!!errors.thumbnail_path}
+        feedback={errors.thumbnail_path}
+        helpText="Optional: upload a custom thumbnail image for this video."
+      />
 
       <FormRow>
         <TextField

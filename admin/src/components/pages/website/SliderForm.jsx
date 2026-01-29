@@ -2,6 +2,7 @@ import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'rea
 import { FormRow, TextField } from '../../common/FormFields'
 import { FormLabel, FormControl, FormText, Col } from 'react-bootstrap'
 import PropTypes from 'prop-types'
+import ImagePathSelector from '../../common/ImagePathSelector'
 
 const SliderForm = forwardRef(({ 
   mode = 'create', 
@@ -32,6 +33,17 @@ const SliderForm = forwardRef(({
         order: sliderData.order || 0,
         link_url: sliderData.link_url || '',
         is_active: sliderData.is_active !== undefined ? sliderData.is_active : true
+      })
+    } else if (mode === 'create') {
+      // Reset form for create mode
+      setFormData({
+        image_path: '',
+        title: '',
+        description: '',
+        alt_text: '',
+        order: 0,
+        link_url: '',
+        is_active: true
       })
     }
   }, [mode, sliderData])
@@ -72,13 +84,25 @@ const SliderForm = forwardRef(({
     }
 
     const submitData = {
-      image_path: formData.image_path.trim(),
+      image_path: formData.image_path.trim() || null,
       title: formData.title.trim() || null,
       description: formData.description.trim() || null,
       alt_text: formData.alt_text.trim() || null,
       order: parseInt(formData.order) || 0,
       link_url: formData.link_url.trim() || null,
       is_active: formData.is_active
+    }
+    
+    // For update mode, only include fields that have values (to avoid overwriting with null)
+    if (mode === 'edit') {
+      // Remove null/empty values except for is_active and order
+      Object.keys(submitData).forEach(key => {
+        if (submitData[key] === null || submitData[key] === '') {
+          if (key !== 'is_active' && key !== 'order') {
+            delete submitData[key]
+          }
+        }
+      })
     }
 
     onSubmit(submitData)
@@ -92,20 +116,18 @@ const SliderForm = forwardRef(({
 
   return (
     <div>
-      <FormRow>
-        <TextField
-          label="Image Path"
-          name="image_path"
-          id="image_path"
-          value={formData.image_path}
-          onChange={(e) => handleChange('image_path', e.target.value)}
-          placeholder="/assets/img/slider/image.jpg"
-          required
-          invalid={!!errors.image_path}
-          feedback={errors.image_path}
-          helpText="Enter the path to the slider image (e.g., /assets/img/slider/37.jpg)"
-        />
-      </FormRow>
+      <ImagePathSelector
+        label="Slider Image"
+        name="image_path"
+        id="image_path"
+        value={formData.image_path}
+        onChange={(path) => handleChange('image_path', path)}
+        uploadFolder="slider"
+        required
+        invalid={!!errors.image_path}
+        feedback={errors.image_path}
+        helpText="Upload a slider image (JPEG, PNG, WebP)."
+      />
 
       <FormRow>
         <TextField

@@ -2,10 +2,13 @@
 
 namespace App\Http\Resources\Website;
 
+use App\Http\Resources\Website\Concerns\HasStorageUrl;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class AlbumResource extends JsonResource
 {
+    use HasStorageUrl;
+
     /**
      * Transform the resource into an array.
      *
@@ -19,6 +22,7 @@ class AlbumResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'cover_image' => $this->cover_image,
+            'cover_image_url' => $this->getStorageUrl($this->cover_image),
             'slug' => $this->slug,
             'category' => $this->category,
             'tags' => $this->tags ?? [],

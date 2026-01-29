@@ -220,9 +220,9 @@ const AlbumsList = () => {
       label: 'Cover',
       render: (value, album) => (
         <div style={{ width: '80px', height: '50px', overflow: 'hidden', borderRadius: '4px' }}>
-          {album.cover_image ? (
+          {album.cover_image_url || album.cover_image ? (
             <img
-              src={album.cover_image}
+              src={album.cover_image_url || album.cover_image}
               alt={album.title || 'Album'}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={(e) => {

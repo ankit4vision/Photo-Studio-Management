@@ -216,7 +216,7 @@ const HomeGalleryList = () => {
       render: (value, item) => (
         <div style={{ width: '80px', height: '50px', overflow: 'hidden', borderRadius: '4px' }}>
           <img
-            src={item.image_path}
+            src={item.image_url || item.image_path}
             alt={item.alt_text || item.title || 'Gallery'}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             onError={(e) => {

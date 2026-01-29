@@ -41,7 +41,6 @@ const FinancialCategoriesList = React.lazy(() => import('../../views/financial/F
 const CompanyHealthReport = React.lazy(() => import('../../views/reports/CompanyHealthReport'))
 
 // Website CMS Components
-const WebsiteCMSDashboard = React.lazy(() => import('../../views/website/WebsiteCMSDashboard'))
 const SliderList = React.lazy(() => import('../../views/website/SliderList'))
 const ServicesList = React.lazy(() => import('../../views/website/ServicesList'))
 const ProjectsList = React.lazy(() => import('../../views/website/ProjectsList'))
@@ -221,10 +220,7 @@ const AppContent = () => {
           />
           
           {/* Website CMS Routes */}
-          <Route
-            path="/website"
-            element={<WebsiteCMSDashboard />}
-          />
+          <Route path="/website" element={<Navigate to="/website/slider" replace />} />
           <Route
             path="/website/slider"
             element={

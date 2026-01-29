@@ -2,6 +2,7 @@ import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'rea
 import { FormRow, TextField } from '../../common/FormFields'
 import { FormLabel, FormControl, FormText, Col } from 'react-bootstrap'
 import PropTypes from 'prop-types'
+import ImagePathSelector from '../../common/ImagePathSelector'
 
 const AlbumForm = forwardRef(({ 
   mode = 'create', 
@@ -161,19 +162,17 @@ const AlbumForm = forwardRef(({
         </Col>
       </FormRow>
 
-      <FormRow>
-        <TextField
-          label="Cover Image Path"
-          name="cover_image"
-          id="cover_image"
-          value={formData.cover_image}
-          onChange={(e) => handleChange('cover_image', e.target.value)}
-          placeholder="/assets/img/albums/cover.jpg"
-          invalid={!!errors.cover_image}
-          feedback={errors.cover_image}
-          helpText="Enter the path to the album cover image"
-        />
-      </FormRow>
+      <ImagePathSelector
+        label="Cover Image"
+        name="cover_image"
+        id="cover_image"
+        value={formData.cover_image}
+        onChange={(path) => handleChange('cover_image', path)}
+        uploadFolder="albums"
+        invalid={!!errors.cover_image}
+        feedback={errors.cover_image}
+        helpText="Upload a cover image for this album (JPEG, PNG, WebP)."
+      />
 
       <FormRow>
         <TextField

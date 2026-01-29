@@ -124,15 +124,6 @@ const WebsiteCMSNav = () => {
               />
               {isExpanded ? 'Hide' : 'Show'} Modules
             </Button>
-            <Button
-              variant="outline-primary"
-              size="sm"
-              onClick={() => navigate('/website')}
-              className="d-flex align-items-center"
-            >
-              <FontAwesomeIcon icon={faHome} className="me-1" size="sm" />
-              Dashboard
-            </Button>
           </div>
         </div>
         {isExpanded && (

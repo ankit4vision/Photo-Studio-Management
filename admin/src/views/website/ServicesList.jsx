@@ -216,9 +216,13 @@ const ServicesList = () => {
       render: (value, service) => (
         <div className="text-center">
           {service.icon_class ? (
-            <i className={`bi ${service.icon_class}`} style={{ fontSize: '24px' }}></i>
+            <span className="text-dark fw-semibold" style={{ fontSize: '13px' }}>
+              {service.icon_class}
+            </span>
           ) : (
-            <FontAwesomeIcon icon={faCog} style={{ fontSize: '20px', color: '#6c757d' }} />
+            <span className="text-muted" style={{ fontSize: '12px' }}>
+              No icon
+            </span>
           )}
         </div>
       ),
@@ -434,47 +438,39 @@ const ServicesList = () => {
 
       {/* Delete Confirmation Modal */}
       <Modal
-        show={showDeleteModal}
-        onHide={() => {
+        visible={showDeleteModal}
+        onClose={() => {
           setShowDeleteModal(false)
           setServiceToDelete(null)
         }}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => {
+          setShowDeleteModal(false)
+          setServiceToDelete(null)
+        }}
+        title="Confirm Delete"
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        loading={false}
+        size="md"
       >
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Are you sure you want to delete this service?</p>
-          {serviceToDelete && (
-            <div className="mt-3">
-              <strong>Title:</strong> {serviceToDelete.title}
-              <br />
-              {serviceToDelete.service_number && (
-                <>
-                  <strong>Number:</strong> {serviceToDelete.service_number}
-                  <br />
-                </>
-              )}
-            </div>
-          )}
-          <p className="text-danger mt-3 mb-0">
-            <small>This action cannot be undone.</small>
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setShowDeleteModal(false)
-              setServiceToDelete(null)
-            }}
-          >
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDeleteConfirm}>
-            Delete
-          </Button>
-        </Modal.Footer>
+        <p>Are you sure you want to delete this service?</p>
+        {serviceToDelete && (
+          <div className="mt-3">
+            <strong>Title:</strong> {serviceToDelete.title}
+            <br />
+            {serviceToDelete.service_number && (
+              <>
+                <strong>Number:</strong> {serviceToDelete.service_number}
+                <br />
+              </>
+            )}
+          </div>
+        )}
+        <p className="text-danger mt-3 mb-0">
+          <small>This action cannot be undone.</small>
+        </p>
       </Modal>
       </Container>
     </>

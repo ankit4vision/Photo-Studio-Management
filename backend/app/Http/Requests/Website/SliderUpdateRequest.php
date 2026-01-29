@@ -24,7 +24,7 @@ class SliderUpdateRequest extends FormRequest
     public function rules()
     {
         return [
-            'image_path' => ['sometimes', 'string', 'max:500'],
+            'image_path' => ['sometimes', 'nullable', 'string', 'max:500'],
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'alt_text' => ['nullable', 'string', 'max:255'],
@@ -32,6 +32,25 @@ class SliderUpdateRequest extends FormRequest
             'link_url' => ['nullable', 'string', 'max:500'],
             'is_active' => ['nullable', 'boolean'],
         ];
+    }
+    
+    /**
+     * Prepare the data for validation.
+     *
+     * @return void
+     */
+    protected function prepareForValidation()
+    {
+        // Convert empty strings to null for nullable fields
+        $this->merge([
+            'image_path' => $this->input('image_path') ?: null,
+            'title' => $this->input('title') ?: null,
+            'description' => $this->input('description') ?: null,
+            'alt_text' => $this->input('alt_text') ?: null,
+            'link_url' => $this->input('link_url') ?: null,
+            'order' => $this->input('order', 0),
+            'is_active' => $this->input('is_active', true),
+        ]);
     }
 }
 
