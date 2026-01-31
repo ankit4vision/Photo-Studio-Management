@@ -1,0 +1,50 @@
+/* Custom Styles for React App */
+
+/* Logo Text Styles */
+.logo-text {
+    font-size: 24px;
+    font-weight: bold;
+    color: inherit;
+    text-decoration: none;
+}
+
+/* Spinner Text Styles */
+.spinner-text {
+    font-size: 20px;
+    font-weight: 600;
+    color: #fff;
+}
+
+/* Ensure all images maintain aspect ratio */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Prevent layout shift during image loading */
+img[loading="lazy"] {
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+img[loading="lazy"].loaded {
+    opacity: 1;
+}
+
+/* Responsive image containers */
+.wptb-item--image,
+.block-gallery,
+.wptb-slider--image {
+    position: relative;
+    overflow: hidden;
+}
+
+.wptb-item--image img,
+.block-gallery img,
+.wptb-slider--image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+

@@ -1,0 +1,5 @@
+/* Main CSS Import */
+@import './styles/main.css';
+
+/* Custom Styles for React App */
+@import './styles/custom.css';
