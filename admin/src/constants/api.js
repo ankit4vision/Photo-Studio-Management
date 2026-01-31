@@ -286,14 +286,6 @@ export const API_ENDPOINTS = {
       UPDATE: (id) => `/admin/website/gallery-videos/${id}`,
       DELETE: (id) => `/admin/website/gallery-videos/${id}`,
     },
-    ALBUM: {
-      BASE: '/admin/website/albums',
-      LIST: '/admin/website/albums',
-      CREATE: '/admin/website/albums',
-      GET_BY_ID: (id) => `/admin/website/albums/${id}`,
-      UPDATE: (id) => `/admin/website/albums/${id}`,
-      DELETE: (id) => `/admin/website/albums/${id}`,
-    },
   },
 }
 

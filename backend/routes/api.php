@@ -24,7 +24,6 @@ use App\Http\Controllers\API\Website\Public\HomeGalleryController as PublicHomeG
 use App\Http\Controllers\API\Website\Public\TestimonialController as PublicTestimonialController;
 use App\Http\Controllers\API\Website\Public\GalleryController as PublicGalleryController;
 use App\Http\Controllers\API\Website\Public\GalleryVideoController as PublicGalleryVideoController;
-use App\Http\Controllers\API\Website\Public\AlbumController as PublicAlbumController;
 
 // Admin Controllers (for admin panel - requires authentication)
 use App\Http\Controllers\API\Website\SliderController;
@@ -34,7 +33,6 @@ use App\Http\Controllers\API\Website\HomeGalleryController;
 use App\Http\Controllers\API\Website\TestimonialController;
 use App\Http\Controllers\API\Website\GalleryController;
 use App\Http\Controllers\API\Website\GalleryVideoController;
-use App\Http\Controllers\API\Website\AlbumController;
 use App\Http\Controllers\API\Website\MediaController;
 
 /*
@@ -63,7 +61,6 @@ Route::prefix('website')->group(function () {
     Route::get('/testimonials', [PublicTestimonialController::class, 'index']);
     Route::get('/gallery', [PublicGalleryController::class, 'index']);
     Route::get('/gallery-videos', [PublicGalleryVideoController::class, 'index']);
-    Route::get('/albums', [PublicAlbumController::class, 'index']);
 });
 
 // Protected routes
@@ -262,13 +259,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/gallery-videos/{galleryVideo}', [GalleryVideoController::class, 'show'])->middleware('permission:view_website_gallery_video');
         Route::put('/gallery-videos/{galleryVideo}', [GalleryVideoController::class, 'update'])->middleware('permission:edit_website_gallery_video');
         Route::delete('/gallery-videos/{galleryVideo}', [GalleryVideoController::class, 'destroy'])->middleware('permission:delete_website_gallery_video');
-
-        // Album Management
-        Route::get('/albums', [AlbumController::class, 'adminIndex'])->middleware('permission:view_website_album');
-        Route::post('/albums', [AlbumController::class, 'store'])->middleware('permission:create_website_album');
-        Route::get('/albums/{album}', [AlbumController::class, 'show'])->middleware('permission:view_website_album');
-        Route::put('/albums/{album}', [AlbumController::class, 'update'])->middleware('permission:edit_website_album');
-        Route::delete('/albums/{album}', [AlbumController::class, 'destroy'])->middleware('permission:delete_website_album');
 
         // Media Upload (centralized CMS image upload) - REQUIRES AUTHENTICATION
         Route::post('/media/upload', [MediaController::class, 'upload'])->middleware('permission:create_website_content');

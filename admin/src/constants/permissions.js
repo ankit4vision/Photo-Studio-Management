@@ -136,12 +136,6 @@ export const PERMISSIONS = {
   WEBSITE_GALLERY_VIDEO_DELETE: 'delete_website_gallery_video',
   WEBSITE_GALLERY_VIDEO_MANAGE: 'view_website_gallery_video', // Manage uses view permission
 
-  // Website CMS - Album
-  WEBSITE_ALBUM_READ: 'view_website_album',
-  WEBSITE_ALBUM_CREATE: 'create_website_album',
-  WEBSITE_ALBUM_EDIT: 'edit_website_album',
-  WEBSITE_ALBUM_DELETE: 'delete_website_album',
-  WEBSITE_ALBUM_MANAGE: 'view_website_album', // Manage uses view permission
 }
 
 // Define roles and their permissions

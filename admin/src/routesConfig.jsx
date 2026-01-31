@@ -58,7 +58,6 @@ const routesConfig = [
   { path: '/website/testimonials', name: 'Testimonials' },
   { path: '/website/gallery', name: 'Gallery Images' },
   { path: '/website/gallery-videos', name: 'Gallery Videos' },
-  { path: '/website/albums', name: 'Albums' },
   
   // Auth Routes
   { path: '/login', name: 'Login' },

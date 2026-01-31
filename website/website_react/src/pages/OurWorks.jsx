@@ -8,7 +8,7 @@ const OurWorks = () => {
   const [projectsLoading, setProjectsLoading] = useState(true)
 
   // Initialize Isotope for the projects grid - re-initialize when projects change
-  useIsotope('.effect-gradient .grid', {}, [projects.length])
+  useIsotope('.grid.gutter-10', {}, [projects.length])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -20,43 +20,57 @@ const OurWorks = () => {
       try {
         setProjectsLoading(true)
         const response = await websiteApi.getProjects(false) // Get all projects
-        if (response.success && response.data && response.data.length > 0) {
+        console.log('Projects API Response:', response) // Debug log
+        let transformedProjects = []
+        
+        if (response.success && response.data && Array.isArray(response.data) && response.data.length > 0) {
           // Transform API data - use thumbnail_image_url from API directly
-          const transformedProjects = response.data
+          transformedProjects = response.data
             .filter(project => {
-              // Filter out projects with placeholder URLs in the API response
+              // Only filter out projects with placeholder URLs, but keep all others (even without images)
               if (project.thumbnail_image_url && (project.thumbnail_image_url.includes('via.placeholder.com') || project.thumbnail_image_url.includes('placeholder'))) {
                 return false
               }
               if (project.thumbnail_image && (project.thumbnail_image.includes('via.placeholder.com') || project.thumbnail_image.includes('placeholder'))) {
                 return false
               }
+              // Keep all other projects (they'll get fallback images)
               return true
             })
             .map((project, index) => {
               // Get image URL - prefer thumbnail_image_url from backend
               const getImageUrl = () => {
+                let imageUrl = null
+                
                 if (project.thumbnail_image_url && !project.thumbnail_image_url.includes('via.placeholder.com') && !project.thumbnail_image_url.includes('placeholder')) {
-                  return project.thumbnail_image_url
+                  imageUrl = project.thumbnail_image_url
+                } else if (project.thumbnail_image && !project.thumbnail_image.includes('via.placeholder.com') && !project.thumbnail_image.includes('placeholder')) {
+                  imageUrl = project.thumbnail_image
                 }
-                if (project.thumbnail_image) {
+                
+                // Clean the image URL - fix common path issues
+                if (imageUrl) {
+                  // Fix singular "project" to plural "projects" with subfolder
+                  imageUrl = imageUrl.replace(/\/assets\/img\/project\//, '/assets/img/projects/1/')
                   // If it's already a full URL, use it
-                  if (project.thumbnail_image.startsWith('http://') || project.thumbnail_image.startsWith('https://')) {
-                    return project.thumbnail_image
+                  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                    return imageUrl
                   }
-                  // If it's a frontend asset path, use it as is
-                  if (project.thumbnail_image.startsWith('/assets/')) {
-                    return project.thumbnail_image
+                  // If it's a frontend asset path, use it as is (after cleaning)
+                  if (imageUrl.startsWith('/assets/')) {
+                    return imageUrl
                   }
                   // If it's a storage path, construct the storage URL
-                  if (project.thumbnail_image && !project.thumbnail_image.includes('\\') && !project.thumbnail_image.match(/^[A-Z]:/)) {
+                  if (!imageUrl.includes('\\') && !imageUrl.match(/^[A-Z]:/)) {
                     const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
                     const baseUrl = apiUrl.replace(/\/api\/?$/, '')
-                    return `${baseUrl}/storage/${project.thumbnail_image}`
+                    return `${baseUrl}/storage/${imageUrl}`
                   }
                 }
-                // Fallback to static image based on index
-                return `/assets/img/projects/1/${(index % 8) + 1}.jpg`
+                
+                // Fallback to static image based on index (always provide a fallback)
+                const fallbackIndex = ((project.id || index) % 8) + 1
+                return `/assets/img/projects/1/${fallbackIndex}.jpg`
               }
               
               // Determine column size based on featured or index (alternating pattern)
@@ -70,9 +84,15 @@ const OurWorks = () => {
                 col: col
               }
             })
+        }
+        
+        // Always ensure we have projects to show - use fallback if needed
+        if (transformedProjects.length > 0) {
+          console.log('Setting projects:', transformedProjects.length)
           setProjects(transformedProjects)
         } else {
-          // Fallback to static data if API fails
+          console.warn('No valid projects, using fallback data')
+          // Fallback to static data - always show something
           setProjects([
             { id: 1, title: 'Wedding Album 2024', count: '25 Photos', image_url: '/assets/img/projects/1/1.jpg', col: 4 },
             { id: 2, title: 'Portrait Session', count: '18 Photos', image_url: '/assets/img/projects/1/2.jpg', col: 4 },
@@ -86,8 +106,8 @@ const OurWorks = () => {
         }
       } catch (error) {
         console.error('Error fetching projects:', error)
-        // Fallback to static data on error
-        setProjects([
+        // Fallback to static data on error - ALWAYS show something
+        const fallbackProjects = [
           { id: 1, title: 'Wedding Album 2024', count: '25 Photos', image_url: '/assets/img/projects/1/1.jpg', col: 4 },
           { id: 2, title: 'Portrait Session', count: '18 Photos', image_url: '/assets/img/projects/1/2.jpg', col: 4 },
           { id: 3, title: 'Fashion Collection', count: '32 Photos', image_url: '/assets/img/projects/1/3.jpg', col: 4 },
@@ -96,7 +116,9 @@ const OurWorks = () => {
           { id: 6, title: 'Studio Session', count: '20 Photos', image_url: '/assets/img/projects/1/6.jpg', col: 4 },
           { id: 7, title: 'Outdoor Adventure', count: '22 Photos', image_url: '/assets/img/projects/1/7.jpg', col: 4 },
           { id: 8, title: 'Family Portrait', count: '15 Photos', image_url: '/assets/img/projects/1/8.jpg', col: 4 }
-        ])
+        ]
+        console.log('Setting fallback projects:', fallbackProjects.length)
+        setProjects(fallbackProjects)
       } finally {
         setProjectsLoading(false)
       }
@@ -127,22 +149,32 @@ const OurWorks = () => {
             <div className="effect-gradient has-radius">
               <div className="grid gutter-10 clearfix">
                 <div className="grid-sizer"></div>
-                <div className="row">
-                  {projectsLoading ? (
-                    <div className="col-12 text-center" style={{ padding: '40px' }}>
-                      <p>Loading projects...</p>
-                    </div>
-                  ) : projects.length > 0 ? (
-                    projects
-                      .filter((project) => {
-                        // Filter out projects with placeholder URLs
-                        const url = project.image_url || `/assets/img/projects/1/${project.id}.jpg`
-                        return url && !url.includes('via.placeholder.com') && !url.includes('placeholder')
-                      })
-                      .map((project) => {
-                        const imageUrl = project.image_url && !project.image_url.includes('via.placeholder.com') && !project.image_url.includes('placeholder')
-                          ? project.image_url
-                          : `/assets/img/projects/1/${project.id}.jpg`
+                {projectsLoading ? (
+                  <div className="col-12 text-center" style={{ padding: '40px', width: '100%' }}>
+                    <p>Loading projects...</p>
+                  </div>
+                ) : (
+                  <>
+                    {projects.length > 0 ? (
+                      projects.map((project, index) => {
+                        // Get a safe fallback image index (1-8, cycling)
+                        const fallbackIndex = ((project.id || index) % 8) + 1
+                        const fallbackPath = `/assets/img/projects/1/${fallbackIndex}.jpg`
+                        
+                        // Clean the image URL - fix common path issues
+                        let imageUrl = project.image_url
+                        if (imageUrl) {
+                          // Fix singular "project" to plural "projects" with subfolder
+                          imageUrl = imageUrl.replace(/\/assets\/img\/project\//, '/assets/img/projects/1/')
+                          // Ensure it doesn't have placeholder
+                          if (imageUrl.includes('via.placeholder.com') || imageUrl.includes('placeholder')) {
+                            imageUrl = null
+                          }
+                        }
+                        
+                        // Use cleaned URL or fallback
+                        imageUrl = imageUrl || fallbackPath
+                        
                         return (
                           <div key={project.id} className={`grid-item col-md-${project.col}`}>
                             <div className="wptb-item--inner">
@@ -159,8 +191,13 @@ const OurWorks = () => {
                                     display: 'block'
                                   }}
                                   onError={(e) => {
-                                    console.error('Project image load error:', imageUrl)
-                                    e.currentTarget.src = `/assets/img/projects/1/${project.id}.jpg`
+                                    // Only set fallback if current src is different
+                                    if (e.currentTarget.src !== fallbackPath && !e.currentTarget.src.includes(fallbackPath)) {
+                                      e.currentTarget.src = fallbackPath
+                                    } else {
+                                      // If fallback also fails, use a default placeholder
+                                      e.currentTarget.style.display = 'none'
+                                    }
                                   }}
                                 />
                                 <Link to={`/album-detail?id=${project.id}`} className="wptb-item--link">
@@ -177,12 +214,13 @@ const OurWorks = () => {
                           </div>
                         )
                       })
-                  ) : (
-                    <div className="col-12 text-center" style={{ padding: '40px' }}>
-                      <p>No projects available</p>
-                    </div>
-                  )}
-                </div>
+                    ) : (
+                      <div className="col-12 text-center" style={{ padding: '40px', width: '100%' }}>
+                        <p>No projects available</p>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           </div>

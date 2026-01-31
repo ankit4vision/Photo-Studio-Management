@@ -171,35 +171,44 @@ const Home = () => {
         const response = await websiteApi.getProjects(true) // Get featured projects for homepage
         if (response.success && response.data && response.data.length > 0) {
           // Transform API data to match component structure - use thumbnail_image_url from API
-          const transformedProjects = response.data.map(project => {
+          const transformedProjects = response.data.map((project, index) => {
             // Get image URL - prefer thumbnail_image_url from backend, otherwise construct from thumbnail_image
             const getImageUrl = () => {
+              let imageUrl = null
+              
               // Filter out placeholder URLs
               if (project.thumbnail_image_url && !project.thumbnail_image_url.includes('via.placeholder.com') && !project.thumbnail_image_url.includes('placeholder')) {
-                return project.thumbnail_image_url
-              }
-              if (project.thumbnail_image) {
+                imageUrl = project.thumbnail_image_url
+              } else if (project.thumbnail_image) {
                 // Filter out placeholder paths
-                if (project.thumbnail_image.includes('via.placeholder.com') || project.thumbnail_image.includes('placeholder')) {
-                  return null
+                if (!project.thumbnail_image.includes('via.placeholder.com') && !project.thumbnail_image.includes('placeholder')) {
+                  imageUrl = project.thumbnail_image
                 }
+              }
+              
+              // Clean the image URL - fix common path issues
+              if (imageUrl) {
+                // Fix singular "project" to plural "projects" with subfolder
+                imageUrl = imageUrl.replace(/\/assets\/img\/project\//, '/assets/img/projects/1/')
                 // If it's already a full URL, use it
-                if (project.thumbnail_image.startsWith('http://') || project.thumbnail_image.startsWith('https://')) {
-                  return project.thumbnail_image
+                if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                  return imageUrl
                 }
-                // If it's a frontend asset path, use it as is
-                if (project.thumbnail_image.startsWith('/assets/')) {
-                  return project.thumbnail_image
+                // If it's a frontend asset path, use it as is (after cleaning)
+                if (imageUrl.startsWith('/assets/')) {
+                  return imageUrl
                 }
                 // If it's a storage path, construct the storage URL
-                if (project.thumbnail_image && !project.thumbnail_image.includes('\\') && !project.thumbnail_image.match(/^[A-Z]:/)) {
+                if (!imageUrl.includes('\\') && !imageUrl.match(/^[A-Z]:/)) {
                   const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
                   const baseUrl = apiUrl.replace(/\/api\/?$/, '')
-                  return `${baseUrl}/storage/${project.thumbnail_image}`
+                  return `${baseUrl}/storage/${imageUrl}`
                 }
               }
-              // Fallback to static image based on ID
-              return `/assets/img/projects/1/${project.id || 1}.jpg`
+              
+              // Fallback to static image based on ID or index
+              const fallbackIndex = ((project.id || index) % 8) + 1
+              return `/assets/img/projects/1/${fallbackIndex}.jpg`
             }
 
             return {
@@ -270,27 +279,39 @@ const Home = () => {
             .map(item => {
               // Get image URL - prefer image_url from backend, otherwise construct from image_path
               const getImageUrl = () => {
+                let imageUrl = null
+                
                 if (item.image_url && !item.image_url.includes('via.placeholder.com') && !item.image_url.includes('placeholder')) {
-                  return item.image_url
+                  imageUrl = item.image_url
+                } else if (item.image_path && !item.image_path.includes('via.placeholder.com') && !item.image_path.includes('placeholder')) {
+                  imageUrl = item.image_path
                 }
-                if (item.image_path) {
+                
+                // Clean the image URL - fix common path issues
+                if (imageUrl) {
+                  // Fix singular "project" to plural "projects"
+                  imageUrl = imageUrl.replace(/\/assets\/img\/project\//, '/assets/img/projects/1/')
+                  // Fix gallery paths if needed
+                  imageUrl = imageUrl.replace(/\/assets\/img\/gallery\//, '/assets/img/projects/gallery/')
                   // If it's already a full URL, use it
-                  if (item.image_path.startsWith('http://') || item.image_path.startsWith('https://')) {
-                    return item.image_path
+                  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                    return imageUrl
                   }
-                  // If it's a frontend asset path, use it as is
-                  if (item.image_path.startsWith('/assets/')) {
-                    return item.image_path
+                  // If it's a frontend asset path, use it as is (after cleaning)
+                  if (imageUrl.startsWith('/assets/')) {
+                    return imageUrl
                   }
                   // If it's a storage path, construct the storage URL
-                  if (item.image_path && !item.image_path.includes('\\') && !item.image_path.match(/^[A-Z]:/)) {
+                  if (!imageUrl.includes('\\') && !imageUrl.match(/^[A-Z]:/)) {
                     const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
                     const baseUrl = apiUrl.replace(/\/api\/?$/, '')
-                    return `${baseUrl}/storage/${item.image_path}`
+                    return `${baseUrl}/storage/${imageUrl}`
                   }
                 }
-                // Fallback to static image
-                return '/assets/img/projects/1/1.jpg'
+                
+                // Fallback to static image (cycling through available images)
+                const fallbackIndex = ((item.id || Math.random()) % 5) + 1
+                return `/assets/img/projects/gallery/${fallbackIndex}.jpg`
               }
 
               return {
@@ -697,9 +718,19 @@ const Home = () => {
                     return true
                   }
 
-                  const imageUrl = isValidUrl(project.image_url) 
-                    ? project.image_url 
-                    : `/assets/img/projects/1/${project.id}.jpg`
+                  // Clean and fix image URL
+                  let imageUrl = project.image_url
+                  if (imageUrl) {
+                    // Fix singular "project" to plural "projects" with subfolder
+                    imageUrl = imageUrl.replace(/\/assets\/img\/project\//, '/assets/img/projects/1/')
+                  }
+                  
+                  // Get safe fallback index
+                  const fallbackIndex = ((project.id || 1) % 8) + 1
+                  const fallbackPath = `/assets/img/projects/1/${fallbackIndex}.jpg`
+                  
+                  // Use cleaned URL or fallback
+                  imageUrl = isValidUrl(imageUrl) ? imageUrl : fallbackPath
 
                   return (
                     <div key={project.id} className="grid-item">
@@ -710,8 +741,14 @@ const Home = () => {
                             alt={project.title} 
                             loading="lazy"
                             onError={(e) => {
-                              console.error('Project image load error:', imageUrl)
-                              e.currentTarget.src = `/assets/img/projects/1/${project.id}.jpg`
+                              // Only set fallback if current src is different
+                              const currentSrc = e.currentTarget.src
+                              if (!currentSrc.includes(fallbackPath) && !currentSrc.endsWith(`/projects/1/${fallbackIndex}.jpg`)) {
+                                e.currentTarget.src = fallbackPath
+                              } else {
+                                // If fallback also fails, hide the image
+                                e.currentTarget.style.display = 'none'
+                              }
                             }}
                           />
                         </div>
@@ -764,8 +801,22 @@ const Home = () => {
                     const url = item.image_url || (typeof item === 'number' ? `/assets/img/projects/1/${item}.jpg` : item)
                     return url && !url.includes('via.placeholder.com') && !url.includes('placeholder')
                   })
-                  .map((item) => {
-                    const imageUrl = item.image_url || (typeof item === 'number' ? `/assets/img/projects/1/${item}.jpg` : item)
+                  .map((item, index) => {
+                    // Get image URL with cleaning
+                    let imageUrl = item.image_url
+                    if (imageUrl) {
+                      // Fix common path issues
+                      imageUrl = imageUrl.replace(/\/assets\/img\/project\//, '/assets/img/projects/1/')
+                      imageUrl = imageUrl.replace(/\/assets\/img\/gallery\//, '/assets/img/projects/gallery/')
+                    } else if (typeof item === 'number') {
+                      imageUrl = `/assets/img/projects/gallery/${item}.jpg`
+                    }
+                    
+                    // Get safe fallback
+                    const fallbackIndex = ((item.id || index) % 5) + 1
+                    const fallbackPath = `/assets/img/projects/gallery/${fallbackIndex}.jpg`
+                    imageUrl = imageUrl || fallbackPath
+                    
                     return (
                       <div key={item.id || item} className="grid-item">
                         <div className="wptb-item--inner">
@@ -775,8 +826,14 @@ const Home = () => {
                               alt={`Gallery ${item.id || item}`} 
                               loading="lazy"
                               onError={(e) => {
-                                console.error('Gallery image load error:', imageUrl)
-                                e.currentTarget.src = `/assets/img/projects/1/1.jpg`
+                                // Only set fallback if current src is different
+                                const currentSrc = e.currentTarget.src
+                                if (!currentSrc.includes(fallbackPath) && !currentSrc.endsWith(`/gallery/${fallbackIndex}.jpg`)) {
+                                  e.currentTarget.src = fallbackPath
+                                } else {
+                                  // If fallback also fails, hide the image
+                                  e.currentTarget.style.display = 'none'
+                                }
                               }}
                             />
                             <a className="wptb-image-popup" href={imageUrl} data-fancybox="home-gallery">

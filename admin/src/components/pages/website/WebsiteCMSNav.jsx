@@ -10,7 +10,6 @@ import {
   faStar,
   faPhotoVideo,
   faVideo,
-  faBook,
   faChevronUp,
   faChevronDown,
 } from '@fortawesome/free-solid-svg-icons'
@@ -79,14 +78,6 @@ const WebsiteCMSNav = () => {
       route: '/website/gallery-videos',
       permission: PERMISSIONS.WEBSITE_GALLERY_VIDEO_READ,
       gradient: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-    },
-    {
-      id: 'albums',
-      title: 'Albums',
-      icon: faBook,
-      route: '/website/albums',
-      permission: PERMISSIONS.WEBSITE_ALBUM_READ,
-      gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
     },
   ]
 

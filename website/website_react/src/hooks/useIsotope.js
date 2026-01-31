@@ -34,9 +34,12 @@ const useIsotope = (gridSelector = '.grid', options = {}, dependencies = []) => 
         // Destroy existing Isotope instance if it exists
         if (isotopeRef.current) {
           try {
-            $grid.isotope('destroy')
+            // Check if isotope is initialized before destroying
+            if ($grid.data('isotope')) {
+              $grid.isotope('destroy')
+            }
           } catch (e) {
-            // Ignore errors if already destroyed
+            // Ignore errors if already destroyed or not initialized
           }
         }
 
@@ -161,9 +164,12 @@ const useIsotope = (gridSelector = '.grid', options = {}, dependencies = []) => 
         const $ = window.jQuery
         const $grid = $(gridSelector)
         try {
-          $grid.isotope('destroy')
+          // Check if isotope is initialized before destroying
+          if ($grid.length > 0 && $grid.data('isotope')) {
+            $grid.isotope('destroy')
+          }
         } catch (e) {
-          // Ignore errors
+          // Ignore errors if already destroyed or not initialized
         }
         isotopeRef.current = null
       }

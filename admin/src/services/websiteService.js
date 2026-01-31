@@ -511,65 +511,6 @@ class WebsiteService {
     }
   }
 
-  // ==================== ALBUM METHODS ====================
-
-  // Get all albums (admin)
-  async getAlbums(params = {}) {
-    try {
-      const response = await apiClient.get(API_ENDPOINTS.WEBSITE.ALBUM.LIST, {
-        params: this.buildQueryParams(params),
-      })
-
-      return this.transformListResponse(response?.data)
-    } catch (error) {
-      console.error('Error fetching albums:', error)
-      throw error
-    }
-  }
-
-  // Get album by ID
-  async getAlbumById(id) {
-    try {
-      const response = await apiClient.get(API_ENDPOINTS.WEBSITE.ALBUM.GET_BY_ID(id))
-      return this.transformItemResponse(response?.data)
-    } catch (error) {
-      console.error('Error fetching album:', error)
-      throw error
-    }
-  }
-
-  // Create new album
-  async createAlbum(albumData) {
-    try {
-      const response = await apiClient.post(API_ENDPOINTS.WEBSITE.ALBUM.CREATE, albumData)
-      return this.transformItemResponse(response?.data)
-    } catch (error) {
-      console.error('Error creating album:', error)
-      throw error
-    }
-  }
-
-  // Update album
-  async updateAlbum(id, albumData) {
-    try {
-      const response = await apiClient.put(API_ENDPOINTS.WEBSITE.ALBUM.UPDATE(id), albumData)
-      return this.transformItemResponse(response?.data)
-    } catch (error) {
-      console.error('Error updating album:', error)
-      throw error
-    }
-  }
-
-  // Delete album
-  async deleteAlbum(id) {
-    try {
-      const response = await apiClient.delete(API_ENDPOINTS.WEBSITE.ALBUM.DELETE(id))
-      return this.transformItemResponse(response?.data ?? { success: true })
-    } catch (error) {
-      console.error('Error deleting album:', error)
-      throw error
-    }
-  }
 }
 
 // Create and export singleton instance

@@ -136,7 +136,6 @@ const AppSidebar = () => {
             'view_website_testimonial',
             'view_website_gallery',
             'view_website_gallery_video',
-            'view_website_album',
           ]
           const hasAnyWebsitePermission = hasPermission && websitePermissions.some(perm => hasPermission(perm))
           if (!hasAnyWebsitePermission) {

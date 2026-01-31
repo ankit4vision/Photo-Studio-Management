@@ -184,34 +184,6 @@ class WebsiteApi {
     }
   }
 
-  /**
-   * Get albums (featured for homepage)
-   */
-  async getAlbums(featured = false) {
-    try {
-      const endpoint = featured ? '/website/albums?featured=true' : '/website/albums'
-      const response = await this.request(endpoint)
-      return {
-        success: true,
-        data: response.data || [],
-      }
-    } catch (error) {
-      console.error('Error fetching albums:', error)
-      return {
-        success: false,
-        data: [],
-        error: error.message,
-      }
-    }
-  }
-
-  /**
-   * Get album details by ID (deprecated - use getProjectDetail)
-   */
-  async getAlbumDetail(albumId) {
-    // For backward compatibility, redirect to project detail
-    return this.getProjectDetail(albumId)
-  }
 
   /**
    * Get project details by ID

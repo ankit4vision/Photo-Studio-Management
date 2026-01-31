@@ -48,7 +48,6 @@ const HomeGalleryList = React.lazy(() => import('../../views/website/HomeGallery
 const TestimonialsList = React.lazy(() => import('../../views/website/TestimonialsList'))
 const GalleryList = React.lazy(() => import('../../views/website/GalleryList'))
 const GalleryVideosList = React.lazy(() => import('../../views/website/GalleryVideosList'))
-const AlbumsList = React.lazy(() => import('../../views/website/AlbumsList'))
 
 import PermissionRoute from './PermissionRoute'
 import { PERMISSIONS } from '../../constants/permissions'
@@ -274,14 +273,6 @@ const AppContent = () => {
             element={
               <PermissionRoute requiredPermission={PERMISSIONS.WEBSITE_GALLERY_VIDEO_READ} showAccessDenied>
                 <GalleryVideosList />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="/website/albums"
-            element={
-              <PermissionRoute requiredPermission={PERMISSIONS.WEBSITE_ALBUM_READ} showAccessDenied>
-                <AlbumsList />
               </PermissionRoute>
             }
           />
