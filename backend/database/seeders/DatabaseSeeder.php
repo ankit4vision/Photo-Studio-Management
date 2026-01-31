@@ -21,15 +21,6 @@ class DatabaseSeeder extends Seeder
             PackageTypeSeeder::class,
             FinancialCategorySeeder::class,
             UserSeeder::class,
-            // Website CMS Seeders
-            WebsiteSliderSeeder::class,
-            WebsiteServiceSeeder::class,
-            WebsiteProjectSeeder::class,
-            WebsiteHomeGallerySeeder::class,
-            WebsiteTestimonialSeeder::class,
-            WebsiteGallerySeeder::class,
-            WebsiteGalleryVideoSeeder::class,
-            WebsiteAlbumSeeder::class,
         ]);
     }
 }
